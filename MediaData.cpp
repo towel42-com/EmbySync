@@ -189,12 +189,12 @@ bool CMediaData::lastPlayedTheSame() const
 
 uint64_t CMediaData::lastPlayedPos( bool lhs ) const
 {
-    return lhs ? ( fLHSServer ? fLHSServer->fLastPlayedPos : 0 ) : ( fRHSServer ? fRHSServer->fLastPlayedPos : 0 );
+    return lhs ? fLHSServer->fLastPlayedPos : fRHSServer->fLastPlayedPos;
 }
 
 bool CMediaData::played( bool lhs ) const
 {
-    return lhs ? ( fLHSServer ? fLHSServer->fPlayed : false ) : ( fRHSServer ? fRHSServer->fPlayed : false );
+    return lhs ? fLHSServer->fPlayed : fRHSServer->fPlayed;
 }
 
 bool operator==( const CMediaDataBase & lhs, const CMediaDataBase & rhs )
@@ -285,15 +285,11 @@ QString CMediaData::getMediaID( bool isLHS ) const
 
 bool CMediaData::beenLoaded( bool isLHS ) const
 {
-
-    return isLHS ? ( fLHSServer && fLHSServer->fBeenLoaded ) : ( fRHSServer && fRHSServer->fBeenLoaded );
+    return isLHS ? fLHSServer->fBeenLoaded : fRHSServer->fBeenLoaded;
 }
 
 bool CMediaData::lhsMoreRecent() const
 {
-    if ( !fLHSServer || !fRHSServer )
-        return false;
-
     //qDebug() << fLHSServer->getLastModifiedTime();
     //qDebug() << fRHSServer->getLastModifiedTime();
     return fLHSServer->getLastModifiedTime() > fRHSServer->getLastModifiedTime();
@@ -301,15 +297,15 @@ bool CMediaData::lhsMoreRecent() const
 
 void CMediaData::setItem( QTreeWidgetItem * item, bool lhs )
 {
-    if ( lhs && fLHSServer )
+    if ( lhs )
         fLHSServer->fItem = item;
-    else if ( !lhs && fRHSServer )
+    else if ( !lhs )
         fRHSServer->fItem = item;
 }
 
 QTreeWidgetItem * CMediaData::getItem( bool lhs )
 {
-    return lhs ? ( fLHSServer ? fLHSServer->fItem : nullptr ) : ( fRHSServer ? fRHSServer->fItem : nullptr );
+    return lhs ? fLHSServer->fItem : fRHSServer->fItem;
 }
 
 QTreeWidgetItem * CMediaData::getItem( bool forLHS ) const
@@ -337,19 +333,7 @@ void CMediaData::createItems( QTreeWidget * lhsTree, QTreeWidget * rhsTree, cons
 
 QStringList CMediaData::getColumns( bool forLHS )
 {
-    QStringList retVal;
-    if ( ( forLHS && !fLHSServer ) || ( !forLHS && !fRHSServer ) )
-    {
-        retVal = QStringList() << fName << QString() << QString() << QString() << QString() << QString();
-        if ( forLHS )
-            fLHSServer = std::make_shared< CMediaDataBase >();
-        else 
-            fRHSServer = std::make_shared< CMediaDataBase >();
-    }
-    else
-    {
-        retVal = QStringList() << fName << getMediaID( forLHS ) << ( isPlayed( forLHS ) ? "Yes" : "No" ) << QString( isFavorite( forLHS ) ? "Yes" : "No" ) << lastPlayed( forLHS ) << lastModified( forLHS );
-    }
+    QStringList retVal = QStringList() << fName << getMediaID( forLHS ) << ( isPlayed( forLHS ) ? "Yes" : "No" ) << QString( isFavorite( forLHS ) ? "Yes" : "No" ) << lastPlayed( forLHS ) << lastModified( forLHS );
     return retVal;
 }
 
