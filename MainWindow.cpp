@@ -659,35 +659,6 @@ void CMainWindow::loadUsersPlayedMedia( std::shared_ptr< SUserData > userData, b
     setExtraData( reply, userData->fName );
 }
 
-//void CMainWindow::loadAllMedia()
-//{
-//    setupProgressDlg( tr( "Loading All Media" ), true, true );
-//    loadAllMedia( true );
-//    loadAllMedia( false );
-//}
-
-//void CMainWindow::loadAllMedia( bool isLHSServer )
-//{
-//    auto && url = fSettings->getServerURL( isLHSServer );
-//    auto path = url.path();
-//    path += QString( "Items" );
-//    url.setPath( path );
-//
-//    QUrlQuery query;
-//
-//    query.addQueryItem( "api_key", isLHSServer ? fSettings->lhsAPI() : fSettings->rhsAPI() );
-//    query.addQueryItem( "IncludeItemTypes", "Movie,Episode,Video" );
-//    query.addQueryItem( "SortBy", "SortName" );
-//    query.addQueryItem( "SortOrder", "Ascending" );
-//    query.addQueryItem( "Recursive", "True" );
-//    url.setQuery( query );
-//
-//    //qDebug() << url;
-//    auto request = QNetworkRequest( url );
-//
-//    auto reply = fManager->get( request );
-//    setIsLHSServer( reply, isLHSServer );
-//}
 //"{
 //    "BackdropImageTags": [
 //        "73047b0b31266acc5b8a36d3825d8800"
@@ -839,10 +810,19 @@ QString SMediaData::computeName( QJsonObject & mediaObj )
 
         auto series = mediaObj[ "SeriesName" ].toString();
         auto season = mediaObj[ "SeasonName" ].toString();
+        auto pos = season.lastIndexOf( ' ' );
+        if ( pos != -1 )
+        {
+            bool aOK;
+            auto seasonNum = season.mid( pos + 1 ).toInt( &aOK );
+            if ( aOK )
+                season = QString( "S%1" ).arg( seasonNum, 2, 10, QChar( '0' ) );
+        }
+
         auto episodeNum = mediaObj[ "IndexNumber" ].toInt();
         auto episodeName = mediaObj[ "EpisodeTitle" ].toString();
 
-        retVal = series + " - " + season + " Episode " + QString::number( episodeNum ) + " " + episodeName + " - " + retVal;
+        retVal = QString( "%1 - %2E%3 - %4 - %5" ).arg( series ).arg( season ).arg( episodeNum, 2, 10, QChar( '0' ) ).arg( episodeName ).arg( retVal );
     }
     return retVal;
 }
