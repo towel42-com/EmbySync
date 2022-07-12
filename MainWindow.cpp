@@ -466,9 +466,9 @@ void CMainWindow::onlyShowMediaWithDifferences()
                 return;
 
             auto hide = onlyShowMediaWithDiff && mediaData->serverDataEqual();
-            if ( mediaData->getItem( true ) )
+            if ( mediaData->getItem( true ) && mediaData->getItem( true )->treeWidget() )
                 mediaData->getItem( true )->setHidden( hide );
-            if ( mediaData->getItem( false ) )
+            if ( mediaData->getItem( false ) && mediaData->getItem( false )->treeWidget() )
                 mediaData->getItem( false )->setHidden( hide );
         }
     );
