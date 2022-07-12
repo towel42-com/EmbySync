@@ -1,0 +1,12 @@
+<RCC>
+    <qresource prefix="/">
+        <file>resources/generate.png</file>
+        <file>resources/load.png</file>
+        <file>resources/open.png</file>
+        <file>resources/save.png</file>
+        <file>resources/settings.png</file>
+        <file>resources/syncmedia.png</file>
+        <file>resources/syncusers.png</file>
+        <file>resources/reload.png</file>
+    </qresource>
+</RCC>
