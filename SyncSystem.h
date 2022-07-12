@@ -98,6 +98,8 @@ public:
     void forEachMedia( std::function< void( std::shared_ptr< CMediaData > media ) > onMediaItem );
 
     void resetProgressDlg() const;
+
+    std::shared_ptr< CUserData > currUser() const;
 Q_SIGNALS:
     void sigAddToLog( const QString & msg );
     void sigLoadingUsersFinished();

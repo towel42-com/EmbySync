@@ -193,8 +193,19 @@ void CSyncSystem::resetProgressDlg() const
     const_cast<CSyncSystem *>( this )->fProgressDlg = { nullptr, {}, {} };
 }
 
+std::shared_ptr< CUserData > CSyncSystem::currUser() const
+{
+    return fCurrUserData;
+}
+
 void CSyncSystem::slotFindMissingMedia()
 {
+    if ( !fCurrUserData->onLHSServer() || !fCurrUserData->onRHSServer() )
+    {
+        checkForMissingMedia();
+        return;
+    }
+
     for ( auto && ii : fAllMedia )
     {
         if ( !ii->hasMissingInfo() || !ii->hasProviderIDs() )
@@ -532,6 +543,10 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
     auto requestType = this->requestType( reply );
     auto extraData = this->extraData( reply );
 
+    auto pos = fAttributes.find( reply );
+    if ( pos != fAttributes.end() )
+        fAttributes.erase( pos );
+
     //emit sigAddToLog( QString( "Request Completed: %1" ).arg( reply->url().toString() ) );
     //emit sigAddToLog( QString( "Is LHS? %1" ).arg( isLHSServer ? "Yes" : "No" ) );
     //emit sigAddToLog( QString( "Request Type: %1" ).arg( toString( requestType ) ) );
@@ -544,10 +559,12 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
             case ERequestType::eNone:
                 break;
             case ERequestType::eUsers:
+                setProgressDlgFinished( isLHSServer );
                 resetProgressDlg();
                 emit sigLoadingUsersFinished();
                 break;
             case ERequestType::eMediaList:
+                setProgressDlgFinished( isLHSServer );
                 resetProgressDlg();
                 loadMediaData();
                 break;
@@ -563,10 +580,6 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
         }
         return;
     }
-
-    auto pos = fAttributes.find( reply );
-    if ( pos != fAttributes.end() )
-        fAttributes.erase( pos );
 
     //qDebug() << "Requests Remaining" << fAttributes.size();
     auto data = reply->readAll();
@@ -589,12 +602,6 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
                 }
             }
             break;
-        case ERequestType::eMissingMedia:
-            if ( !progressDlg() || ( progressDlg() && !progressDlg()->wasCanceled() ) )
-            {
-                loadMissingMediaItem( data, extraData.toString(), isLHSServer );
-            }
-            break;
         case ERequestType::eMediaList:
             if ( !progressDlg() || ( progressDlg() && !progressDlg()->wasCanceled() ) )
             {
@@ -608,15 +615,22 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
                 }
             }
             break;
+        case ERequestType::eMissingMedia:
+            if ( !progressDlg() || ( progressDlg() && !progressDlg()->wasCanceled() ) )
+            {
+                loadMissingMediaItem( data, extraData.toString(), isLHSServer );
+            }
+            break;
         case ERequestType::eMediaData:
             if ( !progressDlg() || ( progressDlg() && !progressDlg()->wasCanceled() ) )
             {
                 loadMediaData( data, isLHSServer, extraData.toString() );
                 incProgressDlg();
+                qDebug() << fAttributes.size();
                 if ( fAttributes.empty() && !fLoadingMediaData )
                 {
                     fLoadingMediaData = true;
-                    QTimer::singleShot( 500, this, &CSyncSystem::slotMergeMedia );
+                    QTimer::singleShot( 0, this, &CSyncSystem::slotMergeMedia );
                 }
             }
             break;
@@ -647,6 +661,8 @@ void CSyncSystem::slotMergeMedia()
     for ( auto && ii : fRHSMedia )
         fAllMedia.insert( ii.second );
 
+    fLHSMedia.clear();
+    fRHSMedia.clear();
     fLHSProviderSearchMap.clear();
     fRHSProviderSearchMap.clear();
 
@@ -911,21 +927,15 @@ void CSyncSystem::loadMediaData()
     if ( !fCurrUserData )
         return;
 
-    if ( fCurrUserData->hasMedia() )
+    if ( !fCurrUserData->hasMedia() )
         return;
-
-    setupProgressDlg( tr( "Loading Media Provider Info" ), fCurrUserData->onLHSServer(), fCurrUserData->onRHSServer() );
-    updateProgressDlg( fCurrUserData->numPlayedMedia() );
 
     for ( auto && ii : fCurrUserData->playedMedia() )
     {
-        incProgressDlg();
-
         loadMediaData( ii, true );
         loadMediaData( ii, false );
     }
 
-    resetProgressDlg();
     setupProgressDlg( tr( "Loading Media Provider Info" ), fCurrUserData->onLHSServer(), fCurrUserData->onRHSServer() );
     updateProgressDlg( fCurrUserData->numPlayedMedia() );
 }
@@ -962,8 +972,6 @@ void CSyncSystem::loadMediaData( const QByteArray & data, bool isLHSServer, cons
     auto mediaData = ( *pos ).second;
     if ( !mediaData )
         return;
-
-    auto treeItem = mediaData->getItem( isLHSServer );
 
     QJsonParseError error;
     auto doc = QJsonDocument::fromJson( data, &error );
