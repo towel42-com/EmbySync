@@ -36,6 +36,8 @@
 #include <QTimer>
 #include <QScrollBar>
 #include <QFileInfo>
+#include <QProgressDialog>
+#include <QMessageBox>
 
 CMainWindow::CMainWindow( QWidget * parent )
     : QMainWindow( parent ),
@@ -83,6 +85,48 @@ CMainWindow::CMainWindow( QWidget * parent )
         {
             updateProviderColumns( mediaData );
         } );
+
+    fSyncSystem->setUserMsgFunc(
+        [this]( const QString & title, const QString & msg, bool isCritical )
+        {
+            if ( isCritical )
+                QMessageBox::critical( this, title, msg );
+            else
+                QMessageBox::information( this, title, msg );
+        } );
+    SProgressFunctions progressFuncs;
+    progressFuncs.fSetupFunc = [this]( const QString & title, bool hasLHSServer, bool hasRHSServer )
+    {
+        return setupProgressDlg( title, hasLHSServer, hasRHSServer );
+    };
+    progressFuncs.fIsFinishedFunc = [this]()
+    {
+        return isProgressDlgFinished();;
+    };
+    progressFuncs.fUpdateFunc = [this]( int count )
+    {
+        return updateProgressDlg( count );
+    };
+    progressFuncs.fIncFunc = [this]()
+    {
+        return incProgressDlg();
+    };
+    progressFuncs.fSetFinishedFunc = [this]( bool isLHS )
+    {
+        return setProgressDlgFinished( isLHS );
+    };
+    progressFuncs.fResetFunc = [this]()
+    {
+        return resetProgressDlg();
+    };
+    progressFuncs.fWasCanceledFunc = [this]()
+    {
+        if ( progressDlg() )
+            return progressDlg()->wasCanceled();
+        return false;
+    };
+
+    fSyncSystem->setProgressFunctions( progressFuncs );
 
     connect( fImpl->actionLoadProject, &QAction::triggered, this, &CMainWindow::slotLoadProject );
     connect( fImpl->menuLoadRecent, &QMenu::aboutToShow, this, &CMainWindow::slotRecentMenuAboutToShow );
@@ -249,10 +293,13 @@ void CMainWindow::slotLoadingUsersFinished()
 void CMainWindow::slotUserMediaLoaded()
 {
     auto currUser = getCurrUserData();
+    auto lhsTree = currUser->onLHSServer() ? fImpl->lhsMedia : nullptr;
+    auto rhsTree = currUser->onRHSServer() ? fImpl->rhsMedia : nullptr;
+
     fSyncSystem->forEachMedia(
-        [this, currUser]( std::shared_ptr< CMediaData > media )
+        [this, lhsTree, rhsTree]( std::shared_ptr< CMediaData > media )
         {
-            media->createItems( currUser->onLHSServer() ? fImpl->lhsMedia : nullptr, currUser->onRHSServer() ? fImpl->rhsMedia : nullptr, fProviderColumnsByColumn );
+            media->createItems( lhsTree, rhsTree, fProviderColumnsByColumn );
         } );
     QTimer::singleShot( 0, fSyncSystem.get(), &CSyncSystem::slotFindMissingMedia );
 }
@@ -366,7 +413,7 @@ void CMainWindow::onlyShowSyncableUsers()
     auto newItem = NSABUtils::nextVisibleItem( currItem );
     slotCurrentItemChanged( newItem, nullptr );
 
-    fSyncSystem->resetProgressDlg();
+    resetProgressDlg();
 }
 
 void CMainWindow::slotToggleOnlyShowMediaWithDifferences()
@@ -392,7 +439,7 @@ void CMainWindow::onlyShowMediaWithDifferences()
                 mediaData->getItem( false )->setHidden( hide );
         }
     );
-    fSyncSystem->resetProgressDlg();
+    resetProgressDlg();
 }
 
 void CMainWindow::slotProcess()
@@ -406,4 +453,79 @@ void CMainWindow::slotAddToLog( const QString & msg )
     fImpl->log->appendPlainText( QString( "%1" ).arg( msg.endsWith( '\n' ) ? msg.left( msg.length() - 1 ) : msg ) );
     fImpl->statusbar->showMessage( msg, 500 );
 }
+
+QProgressDialog * CMainWindow::progressDlg() const
+{
+    return std::get< 0 >( fProgressDlg );
+}
+
+void CMainWindow::resetProgressDlg() const
+{
+    delete std::get< 0 >( const_cast<CMainWindow *>( this )->fProgressDlg );
+    const_cast<CMainWindow *>( this )->fProgressDlg = { nullptr, {}, {} };
+}
+
+void CMainWindow::setupProgressDlg( const QString & title, bool hasLHSServer, bool hasRHSServer )
+{
+    if ( !std::get< 0 >( fProgressDlg ) )
+    {
+        std::get< 0 >( fProgressDlg ) = new QProgressDialog( title, tr( "Cancel" ), 0, 0, parentWidget() );
+        std::get< 0 >( fProgressDlg )->setAutoClose( true );
+        std::get< 0 >( fProgressDlg )->setMinimumDuration( 0 );
+        std::get< 0 >( fProgressDlg )->setValue( 0 );
+        std::get< 0 >( fProgressDlg )->show();
+    }
+    if ( hasLHSServer )
+        std::get< 1 >( fProgressDlg ) = false;
+    else
+        std::get< 1 >( fProgressDlg ).reset();
+
+    if ( hasRHSServer )
+        std::get< 2 >( fProgressDlg ) = false;
+    else
+        std::get< 2 >( fProgressDlg ).reset();
+}
+
+void CMainWindow::updateProgressDlg( int count )
+{
+    if ( !progressDlg() )
+        return;
+    progressDlg()->setMaximum( progressDlg()->maximum() + count );
+}
+
+void CMainWindow::incProgressDlg()
+{
+    if ( !progressDlg() )
+        return;
+
+    progressDlg()->setValue( progressDlg()->value() + 1 );
+}
+
+bool CMainWindow::isProgressDlgFinished()  const
+{
+    if ( !progressDlg() )
+        return true;
+
+    if ( progressDlg()->wasCanceled() )
+    {
+        resetProgressDlg();
+        return true;
+    }
+    bool retVal = true;
+    if ( std::get< 1 >( fProgressDlg ).has_value() )
+        retVal = retVal && std::get< 1 >( fProgressDlg ).value();
+    if ( std::get< 2 >( fProgressDlg ).has_value() )
+        retVal = retVal && std::get< 2 >( fProgressDlg ).value();
+
+    return retVal;
+}
+
+void CMainWindow::setProgressDlgFinished( bool isLHS )
+{
+    if ( isLHS )
+        std::get< 1 >( fProgressDlg ) = true;
+    else
+        std::get< 2 >( fProgressDlg ) = true;
+}
+
 

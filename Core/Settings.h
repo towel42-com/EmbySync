@@ -23,11 +23,12 @@
 #ifndef _SETTINGS_H
 #define _SETTINGS_H
 
-#include <QDialog>
 #include <QString>
 #include <memory>
 #include <tuple>
 #include <QUrl>
+
+class QWidget;
 namespace Ui
 {
     class CSettings;
@@ -42,11 +43,17 @@ public:
     virtual ~CSettings();
 
     QString fileName() const { return fFileName; }
+
     bool load( QWidget * parent );
     bool load( const QString & fileName, QWidget * parent );
+    bool load( const QString & fileName, std::function<void( const QString & title, const QString & msg )> errorFunc );
+
+    bool save();
 
     bool save( QWidget * parent );
     bool maybeSave( QWidget * parent );
+    bool save( QWidget * parent, std::function<QString()> selectFileFunc, std::function<void( const QString & title, const QString & msg )> errorFunc );
+    bool save( std::function<void( const QString & title, const QString & msg )> errorFunc );
 
     QUrl getServerURL( bool lhs )
     {
@@ -94,6 +101,7 @@ public:
     void addRecentProject( const QString & fileName );
     QStringList recentProjectList() const;
 private:
+    bool maybeSave( QWidget * parent, std::function<QString()> selectFileFunc, std::function<void( const QString & title, const QString & msg )> errorFunc );
     QUrl getUrl( bool lhs ) const;
 
     void updateValue( QString & lhs, const QString & rhs );

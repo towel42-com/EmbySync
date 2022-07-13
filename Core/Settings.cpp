@@ -29,8 +29,6 @@
 #include <QFileInfo>
 #include <QSettings>
 
-#include <QMessageBox>
-#include <QFileDialog>
 #include <QUrlQuery>
 
 CSettings::CSettings()
@@ -38,39 +36,20 @@ CSettings::CSettings()
 
 }
 
-CSettings::CSettings( const QString & fileName, QWidget * parentWidget ) :
-    CSettings()
-{
-    fFileName = fileName;
-    load( parentWidget );
-}
-   
-
 CSettings::~CSettings()
 {
-    save( nullptr );
+    save();
 }
 
-bool CSettings::load( const QString & fileName, QWidget * parentWidget )
+bool CSettings::load( const QString & fileName, std::function<void( const QString & title, const QString & msg )> errorFunc )
 {
     fFileName = fileName;
-    return load( parentWidget );
-}
-
-bool CSettings::load( QWidget * parentWidget )
-{
-    if ( fFileName.isEmpty() )
-    {
-        auto fileName = QFileDialog::getOpenFileName( parentWidget, QObject::tr( "Select File" ), QString(), QObject::tr( "Settings File (*.json);;All Files (* *.*)" ) );
-        if ( fileName.isEmpty() )
-            return false;
-        fFileName = QFileInfo( fileName ).absoluteFilePath();
-    }
 
     QFile file( fFileName );
     if ( !file.open( QFile::ReadOnly | QFile::Text ) )
     {
-        QMessageBox::critical( parentWidget, QObject::tr( "Could not open" ), QObject::tr( "Could not open file '%1'" ).arg( fFileName ) );
+        if ( errorFunc )
+            errorFunc( QObject::tr( "Could not open" ), QObject::tr( "Could not open file '%1'" ).arg( fFileName ) );
         fFileName.clear();
         return false;
     }
@@ -79,7 +58,8 @@ bool CSettings::load( QWidget * parentWidget )
     auto json = QJsonDocument::fromJson( file.readAll(), &error );
     if ( error.error != QJsonParseError::NoError )
     {
-        QMessageBox::critical( parentWidget, QObject::tr( "Could not read" ), QObject::tr( "Could not read file '%1' - '%2' @ %3" ).arg( fFileName ).arg( error.errorString() ).arg( error.offset ) );
+        if ( errorFunc )
+            errorFunc( QObject::tr( "Could not read" ), QObject::tr( "Could not read file '%1' - '%2' @ %3" ).arg( fFileName ).arg( error.errorString() ).arg( error.offset ) );
         fFileName.clear();
         return false;
     }
@@ -121,11 +101,17 @@ QStringList CSettings::recentProjectList() const
     return settings.value( "RecentProjects", QStringList() ).toStringList();
 }
 
-
-bool CSettings::save( QWidget * parent )
+bool CSettings::save()
 {
     if ( fFileName.isEmpty() )
-        return maybeSave( parent );
+        return false;
+    return save( std::function<void( const QString & title, const QString & msg )>() );
+}
+
+bool CSettings::save( std::function<void( const QString & title, const QString & msg )> errorFunc )
+{
+    if ( fFileName.isEmpty() )
+        return false;
 
     QJsonDocument json;
     auto root = json.object();
@@ -153,32 +139,14 @@ bool CSettings::save( QWidget * parent )
     QFile file( fFileName );
     if ( !file.open( QFile::WriteOnly | QFile::Text | QFile::Truncate ) )
     {
-        QMessageBox::critical( nullptr, QObject::tr( "Could not open" ), QObject::tr( "Could not open file '%1' for writing" ).arg( fFileName ) );
+        if ( errorFunc )
+            errorFunc( QObject::tr( "Could not open" ), QObject::tr( "Could not open file '%1' for writing" ).arg( fFileName ) );
         return false;
     }
 
     file.write( jsonData );
     fChanged = false;
     return true;
-}
-
-bool CSettings::maybeSave( QWidget * parent )
-{
-    if ( !fChanged )
-        return true;
-
-    if ( fFileName.isEmpty() )
-    {
-        auto fileName = QFileDialog::getSaveFileName( parent, QObject::tr( "Select File" ), QString(), QObject::tr( "Settings File (*.json);;All Files (* *.*)" ) );
-        if ( fileName.isEmpty() )
-            return true;
-
-        fFileName = fileName;
-    }
-
-    if ( fFileName.isEmpty() )
-        return false;
-    return save( parent );
 }
 
 QUrl CSettings::getUrl( bool lhs ) const

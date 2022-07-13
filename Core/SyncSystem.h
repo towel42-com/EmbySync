@@ -40,7 +40,6 @@ class QNetworkAccessManager;
 class CUserData;
 class CMediaData;
 class CSettings;
-class QProgressDialog;
 
 enum class ERequestType
 {
@@ -53,6 +52,57 @@ enum class ERequestType
 };
 
 QString toString( ERequestType request );
+
+struct SProgressFunctions
+{
+    void setupProgress( const QString & title, bool hasLHSServer, bool hasRHSServer )
+    {
+        if ( fSetupFunc )
+            fSetupFunc( title, hasLHSServer, hasRHSServer );
+    }
+
+    bool isProgressFinished() const
+    {
+        if ( fIsFinishedFunc )
+            return fIsFinishedFunc();
+        return true;
+    }
+    void updateProgress( int count )
+    {
+        if ( fUpdateFunc )
+            fUpdateFunc( count );
+    }
+    void incProgress()
+    {
+        if ( fIncFunc )
+            fIncFunc();
+    }
+    void setProgressFinished( bool isLHS )
+    {
+        if ( fSetFinishedFunc )
+            fSetFinishedFunc( isLHS );
+    }
+    void resetProgress() const
+    {
+        if ( fResetFunc )
+            fResetFunc();
+    }
+
+    bool wasCanceled() const
+    {
+        if ( fWasCanceledFunc )
+            return fWasCanceledFunc();
+        return false;
+    }
+
+    std::function< void( const QString & title, bool hasLHSServer, bool hasRHSServer ) > fSetupFunc;
+    std::function< bool() > fIsFinishedFunc;
+    std::function< void( int ) > fUpdateFunc;
+    std::function< void() > fIncFunc;
+    std::function< void( bool ) > fSetFinishedFunc;
+    std::function< void() > fResetFunc;
+    std::function< bool() > fWasCanceledFunc;
+};
 
 struct SServerReplyInfo
 {
@@ -78,10 +128,13 @@ class CSyncSystem : public QObject
 {
     Q_OBJECT
 public:
-    CSyncSystem( std::shared_ptr< CSettings > settings, QWidget * parent );
+    CSyncSystem( std::shared_ptr< CSettings > settings, QObject * parent = nullptr );
     void setUserItemFunc( std::function< void( std::shared_ptr< CUserData > userData ) > updateUserFunc );
     void setMediaItemFunc( std::function< void( std::shared_ptr< CMediaData > userData ) > mediaItemFunc );
     void setProcessNewMediaFunc( std::function< void( std::shared_ptr< CMediaData > userData ) > processMediaFunc );
+    void setUserMsgFunc( std::function< void( const QString & title, const QString & msg, bool isCritical ) > userMsgFunc );
+
+    void setProgressFunctions( const SProgressFunctions & funcs );
 
     bool isRunning() const;
 
@@ -98,8 +151,6 @@ public:
     void forEachUser( std::function< void( std::shared_ptr< CUserData > userData ) > onUser );
     void forEachMedia( std::function< void( std::shared_ptr< CMediaData > media ) > onMediaItem );
 
-    void resetProgressDlg() const;
-
     std::shared_ptr< CUserData > currUser() const;
 Q_SIGNALS:
     void sigAddToLog( const QString & msg );
@@ -109,8 +160,6 @@ Q_SIGNALS:
 public Q_SLOTS:
     void slotFindMissingMedia();
 private:
-    QWidget * parentWidget() const;
-
     void loadUsersPlayedMedia( bool isLHSServer );
     bool processData( std::shared_ptr< CMediaData > mediaData );
 
@@ -119,14 +168,6 @@ private:
     void setFavorite( std::shared_ptr< CMediaData > mediaData );
     void setLastPlayed( std::shared_ptr< CMediaData > mediaData );
     void setMediaData( std::shared_ptr< CMediaData > mediaData, bool deleteUpdate, const QString & updateType );
-
-    QProgressDialog * progressDlg() const;
-    void setupProgressDlg( const QString & title, bool hasLHSServer, bool hasRHSServer );
-
-    void updateProgressDlg( int count );
-    void incProgressDlg();
-    bool isProgressDlgFinished() const;
-    void setProgressDlgFinished( bool isLHS );
 
     void loadUsers( bool forLHSServer );
 
@@ -189,8 +230,9 @@ private:
     std::function< void( std::shared_ptr< CUserData > userData ) > fUpdateUserFunc;
     std::function< void( std::shared_ptr< CMediaData > userData ) > fUpdateMediaFunc;
     std::function< void( std::shared_ptr< CMediaData > userData ) > fProcessNewMediaFunc;
+    std::function< void( const QString & title, const QString & msg, bool isCritical ) > fUserMsgFunc;
+    SProgressFunctions fProgressFuncs;
 
-    std::tuple< QProgressDialog *, std::optional< bool >, std::optional< bool > > fProgressDlg{ nullptr, {}, {} };
     std::shared_ptr< CUserData > fCurrUserData;
 };
 #endif 

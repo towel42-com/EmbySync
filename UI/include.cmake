@@ -1,6 +1,7 @@
 set(qtproject_SRCS
     MainWindow.cpp
     SettingsDlg.cpp
+    MediaData.cpp
 )
 
 set(qtproject_H

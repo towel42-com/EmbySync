@@ -37,6 +37,7 @@ class CMediaData;
 class CUserData;
 class CSettings;
 class CSyncSystem;
+class QProgressDialog;
 
 class CMainWindow : public QMainWindow
 {
@@ -70,6 +71,15 @@ private Q_SLOTS:
     void slotLoadingUsersFinished();
     void slotUserMediaLoaded();
 private:
+    QProgressDialog * progressDlg() const;
+    void setupProgressDlg( const QString & title, bool hasLHSServer, bool hasRHSServer );
+
+    void updateProgressDlg( int count );
+    void incProgressDlg();
+    bool isProgressDlgFinished() const;
+    void setProgressDlgFinished( bool isLHS );
+    void resetProgressDlg() const;
+
     void onlyShowSyncableUsers();
     void onlyShowMediaWithDifferences();
     std::shared_ptr< CUserData > getCurrUserData() const;
@@ -91,5 +101,7 @@ private:
 
     std::unordered_set< QString > fProviderColumnsByName;
     std::map< int, QString > fProviderColumnsByColumn;
+
+    std::tuple< QProgressDialog *, std::optional< bool >, std::optional< bool > > fProgressDlg{ nullptr, {}, {} };
 };
 #endif 

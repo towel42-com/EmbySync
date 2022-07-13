@@ -51,6 +51,7 @@ add_subdirectory( SABUtils )
 add_subdirectory( UI )
 add_subdirectory( Core )
 add_subdirectory( App )
+add_subdirectory( cli )
 
 SET( CPACK_PACKAGE_VERSION_MAJOR ${MAJOR_VERSION} )
 SET( CPACK_PACKAGE_VERSION_MINOR ${MINOR_VERSION} )

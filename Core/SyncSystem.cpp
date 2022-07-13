@@ -60,7 +60,7 @@ QString toString( ERequestType request )
     return {};
 }
 
-CSyncSystem::CSyncSystem( std::shared_ptr< CSettings > settings, QWidget * parent ) :
+CSyncSystem::CSyncSystem( std::shared_ptr< CSettings > settings, QObject * parent ) :
     QObject( parent ),
     fSettings( settings )
 {
@@ -90,21 +90,31 @@ void CSyncSystem::setProcessNewMediaFunc( std::function< void( std::shared_ptr< 
     fProcessNewMediaFunc = processNewMediaFunc;
 }
 
+void CSyncSystem::setUserMsgFunc( std::function< void( const QString & title, const QString & msg, bool isCritical ) > userMsgFunc )
+{
+    fUserMsgFunc = userMsgFunc;
+}
+
+void CSyncSystem::setProgressFunctions( const SProgressFunctions & funcs )
+{
+    fProgressFuncs = funcs;
+}
+
 bool CSyncSystem::isRunning() const
 {
-    return !isProgressDlgFinished();
+    return !fAttributes.empty();
 }
 
 void CSyncSystem::reset()
 {
     fUsers.clear();
-    fAllMedia.clear();
     fAttributes.clear();
     resetMedia();
 }
 
 void CSyncSystem::resetMedia()
 {
+    fAllMedia.clear();
     fMissingMedia.clear();
     fLHSMedia.clear();
     fRHSMedia.clear();
@@ -114,7 +124,7 @@ void CSyncSystem::resetMedia()
 
 void CSyncSystem::loadUsers()
 {
-    setupProgressDlg( tr( "Loading Users" ), true, true );
+    fProgressFuncs.setupProgress( tr( "Loading Users" ), true, true );
 
     loadUsers( true );
     loadUsers( false );
@@ -138,7 +148,7 @@ void CSyncSystem::loadUsersMedia( std::shared_ptr< CUserData > userData )
     if ( !fCurrUserData->onLHSServer() && !fCurrUserData->onRHSServer() )
         return;
 
-    setupProgressDlg( tr( "Loading Users Played Media" ), fCurrUserData->onLHSServer(), fCurrUserData->onRHSServer() );
+    fProgressFuncs.setupProgress( tr( "Loading Users Played Media" ), fCurrUserData->onLHSServer(), fCurrUserData->onRHSServer() );
     if ( fCurrUserData->onLHSServer() )
         loadUsersPlayedMedia( true );
     if ( fCurrUserData->onRHSServer() )
@@ -153,16 +163,15 @@ void CSyncSystem::clearCurrUser()
 
 void CSyncSystem::process()
 {
-    setupProgressDlg( "Processing Data", true, true );
-
-    updateProgressDlg( static_cast<int>( fAllMedia.size() ) );
+    fProgressFuncs.setupProgress( "Processing Data", true, true );
+    fProgressFuncs.updateProgress( static_cast<int>( fAllMedia.size() ) );
     for ( auto && ii : fAllMedia )
     {
-        incProgressDlg();
+        fProgressFuncs.incProgress();
         bool dataProcessed = processData( ii );
         (void)dataProcessed;
     }
-    resetProgressDlg();
+    fProgressFuncs.resetProgress();
 }
 
 std::shared_ptr< CUserData > CSyncSystem::getUserData( const QString & name ) const
@@ -193,12 +202,6 @@ void CSyncSystem::forEachMedia( std::function< void( std::shared_ptr< CMediaData
     }
 }
 
-void CSyncSystem::resetProgressDlg() const
-{
-    delete std::get< 0 >( const_cast<CSyncSystem *>( this )->fProgressDlg );
-    const_cast<CSyncSystem *>( this )->fProgressDlg = { nullptr, {}, {} };
-}
-
 std::shared_ptr< CUserData > CSyncSystem::currUser() const
 {
     return fCurrUserData;
@@ -222,18 +225,13 @@ void CSyncSystem::slotFindMissingMedia()
     if ( checkForMissingMedia() )
         return;
 
-    setupProgressDlg( "Finding Unplayed Info", true, true );
-    updateProgressDlg( static_cast< int >( fMissingMedia.size() ) );
+    fProgressFuncs.setupProgress( "Finding Unplayed Info", true, true );
+    fProgressFuncs.updateProgress( static_cast< int >( fMissingMedia.size() ) );
 
     for( auto && ii : fMissingMedia )
     {
         getMissingMedia( ii.second );
     }
-}
-
-QWidget * CSyncSystem::parentWidget() const
-{
-    return dynamic_cast<QWidget *>( parent() );
 }
 
 void CSyncSystem::loadUsersPlayedMedia( bool isLHSServer )
@@ -414,74 +412,6 @@ void CSyncSystem::setMediaData( std::shared_ptr< CMediaData > mediaData, bool de
     setRequestType( reply, ERequestType::eUpdateData );
 }
 
-QProgressDialog * CSyncSystem::progressDlg() const
-{
-    return std::get< 0 >( fProgressDlg );
-}
-
-void CSyncSystem::setupProgressDlg( const QString & title, bool hasLHSServer, bool hasRHSServer )
-{
-    if ( !std::get< 0 >( fProgressDlg ) )
-    {
-        std::get< 0 >( fProgressDlg ) = new QProgressDialog( title, tr( "Cancel" ), 0, 0, parentWidget() );
-        std::get< 0 >( fProgressDlg )->setAutoClose( true );
-        std::get< 0 >( fProgressDlg )->setMinimumDuration( 0 );
-        std::get< 0 >( fProgressDlg )->setValue( 0 );
-        std::get< 0 >( fProgressDlg )->show();
-    }
-    if ( hasLHSServer )
-        std::get< 1 >( fProgressDlg ) = false;
-    else
-        std::get< 1 >( fProgressDlg ).reset();
-
-    if ( hasRHSServer )
-        std::get< 2 >( fProgressDlg ) = false;
-    else
-        std::get< 2 >( fProgressDlg ).reset();
-}
-
-void CSyncSystem::updateProgressDlg( int count )
-{
-    if ( !progressDlg() )
-        return;
-    progressDlg()->setMaximum( progressDlg()->maximum() + count );
-}
-
-void CSyncSystem::incProgressDlg()
-{
-    if ( !progressDlg() )
-        return;
-
-    progressDlg()->setValue( progressDlg()->value() + 1 );
-}
-
-bool CSyncSystem::isProgressDlgFinished()  const
-{
-    if ( !progressDlg() )
-        return true;
-
-    if ( progressDlg()->wasCanceled() )
-    {
-        resetProgressDlg();
-        return true;
-    }
-    bool retVal = true;
-    if ( std::get< 1 >( fProgressDlg ).has_value() )
-        retVal = retVal && std::get< 1 >( fProgressDlg ).value();
-    if ( std::get< 2 >( fProgressDlg ).has_value() )
-        retVal = retVal && std::get< 2 >( fProgressDlg ).value();
-
-    return retVal;
-}
-
-void CSyncSystem::setProgressDlgFinished( bool isLHS )
-{
-    if ( isLHS )
-        std::get< 1 >( fProgressDlg ) = true;
-    else
-        std::get< 2 >( fProgressDlg ) = true;
-}
-
 void CSyncSystem::loadUsers( bool isLHSServer )
 {
     emit sigAddToLog( tr( "Loading users from server '%1'" ).arg( fSettings->getServerName( isLHSServer )  ) );;
@@ -565,19 +495,19 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
             case ERequestType::eNone:
                 break;
             case ERequestType::eUsers:
-                setProgressDlgFinished( isLHSServer );
-                resetProgressDlg();
+                fProgressFuncs.setProgressFinished( isLHSServer );
+                fProgressFuncs.resetProgress();
                 emit sigLoadingUsersFinished();
                 break;
             case ERequestType::eMediaList:
-                setProgressDlgFinished( isLHSServer );
-                resetProgressDlg();
+                fProgressFuncs.setProgressFinished( isLHSServer );
+                fProgressFuncs.resetProgress();
                 loadMediaData();
                 break;
             case ERequestType::eMissingMedia:
                 break;
             case ERequestType::eMediaData:
-                resetProgressDlg();
+                fProgressFuncs.resetProgress();
                 break;
             case ERequestType::eUpdateData:
                 break;
@@ -596,42 +526,42 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
         case ERequestType::eNone:
             break;
         case ERequestType::eUsers:
-            if ( !progressDlg() || ( progressDlg() && !progressDlg()->wasCanceled() ) )
+            if ( !fProgressFuncs.wasCanceled() )
             {
                 loadUsers( data, isLHSServer );
-                setProgressDlgFinished( isLHSServer );
+                fProgressFuncs.setProgressFinished( isLHSServer );
 
-                if ( isProgressDlgFinished() )
+                if ( fProgressFuncs.isProgressFinished() )
                 {
-                    resetProgressDlg();
+                    fProgressFuncs.resetProgress();
                     emit sigLoadingUsersFinished();
                 }
             }
             break;
         case ERequestType::eMediaList:
-            if ( !progressDlg() || ( progressDlg() && !progressDlg()->wasCanceled() ) )
+            if ( !fProgressFuncs.wasCanceled() )
             {
                 loadMediaList( data, isLHSServer );
-                setProgressDlgFinished( isLHSServer );
+                fProgressFuncs.setProgressFinished( isLHSServer );
 
-                if ( isProgressDlgFinished() )
+                if ( fProgressFuncs.isProgressFinished() )
                 {
-                    resetProgressDlg();
+                    fProgressFuncs.resetProgress();
                     loadMediaData();
                 }
             }
             break;
         case ERequestType::eMissingMedia:
-            if ( !progressDlg() || ( progressDlg() && !progressDlg()->wasCanceled() ) )
+            if ( !fProgressFuncs.wasCanceled() )
             {
                 loadMissingMediaItem( data, extraData.toString(), isLHSServer );
             }
             break;
         case ERequestType::eMediaData:
-            if ( !progressDlg() || ( progressDlg() && !progressDlg()->wasCanceled() ) )
+            if ( !fProgressFuncs.wasCanceled() )
             {
                 loadMediaData( data, isLHSServer, extraData.toString() );
-                incProgressDlg();
+                fProgressFuncs.incProgress();
                 qDebug() << fAttributes.size();
                 if ( fAttributes.empty() && !fLoadingMediaData )
                 {
@@ -655,7 +585,7 @@ void CSyncSystem::slotMergeMedia()
         return;
     }
 
-    resetProgressDlg();
+    fProgressFuncs.resetProgress();
     fLoadingMediaData = false;
 
     mergeMediaData( fLHSMedia, fRHSMedia, true );
@@ -709,7 +639,8 @@ bool CSyncSystem::handleError( QNetworkReply * reply )
     if ( reply && ( reply->error() != QNetworkReply::NoError ) ) // replys with an error do not get cached
     {
         auto data = reply->readAll();
-        QMessageBox::critical( parentWidget(), tr( "Error response from server" ), tr( "Error from Server: %1%2" ).arg( reply->errorString() ).arg( data.isEmpty() ? QString() : QString( " - %1" ).arg( QString( data ) ) ) );
+        if ( fUserMsgFunc )
+            fUserMsgFunc( tr( "Error response from server" ), tr( "Error from Server: %1%2" ).arg( reply->errorString() ).arg( data.isEmpty() ? QString() : QString( " - %1" ).arg( QString( data ) ) ), true );
         return false;
     }
     return true;
@@ -721,21 +652,22 @@ void CSyncSystem::loadUsers( const QByteArray & data, bool isLHSServer )
     auto doc = QJsonDocument::fromJson( data, &error );
     if ( error.error != QJsonParseError::NoError )
     {
-        QMessageBox::critical( parentWidget(), tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ) );
+        if ( fUserMsgFunc )
+            fUserMsgFunc( tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ), true );
         return;
     }
 
     //qDebug() << doc.toJson();
     auto users = doc.array();
-    updateProgressDlg( users.count() );
+    fProgressFuncs.updateProgress( users.count() );
 
     emit sigAddToLog( QString( "Server '%3' has %2 Users" ).arg( fSettings->getServerName( isLHSServer ) ).arg( users.count() ) );
 
     for ( auto && ii : users )
     {
-        if ( progressDlg()->wasCanceled() )
+        if ( fProgressFuncs.wasCanceled() )
             break;
-        incProgressDlg();
+        fProgressFuncs.incProgress();
 
 
         auto user = ii.toObject();
@@ -759,20 +691,21 @@ void CSyncSystem::loadUsers( const QByteArray & data, bool isLHSServer )
 
 void CSyncSystem::loadMissingMediaItem( const QByteArray & data, const QString & mediaName, bool isLHSServer )
 {
-    incProgressDlg();
+    fProgressFuncs.incProgress();
     //qDebug() << progressDlg()->value() << fMissingMedia.size();
 
     QJsonParseError error;
     auto doc = QJsonDocument::fromJson( data, &error );
     if ( error.error != QJsonParseError::NoError )
     {
-        QMessageBox::critical( parentWidget(), tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ) );
+        if ( fUserMsgFunc )
+            fUserMsgFunc( tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ), true );
         return;
     }
 
     //qDebug() << doc.toJson();
     auto mediaList = doc[ "Items" ].toArray();
-    updateProgressDlg( mediaList.count() );
+    fProgressFuncs.updateProgress( mediaList.count() );
 
     emit sigAddToLog( QString( "%1 has %2 watched media items on server '%3' that match missing data for '%4'- %5 remaining" ).arg( fCurrUserData->name() ).arg( mediaList.count() ).arg( fSettings->getServerName( isLHSServer ) ).arg( mediaName ).arg( fMissingMedia.size() ) );
 
@@ -875,13 +808,14 @@ void CSyncSystem::loadMediaList( const QByteArray & data, bool isLHSServer )
     auto doc = QJsonDocument::fromJson( data, &error );
     if ( error.error != QJsonParseError::NoError )
     {
-        QMessageBox::critical( parentWidget(), tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ) );
+        if ( fUserMsgFunc )
+            fUserMsgFunc( tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ), true );
         return;
     }
 
     //qDebug() << doc.toJson();
     auto mediaList = doc[ "Items" ].toArray();
-    updateProgressDlg( mediaList.count() );
+    fProgressFuncs.updateProgress( mediaList.count() );
 
     emit sigAddToLog( QString( "%1 has %2 watched media items on server '%3'" ).arg( fCurrUserData->name() ).arg( mediaList.count() ).arg( fSettings->getServerName( isLHSServer ) ) );
 
@@ -892,9 +826,9 @@ void CSyncSystem::loadMediaList( const QByteArray & data, bool isLHSServer )
             break;
         curr++;
 
-        if ( progressDlg() && progressDlg()->wasCanceled() )
+        if ( fProgressFuncs.wasCanceled() )
             break;
-        incProgressDlg();
+        fProgressFuncs.incProgress();
             
         auto media = ii.toObject();
 
@@ -942,8 +876,8 @@ void CSyncSystem::loadMediaData()
         loadMediaData( ii, false );
     }
 
-    setupProgressDlg( tr( "Loading Media Provider Info" ), fCurrUserData->onLHSServer(), fCurrUserData->onRHSServer() );
-    updateProgressDlg( fCurrUserData->numPlayedMedia() );
+    fProgressFuncs.setupProgress( tr( "Loading Media Provider Info" ), fCurrUserData->onLHSServer(), fCurrUserData->onRHSServer() );
+    fProgressFuncs.updateProgress( fCurrUserData->numPlayedMedia() );
 }
 
 void CSyncSystem::loadMediaData( std::shared_ptr< CMediaData > mediaData, bool isLHSServer )
@@ -983,7 +917,8 @@ void CSyncSystem::loadMediaData( const QByteArray & data, bool isLHSServer, cons
     auto doc = QJsonDocument::fromJson( data, &error );
     if ( error.error != QJsonParseError::NoError )
     {
-        QMessageBox::critical( parentWidget(), tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ) );
+        if ( fUserMsgFunc )
+            fUserMsgFunc( tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ), true );
         return;
     }
 

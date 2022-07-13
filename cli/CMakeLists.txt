@@ -22,13 +22,13 @@
 
 cmake_minimum_required(VERSION 3.22)
  
-project( EmbySyncGUI ) 
+project(EmbySyncCLI) 
 
 include( include.cmake )
 include( ${CMAKE_SOURCE_DIR}/Project.cmake )
 include_directories( ${CMAKE_BINARY_DIR} )
 
-add_executable( ${PROJECT_NAME} WIN32
+add_executable( ${PROJECT_NAME}
                 ${_PROJECT_DEPENDENCIES} 
                 ${_CMAKE_MODULE_FILES}
                 application.rc 
