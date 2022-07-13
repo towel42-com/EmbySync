@@ -1,6 +1,6 @@
 // The MIT License( MIT )
 //
-// Copyright( c ) 2020-2022 Scott Aron Bloom
+// Copyright( c ) 2022 Scott Aron Bloom
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files( the "Software" ), to deal
@@ -84,6 +84,7 @@ public:
         fFileName.clear();
     }
 
+    QString getServerName( bool lhs );
     bool onlyShowSyncableUsers() { return fOnlyShowSyncableUsers; };
     void setOnlyShowSyncableUsers( bool value ) { fOnlyShowSyncableUsers = value; };
 
@@ -106,20 +107,4 @@ private:
     bool fChanged{ false };
 };
 
-class CSettingsDlg : public QDialog
-{
-    Q_OBJECT
-public:
-    CSettingsDlg( std::shared_ptr< CSettings > settings, QWidget * parent = nullptr );
-    virtual ~CSettingsDlg() override;
-
-    virtual void accept() override;
-
-public Q_SLOTS:
-private:
-
-    std::unique_ptr< Ui::CSettings > fImpl;
-    std::shared_ptr< CSettings > fSettings;
-
-};
 #endif 

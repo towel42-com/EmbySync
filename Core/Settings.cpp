@@ -1,6 +1,6 @@
 ﻿// The MIT License( MIT )
 //
-// Copyright( c ) 2020-2022 Scott Aron Bloom
+// Copyright( c ) 2022 Scott Aron Bloom
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files( the "Software" ), to deal
@@ -22,8 +22,6 @@
 
 #include "Settings.h"
 #include <QJsonDocument>
-#include "ui_Settings.h"
-
 #include <QFile>
 #include <QJsonParseError>
 #include <QJsonObject>
@@ -187,7 +185,7 @@ QUrl CSettings::getUrl( bool lhs ) const
 {
     auto path = lhs ? lhsURL() : rhsURL();
     if ( path.isEmpty() )
-        return QUrl();
+        return {};
 
     if ( !path.endsWith( "/" ) )
         path += "/";
@@ -231,28 +229,8 @@ void CSettings::setRHSAPI( const QString & api )
     updateValue( fRHSServer.second, api );
 }
 
-CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, QWidget * parent )
-    : QDialog( parent ),
-    fImpl( new Ui::CSettings ),
-    fSettings( settings )
+QString CSettings::getServerName( bool lhs )
 {
-    fImpl->setupUi( this );
-    fImpl->embyURL1->setText( fSettings->lhsURL() );
-    fImpl->embyAPI1->setText( fSettings->lhsAPI() );
-    fImpl->embyURL2->setText( fSettings->rhsURL() );
-    fImpl->embyAPI2->setText( fSettings->rhsAPI() );
+    return lhs ? fLHSServer.first : fRHSServer.first;
 }
 
-CSettingsDlg::~CSettingsDlg()
-{
-}
-
-void CSettingsDlg::accept()
-{
-    fSettings->setLHSURL( fImpl->embyURL1->text() );
-    fSettings->setLHSAPI( fImpl->embyAPI1->text() );
-    fSettings->setRHSURL( fImpl->embyURL2->text() );
-    fSettings->setRHSAPI( fImpl->embyAPI2->text() );
-
-    QDialog::accept();
-}

@@ -1,5 +1,7 @@
 <RCC>
     <qresource prefix="/">
+        <file>resources/embysync.png</file>
+        <file>resources/embysync.ico</file>
         <file>resources/generate.png</file>
         <file>resources/load.png</file>
         <file>resources/open.png</file>

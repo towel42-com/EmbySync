@@ -1,6 +1,6 @@
 ﻿// The MIT License( MIT )
 //
-// Copyright( c ) 2020-2022 Scott Aron Bloom
+// Copyright( c ) 2022 Scott Aron Bloom
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files( the "Software" ), to deal
@@ -21,104 +21,21 @@
 // SOFTWARE.
 
 #include "MainWindow.h"
-#include "Settings.h"
-#include "SyncSystem.h"
-#include "UserData.h"
-#include "MediaData.h"
+#include "SettingsDlg.h"
+
+#include "Core/SyncSystem.h"
+#include "Core/UserData.h"
+#include "Core/MediaData.h"
+#include "Core/Settings.h"
+#include "SABUtils/QtUtils.h"
 
 #include "ui_MainWindow.h"
 
 #include <unordered_set>
 
 #include <QTimer>
-#include <QMessageBox>
-#include <QDebug>
-#include <QCloseEvent>
-#include <QNetworkAccessManager>
-#include <QNetworkReply>
-#include <QAuthenticator>
-
 #include <QScrollBar>
-#include <QSettings>
 #include <QFileInfo>
-#include <QJsonDocument>
-#include <QJsonParseError>
-#include <QJsonArray>
-#include <QJsonObject>
-
-#include <QUrlQuery>
-
-int autoSize( QAbstractItemView * view, QHeaderView * header, int minWidth = 150 )
-{
-    if ( !view || !view->model() || !header )
-        return -1;
-
-    auto model = view->model();
-
-    auto numCols = model->columnCount();
-    bool stretchLastColumn = header->stretchLastSection();
-    header->setStretchLastSection( false );
-
-    header->resizeSections( QHeaderView::ResizeToContents );
-    int numVisibleColumns = 0;
-    for ( int ii = 0; ii < numCols; ++ii )
-    {
-        if ( header->isSectionHidden( ii ) )
-            continue;
-        numVisibleColumns++;
-        if ( numVisibleColumns > 1 )
-            break;
-    }
-    bool dontResize = ( numVisibleColumns <= 1 ) && stretchLastColumn;
-
-    int totalWidth = 0;
-    for ( int ii = 0; ii < numCols; ++ii )
-    {
-        if ( header->isSectionHidden( ii ) )
-            continue;
-
-        int contentSz = view->sizeHintForColumn( ii );
-        int headerSz = header->sectionSizeHint( ii );
-
-        auto newWidth = std::max( { minWidth, contentSz, headerSz } );
-        totalWidth += newWidth;
-
-        if ( !dontResize )
-            header->resizeSection( ii, newWidth );
-    }
-    if ( stretchLastColumn )
-        header->setStretchLastSection( true );
-    return totalWidth;
-}
-
-int autoSize( QTreeView * tree )
-{
-    return autoSize( tree, tree->header() );
-}
-
-QTreeWidgetItem * nextVisibleItem( QTreeWidgetItem * item )
-{
-    if ( !item )
-        return nullptr;
-
-    auto treeWidget = item->treeWidget();
-    if ( item && item->isHidden() )
-    {
-        QTreeWidgetItem * sibling = item;
-        while ( sibling && sibling->isHidden() )
-            sibling = treeWidget->topLevelItem( treeWidget->indexOfTopLevelItem( sibling ) + 1 );
-        item = sibling;
-    }
-
-    if ( item && item->isHidden() )
-    {
-        QTreeWidgetItem * sibling = item;
-        while ( sibling && sibling->isHidden() )
-            sibling = treeWidget->topLevelItem( treeWidget->indexOfTopLevelItem( sibling ) - 1 );
-        item = sibling;
-    }
-    return item;
-}
 
 CMainWindow::CMainWindow( QWidget * parent )
     : QMainWindow( parent ),
@@ -316,8 +233,8 @@ void CMainWindow::slotSave()
 void CMainWindow::loadSettings()
 {
     slotAddToLog( "Loading Settings" );
-    fImpl->lhsServerLabel->setText( tr( "LHS Server: %1" ).arg( fSettings->lhsURL() ) );
-    fImpl->rhsServerLabel->setText( tr( "RHS Server: %1" ).arg( fSettings->rhsURL() ) );
+    fImpl->lhsServerLabel->setText( tr( "Server: %1" ).arg( fSettings->lhsURL() ) );
+    fImpl->rhsServerLabel->setText( tr( "Server: %1" ).arg( fSettings->rhsURL() ) );
     fImpl->actionOnlyShowSyncableUsers->setChecked( fSettings->onlyShowSyncableUsers() );
     fImpl->actionOnlyShowMediaWithDifferences->setChecked( fSettings->onlyShowMediaWithDifferences() );
 
@@ -347,11 +264,14 @@ void CMainWindow::slotReloadUsers()
 
 void CMainWindow::slotReloadCurrentUser()
 {
+    fSyncSystem->clearCurrUser();
     slotCurrentItemChanged( nullptr, nullptr );
 }
 
-void CMainWindow::slotCurrentItemChanged( QTreeWidgetItem * /*prev*/, QTreeWidgetItem * curr )
+void CMainWindow::slotCurrentItemChanged( QTreeWidgetItem * curr, QTreeWidgetItem * /*prev*/ )
 {
+    fImpl->actionReloadCurrentUser->setEnabled( curr != nullptr );
+
     if ( fSyncSystem->isRunning() )
         return;
 
@@ -373,8 +293,8 @@ void CMainWindow::slotCurrentItemChanged( QTreeWidgetItem * /*prev*/, QTreeWidge
 
 void CMainWindow::slotMissingMediaLoaded()
 {
-    autoSize( fImpl->lhsMedia );
-    autoSize( fImpl->rhsMedia );
+    NSABUtils::autoSize( fImpl->lhsMedia );
+    NSABUtils::autoSize( fImpl->rhsMedia );
     onlyShowMediaWithDifferences();
 }
 
@@ -443,8 +363,8 @@ void CMainWindow::onlyShowSyncableUsers()
         }
     );
 
-    auto newItem = nextVisibleItem( currItem );
-    slotCurrentItemChanged( nullptr, newItem );
+    auto newItem = NSABUtils::nextVisibleItem( currItem );
+    slotCurrentItemChanged( newItem, nullptr );
 
     fSyncSystem->resetProgressDlg();
 }

@@ -1,6 +1,6 @@
 ﻿// The MIT License( MIT )
 //
-// Copyright( c ) 2020-2022 Scott Aron Bloom
+// Copyright( c ) 2022 Scott Aron Bloom
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files( the "Software" ), to deal
@@ -57,7 +57,7 @@ QString toString( ERequestType request )
         case ERequestType::eMediaData: return "eMediaData";
         case ERequestType::eUpdateData: return "eUpdateData";
     }
-    return QString();
+    return {};
 }
 
 CSyncSystem::CSyncSystem( std::shared_ptr< CSettings > settings, QWidget * parent ) :
@@ -99,13 +99,13 @@ void CSyncSystem::reset()
 {
     fUsers.clear();
     fAllMedia.clear();
-    fMissingMedia.clear();
     fAttributes.clear();
     resetMedia();
 }
 
 void CSyncSystem::resetMedia()
 {
+    fMissingMedia.clear();
     fLHSMedia.clear();
     fRHSMedia.clear();
     fLHSProviderSearchMap.clear();
@@ -143,6 +143,12 @@ void CSyncSystem::loadUsersMedia( std::shared_ptr< CUserData > userData )
         loadUsersPlayedMedia( true );
     if ( fCurrUserData->onRHSServer() )
         loadUsersPlayedMedia( false );
+}
+
+void CSyncSystem::clearCurrUser()
+{
+    fCurrUserData.reset();
+    resetMedia();
 }
 
 void CSyncSystem::process()
@@ -253,7 +259,7 @@ void CSyncSystem::loadUsersPlayedMedia( bool isLHSServer )
     //qDebug() << url;
     auto request = QNetworkRequest( url );
 
-    emit sigAddToLog( QString( "Requesting Played media for '%1' from %2 server" ).arg( fCurrUserData->name() ).arg( isLHSServer ? "LHS" : "RHS" ) );
+    emit sigAddToLog( QString( "Requesting Played media for '%1' from server '%2'" ).arg( fCurrUserData->name() ).arg( fSettings->getServerName( isLHSServer ) ) );
 
     auto reply = fManager->get( request );
     setIsLHS( reply, isLHSServer );
@@ -478,7 +484,7 @@ void CSyncSystem::setProgressDlgFinished( bool isLHS )
 
 void CSyncSystem::loadUsers( bool isLHSServer )
 {
-    emit sigAddToLog( tr( "Loading users from %1 Server" ).arg( isLHSServer ? "LHS" : "RHS" ) );;
+    emit sigAddToLog( tr( "Loading users from server '%1'" ).arg( fSettings->getServerName( isLHSServer )  ) );;
     auto && url = fSettings->getServerURL( isLHSServer );
     if ( !url.isValid() )
         return;
@@ -723,7 +729,7 @@ void CSyncSystem::loadUsers( const QByteArray & data, bool isLHSServer )
     auto users = doc.array();
     updateProgressDlg( users.count() );
 
-    emit sigAddToLog( QString( "%1 Server has %2 Users" ).arg( isLHSServer ? "LHS" : "RHS" ).arg( users.count() ) );
+    emit sigAddToLog( QString( "Server '%3' has %2 Users" ).arg( fSettings->getServerName( isLHSServer ) ).arg( users.count() ) );
 
     for ( auto && ii : users )
     {
@@ -768,7 +774,7 @@ void CSyncSystem::loadMissingMediaItem( const QByteArray & data, const QString &
     auto mediaList = doc[ "Items" ].toArray();
     updateProgressDlg( mediaList.count() );
 
-    emit sigAddToLog( QString( "%1 has %2 watched media items on %3 server that match missing data for '%4'- %5 remaining" ).arg( fCurrUserData->name() ).arg( mediaList.count() ).arg( isLHSServer ? "LHS" : "RHS" ).arg( mediaName ).arg( fMissingMedia.size() ) );
+    emit sigAddToLog( QString( "%1 has %2 watched media items on server '%3' that match missing data for '%4'- %5 remaining" ).arg( fCurrUserData->name() ).arg( mediaList.count() ).arg( fSettings->getServerName( isLHSServer ) ).arg( mediaName ).arg( fMissingMedia.size() ) );
 
     for ( auto && ii : mediaList )
     {
@@ -787,7 +793,7 @@ void CSyncSystem::loadMissingMediaItem( const QByteArray & data, const QString &
             mediaData = ( *pos ).second;
         else
         {
-            emit sigAddToLog( QString( "Error:  COULD NOT FIND MEDIA '%1' on %2 server" ).arg( mediaName ).arg( isLHSServer ? "LHS" : "RHS" ) );
+            emit sigAddToLog( QString( "Error:  COULD NOT FIND MEDIA '%1' on %2 server" ).arg( mediaName ).arg( fSettings->getServerName( isLHSServer ) ) );
             continue;
         }
         fMissingMedia.erase( pos );
@@ -877,13 +883,13 @@ void CSyncSystem::loadMediaList( const QByteArray & data, bool isLHSServer )
     auto mediaList = doc[ "Items" ].toArray();
     updateProgressDlg( mediaList.count() );
 
-    emit sigAddToLog( QString( "%1 has %2 watched media items on %3 server" ).arg( fCurrUserData->name() ).arg( mediaList.count() ).arg( isLHSServer ? "LHS" : "RHS" ) );
+    emit sigAddToLog( QString( "%1 has %2 watched media items on server '%3'" ).arg( fCurrUserData->name() ).arg( mediaList.count() ).arg( fSettings->getServerName( isLHSServer ) ) );
 
     int curr = 0;
     for ( auto && ii : mediaList )
     {
-        //if ( curr >= 10 )
-        //    break;
+        if ( curr >= 10 )
+            break;
         curr++;
 
         if ( progressDlg() && progressDlg()->wasCanceled() )

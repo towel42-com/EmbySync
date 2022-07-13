@@ -48,12 +48,12 @@
            </column>
            <column>
             <property name="text">
-             <string>Server 1?</string>
+             <string>On LHS Server?</string>
             </property>
            </column>
            <column>
             <property name="text">
-             <string>Server 2?</string>
+             <string>On RHS Server?</string>
             </property>
            </column>
           </widget>
@@ -69,7 +69,7 @@
           <item>
            <widget class="QLabel" name="lhsServerLabel">
             <property name="text">
-             <string>Server 1 Media:</string>
+             <string>LHS Server Media:</string>
             </property>
            </widget>
           </item>
@@ -126,7 +126,7 @@
           <item>
            <widget class="QLabel" name="rhsServerLabel">
             <property name="text">
-             <string>Server 2 Media:</string>
+             <string>RHS Server Media:</string>
             </property>
            </widget>
           </item>

@@ -1,6 +1,6 @@
 # The MIT License (MIT)
 #
-# Copyright (c) 2020-2021 Scott Aron Bloom
+# Copyright (c) 2022 Scott Aron Bloom
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,15 +20,23 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.22)
 if(CMAKE_VERSION VERSION_LESS "3.7.0")
     set(CMAKE_INCLUDE_CURRENT_DIR ON)
 endif()
+project( UI )
 
-include( ${CMAKE_SOURCE_DIR}/SABUtils/Project.cmake )
+include( include.cmake )
+include( ${CMAKE_SOURCE_DIR}/Project.cmake )
 
-SET( project_pub_DEPS
-     Qt5::Network
-     ${project_pub_DEPS}
-     )
+add_library(${PROJECT_NAME} STATIC
+    ${_PROJECT_DEPENDENCIES} 
+    )
+set_target_properties( ${PROJECT_NAME} PROPERTIES FOLDER Libs )
 
+target_link_libraries( ${PROJECT_NAME}
+    PUBLIC
+        ${project_pub_DEPS}
+    PRIVATE 
+        ${project_pri_DEPS}
+)
