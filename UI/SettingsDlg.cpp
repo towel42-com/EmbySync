@@ -1,6 +1,6 @@
-// The MIT License( MIT )
+﻿// The MIT License( MIT )
 //
-// Copyright( c ) 2020-2022 Scott Aron Bloom
+// Copyright( c ) 2022 Scott Aron Bloom
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files( the "Software" ), to deal
@@ -19,22 +19,34 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-#include "MainWindow.h"
 
-#include <QApplication>
+#include "SettingsDlg.h"
+#include "Core/Settings.h"
 
+#include "ui_SettingsDlg.h"
 
-int main( int argc, char ** argv )
+CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, QWidget * parent )
+    : QDialog( parent ),
+    fImpl( new Ui::CSettingsDlg ),
+    fSettings( settings )
 {
-    QApplication::setAttribute( Qt::AA_EnableHighDpiScaling );
-    QApplication::setAttribute( Qt::AA_UseHighDpiPixmaps );
-    QApplication appl( argc, argv );
-    appl.setApplicationName( "EmbySync" ); // QString::fromStdString( NVersion::APP_NAME ) );
-    appl.setApplicationVersion( "0.1" ); // QString::fromStdString( NVersion::getVersionString( true ) ) );
-    appl.setOrganizationName( "Scott Aron Bloom" ); // QString::fromStdString( NVersion::VENDOR ) );
-    appl.setOrganizationDomain( "github.com/towel42-com/EmbySync" ); // QString::fromStdString( NVersion::HOMEPAGE ) );
+    fImpl->setupUi( this );
+    fImpl->embyURL1->setText( fSettings->lhsURL() );
+    fImpl->embyAPI1->setText( fSettings->lhsAPI() );
+    fImpl->embyURL2->setText( fSettings->rhsURL() );
+    fImpl->embyAPI2->setText( fSettings->rhsAPI() );
+}
 
-    CMainWindow dlg;
-    dlg.show();
-    return appl.exec();
+CSettingsDlg::~CSettingsDlg()
+{
+}
+
+void CSettingsDlg::accept()
+{
+    fSettings->setLHSURL( fImpl->embyURL1->text() );
+    fSettings->setLHSAPI( fImpl->embyAPI1->text() );
+    fSettings->setRHSURL( fImpl->embyURL2->text() );
+    fSettings->setRHSAPI( fImpl->embyAPI2->text() );
+
+    QDialog::accept();
 }

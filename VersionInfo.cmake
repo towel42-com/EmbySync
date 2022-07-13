@@ -1,6 +1,6 @@
 # The MIT License (MIT)
 #
-# Copyright (c) 2020-2021 Scott Aron Bloom
+# Copyright (c) 2022 Scott Aron Bloom
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -9,7 +9,7 @@
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in
+# Thg above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -20,15 +20,29 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-cmake_minimum_required(VERSION 3.1)
-if(CMAKE_VERSION VERSION_LESS "3.7.0")
-    set(CMAKE_INCLUDE_CURRENT_DIR ON)
-endif()
+find_package(Git REQUIRED)
+find_package(CreateVersion REQUIRED)
 
-include( ${CMAKE_SOURCE_DIR}/SABUtils/Project.cmake )
+GetGitInfo(${CMAKE_SOURCE_DIR} GIT_VERSION_INFO)
+STRING(TIMESTAMP BUILD_DATE "%m/%d/%Y")
 
-SET( project_pub_DEPS
-     Qt5::Network
-     ${project_pub_DEPS}
-     )
+SET( MAJOR_VERSION    0.0 )
+SET( MINOR_VERSION    1 )
+SET( APP_NAME         "Emby Sync" )
+SET( VENDOR           "Scott Aron Bloom" )
+SET( HOMEPAGE         "www.towel42.com" )
+SET( PRODUCT_HOMEPAGE "github.com/towel42-com/EmbySync" )
+SET( EMAIL            "support@towel42.com" )
+
+CreateVersion( ${CMAKE_SOURCE_DIR} 
+	MAJOR ${MAJOR_VERSION} 
+    MINOR ${MINOR_VERSION} 
+    PATCH ${GIT_VERSION_INFO_REV}
+    DIFF  ${GIT_VERSION_INFO_DIFF}
+    APP_NAME ${APP_NAME} 
+    VENDOR ${VENDOR} 
+    HOMEPAGE ${HOMEPAGE} 
+    PRODUCT_HOMEPAGE ${PRODUCT_HOMEPAGE} 
+    EMAIL ${EMAIL} 
+    BUILD_DATE ${BUILD_DATE})
 

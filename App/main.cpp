@@ -1,6 +1,6 @@
 // The MIT License( MIT )
 //
-// Copyright( c ) 2020-2022 Scott Aron Bloom
+// Copyright( c ) 2022 Scott Aron Bloom
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files( the "Software" ), to deal
@@ -19,44 +19,28 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+#include "UI/MainWindow.h"
+#include "Version.h"
+#include "SABUtils/SABUtilsResources.h"
 
-#ifndef __USERDATA_H
-#define __USERDATA_H
+#include <QApplication>
 
-#include <QString>
-#include <list>
-#include <memory>
 
-class CMediaData;
-class QTreeWidgetItem;
-
-class CUserData
+int main( int argc, char ** argv )
 {
-public:
-    CUserData( const QString & name );
+    NSABUtils::initResources();
+    Q_INIT_RESOURCE( EmbySync );
 
-    QString name() const { return fName; }
+    QApplication::setAttribute( Qt::AA_EnableHighDpiScaling );
+    QApplication::setAttribute( Qt::AA_UseHighDpiPixmaps );
+    QApplication appl( argc, argv );
+    appl.setApplicationName( QString::fromStdString( NVersion::APP_NAME ) );
+    appl.setApplicationVersion( QString::fromStdString( NVersion::getVersionString( true ) ) );
+    appl.setOrganizationName( QString::fromStdString( NVersion::VENDOR ) );
+    appl.setOrganizationDomain( QString::fromStdString( NVersion::HOMEPAGE ) );
+    appl.setOrganizationDomain( "github.com/towel42-com/EmbySync" ); // QString::fromStdString( NVersion::HOMEPAGE ) );
 
-    QTreeWidgetItem * getItem() const { return fItem; }
-    void setItem( QTreeWidgetItem * item ) { fItem = item; }
-
-    QString getUserID( bool isLHS ) const;
-    void setUserID( const QString & id, bool isLHS );
-
-    void clearWatchedMedia();
-
-    bool onLHSServer() const;
-    bool onRHSServer() const;
-
-
-    void addPlayedMedia( std::shared_ptr< CMediaData > mediaData );
-    const std::list< std::shared_ptr< CMediaData > > & playedMedia() const;
-    bool hasMedia() const;
-    int numPlayedMedia() const;
-private:
-    QString fName;
-    std::pair< QString, QString > fUserID;
-    QTreeWidgetItem * fItem{ nullptr };
-    std::list< std::shared_ptr< CMediaData > > fPlayedMedia;
-};
-#endif 
+    CMainWindow mainWindow;
+    mainWindow.show();
+    return appl.exec();
+}
