@@ -23,35 +23,23 @@
 #include "MediaData.h"
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QTreeWidgetItem>
-#include <QTreeWidget>
 
-struct CMediaDataBase
+QDateTime CMediaDataBase::getLastModifiedTime() const
 {
-    QString fMediaID;
-    uint64_t fLastPlayedPos;
-    bool fIsFavorite{ false };
-    bool fPlayed{ false };
-    QDateTime getLastModifiedTime() const
-    {
-        if ( !fUserData.contains( "LastPlayedDate" ) )
-            return {};
+    if ( !fUserData.contains( "LastPlayedDate" ) )
+        return {};
 
-        auto value = fUserData[ "LastPlayedDate" ].toDateTime();
-        return value;
-    }
-    void loadUserDataFromJSON( const QJsonObject & userDataObj, const QMap<QString, QVariant> & userDataVariant )
-    {
-        fIsFavorite = userDataObj[ "IsFavorite" ].toBool();
-        fLastPlayedPos = userDataObj[ "PlaybackPositionTicks" ].toVariant().toLongLong();
-        fPlayed = userDataObj[ "Played" ].toVariant().toBool();
-        fUserData = userDataVariant;
-    }
-    QMap<QString, QVariant> fUserData;
-    QTreeWidgetItem * fItem{ nullptr };
-    bool fBeenLoaded{ false };
-};
+    auto value = fUserData[ "LastPlayedDate" ].toDateTime();
+    return value;
+}
 
+void CMediaDataBase::loadUserDataFromJSON( const QJsonObject & userDataObj, const QMap<QString, QVariant> & userDataVariant )
+{
+    fIsFavorite = userDataObj[ "IsFavorite" ].toBool();
+    fLastPlayedPos = userDataObj[ "PlaybackPositionTicks" ].toVariant().toLongLong();
+    fPlayed = userDataObj[ "Played" ].toVariant().toBool();
+    fUserData = userDataVariant;
+}
 
 CMediaData::CMediaData( const QString & name, const QString & type ) :
     fName( name ),
@@ -206,49 +194,6 @@ bool operator==( const CMediaDataBase & lhs, const CMediaDataBase & rhs )
     return equal;
 }
 
-void CMediaData::setItemColor( QTreeWidgetItem * item, const QColor & clr )
-{
-    for ( int ii = 0; ii < item->columnCount(); ++ii )
-        setItemColor( item, ii, clr );
-}
-
-void CMediaData::setItemColor( QTreeWidgetItem * item, int column, const QColor & clr )
-{
-    item->setBackground( column, clr );
-}
-
-
-void CMediaData::setItemColors()
-{
-    //if ( isMissing( true ) )
-    //    setItemColor( fLHSServer->fItem, Qt::red );
-    //if ( isMissing( false ) )
-    //    setItemColor( fRHSServer->fItem, Qt::red );
-    if ( !hasMissingInfo() )
-    {
-        if ( *fLHSServer != *fRHSServer )
-        {
-            setItemColor( fRHSServer->fItem, EColumn::eName, Qt::yellow );
-            setItemColor( fLHSServer->fItem, EColumn::eName, Qt::yellow );
-            if ( played( true ) != played( false ) )
-            {
-                setItemColor( fRHSServer->fItem, EColumn::ePlayed, Qt::yellow );
-                setItemColor( fLHSServer->fItem, EColumn::ePlayed, Qt::yellow );
-            }
-            if ( isFavorite( true ) != isFavorite( false ) )
-            {
-                setItemColor( fRHSServer->fItem, EColumn::eFavorite, Qt::yellow );
-                setItemColor( fLHSServer->fItem, EColumn::eFavorite, Qt::yellow );
-            }
-            if ( lastPlayedPos( true ) != lastPlayedPos( false ) )
-            {
-                setItemColor( fRHSServer->fItem, EColumn::eLastPlayedPos, Qt::yellow );
-                setItemColor( fLHSServer->fItem, EColumn::eLastPlayedPos, Qt::yellow );
-            }
-        }
-    }
-}
-
 QUrlQuery CMediaData::getMissingItemQuery() const
 {
     QUrlQuery query;
@@ -321,16 +266,6 @@ void CMediaData::updateFromOther( std::shared_ptr< CMediaData > other, bool toLH
         fRHSServer = other->fRHSServer;
 }
 
-void CMediaData::createItems( QTreeWidget * lhsTree, QTreeWidget * rhsTree, const std::map< int, QString > & providersByColumn )
-{
-    auto columns = getColumns( providersByColumn );
-
-    fLHSServer->fItem = new QTreeWidgetItem( lhsTree, columns.first );
-    fRHSServer->fItem = new QTreeWidgetItem( rhsTree, columns.second );
-
-    setItemColors();
-}
-
 QStringList CMediaData::getColumns( bool forLHS )
 {
     QStringList retVal = QStringList() << fName << getMediaID( forLHS ) << ( isPlayed( forLHS ) ? "Yes" : "No" ) << QString( isFavorite( forLHS ) ? "Yes" : "No" ) << lastPlayed( forLHS ) << lastModified( forLHS );
@@ -353,22 +288,4 @@ std::pair< QStringList, QStringList > CMediaData::getColumns( const std::map< in
     auto rhsColumns = getColumns( false ) << providerColumns;
 
     return { lhsColumns, rhsColumns };
-}
-
-void CMediaData::updateItems( const std::map< int, QString > & providersByColumn )
-{
-    auto bothColumns = getColumns( providersByColumn );
-    updateItems( bothColumns.first, true );
-    updateItems( bothColumns.second, false );
-}
-
-void CMediaData::updateItems( const QStringList & data, bool forLHS )
-{
-    auto item = getItem( forLHS );
-    Q_ASSERT( item && ( item->columnCount() == data.count() ) );
-    for ( int ii = 0; ii < data.count(); ++ii )
-    {
-        item->setText( ii, data[ ii ] );
-    }
-    setItemColors();
 }

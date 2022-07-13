@@ -26,13 +26,27 @@
 #include <QString>
 #include <QMap>
 #include <QUrlQuery>
+#include <QDateTime>
 
 class QVariant;
 class QTreeWidgetItem;
 class QJsonObject;
 class QTreeWidget;
 class QColor;
-struct CMediaDataBase;
+
+struct CMediaDataBase
+{
+    QString fMediaID;
+    uint64_t fLastPlayedPos;
+    bool fIsFavorite{ false };
+    bool fPlayed{ false };
+    QDateTime getLastModifiedTime() const;
+    void loadUserDataFromJSON( const QJsonObject & userDataObj, const QMap<QString, QVariant> & userDataVariant );
+    QMap<QString, QVariant> fUserData;
+    QTreeWidgetItem * fItem{ nullptr };
+    bool fBeenLoaded{ false };
+};
+
 bool operator==( const CMediaDataBase & lhs, const CMediaDataBase & rhs );
 inline bool operator!=( const CMediaDataBase & lhs, const CMediaDataBase & rhs )
 {

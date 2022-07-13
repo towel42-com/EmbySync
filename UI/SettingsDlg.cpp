@@ -23,10 +23,13 @@
 #include "SettingsDlg.h"
 #include "Core/Settings.h"
 
+#include <QFileDialog>
+#include <QMessageBox>
+
 #include "ui_SettingsDlg.h"
 
-CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, QWidget * parent )
-    : QDialog( parent ),
+CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, QWidget * parentWidget )
+    : QDialog( parentWidget ),
     fImpl( new Ui::CSettingsDlg ),
     fSettings( settings )
 {
@@ -49,4 +52,98 @@ void CSettingsDlg::accept()
     fSettings->setRHSAPI( fImpl->embyAPI2->text() );
 
     QDialog::accept();
+}
+
+CSettings::CSettings( const QString & fileName, QWidget * parentWidget ) :
+    CSettings()
+{
+    fFileName = fileName;
+    load( parentWidget );
+}
+
+bool CSettings::load( const QString & fileName, QWidget * parentWidget )
+{
+    fFileName = fileName;
+    return load( parentWidget );
+}
+
+bool CSettings::load( QWidget * parentWidget )
+{
+    if ( fFileName.isEmpty() )
+    {
+        auto fileName = QFileDialog::getOpenFileName( parentWidget, QObject::tr( "Select File" ), QString(), QObject::tr( "Settings File (*.json);;All Files (* *.*)" ) );
+        if ( fileName.isEmpty() )
+            return false;
+        fFileName = QFileInfo( fileName ).absoluteFilePath();
+    }
+
+    return load( fFileName,
+                 [ parentWidget ]( const QString & title, const QString & msg )
+    {
+        QMessageBox::critical( parentWidget, title, msg );
+    } );
+}
+
+//std::function<QString()> selectFileFunc, std::function<void( const QString & title, const QString & msg )> errorFunc
+bool CSettings::save( QWidget * parentWidget )
+{
+    return save( parentWidget,
+                 [parentWidget]() -> QString
+                 {
+                     auto fileName = QFileDialog::getSaveFileName( parentWidget, QObject::tr( "Select File" ), QString(), QObject::tr( "Settings File (*.json);;All Files (* *.*)" ) );
+                     if ( fileName.isEmpty() )
+                         return {};
+
+                     return fileName;
+                 },
+                 [parentWidget]( const QString & title, const QString & msg )
+                 {
+                     QMessageBox::critical( parentWidget, title, msg );
+                 } );
+}
+  
+bool CSettings::maybeSave( QWidget * parentWidget )
+{
+    return maybeSave( parentWidget,
+                      [parentWidget]() -> QString
+                      {
+                          auto fileName = QFileDialog::getSaveFileName( parentWidget, QObject::tr( "Select File" ), QString(), QObject::tr( "Settings File (*.json);;All Files (* *.*)" ) );
+                          if ( fileName.isEmpty() )
+                              return {};
+
+                          return fileName;
+                      },
+                      [parentWidget]( const QString & title, const QString & msg )
+                      {
+                          QMessageBox::critical( parentWidget, title, msg );
+                      } );
+}
+
+bool CSettings::save( QWidget * parentWidget, std::function<QString()> selectFileFunc, std::function<void( const QString & title, const QString & msg )> errorFunc )
+{
+    if ( fFileName.isEmpty() )
+        return maybeSave( parentWidget, selectFileFunc, errorFunc );
+
+    return save( errorFunc );
+}
+
+bool CSettings::maybeSave( QWidget * parentWidget, std::function<QString()> selectFileFunc, std::function<void( const QString & title, const QString & msg )> errorFunc )
+{
+    if ( !fChanged )
+        return true;
+
+    if ( fFileName.isEmpty() )
+    {
+        if ( selectFileFunc )
+        {
+            auto fileName = selectFileFunc();
+            if ( fileName.isEmpty() )
+                return true;
+            fFileName = fileName;
+        }
+    }
+
+    if ( fFileName.isEmpty() )
+        return false;
+    return save( parentWidget, selectFileFunc, errorFunc );
 }

@@ -1,4 +1,5 @@
 # C++ objects and libs
+*.aps
 *.slo
 *.lo
 *.o
