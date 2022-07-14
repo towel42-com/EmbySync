@@ -9,6 +9,7 @@
         <file>resources/settings.png</file>
         <file>resources/syncmedia.png</file>
         <file>resources/syncusers.png</file>
-        <file>resources/reload.png</file>
+        <file>resources/reloadUsers.png</file>
+        <file>resources/reloadServers.png</file>
     </qresource>
 </RCC>
