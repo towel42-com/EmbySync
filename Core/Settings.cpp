@@ -117,6 +117,7 @@ bool CSettings::save( std::function<void( const QString & title, const QString &
     auto root = json.object();
 
     root[ "OnlyShowSyncableUsers" ] = onlyShowSyncableUsers();
+    root[ "OnlyShowMediaWithDifferences" ] = onlyShowMediaWithDifferences();
 
     auto lhs = json.object();
 
