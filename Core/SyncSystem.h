@@ -55,51 +55,16 @@ QString toString( ERequestType request );
 
 struct SProgressFunctions
 {
-    void setupProgress( const QString & title, bool hasLHSServer, bool hasRHSServer )
-    {
-        if ( fSetupFunc )
-            fSetupFunc( title, hasLHSServer, hasRHSServer );
-    }
+    void setupProgress( const QString & title );
 
-    bool isProgressFinished() const
-    {
-        if ( fIsFinishedFunc )
-            return fIsFinishedFunc();
-        return true;
-    }
-    void updateProgress( int count )
-    {
-        if ( fUpdateFunc )
-            fUpdateFunc( count );
-    }
-    void incProgress()
-    {
-        if ( fIncFunc )
-            fIncFunc();
-    }
-    void setProgressFinished( bool isLHS )
-    {
-        if ( fSetFinishedFunc )
-            fSetFinishedFunc( isLHS );
-    }
-    void resetProgress() const
-    {
-        if ( fResetFunc )
-            fResetFunc();
-    }
+    void setMaximum( int count );
+    void incProgress();
+    void resetProgress() const;
+    bool wasCanceled() const;
 
-    bool wasCanceled() const
-    {
-        if ( fWasCanceledFunc )
-            return fWasCanceledFunc();
-        return false;
-    }
-
-    std::function< void( const QString & title, bool hasLHSServer, bool hasRHSServer ) > fSetupFunc;
-    std::function< bool() > fIsFinishedFunc;
-    std::function< void( int ) > fUpdateFunc;
+    std::function< void( const QString & title ) > fSetupFunc;
+    std::function< void( int ) > fSetMaximumFunc;
     std::function< void() > fIncFunc;
-    std::function< void( bool ) > fSetFinishedFunc;
     std::function< void() > fResetFunc;
     std::function< bool() > fWasCanceledFunc;
 };
@@ -164,6 +129,7 @@ private:
     bool processData( std::shared_ptr< CMediaData > mediaData );
 
     void setPlayed( std::shared_ptr< CMediaData > mediaData );
+    void setPlayCount( std::shared_ptr< CMediaData > mediaData );
     void setPlayPosition( std::shared_ptr< CMediaData > mediaData );
     void setFavorite( std::shared_ptr< CMediaData > mediaData );
     void setLastPlayed( std::shared_ptr< CMediaData > mediaData );
@@ -182,6 +148,11 @@ private:
 
 private Q_SLOTS:
     void slotRequestFinished( QNetworkReply * reply );
+
+    void postHandlRequest( ERequestType requestType );
+
+    void decRequestCount( ERequestType requestType );
+
     void slotMergeMedia();
 
     void slotAuthenticationRequired( QNetworkReply * reply, QAuthenticator * authenticator );
@@ -191,6 +162,8 @@ private Q_SLOTS:
     void slotSSlErrors( QNetworkReply * reply, const QList<QSslError> & errors );
 
 private:
+    bool isLastRequestOfType( ERequestType type ) const;
+
     bool handleError( QNetworkReply * reply );
     void loadUsers( const QByteArray & data, bool isLHS );
     void loadMissingMediaItem( const QByteArray & data, const QString & mediaName, bool isLHS );
@@ -225,6 +198,7 @@ private:
     std::unordered_map< QString, std::unordered_map< QString, std::shared_ptr< CMediaData > > > fLHSProviderSearchMap; // provider name, to map of id to mediadata
     std::unordered_map< QString, std::unordered_map< QString, std::shared_ptr< CMediaData > > > fRHSProviderSearchMap;
 
+    std::unordered_map< ERequestType, int > fRequests;
     std::unordered_map< QNetworkReply *, std::unordered_map< int, QVariant > > fAttributes;
 
     std::function< void( std::shared_ptr< CUserData > userData ) > fUpdateUserFunc;
@@ -233,6 +207,8 @@ private:
     std::function< void( const QString & title, const QString & msg, bool isCritical ) > fUserMsgFunc;
     SProgressFunctions fProgressFuncs;
 
+    using TOptionalBoolPair = std::pair< std::optional< bool >, std::optional< bool > >;
+    std::unordered_map< QString, TOptionalBoolPair > fLeftAndRightFinished;
     std::shared_ptr< CUserData > fCurrUserData;
 };
-#endif 
+#endif
