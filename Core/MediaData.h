@@ -37,12 +37,14 @@ class QColor;
 struct CMediaDataBase
 {
     QString fMediaID;
-    uint64_t fLastPlayedPos;
     bool fIsFavorite{ false };
     bool fPlayed{ false };
-    QDateTime getLastModifiedTime() const;
-    void loadUserDataFromJSON( const QJsonObject & userDataObj, const QMap<QString, QVariant> & userDataVariant );
-    QMap<QString, QVariant> fUserData;
+    QDateTime fLastPlayedDate;
+    uint64_t fPlayCount;
+    uint64_t fPlaybackPositionTicks; // 1 tick = 10000 ms
+
+    void loadUserDataFromJSON( const QJsonObject & userDataObj );
+
     QTreeWidgetItem * fItem{ nullptr };
     bool fBeenLoaded{ false };
 };
@@ -59,12 +61,16 @@ public:
     enum EColumn
     {
         eName = 0,
-        eMediaID = 1,
-        ePlayed = 2,
-        eFavorite = 3,
-        eLastPlayedPos = 4,
-        eLastModified = 5
+        eMediaID,
+        eFavorite,
+        ePlayed,
+        eLastPlayed,
+        ePlayCount,
+        ePlaybackPosition
     };
+
+    static QStringList getHeaderLabels();
+    static void setMSecsToStringFunc( std::function< QString( uint64_t ) > func );
 
     CMediaData( const QString & name, const QString & type );
 
@@ -75,28 +81,27 @@ public:
     bool hasMissingInfo() const;
 
     void setMediaID( const QString & id, bool isLHS );
-    QString getMediaID( bool isLHS ) const;
     bool beenLoaded( bool isLHS ) const;
-    
-    bool mediaWatchedOnServer( bool isLHS );
-    
+
+    QString getMediaID( bool isLHS ) const;
+    bool isFavorite( bool lhs ) const;
+    bool isPlayed( bool lhs ) const;
+    QDateTime lastPlayed( bool lhs ) const;
+    uint64_t playCount( bool lhs ) const;
+    uint64_t playbackPositionMSecs( bool lhs ) const; 
+    uint64_t playbackPositionTicks( bool lhs ) const;// 10,000 ticks = 1 ms
+    QString playbackPosition( bool lhs ) const;
+
     bool hasProviderIDs() const;
     QString getProviderList() const;
-
-    bool isPlayed( bool lhs ) const;
-    bool isFavorite( bool lhs ) const;
-    QString lastModified( bool lhs ) const;
-    QString lastPlayed( bool lhs ) const;
 
     bool serverDataEqual() const;
 
     bool bothPlayed() const;
-    bool playPositionTheSame() const;
+    bool playbackPositionTheSame() const;
     bool bothFavorites() const;
     bool lastPlayedTheSame() const;
 
-    uint64_t lastPlayedPos( bool lhs ) const;
-    bool played( bool lhs )  const;
     void loadUserDataFromJSON( const QJsonObject & object, bool isLHSServer );
     bool lhsMoreRecent() const;
     void setItem( QTreeWidgetItem * item, bool lhs );
@@ -108,8 +113,6 @@ public:
     void updateItems( const std::map< int, QString > & providersByColumn );
     void updateItems( const QStringList & columnsData, bool forLHS );
     void setItemColors();
-    void setItemColor( QTreeWidgetItem * item, const QColor & clr );
-    void setItemColor( QTreeWidgetItem * item, int column, const QColor & clr );
 
     QUrlQuery getMissingItemQuery() const;
 
@@ -125,5 +128,7 @@ private:
 
     std::shared_ptr< CMediaDataBase > fLHSServer;
     std::shared_ptr< CMediaDataBase > fRHSServer;
+
+    static std::function< QString( uint64_t ) > sMSecsToStringFunc;
 };
 #endif 

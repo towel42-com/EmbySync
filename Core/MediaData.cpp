@@ -24,21 +24,37 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
-QDateTime CMediaDataBase::getLastModifiedTime() const
-{
-    if ( !fUserData.contains( "LastPlayedDate" ) )
-        return {};
+#include <QObject>
+#include <chrono>
 
-    auto value = fUserData[ "LastPlayedDate" ].toDateTime();
-    return value;
+void CMediaDataBase::loadUserDataFromJSON( const QJsonObject & userDataObj )
+{
+    //qDebug() << userDataObj;
+
+    fIsFavorite = userDataObj[ "IsFavorite" ].toBool();
+    fLastPlayedDate = userDataObj[ "LastPlayedDate" ].toVariant().toDateTime();
+    fPlayCount = userDataObj[ "PlayCount" ].toVariant().toLongLong();
+    fPlaybackPositionTicks = userDataObj[ "PlaybackPositionTicks" ].toVariant().toLongLong();
+    fPlayed = userDataObj[ "Played" ].toVariant().toBool();
 }
 
-void CMediaDataBase::loadUserDataFromJSON( const QJsonObject & userDataObj, const QMap<QString, QVariant> & userDataVariant )
+QStringList CMediaData::getHeaderLabels()
 {
-    fIsFavorite = userDataObj[ "IsFavorite" ].toBool();
-    fLastPlayedPos = userDataObj[ "PlaybackPositionTicks" ].toVariant().toLongLong();
-    fPlayed = userDataObj[ "Played" ].toVariant().toBool();
-    fUserData = userDataVariant;
+    return QStringList()
+        << QObject::tr( "Name" )
+        << QObject::tr( "ID" )
+        << QObject::tr( "Is Favorite?" )
+        << QObject::tr( "Played?" )
+        << QObject::tr( "Last Played" )
+        << QObject::tr( "Play Count" )
+        << QObject::tr( "Play Position" )
+        ;
+}
+
+std::function< QString( uint64_t ) > CMediaData::sMSecsToStringFunc;
+void CMediaData::setMSecsToStringFunc( std::function< QString( uint64_t ) > func )
+{
+    sMSecsToStringFunc = func;
 }
 
 CMediaData::CMediaData( const QString & name, const QString & type ) :
@@ -99,25 +115,19 @@ void CMediaData::loadUserDataFromJSON( const QJsonObject & media, bool isLHSServ
     //auto tmp = QJsonDocument( userDataObj );
     //qDebug() << tmp.toJson();
 
-    auto userDataVariant = media[ "UserData" ].toVariant().toMap();
     if ( isLHSServer )
     {
-        fLHSServer->loadUserDataFromJSON( userDataObj, userDataVariant );
+        fLHSServer->loadUserDataFromJSON( userDataObj );
     }
     else
     {
-        fRHSServer->loadUserDataFromJSON( userDataObj, userDataVariant );
+        fRHSServer->loadUserDataFromJSON( userDataObj );
     }
 }
 
 bool CMediaData::serverDataEqual() const
 {
     return *fLHSServer == *fRHSServer;
-}
-
-bool CMediaData::mediaWatchedOnServer( bool isLHS )
-{
-    return isLHS ? !fLHSServer->fMediaID.isEmpty() : !fRHSServer->fMediaID.isEmpty();
 }
 
 bool CMediaData::hasProviderIDs() const
@@ -140,29 +150,53 @@ bool CMediaData::isPlayed( bool lhs ) const
     return lhs ? fLHSServer->fPlayed : fRHSServer->fPlayed;
 }
 
+uint64_t CMediaData::playCount( bool lhs ) const
+{
+    return lhs ? fLHSServer->fPlayCount : fRHSServer->fPlayCount;
+}
+
 bool CMediaData::isFavorite( bool lhs ) const
 {
     return lhs ? fLHSServer->fIsFavorite : fRHSServer->fIsFavorite;
 }
 
-QString CMediaData::lastModified( bool lhs ) const
+QDateTime CMediaData::lastPlayed( bool lhs ) const
 {
-    return lhs ? fLHSServer->getLastModifiedTime().toString() : fRHSServer->getLastModifiedTime().toString();
+    return lhs ? fLHSServer->fLastPlayedDate : fRHSServer->fLastPlayedDate;
 }
 
-QString CMediaData::lastPlayed( bool lhs ) const
+// 1 tick = 10000 ms
+uint64_t CMediaData::playbackPositionTicks( bool lhs ) const
 {
-    return ( lastPlayedPos( lhs ) ? QString::number( lastPlayedPos( lhs ) ) : QString() );
+    return lhs ? fLHSServer->fPlaybackPositionTicks : fRHSServer->fPlaybackPositionTicks;
+}
+
+QString CMediaData::playbackPosition( bool lhs ) const
+{
+    auto playbackMS = playbackPositionMSecs( lhs );
+    if ( playbackMS == 0 )
+        return {};
+
+    if ( sMSecsToStringFunc )
+        return sMSecsToStringFunc( playbackMS );
+    return QString::number( playbackMS );
+}
+
+// stored in ticks
+// 1 tick = 10000 ms
+uint64_t CMediaData::playbackPositionMSecs( bool lhs ) const
+{
+    return playbackPositionTicks( lhs ) / 10000;
 }
 
 bool CMediaData::bothPlayed() const
 {
-    return ( played( true ) != 0 ) && ( played( false ) != 0 );
+    return ( isPlayed( true ) != 0 ) && ( isPlayed( false ) != 0 );
 }
 
-bool CMediaData::playPositionTheSame() const
+bool CMediaData::playbackPositionTheSame() const
 {
-    return lastPlayedPos( true ) == lastPlayedPos( false );
+    return playbackPositionTicks( true ) == playbackPositionTicks( false );
 }
 
 bool CMediaData::bothFavorites() const
@@ -172,25 +206,17 @@ bool CMediaData::bothFavorites() const
 
 bool CMediaData::lastPlayedTheSame() const
 {
-    return fLHSServer->getLastModifiedTime() == fRHSServer->getLastModifiedTime();
-}
-
-uint64_t CMediaData::lastPlayedPos( bool lhs ) const
-{
-    return lhs ? fLHSServer->fLastPlayedPos : fRHSServer->fLastPlayedPos;
-}
-
-bool CMediaData::played( bool lhs ) const
-{
-    return lhs ? fLHSServer->fPlayed : fRHSServer->fPlayed;
+    return fLHSServer->fLastPlayedDate == fRHSServer->fLastPlayedDate;
 }
 
 bool operator==( const CMediaDataBase & lhs, const CMediaDataBase & rhs )
 {
-    bool equal = lhs.fLastPlayedPos == rhs.fLastPlayedPos;
+    auto equal = true;
     equal = equal && lhs.fIsFavorite == rhs.fIsFavorite;
     equal = equal && lhs.fPlayed == rhs.fPlayed;
-    //equal = equal && lhs.getLastModifiedTime() == rhs.getLastModifiedTime();
+    // equal = equal && lhs.fLastPlayedDate == rhs.fLastPlayedDate;
+    equal = equal && lhs.fPlayCount == rhs.fPlayCount;
+    equal = equal && lhs.fPlaybackPositionTicks == rhs.fPlaybackPositionTicks;
     return equal;
 }
 
@@ -235,9 +261,9 @@ bool CMediaData::beenLoaded( bool isLHS ) const
 
 bool CMediaData::lhsMoreRecent() const
 {
-    //qDebug() << fLHSServer->getLastModifiedTime();
-    //qDebug() << fRHSServer->getLastModifiedTime();
-    return fLHSServer->getLastModifiedTime() > fRHSServer->getLastModifiedTime();
+    //qDebug() << fLHSServer->fLastPlayedDate;
+    //qDebug() << fRHSServer->fLastPlayedDate;
+    return fLHSServer->fLastPlayedDate > fRHSServer->fLastPlayedDate;
 }
 
 void CMediaData::setItem( QTreeWidgetItem * item, bool lhs )
@@ -268,7 +294,15 @@ void CMediaData::updateFromOther( std::shared_ptr< CMediaData > other, bool toLH
 
 QStringList CMediaData::getColumns( bool forLHS )
 {
-    QStringList retVal = QStringList() << fName << getMediaID( forLHS ) << ( isPlayed( forLHS ) ? "Yes" : "No" ) << QString( isFavorite( forLHS ) ? "Yes" : "No" ) << lastPlayed( forLHS ) << lastModified( forLHS );
+    auto retVal = QStringList()
+        << fName
+        << getMediaID( forLHS )
+        << ( isFavorite( forLHS ) ? "Yes" : "No" )
+        << ( isPlayed( forLHS ) ? "Yes" : "No" )
+        << lastPlayed( forLHS ).toString()
+        << QString::number( playCount( forLHS ) )
+        << playbackPosition( forLHS )
+        ;
     return retVal;
 }
 
