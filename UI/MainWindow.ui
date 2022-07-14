@@ -219,7 +219,7 @@
     <addaction name="separator"/>
     <addaction name="actionSave"/>
     <addaction name="separator"/>
-    <addaction name="actionReloadUsers"/>
+    <addaction name="actionReloadServers"/>
     <addaction name="actionReloadCurrentUser"/>
     <addaction name="separator"/>
     <addaction name="actionProcess"/>
@@ -253,7 +253,8 @@
    <addaction name="actionOnlyShowSyncableUsers"/>
    <addaction name="actionOnlyShowMediaWithDifferences"/>
    <addaction name="separator"/>
-   <addaction name="actionReloadUsers"/>
+   <addaction name="actionReloadServers"/>
+   <addaction name="actionReloadCurrentUser"/>
    <addaction name="separator"/>
    <addaction name="actionProcess"/>
   </widget>
@@ -307,16 +308,16 @@
     <string>Process User</string>
    </property>
   </action>
-  <action name="actionReloadUsers">
+  <action name="actionReloadServers">
    <property name="icon">
     <iconset resource="EmbySync.qrc">
-     <normaloff>:/resources/reload.png</normaloff>:/resources/reload.png</iconset>
+     <normaloff>:/resources/reloadServers.png</normaloff>:/resources/reloadServers.png</iconset>
    </property>
    <property name="text">
-    <string>Reload Users</string>
+    <string>Reload Servers</string>
    </property>
    <property name="toolTip">
-    <string>Reload Users</string>
+    <string>Reload Servers</string>
    </property>
   </action>
   <action name="actionOnlyShowSyncableUsers">
@@ -355,6 +356,10 @@
    </property>
   </action>
   <action name="actionReloadCurrentUser">
+   <property name="icon">
+    <iconset resource="EmbySync.qrc">
+     <normaloff>:/resources/reloadUsers.png</normaloff>:/resources/reloadUsers.png</iconset>
+   </property>
    <property name="text">
     <string>Reload Current User</string>
    </property>
