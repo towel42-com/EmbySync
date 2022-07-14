@@ -28,6 +28,7 @@
 #include <unordered_set>
 #include <tuple>
 #include <optional>
+#include <QPointer>
 namespace Ui
 {
     class CMainWindow;
@@ -60,7 +61,7 @@ public Q_SLOTS:
 private Q_SLOTS:
     void slotCurrentItemChanged( QTreeWidgetItem *, QTreeWidgetItem * );
 
-    void slotReloadUsers();
+    void slotReloadServers();
     void slotReloadCurrentUser();
     void slotProcess();
     void slotToggleOnlyShowSyncableUsers();
@@ -71,14 +72,11 @@ private Q_SLOTS:
     void slotLoadingUsersFinished();
     void slotUserMediaLoaded();
 private:
-    QProgressDialog * progressDlg() const;
-    void setupProgressDlg( const QString & title, bool hasLHSServer, bool hasRHSServer );
+    void setupProgressDlg( const QString & title );
 
-    void updateProgressDlg( int count );
+    void setProgressMaximum( int count );
     void incProgressDlg();
-    bool isProgressDlgFinished() const;
-    void setProgressDlgFinished( bool isLHS );
-    void resetProgressDlg() const;
+    void resetProgressDlg();
 
     void onlyShowSyncableUsers();
     void onlyShowMediaWithDifferences();
@@ -88,6 +86,8 @@ private:
     void loadFile( const QString & fileName );
 
     void reset();
+
+    void resetServers();
 
     void loadAllMedia();
     void loadAllMedia( bool isLHS );
@@ -102,6 +102,6 @@ private:
     std::unordered_set< QString > fProviderColumnsByName;
     std::map< int, QString > fProviderColumnsByColumn;
 
-    std::tuple< QProgressDialog *, std::optional< bool >, std::optional< bool > > fProgressDlg{ nullptr, {}, {} };
+    QPointer< QProgressDialog > fProgressDlg;
 };
 #endif 

@@ -95,25 +95,17 @@ CMainWindow::CMainWindow( QWidget * parent )
                 QMessageBox::information( this, title, msg );
         } );
     SProgressFunctions progressFuncs;
-    progressFuncs.fSetupFunc = [this]( const QString & title, bool hasLHSServer, bool hasRHSServer )
+    progressFuncs.fSetupFunc = [this]( const QString & title )
     {
-        return setupProgressDlg( title, hasLHSServer, hasRHSServer );
+        return setupProgressDlg( title );
     };
-    progressFuncs.fIsFinishedFunc = [this]()
+    progressFuncs.fSetMaximumFunc = [this]( int count )
     {
-        return isProgressDlgFinished();;
-    };
-    progressFuncs.fUpdateFunc = [this]( int count )
-    {
-        return updateProgressDlg( count );
+        return setProgressMaximum( count );
     };
     progressFuncs.fIncFunc = [this]()
     {
         return incProgressDlg();
-    };
-    progressFuncs.fSetFinishedFunc = [this]( bool isLHS )
-    {
-        return setProgressDlgFinished( isLHS );
     };
     progressFuncs.fResetFunc = [this]()
     {
@@ -121,8 +113,8 @@ CMainWindow::CMainWindow( QWidget * parent )
     };
     progressFuncs.fWasCanceledFunc = [this]()
     {
-        if ( progressDlg() )
-            return progressDlg()->wasCanceled();
+        if ( fProgressDlg )
+            return fProgressDlg->wasCanceled();
         return false;
     };
 
@@ -130,7 +122,7 @@ CMainWindow::CMainWindow( QWidget * parent )
 
     connect( fImpl->actionLoadProject, &QAction::triggered, this, &CMainWindow::slotLoadProject );
     connect( fImpl->menuLoadRecent, &QMenu::aboutToShow, this, &CMainWindow::slotRecentMenuAboutToShow );
-    connect( fImpl->actionReloadUsers, &QAction::triggered, this, &CMainWindow::slotReloadUsers );
+    connect( fImpl->actionReloadServers, &QAction::triggered, this, &CMainWindow::slotReloadServers );
     connect( fImpl->actionReloadCurrentUser, &QAction::triggered, this, &CMainWindow::slotReloadCurrentUser );
     connect( fImpl->actionProcess, &QAction::triggered, this, &CMainWindow::slotProcess );
     connect( fImpl->actionOnlyShowSyncableUsers, &QAction::triggered, this, &CMainWindow::slotToggleOnlyShowSyncableUsers );
@@ -138,7 +130,6 @@ CMainWindow::CMainWindow( QWidget * parent )
     connect( fImpl->actionSave, &QAction::triggered, this, &CMainWindow::slotSave );
     connect( fImpl->actionSettings, &QAction::triggered, this, &CMainWindow::slotSettings );
 
-    slotCurrentItemChanged( nullptr, nullptr );
     connect( fImpl->users, &QTreeWidget::currentItemChanged, this, &CMainWindow::slotCurrentItemChanged );
 
     connect( fImpl->lhsMedia, &QTreeWidget::currentItemChanged,
@@ -183,7 +174,7 @@ CMainWindow::CMainWindow( QWidget * parent )
     if ( !recentProjects.isEmpty() )
     {
         auto project = recentProjects[ 0 ];
-        QTimer::singleShot( 0, [this,project]()
+        QTimer::singleShot( 0, [this, project]()
                             {
                                 loadFile( project );
                             } );
@@ -211,12 +202,18 @@ void CMainWindow::slotSettings()
 
 void CMainWindow::reset()
 {
+    resetServers();
+
+    fSettings->reset();
+    fImpl->log->clear();
+}
+
+void CMainWindow::resetServers()
+{
     fImpl->users->clear();
     fImpl->lhsMedia->clear();
     fImpl->rhsMedia->clear();
-    fSettings->reset();
     fSyncSystem->reset();
-    fImpl->log->clear();
 }
 
 void CMainWindow::slotRecentMenuAboutToShow()
@@ -239,7 +236,7 @@ void CMainWindow::slotRecentMenuAboutToShow()
                      auto fileName = action->data().toString();
                      loadFile( fileName );
                  } );
-                  
+
 
         fImpl->menuLoadRecent->addAction( action );
     }
@@ -304,24 +301,27 @@ void CMainWindow::slotUserMediaLoaded()
     QTimer::singleShot( 0, fSyncSystem.get(), &CSyncSystem::slotFindMissingMedia );
 }
 
-void CMainWindow::slotReloadUsers()
+void CMainWindow::slotReloadServers()
 {
+    resetServers();
     fSyncSystem->loadUsers();
 }
 
 void CMainWindow::slotReloadCurrentUser()
 {
     fSyncSystem->clearCurrUser();
-    slotCurrentItemChanged( nullptr, nullptr );
+    auto currItem = fImpl->users->currentItem();
+    slotCurrentItemChanged( currItem, currItem );
 }
 
-void CMainWindow::slotCurrentItemChanged( QTreeWidgetItem * curr, QTreeWidgetItem * /*prev*/ )
+void CMainWindow::slotCurrentItemChanged( QTreeWidgetItem * curr, QTreeWidgetItem * prev )
 {
     fImpl->actionReloadCurrentUser->setEnabled( curr != nullptr );
 
     if ( fSyncSystem->isRunning() )
         return;
 
+    auto prevUserData = userDataForItem( prev );
     if ( !curr )
         curr = fImpl->users->currentItem();
 
@@ -329,11 +329,20 @@ void CMainWindow::slotCurrentItemChanged( QTreeWidgetItem * curr, QTreeWidgetIte
         return;
 
     auto userData = userDataForItem( curr );
+    if ( !userData )
+        return;
+
     if ( fSyncSystem->currUser() == userData )
         return;
 
+    if ( prevUserData )
+        prevUserData->clearWatchedMedia();
+    userData->clearWatchedMedia();
+    fSyncSystem->resetMedia();
     fImpl->lhsMedia->clear();
     fImpl->rhsMedia->clear();
+    fImpl->lhsMedia->setHeaderLabels( CMediaData::getHeaderLabels() );
+    fImpl->rhsMedia->setHeaderLabels( CMediaData::getHeaderLabels() );
 
     fSyncSystem->loadUsersMedia( userData );
 }
@@ -348,7 +357,7 @@ void CMainWindow::slotMissingMediaLoaded()
 std::shared_ptr< CUserData > CMainWindow::getCurrUserData() const
 {
     auto curr = fImpl->users->currentItem();
-    if ( !curr )
+    if ( !curr || curr->isHidden() )
         return {};
 
     return userDataForItem( curr );
@@ -411,9 +420,7 @@ void CMainWindow::onlyShowSyncableUsers()
     );
 
     auto newItem = NSABUtils::nextVisibleItem( currItem );
-    slotCurrentItemChanged( newItem, nullptr );
-
-    resetProgressDlg();
+    fImpl->users->setCurrentItem( newItem );
 }
 
 void CMainWindow::slotToggleOnlyShowMediaWithDifferences()
@@ -454,78 +461,36 @@ void CMainWindow::slotAddToLog( const QString & msg )
     fImpl->statusbar->showMessage( msg, 500 );
 }
 
-QProgressDialog * CMainWindow::progressDlg() const
+void CMainWindow::resetProgressDlg()
 {
-    return std::get< 0 >( fProgressDlg );
+    if ( fProgressDlg )
+        fProgressDlg.data()->deleteLater();
 }
 
-void CMainWindow::resetProgressDlg() const
+void CMainWindow::setupProgressDlg( const QString & title )
 {
-    delete std::get< 0 >( const_cast<CMainWindow *>( this )->fProgressDlg );
-    const_cast<CMainWindow *>( this )->fProgressDlg = { nullptr, {}, {} };
-}
-
-void CMainWindow::setupProgressDlg( const QString & title, bool hasLHSServer, bool hasRHSServer )
-{
-    if ( !std::get< 0 >( fProgressDlg ) )
+    if ( !fProgressDlg )
     {
-        std::get< 0 >( fProgressDlg ) = new QProgressDialog( title, tr( "Cancel" ), 0, 0, parentWidget() );
-        std::get< 0 >( fProgressDlg )->setAutoClose( true );
-        std::get< 0 >( fProgressDlg )->setMinimumDuration( 0 );
-        std::get< 0 >( fProgressDlg )->setValue( 0 );
-        std::get< 0 >( fProgressDlg )->show();
+        fProgressDlg = new QProgressDialog( title, tr( "Cancel" ), 0, 0, this );
+        fProgressDlg->setAutoClose( true );
+        fProgressDlg->setMinimumDuration( 0 );
+        fProgressDlg->setValue( 0 );
+        fProgressDlg->open();
     }
-    if ( hasLHSServer )
-        std::get< 1 >( fProgressDlg ) = false;
-    else
-        std::get< 1 >( fProgressDlg ).reset();
-
-    if ( hasRHSServer )
-        std::get< 2 >( fProgressDlg ) = false;
-    else
-        std::get< 2 >( fProgressDlg ).reset();
 }
 
-void CMainWindow::updateProgressDlg( int count )
+void CMainWindow::setProgressMaximum( int count )
 {
-    if ( !progressDlg() )
+    if ( !fProgressDlg )
         return;
-    progressDlg()->setMaximum( progressDlg()->maximum() + count );
+    fProgressDlg->setMaximum( count );
 }
 
 void CMainWindow::incProgressDlg()
 {
-    if ( !progressDlg() )
+    if ( !fProgressDlg )
         return;
 
-    progressDlg()->setValue( progressDlg()->value() + 1 );
+    fProgressDlg->setValue( fProgressDlg->value() + 1 );
 }
-
-bool CMainWindow::isProgressDlgFinished()  const
-{
-    if ( !progressDlg() )
-        return true;
-
-    if ( progressDlg()->wasCanceled() )
-    {
-        resetProgressDlg();
-        return true;
-    }
-    bool retVal = true;
-    if ( std::get< 1 >( fProgressDlg ).has_value() )
-        retVal = retVal && std::get< 1 >( fProgressDlg ).value();
-    if ( std::get< 2 >( fProgressDlg ).has_value() )
-        retVal = retVal && std::get< 2 >( fProgressDlg ).value();
-
-    return retVal;
-}
-
-void CMainWindow::setProgressDlgFinished( bool isLHS )
-{
-    if ( isLHS )
-        std::get< 1 >( fProgressDlg ) = true;
-    else
-        std::get< 2 >( fProgressDlg ) = true;
-}
-
 
