@@ -21,18 +21,32 @@
 // SOFTWARE.
 
 #include "Core/MediaData.h"
+#include "SABUtils/utils.h"
+
 #include <QTreeWidgetItem>
 #include <QTreeWidget>
 
-void CMediaData::setItemColor( QTreeWidgetItem * item, const QColor & clr )
+void setItemColor( QTreeWidgetItem * item, int column, const QColor & clr )
+{
+    if ( !item )
+        return;
+    item->setBackground( column, clr );
+}
+
+void setItemColor( QTreeWidgetItem * item, const QColor & clr )
 {
     for ( int ii = 0; ii < item->columnCount(); ++ii )
         setItemColor( item, ii, clr );
 }
 
-void CMediaData::setItemColor( QTreeWidgetItem * item, int column, const QColor & clr )
+template< typename T >
+void setItemColor( QTreeWidgetItem * lhs, QTreeWidgetItem * rhs, int column, const T & lhsValue, const T & rhsValue )
 {
-    item->setBackground( column, clr );
+    if ( lhsValue != rhsValue )
+    {
+        setItemColor( lhs, column, Qt::yellow );
+        setItemColor( rhs, column, Qt::yellow );
+    }
 }
 
 void CMediaData::setItemColors()
@@ -45,29 +59,27 @@ void CMediaData::setItemColors()
     {
         if ( *fLHSServer != *fRHSServer )
         {
-            setItemColor( fRHSServer->fItem, EColumn::eName, Qt::yellow );
-            setItemColor( fLHSServer->fItem, EColumn::eName, Qt::yellow );
-            if ( played( true ) != played( false ) )
-            {
-                setItemColor( fRHSServer->fItem, EColumn::ePlayed, Qt::yellow );
-                setItemColor( fLHSServer->fItem, EColumn::ePlayed, Qt::yellow );
-            }
-            if ( isFavorite( true ) != isFavorite( false ) )
-            {
-                setItemColor( fRHSServer->fItem, EColumn::eFavorite, Qt::yellow );
-                setItemColor( fLHSServer->fItem, EColumn::eFavorite, Qt::yellow );
-            }
-            if ( lastPlayedPos( true ) != lastPlayedPos( false ) )
-            {
-                setItemColor( fRHSServer->fItem, EColumn::eLastPlayedPos, Qt::yellow );
-                setItemColor( fLHSServer->fItem, EColumn::eLastPlayedPos, Qt::yellow );
-            }
+            ::setItemColor( fLHSServer->fItem, fRHSServer->fItem, EColumn::eName, false, true );
+            ::setItemColor( fLHSServer->fItem, fRHSServer->fItem, EColumn::eFavorite, isFavorite( true ), isFavorite( false ) );
+            ::setItemColor( fLHSServer->fItem, fRHSServer->fItem, EColumn::ePlayed, isPlayed( true ), isPlayed( false ) );
+            ::setItemColor( fLHSServer->fItem, fRHSServer->fItem, EColumn::eLastPlayed, lastPlayed( true ), lastPlayed( false ) );
+            ::setItemColor( fLHSServer->fItem, fRHSServer->fItem, EColumn::ePlayCount, playCount( true ), playCount( false ) );
+            ::setItemColor( fLHSServer->fItem, fRHSServer->fItem, EColumn::ePlaybackPosition, playbackPositionTicks( true ), playbackPositionTicks( false ) );
         }
     }
 }
 
 void CMediaData::createItems( QTreeWidget * lhsTree, QTreeWidget * rhsTree, const std::map< int, QString > & providersByColumn )
 {
+    if ( !sMSecsToStringFunc )
+    {
+        setMSecsToStringFunc(
+            []( uint64_t msecs )
+            {
+                return NSABUtils::CTimeString( msecs ).toString( "dd:hh:mm:ss.zzz", true );
+            } );
+    }
+
     auto columns = getColumns( providersByColumn );
 
     if ( lhsTree )
