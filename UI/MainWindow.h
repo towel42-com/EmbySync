@@ -48,6 +48,7 @@ public:
     virtual ~CMainWindow() override;
 
     virtual void closeEvent( QCloseEvent * closeEvent ) override;
+    virtual bool eventFilter( QObject * obj, QEvent * event ) override;
 public Q_SLOTS:
     void slotSettings();
 
@@ -56,8 +57,11 @@ public Q_SLOTS:
     void slotLoadProject();
     void slotSave();
     void slotRecentMenuAboutToShow();
-    void slotMissingMediaLoaded();
+    void slotUserMediaCompletelyLoaded();
 
+    void slotLHSMediaDoubleClicked();
+
+    void slotRHSMediaDoubleClicked();
 private Q_SLOTS:
     void slotCurrentItemChanged( QTreeWidgetItem *, QTreeWidgetItem * );
 
@@ -72,6 +76,8 @@ private Q_SLOTS:
     void slotLoadingUsersFinished();
     void slotUserMediaLoaded();
 private:
+    void changeMediaUserData( QTreeWidgetItem * item );
+
     void setupProgressDlg( const QString & title );
 
     void setProgressMaximum( int count );
@@ -102,6 +108,8 @@ private:
     std::unordered_set< QString > fProviderColumnsByName;
     std::map< int, QString > fProviderColumnsByColumn;
 
-    QPointer< QProgressDialog > fProgressDlg;
+    QProgressDialog * fProgressDlg{ nullptr };
+
+    std::map< QTreeWidgetItem *, std::shared_ptr< CMediaData > > fMediaItems;
 };
 #endif 

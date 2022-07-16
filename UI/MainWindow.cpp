@@ -22,6 +22,7 @@
 
 #include "MainWindow.h"
 #include "SettingsDlg.h"
+#include "UserDataDlg.h"
 
 #include "Core/SyncSystem.h"
 #include "Core/UserData.h"
@@ -54,7 +55,7 @@ CMainWindow::CMainWindow( QWidget * parent )
     connect( fSyncSystem.get(), &CSyncSystem::sigAddToLog, this, &CMainWindow::slotAddToLog );
     connect( fSyncSystem.get(), &CSyncSystem::sigLoadingUsersFinished, this, &CMainWindow::slotLoadingUsersFinished );
     connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaLoaded, this, &CMainWindow::slotUserMediaLoaded );
-    connect( fSyncSystem.get(), &CSyncSystem::sigMissingMediaLoaded, this, &CMainWindow::slotMissingMediaLoaded );
+    connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaCompletelyLoaded, this, &CMainWindow::slotUserMediaCompletelyLoaded );
 
     fSyncSystem->setUserItemFunc(
         [this]( std::shared_ptr< CUserData > userData )
@@ -78,7 +79,7 @@ CMainWindow::CMainWindow( QWidget * parent )
             if ( !mediaData )
                 return;
 
-            mediaData->updateItems( fProviderColumnsByColumn );
+            mediaData->updateItems( fProviderColumnsByColumn, fSettings );
         } );
     fSyncSystem->setProcessNewMediaFunc(
         [this]( std::shared_ptr<CMediaData > mediaData )
@@ -130,6 +131,9 @@ CMainWindow::CMainWindow( QWidget * parent )
     connect( fImpl->actionSave, &QAction::triggered, this, &CMainWindow::slotSave );
     connect( fImpl->actionSettings, &QAction::triggered, this, &CMainWindow::slotSettings );
 
+    connect( fImpl->lhsMedia, &QTreeWidget::doubleClicked, this, &CMainWindow::slotLHSMediaDoubleClicked );
+    connect( fImpl->rhsMedia, &QTreeWidget::doubleClicked, this, &CMainWindow::slotRHSMediaDoubleClicked );
+
     connect( fImpl->users, &QTreeWidget::currentItemChanged, this, &CMainWindow::slotCurrentItemChanged );
 
     connect( fImpl->lhsMedia, &QTreeWidget::currentItemChanged,
@@ -158,11 +162,42 @@ CMainWindow::CMainWindow( QWidget * parent )
                  fImpl->lhsMedia->setCurrentItem( items.front() );
              }
     );
+    fImpl->lhsMedia->horizontalScrollBar()->installEventFilter( this );
+    fImpl->mainSplitter->setStretchFactor( 0, 1 );
+    fImpl->mainSplitter->setStretchFactor( 1, 1 );
+    fImpl->mainSplitter->setStretchFactor( 2, 0 );
+    fImpl->mainSplitter->setStretchFactor( 3, 1 );
+
+    connect( fImpl->mainSplitter, &QSplitter::splitterMoved,
+             [ this ]( int /*pos*/, int index )
+    {
+                 if ( ( index == 2 ) || ( index == 3 ) )
+                 {
+                     auto sizes = fImpl->mainSplitter->sizes();
+                     auto newValue = sizes[ 2 ];
+                     auto diff = newValue - 40;
+                     sizes[ 2 ] = 40;
+                     if ( index == 2 ) // lhs
+                     {
+                         sizes[ 3 ] += diff;
+                     }
+                     else if ( index == 3 ) // rhs
+                     {
+                         sizes[ 1 ] += diff;
+                     }
+                     fImpl->mainSplitter->setSizes( sizes );
+                 }
+    } );
+
     connect( fImpl->lhsMedia->verticalScrollBar(), &QScrollBar::sliderMoved, fImpl->rhsMedia->verticalScrollBar(), &QScrollBar::setValue );
     connect( fImpl->lhsMedia->verticalScrollBar(), &QScrollBar::valueChanged, fImpl->rhsMedia->verticalScrollBar(), &QScrollBar::setValue );
 
     connect( fImpl->rhsMedia->verticalScrollBar(), &QScrollBar::sliderMoved, fImpl->lhsMedia->verticalScrollBar(), &QScrollBar::setValue );
     connect( fImpl->rhsMedia->verticalScrollBar(), &QScrollBar::valueChanged, fImpl->lhsMedia->verticalScrollBar(), &QScrollBar::setValue );
+
+    connect( fImpl->lhsMedia->verticalScrollBar(), &QScrollBar::sliderMoved, fImpl->dirTree->verticalScrollBar(), &QScrollBar::setValue );
+    connect( fImpl->lhsMedia->verticalScrollBar(), &QScrollBar::valueChanged, fImpl->dirTree->verticalScrollBar(), &QScrollBar::setValue );
+
 
     connect( fImpl->lhsMedia->horizontalScrollBar(), &QScrollBar::sliderMoved, fImpl->rhsMedia->horizontalScrollBar(), &QScrollBar::setValue );
     connect( fImpl->lhsMedia->horizontalScrollBar(), &QScrollBar::valueChanged, fImpl->rhsMedia->horizontalScrollBar(), &QScrollBar::setValue );
@@ -191,6 +226,23 @@ void CMainWindow::closeEvent( QCloseEvent * event )
         event->ignore();
     else
         event->accept();
+}
+
+bool CMainWindow::eventFilter( QObject * obj, QEvent * event )
+{
+    if ( obj == fImpl->lhsMedia->horizontalScrollBar() )
+    {
+        if ( event->type() == QEvent::Show )
+        {
+            fImpl->dirTree->setHorizontalScrollBarPolicy( Qt::ScrollBarPolicy::ScrollBarAlwaysOn );
+        }
+        else if ( event->type() == QEvent::Hide )
+        {
+            fImpl->dirTree->setHorizontalScrollBarPolicy( Qt::ScrollBarPolicy::ScrollBarAlwaysOff );
+        }
+    }
+
+    return QMainWindow::eventFilter( obj, event );
 }
 
 void CMainWindow::slotSettings()
@@ -291,12 +343,15 @@ void CMainWindow::slotUserMediaLoaded()
 {
     auto currUser = getCurrUserData();
     auto lhsTree = currUser->onLHSServer() ? fImpl->lhsMedia : nullptr;
+    auto dirTree = fImpl->dirTree;
     auto rhsTree = currUser->onRHSServer() ? fImpl->rhsMedia : nullptr;
 
     fSyncSystem->forEachMedia(
-        [this, lhsTree, rhsTree]( std::shared_ptr< CMediaData > media )
+        [this, lhsTree, rhsTree, dirTree]( std::shared_ptr< CMediaData > media )
         {
-            media->createItems( lhsTree, rhsTree, fProviderColumnsByColumn );
+            auto items = media->createItems( lhsTree, rhsTree, dirTree, fProviderColumnsByColumn, fSettings );
+            fMediaItems[ items.first ] = media;
+            fMediaItems[ items.second ] = media;
         } );
     QTimer::singleShot( 0, fSyncSystem.get(), &CSyncSystem::slotFindMissingMedia );
 }
@@ -304,6 +359,7 @@ void CMainWindow::slotUserMediaLoaded()
 void CMainWindow::slotReloadServers()
 {
     resetServers();
+    fMediaItems.clear();
     fSyncSystem->loadUsers();
 }
 
@@ -337,9 +393,11 @@ void CMainWindow::slotCurrentItemChanged( QTreeWidgetItem * curr, QTreeWidgetIte
 
     if ( prevUserData )
         prevUserData->clearWatchedMedia();
+    fMediaItems.clear();
     userData->clearWatchedMedia();
     fSyncSystem->resetMedia();
     fImpl->lhsMedia->clear();
+    fImpl->dirTree->clear();
     fImpl->rhsMedia->clear();
     fImpl->lhsMedia->setHeaderLabels( CMediaData::getHeaderLabels() );
     fImpl->rhsMedia->setHeaderLabels( CMediaData::getHeaderLabels() );
@@ -347,7 +405,7 @@ void CMainWindow::slotCurrentItemChanged( QTreeWidgetItem * curr, QTreeWidgetIte
     fSyncSystem->loadUsersMedia( userData );
 }
 
-void CMainWindow::slotMissingMediaLoaded()
+void CMainWindow::slotUserMediaCompletelyLoaded()
 {
     NSABUtils::autoSize( fImpl->lhsMedia );
     NSABUtils::autoSize( fImpl->rhsMedia );
@@ -439,9 +497,11 @@ void CMainWindow::onlyShowMediaWithDifferences()
             if ( !mediaData )
                 return;
 
-            auto hide = onlyShowMediaWithDiff && mediaData->serverDataEqual();
+            auto hide = onlyShowMediaWithDiff && mediaData->userDataEqual( false );
             if ( mediaData->getItem( true ) && mediaData->getItem( true )->treeWidget() )
                 mediaData->getItem( true )->setHidden( hide );
+            if ( mediaData->dirItem() )
+                mediaData->dirItem()->setHidden( hide );
             if ( mediaData->getItem( false ) && mediaData->getItem( false )->treeWidget() )
                 mediaData->getItem( false )->setHidden( hide );
         }
@@ -464,7 +524,8 @@ void CMainWindow::slotAddToLog( const QString & msg )
 void CMainWindow::resetProgressDlg()
 {
     if ( fProgressDlg )
-        fProgressDlg.data()->deleteLater();
+        fProgressDlg->deleteLater();
+    fProgressDlg = nullptr;
 }
 
 void CMainWindow::setupProgressDlg( const QString & title )
@@ -472,11 +533,12 @@ void CMainWindow::setupProgressDlg( const QString & title )
     if ( !fProgressDlg )
     {
         fProgressDlg = new QProgressDialog( title, tr( "Cancel" ), 0, 0, this );
-        fProgressDlg->setAutoClose( true );
-        fProgressDlg->setMinimumDuration( 0 );
-        fProgressDlg->setValue( 0 );
-        fProgressDlg->open();
     }
+    fProgressDlg->setWindowTitle( title );
+    fProgressDlg->setAutoClose( true );
+    fProgressDlg->setMinimumDuration( 0 );
+    fProgressDlg->setValue( 0 );
+    fProgressDlg->open();
 }
 
 void CMainWindow::setProgressMaximum( int count )
@@ -492,5 +554,43 @@ void CMainWindow::incProgressDlg()
         return;
 
     fProgressDlg->setValue( fProgressDlg->value() + 1 );
+}
+
+
+void CMainWindow::slotLHSMediaDoubleClicked()
+{
+    auto item = fImpl->lhsMedia->currentItem();
+    changeMediaUserData( item );
+}
+
+void CMainWindow::slotRHSMediaDoubleClicked()
+{
+    auto item = fImpl->rhsMedia->currentItem();
+    changeMediaUserData( item );
+}
+
+void CMainWindow::changeMediaUserData( QTreeWidgetItem * item )
+{
+    if ( !item )
+        return;
+
+    auto pos = fMediaItems.find( item );
+    if ( pos == fMediaItems.end() )
+        return;
+    auto mediaData = ( *pos ).second;
+    if ( !mediaData )
+        return;
+
+    auto userData = fSyncSystem->currUser();
+    if ( !userData )
+        return;
+
+    bool isLHS = item->treeWidget() == fImpl->lhsMedia;
+    
+    CUserDataDlg dlg( userData, mediaData, fSettings->getUrl( isLHS ).url(), isLHS, this );
+    if ( dlg.exec() == QDialog::Accepted )
+    {
+        fSyncSystem->requestUpdateUserDataForMedia( mediaData, dlg.getMediaData(), isLHS );
+    }
 }
 
