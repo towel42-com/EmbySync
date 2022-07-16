@@ -24,27 +24,38 @@
 #define _SETTINGSDLG_H
 
 #include <QDialog>
+#include <QColor>
 #include <memory>
 namespace Ui
 {
     class CSettingsDlg;
 }
 
+class QLabel;
 class CSettings;
 class CSettingsDlg : public QDialog
 {
     Q_OBJECT
 public:
     CSettingsDlg( std::shared_ptr< CSettings > settings, QWidget * parent = nullptr );
+
+    void load();
+
     virtual ~CSettingsDlg() override;
 
     virtual void accept() override;
 
+    void save();
+
 public Q_SLOTS:
 private:
+    void updateColors();
+    void updateColor( QLabel * label, const QColor & color );
 
     std::unique_ptr< Ui::CSettingsDlg > fImpl;
     std::shared_ptr< CSettings > fSettings;
+    QColor fMediaSourceColor;
+    QColor fMediaDestColor;
 
 };
 #endif 

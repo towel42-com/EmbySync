@@ -25,6 +25,7 @@
 
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QColorDialog>
 
 #include "ui_SettingsDlg.h"
 
@@ -34,24 +35,28 @@ CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, QWidget * par
     fSettings( settings )
 {
     fImpl->setupUi( this );
-    fImpl->embyURL1->setText( fSettings->lhsURL() );
-    fImpl->embyAPI1->setText( fSettings->lhsAPI() );
-    fImpl->embyURL2->setText( fSettings->rhsURL() );
-    fImpl->embyAPI2->setText( fSettings->rhsAPI() );
-}
+    load();
+    connect( fImpl->mediaSourceColor, &QToolButton::clicked,
+             [this]()
+             {
+                 auto newColor = QColorDialog::getColor( fMediaSourceColor, this, tr( "Select Color" ) );
+                 if ( newColor.isValid() )
+                 {
+                     fMediaSourceColor = newColor;
+                     updateColors();
+                 }
+             } );
+    connect( fImpl->mediaDestColor, &QToolButton::clicked,
+             [this]()
+             {
+                 auto newColor = QColorDialog::getColor( fMediaDestColor, this, tr( "Select Color" ) );
+                 if ( newColor.isValid() )
+                 {
+                     fMediaDestColor = newColor;
+                     updateColors();
+                 }
+             } );
 
-CSettingsDlg::~CSettingsDlg()
-{
-}
-
-void CSettingsDlg::accept()
-{
-    fSettings->setLHSURL( fImpl->embyURL1->text() );
-    fSettings->setLHSAPI( fImpl->embyAPI1->text() );
-    fSettings->setRHSURL( fImpl->embyURL2->text() );
-    fSettings->setRHSAPI( fImpl->embyAPI2->text() );
-
-    QDialog::accept();
 }
 
 CSettings::CSettings( const QString & fileName, QWidget * parentWidget ) :
@@ -59,6 +64,63 @@ CSettings::CSettings( const QString & fileName, QWidget * parentWidget ) :
 {
     fFileName = fileName;
     load( parentWidget );
+}
+
+
+CSettingsDlg::~CSettingsDlg()
+{
+}
+
+void CSettingsDlg::accept()
+{
+    save();
+    QDialog::accept();
+}
+
+
+void CSettingsDlg::load()
+{
+    fImpl->embyURL1->setText( fSettings->lhsURL() );
+    fImpl->embyAPI1->setText( fSettings->lhsAPI() );
+    fImpl->embyURL2->setText( fSettings->rhsURL() );
+    fImpl->embyAPI2->setText( fSettings->rhsAPI() );
+
+    fMediaSourceColor = fSettings->mediaSourceColor();
+    fMediaDestColor = fSettings->mediaDestColor();
+    updateColors();
+    auto maxItems = fSettings->maxItems();
+    if ( maxItems < fImpl->maxItems->minimum() )
+        maxItems = fImpl->maxItems->minimum();
+    fImpl->maxItems->setValue( maxItems );
+}
+
+void CSettingsDlg::save()
+{
+    fSettings->setLHSURL( fImpl->embyURL1->text() );
+    fSettings->setLHSAPI( fImpl->embyAPI1->text() );
+    fSettings->setRHSURL( fImpl->embyURL2->text() );
+    fSettings->setRHSAPI( fImpl->embyAPI2->text() );
+
+    fSettings->setMediaSourceColor( fMediaSourceColor.name() );
+    fSettings->setMediaDestColor( fMediaDestColor.name() );
+    fSettings->setMaxItems( ( fImpl->maxItems->value() == fImpl->maxItems->minimum() ) ? -1 : fImpl->maxItems->value() );
+}
+
+
+void CSettingsDlg::updateColors()
+{
+    updateColor( fImpl->mediaSource, fMediaSourceColor);
+    updateColor( fImpl->mediaDest, fMediaDestColor );
+}
+
+void CSettingsDlg::updateColor( QLabel * label, const QColor & color )
+{
+    QString styleSheet;
+    if ( color == Qt::black )
+        styleSheet = QString( "QLabel { background-color: %1; foreground-color: #ffffff }" ).arg( color.name() );
+    else
+        styleSheet = QString( "QLabel { background-color: %1 }" ).arg( color.name() );
+    label->setStyleSheet( styleSheet );
 }
 
 bool CSettings::load( const QString & fileName, QWidget * parentWidget )
