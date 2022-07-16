@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1808</width>
+    <width>1093</width>
     <height>660</height>
    </rect>
   </property>
@@ -14,13 +14,13 @@
    <string>EmbySync</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout_4">
+   <layout class="QVBoxLayout" name="verticalLayout_5">
     <item>
-     <widget class="QSplitter" name="splitter_3">
+     <widget class="QSplitter" name="splitter_2">
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
-      <widget class="QSplitter" name="splitter_2">
+      <widget class="QSplitter" name="mainSplitter">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
@@ -60,124 +60,184 @@
          </item>
         </layout>
        </widget>
-       <widget class="QSplitter" name="splitter">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <widget class="QWidget" name="layoutWidget_1">
-         <layout class="QVBoxLayout" name="verticalLayout_2">
-          <item>
-           <widget class="QLabel" name="lhsServerLabel">
+       <widget class="QWidget" name="layoutWidget">
+        <layout class="QVBoxLayout" name="verticalLayout_4">
+         <item>
+          <widget class="QLabel" name="lhsServerLabel">
+           <property name="text">
+            <string>LHS Server Media:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QTreeWidget" name="lhsMedia">
+           <property name="alternatingRowColors">
+            <bool>true</bool>
+           </property>
+           <property name="indentation">
+            <number>0</number>
+           </property>
+           <property name="rootIsDecorated">
+            <bool>false</bool>
+           </property>
+           <property name="itemsExpandable">
+            <bool>false</bool>
+           </property>
+           <property name="sortingEnabled">
+            <bool>true</bool>
+           </property>
+           <attribute name="headerCascadingSectionResizes">
+            <bool>true</bool>
+           </attribute>
+           <attribute name="headerShowSortIndicator" stdset="0">
+            <bool>true</bool>
+           </attribute>
+           <column>
             <property name="text">
-             <string>LHS Server Media:</string>
+             <string>Name</string>
             </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QTreeWidget" name="lhsMedia">
-            <property name="alternatingRowColors">
-             <bool>true</bool>
-            </property>
-            <property name="sortingEnabled">
-             <bool>true</bool>
-            </property>
-            <attribute name="headerCascadingSectionResizes">
-             <bool>true</bool>
-            </attribute>
-            <attribute name="headerShowSortIndicator" stdset="0">
-             <bool>true</bool>
-            </attribute>
-            <column>
-             <property name="text">
-              <string>Name</string>
-             </property>
-            </column>
-            <column>
-             <property name="text">
-              <string>ID</string>
-             </property>
-            </column>
-            <column>
-             <property name="text">
-              <string>Played on Server?</string>
-             </property>
-            </column>
-            <column>
-             <property name="text">
-              <string>Is Favorite?</string>
-             </property>
-            </column>
-            <column>
-             <property name="text">
-              <string>Last Played Pos</string>
-             </property>
-            </column>
-            <column>
-             <property name="text">
-              <string>Last Modified Timestamp</string>
-             </property>
-            </column>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-        <widget class="QWidget" name="layoutWidget_2">
-         <layout class="QVBoxLayout" name="verticalLayout_3">
-          <item>
-           <widget class="QLabel" name="rhsServerLabel">
+           </column>
+           <column>
             <property name="text">
-             <string>RHS Server Media:</string>
+             <string>ID</string>
             </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QTreeWidget" name="rhsMedia">
-            <property name="alternatingRowColors">
-             <bool>true</bool>
+           </column>
+           <column>
+            <property name="text">
+             <string>Played on Server?</string>
             </property>
-            <property name="sortingEnabled">
-             <bool>true</bool>
+           </column>
+           <column>
+            <property name="text">
+             <string>Is Favorite?</string>
             </property>
-            <attribute name="headerCascadingSectionResizes">
-             <bool>true</bool>
-            </attribute>
-            <attribute name="headerShowSortIndicator" stdset="0">
-             <bool>true</bool>
-            </attribute>
-            <column>
-             <property name="text">
-              <string>Name</string>
-             </property>
-            </column>
-            <column>
-             <property name="text">
-              <string>Media ID</string>
-             </property>
-            </column>
-            <column>
-             <property name="text">
-              <string>Played on Server?</string>
-             </property>
-            </column>
-            <column>
-             <property name="text">
-              <string>Is Favorite?</string>
-             </property>
-            </column>
-            <column>
-             <property name="text">
-              <string>Last Played Pos</string>
-             </property>
-            </column>
-            <column>
-             <property name="text">
-              <string>Last Modified Timestamp</string>
-             </property>
-            </column>
-           </widget>
-          </item>
-         </layout>
-        </widget>
+           </column>
+           <column>
+            <property name="text">
+             <string>Last Played Pos</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Last Modified Timestamp</string>
+            </property>
+           </column>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="layoutWidget">
+        <layout class="QVBoxLayout" name="verticalLayout_2">
+         <item>
+          <widget class="QLabel" name="dirLabel">
+           <property name="maximumSize">
+            <size>
+             <width>40</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QTreeWidget" name="dirTree">
+           <property name="maximumSize">
+            <size>
+             <width>40</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="verticalScrollBarPolicy">
+            <enum>Qt::ScrollBarAlwaysOff</enum>
+           </property>
+           <property name="horizontalScrollBarPolicy">
+            <enum>Qt::ScrollBarAsNeeded</enum>
+           </property>
+           <property name="indentation">
+            <number>0</number>
+           </property>
+           <property name="rootIsDecorated">
+            <bool>true</bool>
+           </property>
+           <property name="itemsExpandable">
+            <bool>false</bool>
+           </property>
+           <column>
+            <property name="text">
+             <string/>
+            </property>
+           </column>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="layoutWidget_2">
+        <layout class="QVBoxLayout" name="verticalLayout_3">
+         <item>
+          <widget class="QLabel" name="rhsServerLabel">
+           <property name="text">
+            <string>RHS Server Media:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QTreeWidget" name="rhsMedia">
+           <property name="alternatingRowColors">
+            <bool>true</bool>
+           </property>
+           <property name="indentation">
+            <number>0</number>
+           </property>
+           <property name="rootIsDecorated">
+            <bool>false</bool>
+           </property>
+           <property name="itemsExpandable">
+            <bool>false</bool>
+           </property>
+           <property name="sortingEnabled">
+            <bool>true</bool>
+           </property>
+           <attribute name="headerCascadingSectionResizes">
+            <bool>true</bool>
+           </attribute>
+           <attribute name="headerShowSortIndicator" stdset="0">
+            <bool>true</bool>
+           </attribute>
+           <column>
+            <property name="text">
+             <string>Name</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Media ID</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Played on Server?</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Is Favorite?</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Last Played Pos</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Last Modified Timestamp</string>
+            </property>
+           </column>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </widget>
       <widget class="QPlainTextEdit" name="log">
@@ -200,7 +260,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1808</width>
+     <width>1093</width>
      <height>22</height>
     </rect>
    </property>
