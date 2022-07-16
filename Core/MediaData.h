@@ -30,11 +30,15 @@
 
 class QVariant;
 class QTreeWidgetItem;
+class QListWidgetItem;
 class QJsonObject;
 class QTreeWidget;
+class QListWidget;
 class QColor;
 
-struct CMediaDataBase
+class CSettings;
+
+struct SMediaUserData
 {
     QString fMediaID;
     bool fIsFavorite{ false };
@@ -43,14 +47,17 @@ struct CMediaDataBase
     uint64_t fPlayCount;
     uint64_t fPlaybackPositionTicks; // 1 tick = 10000 ms
 
+    bool userDataEqual( const SMediaUserData & rhs, bool includeTimeStamp ) const;
+
+    QJsonObject toJSON() const;
     void loadUserDataFromJSON( const QJsonObject & userDataObj );
 
     QTreeWidgetItem * fItem{ nullptr };
     bool fBeenLoaded{ false };
 };
 
-bool operator==( const CMediaDataBase & lhs, const CMediaDataBase & rhs );
-inline bool operator!=( const CMediaDataBase & lhs, const CMediaDataBase & rhs )
+bool operator==( const SMediaUserData & lhs, const SMediaUserData & rhs );
+inline bool operator!=( const SMediaUserData & lhs, const SMediaUserData & rhs )
 {
     return !operator==( lhs, rhs );
 }
@@ -71,63 +78,77 @@ public:
 
     static QStringList getHeaderLabels();
     static void setMSecsToStringFunc( std::function< QString( uint64_t ) > func );
-
-    CMediaData( const QString & name, const QString & type );
-
-    QString name() const;
     static QString computeName( QJsonObject & media );
 
-    bool isMissing( bool isLHS ) const;
-    bool hasMissingInfo() const;
-
-    void setMediaID( const QString & id, bool isLHS );
+    CMediaData( const QString & name, const QString & type );
+    QString name() const;
     bool beenLoaded( bool isLHS ) const;
 
+    void loadUserDataFromJSON( const QJsonObject & object, bool isLHSServer );
+    void updateFromOther( std::shared_ptr< CMediaData > other, bool toLHS );
+    QUrlQuery getSearchForMediaQuery() const;
+
+    void updateItems( const std::map< int, QString > & providersByColumn, std::shared_ptr< CSettings > settings );
+    std::pair< QTreeWidgetItem *, QTreeWidgetItem * > createItems( QTreeWidget * lhsTree, QTreeWidget * rhsTree, QTreeWidget * dirTree, const std::map< int, QString > & providersByColumn, std::shared_ptr< CSettings > settings );
+
+    const std::map< QString, QString > & getProviders() const { return fProviders; }
+    bool userDataEqual( bool includeLastPlayedTimestamp ) const;
+
+    QTreeWidgetItem * getItem( bool lhs );
+    QTreeWidgetItem * dirItem() const { return fDirItem; }
+
     QString getMediaID( bool isLHS ) const;
-    bool isFavorite( bool lhs ) const;
-    bool isPlayed( bool lhs ) const;
-    QDateTime lastPlayed( bool lhs ) const;
-    uint64_t playCount( bool lhs ) const;
-    uint64_t playbackPositionMSecs( bool lhs ) const; 
-    uint64_t playbackPositionTicks( bool lhs ) const;// 10,000 ticks = 1 ms
-    QString playbackPosition( bool lhs ) const;
+    void setMediaID( const QString & id, bool isLHS );
+    bool isMissing( bool isLHS ) const;
+
+
+    bool hasMissingInfo() const;
 
     bool hasProviderIDs() const;
-    QString getProviderList() const;
+    void addProvider( const QString & providerName, const QString & providerID );
 
-    bool serverDataEqual() const;
+    bool lastPlayedTheSame() const;
+    bool rhsLastPlayedOlder() const;
+    bool lhsLastPlayedOlder() const;
 
     bool bothPlayed() const;
-    bool playbackPositionTheSame() const;
-    bool bothFavorites() const;
-    bool lastPlayedTheSame() const;
+    bool isPlayed( bool lhs ) const;
 
-    void loadUserDataFromJSON( const QJsonObject & object, bool isLHSServer );
-    bool lhsMoreRecent() const;
+    bool playbackPositionTheSame() const;
+    QString playbackPosition( bool lhs ) const;
+    uint64_t playbackPositionMSecs( bool lhs ) const;
+    uint64_t playbackPositionTicks( bool lhs ) const;// 10,000 ticks = 1 ms
+    QTime playbackPositionTime( bool lhs ) const;
+
+    bool bothFavorites() const;
+    bool isFavorite( bool lhs ) const;
+
+    QDateTime lastPlayed( bool lhs ) const;
+    uint64_t playCount( bool lhs ) const;
+    std::shared_ptr<SMediaUserData> lhsUserData() const { return fLHSUserData; }
+    std::shared_ptr<SMediaUserData> rhsUserData() const { return fRHSUserData; }
+private:
+
+    QString getProviderList() const;
+
     void setItem( QTreeWidgetItem * item, bool lhs );
-    QTreeWidgetItem * getItem( bool lhs );
-    void updateFromOther( std::shared_ptr< CMediaData > other, bool toLHS );
-    void createItems( QTreeWidget * lhsTree, QTreeWidget * rhsTree, const std::map< int, QString > & providersByColumn );
     QStringList getColumns( bool forLHS );
     std::pair< QStringList, QStringList > getColumns( const std::map< int, QString > & providersByColumn );
-    void updateItems( const std::map< int, QString > & providersByColumn );
-    void updateItems( const QStringList & columnsData, bool forLHS );
-    void setItemColors();
-
-    QUrlQuery getMissingItemQuery() const;
-
-    void addProvider( const QString & providerName, const QString & providerID );
-    const std::map< QString, QString > & getProviders() const { return fProviders; }
-
 
     QTreeWidgetItem * getItem( bool forLHS ) const;
-private:
+
+    QString getDirectionLabel() const;
+
+
+    void setItemColors( std::shared_ptr< CSettings > settings );
+    void updateItems( const QStringList & columnsData, bool forLHS, std::shared_ptr< CSettings > settings );
     QString fType;
     QString fName;
     std::map< QString, QString > fProviders;
 
-    std::shared_ptr< CMediaDataBase > fLHSServer;
-    std::shared_ptr< CMediaDataBase > fRHSServer;
+    QTreeWidgetItem * fDirItem{ nullptr };
+    std::shared_ptr< SMediaUserData > fLHSUserData;
+    std::shared_ptr< SMediaUserData > fRHSUserData;
 
     static std::function< QString( uint64_t ) > sMSecsToStringFunc;
 };
