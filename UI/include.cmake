@@ -1,12 +1,14 @@
 set(qtproject_SRCS
     MainWindow.cpp
-    SettingsDlg.cpp
     MediaData.cpp
+    SettingsDlg.cpp
+    UserDataDlg.cpp
 )
 
 set(qtproject_H
     MainWindow.h
     SettingsDlg.h
+    UserDataDlg.h
 )
 
 set(project_H
@@ -15,6 +17,7 @@ set(project_H
 set(qtproject_UIS
     MainWindow.ui
     SettingsDlg.ui
+    UserDataDlg.ui
 )
 
 
