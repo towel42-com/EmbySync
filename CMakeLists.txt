@@ -65,8 +65,8 @@ set( CPACK_PACKAGE_INSTALL_REGISTRY_KEY "${VENDOR}/${APP_NAME}" )
 SET( CPACK_PACKAGE_DESCRIPTION "Applicaiton to help manage your multiple Emby Servers" )
 
 SET( CPACK_GENERATOR ZIP NSIS )
-SET( CPACK_NSIS_MUI_ICON ${CMAKE_SOURCE_DIR}/UI/resources/application.ico )
-SET( CPACK_NSIS_MUI_UNIICON ${CMAKE_SOURCE_DIR}/UI/resources/application.ico )
+SET( CPACK_NSIS_MUI_ICON ${CMAKE_SOURCE_DIR}/UI/resources/embysync.ico )
+SET( CPACK_NSIS_MUI_UNIICON ${CMAKE_SOURCE_DIR}/UI/resources/embysync.ico )
 include( CPack )
 
 
