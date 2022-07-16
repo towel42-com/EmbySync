@@ -21,10 +21,12 @@
 // SOFTWARE.
 
 #include "Core/MediaData.h"
+#include "Core/Settings.h"
 #include "SABUtils/utils.h"
 
 #include <QTreeWidgetItem>
 #include <QTreeWidget>
+#include <QListWidget>
 
 void setItemColor( QTreeWidgetItem * item, int column, const QColor & clr )
 {
@@ -40,16 +42,19 @@ void setItemColor( QTreeWidgetItem * item, const QColor & clr )
 }
 
 template< typename T >
-void setItemColor( QTreeWidgetItem * lhs, QTreeWidgetItem * rhs, int column, const T & lhsValue, const T & rhsValue )
+void setItemColor( QTreeWidgetItem * lhs, QTreeWidgetItem * rhs, int column, const T & lhsValue, const T & rhsValue, bool rhsOlder, std::shared_ptr< CSettings > settings )
 {
     if ( lhsValue != rhsValue )
     {
-        setItemColor( lhs, column, Qt::yellow );
-        setItemColor( rhs, column, Qt::yellow );
+        auto older = settings->mediaSourceColor();
+        auto newer = settings->mediaDestColor();
+
+        setItemColor( lhs, column, rhsOlder ? newer : older );
+        setItemColor( rhs, column, rhsOlder ? older : newer );
     }
 }
 
-void CMediaData::setItemColors()
+void CMediaData::setItemColors( std::shared_ptr< CSettings > settings )
 {
     //if ( isMissing( true ) )
     //    setItemColor( fLHSServer->fItem, Qt::red );
@@ -57,47 +62,52 @@ void CMediaData::setItemColors()
     //    setItemColor( fRHSServer->fItem, Qt::red );
     if ( !hasMissingInfo() )
     {
-        if ( *fLHSServer != *fRHSServer )
+        if ( *lhsUserData() != *rhsUserData() )
         {
-            ::setItemColor( fLHSServer->fItem, fRHSServer->fItem, EColumn::eName, false, true );
-            ::setItemColor( fLHSServer->fItem, fRHSServer->fItem, EColumn::eFavorite, isFavorite( true ), isFavorite( false ) );
-            ::setItemColor( fLHSServer->fItem, fRHSServer->fItem, EColumn::ePlayed, isPlayed( true ), isPlayed( false ) );
-            ::setItemColor( fLHSServer->fItem, fRHSServer->fItem, EColumn::eLastPlayed, lastPlayed( true ), lastPlayed( false ) );
-            ::setItemColor( fLHSServer->fItem, fRHSServer->fItem, EColumn::ePlayCount, playCount( true ), playCount( false ) );
-            ::setItemColor( fLHSServer->fItem, fRHSServer->fItem, EColumn::ePlaybackPosition, playbackPositionTicks( true ), playbackPositionTicks( false ) );
+            bool rhsOlder = this->rhsLastPlayedOlder();
+            ::setItemColor( lhsUserData()->fItem, rhsUserData()->fItem, EColumn::eName, false, true, rhsOlder, settings );
+            ::setItemColor( lhsUserData()->fItem, rhsUserData()->fItem, EColumn::eFavorite, isFavorite( true ), isFavorite( false ), rhsOlder, settings );
+            ::setItemColor( lhsUserData()->fItem, rhsUserData()->fItem, EColumn::ePlayed, isPlayed( true ), isPlayed( false ), rhsOlder, settings );
+            ::setItemColor( lhsUserData()->fItem, rhsUserData()->fItem, EColumn::eLastPlayed, lastPlayed( true ), lastPlayed( false ), rhsOlder, settings );
+            ::setItemColor( lhsUserData()->fItem, rhsUserData()->fItem, EColumn::ePlayCount, playCount( true ), playCount( false ), rhsOlder, settings );
+            ::setItemColor( lhsUserData()->fItem, rhsUserData()->fItem, EColumn::ePlaybackPosition, playbackPositionTicks( true ), playbackPositionTicks( false ), rhsOlder, settings );
         }
     }
 }
 
-void CMediaData::createItems( QTreeWidget * lhsTree, QTreeWidget * rhsTree, const std::map< int, QString > & providersByColumn )
+std::pair< QTreeWidgetItem *, QTreeWidgetItem * > CMediaData::createItems( QTreeWidget * lhsTree, QTreeWidget * rhsTree, QTreeWidget * dirTree, const std::map< int, QString > & providersByColumn, std::shared_ptr< CSettings > settings )
 {
-    if ( !sMSecsToStringFunc )
-    {
-        setMSecsToStringFunc(
-            []( uint64_t msecs )
-            {
-                return NSABUtils::CTimeString( msecs ).toString( "dd:hh:mm:ss.zzz", true );
-            } );
-    }
-
     auto columns = getColumns( providersByColumn );
 
     if ( lhsTree )
-        fLHSServer->fItem = new QTreeWidgetItem( lhsTree, columns.first );
-    if ( rhsTree )
-        fRHSServer->fItem = new QTreeWidgetItem( rhsTree, columns.second );
+        lhsUserData()->fItem = new QTreeWidgetItem( lhsTree, columns.first );
+    if ( dirTree )
+    {
+        fDirItem = new QTreeWidgetItem( dirTree, QStringList() << getDirectionLabel() );
+        //fDirItem->setTextAlignment( 0, Qt::AlignHCenter );
+        if ( lhsTree )
+        {
+            auto sizeHint = lhsUserData()->fItem->sizeHint( 0 );
+            fDirItem->setSizeHint( 0, sizeHint );
+        }
+    }
 
-    setItemColors();
+    if ( rhsTree )
+        rhsUserData()->fItem = new QTreeWidgetItem( rhsTree, columns.second );
+
+    setItemColors( settings );
+
+    return { lhsUserData()->fItem, rhsUserData()->fItem };
 }
 
-void CMediaData::updateItems( const std::map< int, QString > & providersByColumn )
+void CMediaData::updateItems( const std::map< int, QString > & providersByColumn, std::shared_ptr< CSettings > settings )
 {
     auto bothColumns = getColumns( providersByColumn );
-    updateItems( bothColumns.first, true );
-    updateItems( bothColumns.second, false );
+    updateItems( bothColumns.first, true, settings );
+    updateItems( bothColumns.second, false, settings );
 }
 
-void CMediaData::updateItems( const QStringList & data, bool forLHS )
+void CMediaData::updateItems( const QStringList & data, bool forLHS, std::shared_ptr< CSettings > settings )
 {
     auto item = getItem( forLHS );
     Q_ASSERT( item && ( item->columnCount() == data.count() ) );
@@ -105,5 +115,5 @@ void CMediaData::updateItems( const QStringList & data, bool forLHS )
     {
         item->setText( ii, data[ ii ] );
     }
-    setItemColors();
+    setItemColors( settings );
 }
