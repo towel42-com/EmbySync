@@ -1,0 +1,15 @@
+{
+    "MaxItems": -1,
+    "MediaDestColor": "#ffff00",
+    "MediaSourceColor": "#ffff00",
+    "OnlyShowMediaWithDifferences": false,
+    "OnlyShowSyncableUsers": false,
+    "lhs": {
+        "api": "bff7356525234545ad26bc2395022758",
+        "url": "http://beachbox:8096"
+    },
+    "rhs": {
+        "api": "bff7356525234545ad26bc2395022758",
+        "url": "http://beachbox:8096"
+    }
+}
