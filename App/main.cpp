@@ -20,6 +20,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 #include "UI/MainWindow.h"
+#include "Core/MediaData.h"
+#include "SABUtils/utils.h"
+
 #include "Version.h"
 #include "SABUtils/SABUtilsResources.h"
 
@@ -28,6 +31,12 @@
 
 int main( int argc, char ** argv )
 {
+    CMediaData::setMSecsToStringFunc(
+        []( uint64_t msecs )
+        {
+            return NSABUtils::CTimeString( msecs ).toString( "dd:hh:mm:ss.zzz", true );
+        } );
+
     NSABUtils::initResources();
     Q_INIT_RESOURCE( EmbySync );
 
