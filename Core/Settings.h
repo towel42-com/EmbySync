@@ -70,6 +70,8 @@ public:
         return getUrl( false );
     }
 
+    QUrl getUrl( bool lhs ) const;
+
     QString lhsURL() const { return fLHSServer.first; }
     void setLHSURL( const QString & url );
 
@@ -91,6 +93,15 @@ public:
         fFileName.clear();
     }
 
+    QString mediaSourceColor() const { return fMediaSourceColor; }
+    void setMediaSourceColor( const QString & color );
+
+    QString mediaDestColor() const { return fMediaDestColor; }
+    void setMediaDestColor( const QString & color );
+
+    int maxItems() const { return fMaxItems; }
+    void setMaxItems( int maxItems );
+
     QString getServerName( bool lhs );
     bool onlyShowSyncableUsers() { return fOnlyShowSyncableUsers; };
     void setOnlyShowSyncableUsers( bool value ) { fOnlyShowSyncableUsers = value; };
@@ -102,13 +113,25 @@ public:
     QStringList recentProjectList() const;
 private:
     bool maybeSave( QWidget * parent, std::function<QString()> selectFileFunc, std::function<void( const QString & title, const QString & msg )> errorFunc );
-    QUrl getUrl( bool lhs ) const;
 
-    void updateValue( QString & lhs, const QString & rhs );
+    template< typename T >
+    void updateValue( T & lhs, const T & rhs )
+    {
+        if ( lhs != rhs )
+        {
+            lhs = rhs;
+            fChanged = true;
+        }
+    }
+
 
     QString fFileName;
     std::pair< QString, QString > fLHSServer;
     std::pair< QString, QString > fRHSServer;
+
+    QString fMediaSourceColor{ "yellow" };
+    QString fMediaDestColor{ "yellow" };
+    int fMaxItems{ 0 };
 
     bool fOnlyShowSyncableUsers{ true };
     bool fOnlyShowMediaWithDifferences{ true };

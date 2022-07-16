@@ -79,6 +79,23 @@ bool CSettings::load( const QString & fileName, std::function<void( const QStrin
         setOnlyShowMediaWithDifferences( true );
     else
         setOnlyShowMediaWithDifferences( json[ "OnlyShowSyncableUsers" ].toBool() );
+
+    if ( json.object().find( "MediaSourceColor" ) == json.object().end() )
+        setMediaSourceColor( "yellow" );
+    else
+        setMediaSourceColor( json[ "MediaSourceColor" ].toString() );
+
+    if ( json.object().find( "MediaDestColor" ) == json.object().end() )
+        setMediaDestColor( "yellow" );
+    else
+        setMediaDestColor( json[ "MediaDestColor" ].toString() );
+
+    if ( json.object().find( "MaxItems" ) == json.object().end() )
+        setMaxItems( -1 );
+    else
+        setMaxItems( json[ "MaxItems" ].toInt() );
+
+
     fChanged = false;
 
     addRecentProject( fFileName );
@@ -118,6 +135,10 @@ bool CSettings::save( std::function<void( const QString & title, const QString &
 
     root[ "OnlyShowSyncableUsers" ] = onlyShowSyncableUsers();
     root[ "OnlyShowMediaWithDifferences" ] = onlyShowMediaWithDifferences();
+
+    root[ "MediaSourceColor" ] = mediaSourceColor();
+    root[ "MediaDestColor" ] = mediaDestColor();
+    root[ "MaxItems" ] = maxItems();
 
     auto lhs = json.object();
 
@@ -169,15 +190,6 @@ QUrl CSettings::getUrl( bool lhs ) const
     return retVal;
 }
 
-void CSettings::updateValue( QString & lhs, const QString & rhs )
-{
-    if ( lhs != rhs )
-    {
-        lhs = rhs;
-        fChanged = true;
-    }
-}
-
 void CSettings::setLHSURL( const QString & url )
 {
     updateValue( fLHSServer.first, url );
@@ -196,6 +208,21 @@ void CSettings::setRHSURL( const QString & url )
 void CSettings::setRHSAPI( const QString & api )
 {
     updateValue( fRHSServer.second, api );
+}
+
+void CSettings::setMediaSourceColor( const QString & color )
+{
+    updateValue( fMediaSourceColor, color );
+}
+
+void CSettings::setMediaDestColor( const QString & color )
+{
+    updateValue( fMediaDestColor, color );
+}
+
+void CSettings::setMaxItems( int maxItems )
+{
+    updateValue( fMaxItems, maxItems );
 }
 
 QString CSettings::getServerName( bool lhs )
