@@ -22,6 +22,7 @@
 
 set(qtproject_SRCS
     MediaData.cpp
+    MediaModel.cpp
     SyncSystem.cpp
     Settings.cpp
     UserData.cpp
@@ -29,6 +30,7 @@ set(qtproject_SRCS
 
 set(qtproject_H
     SyncSystem.h
+    MediaModel.h
 )
 
 set(project_H

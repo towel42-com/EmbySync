@@ -1,6 +1,5 @@
 set(qtproject_SRCS
     MainWindow.cpp
-    MediaData.cpp
     SettingsDlg.cpp
     UserDataDlg.cpp
 )

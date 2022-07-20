@@ -30,6 +30,7 @@
 #include <QSettings>
 
 #include <QUrlQuery>
+#include <QColor>
 
 CSettings::CSettings()
 {
@@ -136,8 +137,8 @@ bool CSettings::save( std::function<void( const QString & title, const QString &
     root[ "OnlyShowSyncableUsers" ] = onlyShowSyncableUsers();
     root[ "OnlyShowMediaWithDifferences" ] = onlyShowMediaWithDifferences();
 
-    root[ "MediaSourceColor" ] = mediaSourceColor();
-    root[ "MediaDestColor" ] = mediaDestColor();
+    root[ "MediaSourceColor" ] = mediaSourceColor().name();
+    root[ "MediaDestColor" ] = mediaDestColor().name();
     root[ "MaxItems" ] = maxItems();
 
     auto lhs = json.object();
@@ -210,14 +211,47 @@ void CSettings::setRHSAPI( const QString & api )
     updateValue( fRHSServer.second, api );
 }
 
-void CSettings::setMediaSourceColor( const QString & color )
+QColor CSettings::getColor( const QColor & clr, bool forBackground /*= true */ ) const
+{
+    if (clr == Qt::black )
+    {
+        if ( !forBackground )
+            return QColor( Qt::white ).name();
+    }
+
+    if ( !forBackground )
+        return QString();
+    return clr;
+}
+
+QColor CSettings::mediaSourceColor( bool forBackground /*= true */ ) const
+{
+    return getColor( fMediaSourceColor, forBackground );
+}
+
+void CSettings::setMediaSourceColor( const QColor & color )
 {
     updateValue( fMediaSourceColor, color );
 }
 
-void CSettings::setMediaDestColor( const QString & color )
+QColor CSettings::mediaDestColor( bool forBackground /*= true */ ) const
+{
+    return getColor( fMediaDestColor, forBackground );
+}
+
+void CSettings::setMediaDestColor( const QColor & color )
 {
     updateValue( fMediaDestColor, color );
+}
+
+QColor CSettings::mediaDataMissingColor( bool forBackground /*= true */ ) const
+{
+    return getColor( fMediaDataMissingColor, forBackground );
+}
+
+void CSettings::setMediaDataMissingColor( const QColor & color )
+{
+    updateValue( fMediaDataMissingColor, color );
 }
 
 void CSettings::setMaxItems( int maxItems )
