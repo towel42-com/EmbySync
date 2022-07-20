@@ -113,6 +113,10 @@ public:
     bool onlyShowMediaWithDifferences() { return fOnlyShowMediaWithDifferences; };
     void setOnlyShowMediaWithDifferences( bool value ) { fOnlyShowMediaWithDifferences = value; };
 
+    bool showMediaWithIssues() { return fShowMediaWithIssues; };
+    void setShowMediaWithIssues( bool value ) { fShowMediaWithIssues = value; };
+
+    
     void addRecentProject( const QString & fileName );
     QStringList recentProjectList() const;
 private:
@@ -141,6 +145,7 @@ private:
 
     bool fOnlyShowSyncableUsers{ true };
     bool fOnlyShowMediaWithDifferences{ true };
+    bool fShowMediaWithIssues{ false };
     bool fChanged{ false };
 };
 

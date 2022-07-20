@@ -81,6 +81,12 @@ bool CSettings::load( const QString & fileName, std::function<void( const QStrin
     else
         setOnlyShowMediaWithDifferences( json[ "OnlyShowSyncableUsers" ].toBool() );
 
+    if ( json.object().find( "ShowMediaWithIssues" ) == json.object().end() )
+        setShowMediaWithIssues( false );
+    else
+        setShowMediaWithIssues( json[ "ShowMediaWithIssues" ].toBool() );
+    
+
     if ( json.object().find( "MediaSourceColor" ) == json.object().end() )
         setMediaSourceColor( "yellow" );
     else
@@ -136,6 +142,8 @@ bool CSettings::save( std::function<void( const QString & title, const QString &
 
     root[ "OnlyShowSyncableUsers" ] = onlyShowSyncableUsers();
     root[ "OnlyShowMediaWithDifferences" ] = onlyShowMediaWithDifferences();
+    root[ "ShowMediaWithIssues" ] = showMediaWithIssues();
+    
 
     root[ "MediaSourceColor" ] = mediaSourceColor().name();
     root[ "MediaDestColor" ] = mediaDestColor().name();
