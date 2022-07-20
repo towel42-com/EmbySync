@@ -42,35 +42,24 @@ CUserDataDlg::CUserDataDlg( bool origFromLHS, std::shared_ptr< CUserData > userD
     fSettings( settings )
 {
     fImpl->setupUi( this );
-    connect( fImpl->setTimeToNowBtn, &QToolButton::clicked,
-             [ this ]()
-             {
-                 fImpl->lastPlayedDate->setDateTime( QDateTime::currentDateTimeUtc() );
-             } );
-    connect( fImpl->hasBeenPlayed, &QCheckBox::clicked,
-             [this]()
-             {
-                 if ( fImpl->hasBeenPlayed->isChecked() )
-                     fImpl->lastPlayedDate->setDateTime( QDateTime::currentDateTimeUtc() );
-             } );
 
     connect( fImpl->buttonBox->addButton( tr( "Apply to LHS Server" ), QDialogButtonBox::ButtonRole::ActionRole ), &QPushButton::clicked,
              [this]()
              {
-                 fSyncSystem->updateUserDataForMedia( fMediaData, getMediaData(), true );
+                 fSyncSystem->updateUserDataForMedia( fMediaData, createMediaUserData(), true );
              } );
 
     connect( fImpl->buttonBox->addButton( tr( "Apply to RHS Server" ), QDialogButtonBox::ButtonRole::ActionRole ), &QPushButton::clicked,
              [this]()
              {
-                 fSyncSystem->updateUserDataForMedia( fMediaData, getMediaData(), false );
+                 fSyncSystem->updateUserDataForMedia( fMediaData, createMediaUserData(), false );
              } );
 
     connect( fImpl->buttonBox->addButton( tr( "Apply to All Servers" ), QDialogButtonBox::ButtonRole::ActionRole ), &QPushButton::clicked,
              [this]()
              {
-                 fSyncSystem->updateUserDataForMedia( fMediaData, getMediaData(), true );
-                 fSyncSystem->updateUserDataForMedia( fMediaData, getMediaData(), false );
+                 fSyncSystem->updateUserDataForMedia( fMediaData, createMediaUserData(), true );
+                 fSyncSystem->updateUserDataForMedia( fMediaData, createMediaUserData(), false );
              } );
 
     load();
@@ -92,25 +81,16 @@ void CUserDataDlg::load()
     fImpl->userName->setText( fUserData->name() );
     fImpl->mediaName->setText( fMediaData->name() );
 
-    fImpl->isFavorite->setChecked( fMediaData->isFavorite( fFromLHS ) );
-    fImpl->hasBeenPlayed->setChecked( fMediaData->isPlayed( fFromLHS ) );
-    fImpl->lastPlayedDate->setDateTime( fMediaData->lastPlayed( fFromLHS ) );
-    fImpl->playbackPosition->setTime( fMediaData->playbackPositionTime( fFromLHS ) );
-    fImpl->playCount->setValue( fMediaData->playCount( fFromLHS ) );
+    fImpl->userMedia->setReadOnly( false );
+    fImpl->userMedia->setMediaUserData( fMediaData->userMediaData( fFromLHS ) );
 }
 
 void CUserDataDlg::save()
 {
 }
 
-std::shared_ptr< SMediaUserData > CUserDataDlg::getMediaData() const
+std::shared_ptr< SMediaUserData > CUserDataDlg::createMediaUserData() const
 {
-    auto retVal = std::make_shared< SMediaUserData >();
-    retVal->fIsFavorite = fImpl->isFavorite->isChecked();
-    retVal->fPlayed = fImpl->hasBeenPlayed->isChecked();
-    retVal->fLastPlayedDate = fImpl->lastPlayedDate->dateTime();
-    retVal->fPlayCount = fImpl->playCount->value();
-    retVal->fPlaybackPositionTicks = ( 10000ULL * fImpl->playbackPosition->time().msecsSinceStartOfDay() );
-    return retVal;
+    return fImpl->userMedia->createMediaUserData();
 }
 
