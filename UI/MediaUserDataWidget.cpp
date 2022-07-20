@@ -25,6 +25,8 @@
 
 #include "ui_MediaUserDataWidget.h"
 
+#include <QDebug>
+
 
 CMediaUserDataWidget::CMediaUserDataWidget( QWidget * parentWidget /*= nullptr */ ) :
     QGroupBox( parentWidget ),
