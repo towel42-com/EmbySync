@@ -50,7 +50,8 @@ enum class ERequestType
     eGetMediaInfo,
     eMediaData,
     eReloadMediaData,
-    eUpdateData
+    eUpdateData,
+    eUpdateFavorite
 };
 
 QString toString( ERequestType request );
@@ -118,15 +119,17 @@ public:
     void forEachUser( std::function< void( std::shared_ptr< CUserData > userData ) > onUser );
     void forEachMedia( std::function< void( std::shared_ptr< CMediaData > media ) > onMediaItem );
 
+    std::unordered_set< std::shared_ptr< CMediaData > > getAllMedia() const { return fAllMedia; }
+
     std::shared_ptr< CUserData > currUser() const;
 
-    void requestUpdateUserDataForMedia( std::shared_ptr< CMediaData > mediaData, std::shared_ptr< SMediaUserData > newData, bool sendToLHS );
-
+    void updateUserDataForMedia( std::shared_ptr<CMediaData> mediaData, std::shared_ptr<SMediaUserData> newData, bool lhsNeedsUpdating );
 Q_SIGNALS:
     void sigAddToLog( const QString & msg );
     void sigLoadingUsersFinished();
     void sigUserMediaLoaded();
     void sigUserMediaCompletelyLoaded();
+    void sigFindingMediaInfoFinished();
 public Q_SLOTS:
     void slotFindMissingMedia();
 private:
@@ -168,6 +171,11 @@ private:
     void requestMediaInformation( std::shared_ptr< CMediaData > mediaData, bool forLHS );
 
     void loadMediaList( const QByteArray & data, bool isLHS );
+
+    void loadMedia( QJsonObject & media, bool isLHSServer );
+
+    void addMediaInfo( std::shared_ptr<CMediaData> mediaData, const QJsonObject & mediaInfo, bool isLHSServer );
+
     void loadMediaData();
     void requestMediaData( std::shared_ptr< CMediaData > mediaData, bool isLHS, bool reload );
     void loadMediaData( const QByteArray & data, bool isLHS, const QString & id );
@@ -179,6 +187,7 @@ private:
     void setMediaForProvider( const QString & providerName, const QString & providerID, std::shared_ptr< CMediaData > mediaData, bool isLHS );
 
     void requestSetFavorite( std::shared_ptr< CMediaData > mediaData, std::shared_ptr< SMediaUserData > newData, bool sendToLHS );
+    void requestUpdateUserDataForMedia( std::shared_ptr< CMediaData > mediaData, std::shared_ptr< SMediaUserData > newData, bool sendToLHS );
 
     std::shared_ptr< CSettings > fSettings;
 

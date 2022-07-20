@@ -147,23 +147,22 @@ void CMediaData::loadUserDataFromJSON( const QJsonObject & media, bool isLHSServ
     }
 }
 
-bool CMediaData::userDataEqual( bool includeTimestamp ) const
+bool CMediaData::userDataEqual() const
 {
-    return fLHSUserData->userDataEqual( *fRHSUserData, includeTimestamp );
+    return fLHSUserData->userDataEqual( *fRHSUserData );
 }
 
 bool operator==( const SMediaUserData & lhs, const SMediaUserData & rhs )
 {
-    return lhs.userDataEqual( rhs, false );
+    return lhs.userDataEqual( rhs );
 }
 
-bool SMediaUserData::userDataEqual( const SMediaUserData & rhs, bool includeTimeStamp ) const
+bool SMediaUserData::userDataEqual( const SMediaUserData & rhs ) const
 {
     auto equal = true;
     equal = equal && fIsFavorite == rhs.fIsFavorite;
     equal = equal && fPlayed == rhs.fPlayed;
-    if ( includeTimeStamp )
-        equal = equal && fLastPlayedDate == rhs.fLastPlayedDate;
+    equal = equal && fLastPlayedDate == rhs.fLastPlayedDate;
     equal = equal && fPlayCount == rhs.fPlayCount;
     equal = equal && fPlaybackPositionTicks == rhs.fPlaybackPositionTicks;
     return equal;
@@ -272,6 +271,14 @@ QUrlQuery CMediaData::getSearchForMediaQuery() const
     return query;
 }
 
+QString CMediaData::getProviderID( const QString & provider )
+{
+    auto pos = fProviders.find( provider );
+    if ( pos == fProviders.end() )
+        return {};
+    return ( *pos ).second;
+}
+
 void CMediaData::addProvider( const QString & providerName, const QString & providerID )
 {
     fProviders[ providerName ] = providerID;
@@ -298,48 +305,51 @@ bool CMediaData::beenLoaded( bool isLHS ) const
     return isLHS ? fLHSUserData->fBeenLoaded : fRHSUserData->fBeenLoaded;
 }
 
-bool CMediaData::rhsLastPlayedOlder() const
+bool CMediaData::rhsNeedsUpdating() const
 {
     //qDebug() << fLHSServer->fLastPlayedDate;
     //qDebug() << fRHSServer->fLastPlayedDate;
     return fLHSUserData->fLastPlayedDate > fRHSUserData->fLastPlayedDate;
 }
 
-bool CMediaData::lhsLastPlayedOlder() const
+bool CMediaData::lhsNeedsUpdating() const
 {
     //qDebug() << fLHSServer->fLastPlayedDate;
     //qDebug() << fRHSServer->fLastPlayedDate;
     return fRHSUserData->fLastPlayedDate > fLHSUserData->fLastPlayedDate;
 }
 
-void CMediaData::setItem( QTreeWidgetItem * item, bool lhs )
-{
-    if ( lhs )
-        fLHSUserData->fItem = item;
-    else if ( !lhs )
-        fRHSUserData->fItem = item;
-}
-
-QTreeWidgetItem * CMediaData::getItem( bool lhs )
-{
-    return lhs ? fLHSUserData->fItem : fRHSUserData->fItem;
-}
-
-QTreeWidgetItem * CMediaData::getItem( bool forLHS ) const
-{
-    return forLHS ? fLHSUserData->fItem : fRHSUserData->fItem;
-}
-
 QString CMediaData::getDirectionLabel() const
 {
-    if ( userDataEqual( true ) )
-        return "   =   ";
-    if ( rhsLastPlayedOlder() )
-        return "<<<";
-    else if ( lhsLastPlayedOlder() )
-        return ">>>";
+    QString retVal;
+    if ( hasMissingInfo() )
+        retVal = "<NA>";
+    else if ( userDataEqual() )
+        retVal = "   =   ";
+    else if ( rhsNeedsUpdating() )
+        retVal = ">>>";
+    else if ( lhsNeedsUpdating() )
+        retVal = "<<<";
     else
-        return "===";
+        retVal = QString();
+
+    return retVal;
+}
+
+int CMediaData::getDirectionValue() const
+{
+    int retVal{ 0 };
+    if ( hasMissingInfo() )
+        retVal = 0;
+    else if ( userDataEqual() )
+        retVal = 2;
+    else if ( rhsNeedsUpdating() )
+        retVal = 1;
+    else if ( lhsNeedsUpdating() )
+        retVal = 3;
+    else
+        retVal = 0;
+    return retVal;
 }
 
 void CMediaData::updateFromOther( std::shared_ptr< CMediaData > other, bool toLHS )
@@ -348,36 +358,4 @@ void CMediaData::updateFromOther( std::shared_ptr< CMediaData > other, bool toLH
         fLHSUserData = other->fLHSUserData;
     else
         fRHSUserData = other->fRHSUserData;
-}
-
-QStringList CMediaData::getColumns( bool forLHS )
-{
-    auto retVal = QStringList()
-        << fName
-        << getMediaID( forLHS )
-        << ( isFavorite( forLHS ) ? "Yes" : "No" )
-        << ( isPlayed( forLHS ) ? "Yes" : "No" )
-        << lastPlayed( forLHS ).toString()
-        << QString::number( playCount( forLHS ) )
-        << playbackPosition( forLHS )
-        ;
-    return retVal;
-}
-
-std::pair< QStringList, QStringList > CMediaData::getColumns( const std::map< int, QString > & providersByColumn )
-{
-    QStringList providerColumns;
-    for ( auto && ii : providersByColumn )
-    {
-        auto pos = fProviders.find( ii.second );
-        if ( pos == fProviders.end() )
-            providerColumns << QString();
-        else
-            providerColumns << ( *pos ).second;
-    }
-
-    auto lhsColumns = getColumns( true ) << providerColumns;
-    auto rhsColumns = getColumns( false ) << providerColumns;
-
-    return { lhsColumns, rhsColumns };
 }

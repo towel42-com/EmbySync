@@ -23,19 +23,23 @@
 #include "UserDataDlg.h"
 #include "Core/UserData.h"
 #include "Core/MediaData.h"
+#include "Core/SyncSystem.h"
 
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QColorDialog>
+#include <QPushButton>
 
 #include "ui_UserDataDlg.h"
 
-CUserDataDlg::CUserDataDlg( std::shared_ptr< CUserData > userData, std::shared_ptr< CMediaData > mediaData, const QString & serverName, bool isLHS, QWidget * parentWidget )
+CUserDataDlg::CUserDataDlg( bool origFromLHS, std::shared_ptr< CUserData > userData, std::shared_ptr< CMediaData > mediaData, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CSettings > settings, QWidget * parentWidget )
     : QDialog( parentWidget ),
     fImpl( new Ui::CUserDataDlg ),
     fUserData( userData ),
-    fServerInfo( serverName, isLHS ),
-    fMediaData( mediaData )
+    fFromLHS( origFromLHS ),
+    fMediaData( mediaData ),
+    fSyncSystem( syncSystem ),
+    fSettings( settings )
 {
     fImpl->setupUi( this );
     connect( fImpl->setTimeToNowBtn, &QToolButton::clicked,
@@ -43,6 +47,32 @@ CUserDataDlg::CUserDataDlg( std::shared_ptr< CUserData > userData, std::shared_p
              {
                  fImpl->lastPlayedDate->setDateTime( QDateTime::currentDateTimeUtc() );
              } );
+    connect( fImpl->hasBeenPlayed, &QCheckBox::clicked,
+             [this]()
+             {
+                 if ( fImpl->hasBeenPlayed->isChecked() )
+                     fImpl->lastPlayedDate->setDateTime( QDateTime::currentDateTimeUtc() );
+             } );
+
+    connect( fImpl->buttonBox->addButton( tr( "Apply to LHS Server" ), QDialogButtonBox::ButtonRole::ActionRole ), &QPushButton::clicked,
+             [this]()
+             {
+                 fSyncSystem->updateUserDataForMedia( fMediaData, getMediaData(), true );
+             } );
+
+    connect( fImpl->buttonBox->addButton( tr( "Apply to RHS Server" ), QDialogButtonBox::ButtonRole::ActionRole ), &QPushButton::clicked,
+             [this]()
+             {
+                 fSyncSystem->updateUserDataForMedia( fMediaData, getMediaData(), false );
+             } );
+
+    connect( fImpl->buttonBox->addButton( tr( "Apply to All Servers" ), QDialogButtonBox::ButtonRole::ActionRole ), &QPushButton::clicked,
+             [this]()
+             {
+                 fSyncSystem->updateUserDataForMedia( fMediaData, getMediaData(), true );
+                 fSyncSystem->updateUserDataForMedia( fMediaData, getMediaData(), false );
+             } );
+
     load();
 }
 
@@ -60,14 +90,13 @@ void CUserDataDlg::accept()
 void CUserDataDlg::load()
 {
     fImpl->userName->setText( fUserData->name() );
-    fImpl->serverName->setText( fServerInfo.first );
     fImpl->mediaName->setText( fMediaData->name() );
 
-    fImpl->isFavorite->setChecked( fMediaData->isFavorite( fServerInfo.second ) );
-    fImpl->hasBeenPlayed->setChecked( fMediaData->isPlayed( fServerInfo.second ) );
-    fImpl->lastPlayedDate->setDateTime( fMediaData->lastPlayed( fServerInfo.second ) );
-    fImpl->playbackPosition->setTime( fMediaData->playbackPositionTime( fServerInfo.second ) );
-    fImpl->playCount->setValue( fMediaData->playCount( fServerInfo.second ) );
+    fImpl->isFavorite->setChecked( fMediaData->isFavorite( fFromLHS ) );
+    fImpl->hasBeenPlayed->setChecked( fMediaData->isPlayed( fFromLHS ) );
+    fImpl->lastPlayedDate->setDateTime( fMediaData->lastPlayed( fFromLHS ) );
+    fImpl->playbackPosition->setTime( fMediaData->playbackPositionTime( fFromLHS ) );
+    fImpl->playCount->setValue( fMediaData->playCount( fFromLHS ) );
 }
 
 void CUserDataDlg::save()

@@ -34,13 +34,15 @@ namespace Ui
 class QLabel;
 class CUserData;
 class CMediaData;
+class CSyncSystem;
+class CSettings;
 struct SMediaUserData;
 
 class CUserDataDlg : public QDialog
 {
     Q_OBJECT
 public:
-    CUserDataDlg( std::shared_ptr< CUserData > userData, std::shared_ptr< CMediaData > mediaData, const QString & serverName, bool isLHS, QWidget * parentWidget =nullptr);
+    CUserDataDlg( bool origFromLHS, std::shared_ptr< CUserData > userData, std::shared_ptr< CMediaData > mediaData, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CSettings > settings, QWidget * parentWidget=nullptr );
 
     virtual ~CUserDataDlg() override;
     virtual void accept() override;
@@ -54,9 +56,12 @@ public Q_SLOTS:
 private:
 
     std::unique_ptr< Ui::CUserDataDlg > fImpl;
+
     std::shared_ptr< CUserData > fUserData;
-    std::pair< QString, bool > fServerInfo;
+    bool fFromLHS{ false };
     std::shared_ptr< CMediaData > fMediaData;
+    std::shared_ptr< CSyncSystem > fSyncSystem;
+    std::shared_ptr< CSettings > fSettings;
 
 };
 #endif 

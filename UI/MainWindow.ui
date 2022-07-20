@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1093</width>
-    <height>660</height>
+    <width>1097</width>
+    <height>632</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,7 +16,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_5">
     <item>
-     <widget class="QSplitter" name="splitter_2">
+     <widget class="QSplitter" name="splitter">
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
@@ -24,10 +24,10 @@
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <widget class="QWidget" name="layoutWidget">
+       <widget class="QWidget" name="layoutWidget_1">
         <layout class="QVBoxLayout" name="verticalLayout">
          <item>
-          <widget class="QLabel" name="label">
+          <widget class="QLabel" name="usersLabel">
            <property name="text">
             <string>Users:</string>
            </property>
@@ -60,7 +60,7 @@
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="layoutWidget">
+       <widget class="QWidget" name="layoutWidget_2">
         <layout class="QVBoxLayout" name="verticalLayout_4">
          <item>
           <widget class="QLabel" name="lhsServerLabel">
@@ -70,7 +70,10 @@
           </widget>
          </item>
          <item>
-          <widget class="QTreeWidget" name="lhsMedia">
+          <widget class="QTreeView" name="lhsMedia">
+           <property name="horizontalScrollBarPolicy">
+            <enum>Qt::ScrollBarAsNeeded</enum>
+           </property>
            <property name="alternatingRowColors">
             <bool>true</bool>
            </property>
@@ -86,47 +89,14 @@
            <property name="sortingEnabled">
             <bool>true</bool>
            </property>
-           <attribute name="headerCascadingSectionResizes">
+           <attribute name="headerHighlightSections">
             <bool>true</bool>
            </attribute>
-           <attribute name="headerShowSortIndicator" stdset="0">
-            <bool>true</bool>
-           </attribute>
-           <column>
-            <property name="text">
-             <string>Name</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>ID</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Played on Server?</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Is Favorite?</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Last Played Pos</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Last Modified Timestamp</string>
-            </property>
-           </column>
           </widget>
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="layoutWidget">
+       <widget class="QWidget" name="layoutWidget_3">
         <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
           <widget class="QLabel" name="dirLabel">
@@ -142,18 +112,12 @@
           </widget>
          </item>
          <item>
-          <widget class="QTreeWidget" name="dirTree">
-           <property name="maximumSize">
-            <size>
-             <width>40</width>
-             <height>16777215</height>
-            </size>
-           </property>
+          <widget class="QTreeView" name="directionTree">
            <property name="verticalScrollBarPolicy">
             <enum>Qt::ScrollBarAlwaysOff</enum>
            </property>
            <property name="horizontalScrollBarPolicy">
-            <enum>Qt::ScrollBarAsNeeded</enum>
+            <enum>Qt::ScrollBarAlwaysOff</enum>
            </property>
            <property name="indentation">
             <number>0</number>
@@ -164,16 +128,30 @@
            <property name="itemsExpandable">
             <bool>false</bool>
            </property>
-           <column>
-            <property name="text">
-             <string/>
-            </property>
-           </column>
+           <property name="sortingEnabled">
+            <bool>true</bool>
+           </property>
           </widget>
+         </item>
+         <item>
+          <spacer name="scrollSpacer">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeType">
+            <enum>QSizePolicy::Fixed</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
          </item>
         </layout>
        </widget>
-       <widget class="QWidget" name="layoutWidget_2">
+       <widget class="QWidget" name="layoutWidget_4">
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <item>
           <widget class="QLabel" name="rhsServerLabel">
@@ -183,7 +161,10 @@
           </widget>
          </item>
          <item>
-          <widget class="QTreeWidget" name="rhsMedia">
+          <widget class="QTreeView" name="rhsMedia">
+           <property name="horizontalScrollBarPolicy">
+            <enum>Qt::ScrollBarAsNeeded</enum>
+           </property>
            <property name="alternatingRowColors">
             <bool>true</bool>
            </property>
@@ -199,42 +180,9 @@
            <property name="sortingEnabled">
             <bool>true</bool>
            </property>
-           <attribute name="headerCascadingSectionResizes">
+           <attribute name="headerHighlightSections">
             <bool>true</bool>
            </attribute>
-           <attribute name="headerShowSortIndicator" stdset="0">
-            <bool>true</bool>
-           </attribute>
-           <column>
-            <property name="text">
-             <string>Name</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Media ID</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Played on Server?</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Is Favorite?</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Last Played Pos</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Last Modified Timestamp</string>
-            </property>
-           </column>
           </widget>
          </item>
         </layout>
@@ -253,6 +201,13 @@
       </widget>
      </widget>
     </item>
+    <item>
+     <widget class="QLabel" name="mediaSummaryLabel">
+      <property name="text">
+       <string>Media Summary:</string>
+      </property>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -260,7 +215,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1093</width>
+     <width>1097</width>
      <height>22</height>
     </rect>
    </property>

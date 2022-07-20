@@ -24,6 +24,7 @@
 #define _SETTINGS_H
 
 #include <QString>
+#include <QColor>
 #include <memory>
 #include <tuple>
 #include <QUrl>
@@ -93,11 +94,14 @@ public:
         fFileName.clear();
     }
 
-    QString mediaSourceColor() const { return fMediaSourceColor; }
-    void setMediaSourceColor( const QString & color );
+    QColor mediaSourceColor( bool forBackground = true ) const;
+    void setMediaSourceColor( const QColor & color );
 
-    QString mediaDestColor() const { return fMediaDestColor; }
-    void setMediaDestColor( const QString & color );
+    QColor mediaDestColor( bool forBackground = true ) const;
+    void setMediaDestColor( const QColor & color );
+
+    QColor mediaDataMissingColor( bool forBackground = true ) const;
+    void setMediaDataMissingColor( const QColor & color );
 
     int maxItems() const { return fMaxItems; }
     void setMaxItems( int maxItems );
@@ -112,6 +116,7 @@ public:
     void addRecentProject( const QString & fileName );
     QStringList recentProjectList() const;
 private:
+    QColor getColor( const QColor & clr, bool forBackground /*= true */ ) const;
     bool maybeSave( QWidget * parent, std::function<QString()> selectFileFunc, std::function<void( const QString & title, const QString & msg )> errorFunc );
 
     template< typename T >
@@ -129,8 +134,9 @@ private:
     std::pair< QString, QString > fLHSServer;
     std::pair< QString, QString > fRHSServer;
 
-    QString fMediaSourceColor{ "yellow" };
-    QString fMediaDestColor{ "yellow" };
+    QColor fMediaSourceColor{ "yellow" };
+    QColor fMediaDestColor{ "yellow" };
+    QColor fMediaDataMissingColor{ "red" };
     int fMaxItems{ 0 };
 
     bool fOnlyShowSyncableUsers{ true };

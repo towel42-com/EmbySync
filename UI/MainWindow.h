@@ -39,16 +39,30 @@ class CUserData;
 class CSettings;
 class CSyncSystem;
 class QProgressDialog;
+class CMediaModel;
+class CMediaFilterModel;
+class QTreeView;
+
 
 class CMainWindow : public QMainWindow
 {
     Q_OBJECT
 public:
+    enum class EWhichTree
+    {
+        eLHS,
+        eDir,
+        eRHS
+    };
     CMainWindow( QWidget * parent = nullptr );
+
     virtual ~CMainWindow() override;
 
     virtual void closeEvent( QCloseEvent * closeEvent ) override;
+    virtual void showEvent( QShowEvent * event ) override;
     virtual bool eventFilter( QObject * obj, QEvent * event ) override;
+Q_SIGNALS:
+
 public Q_SLOTS:
     void slotSettings();
 
@@ -62,8 +76,9 @@ public Q_SLOTS:
     void slotLHSMediaDoubleClicked();
 
     void slotRHSMediaDoubleClicked();
+    void slotPendingMediaUpdate();
 private Q_SLOTS:
-    void slotCurrentItemChanged( QTreeWidgetItem *, QTreeWidgetItem * );
+    void slotCurrentUserChanged( QTreeWidgetItem *, QTreeWidgetItem * );
 
     void slotReloadServers();
     void slotReloadCurrentUser();
@@ -75,8 +90,11 @@ private Q_SLOTS:
 
     void slotLoadingUsersFinished();
     void slotUserMediaLoaded();
+
+    void slotSetCurrentMediaItem( const QModelIndex & current, const QModelIndex & previous );
 private:
-    void changeMediaUserData( QTreeWidgetItem * item );
+    void hideColumns( QTreeView * treeView, EWhichTree whichTree );
+    void changeMediaUserData( QModelIndex idx );
 
     void setupProgressDlg( const QString & title );
 
@@ -99,17 +117,15 @@ private:
     void loadAllMedia( bool isLHS );
 
 
-    void updateProviderColumns( std::shared_ptr< CMediaData > ii );
-
     std::unique_ptr< Ui::CMainWindow > fImpl;
     std::shared_ptr< CSettings > fSettings;
     std::shared_ptr< CSyncSystem > fSyncSystem;
 
-    std::unordered_set< QString > fProviderColumnsByName;
-    std::map< int, QString > fProviderColumnsByColumn;
-
     QProgressDialog * fProgressDlg{ nullptr };
 
-    std::map< QTreeWidgetItem *, std::shared_ptr< CMediaData > > fMediaItems;
+    CMediaModel * fMediaModel{ nullptr };
+    CMediaFilterModel * fFilterModel{ nullptr };
+    QTimer * fPendingMediaUpdateTimer{ nullptr };
+
 };
 #endif 
