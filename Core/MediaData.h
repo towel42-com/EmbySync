@@ -47,6 +47,14 @@ struct SMediaUserData
     uint64_t fPlayCount;
     uint64_t fPlaybackPositionTicks; // 1 tick = 10000 ms
 
+    uint64_t playbackPositionMSecs() const;
+    void setPlaybackPositionMSecs( uint64_t msecs );
+
+    QTime playbackPositionTime() const;
+    void setPlaybackPosition( const QTime & time );
+
+    QString playbackPosition() const;
+
     bool userDataEqual( const SMediaUserData & rhs ) const;
 
     QJsonObject toJSON() const;
@@ -77,6 +85,7 @@ public:
 
     static QStringList getHeaderLabels();
     static void setMSecsToStringFunc( std::function< QString( uint64_t ) > func );
+    static std::function< QString( uint64_t ) > mecsToStringFunc();
     static QString computeName( QJsonObject & media );
 
     CMediaData( const QString & name, const QString & type );
@@ -118,8 +127,11 @@ public:
 
     QDateTime lastPlayed( bool lhs ) const;
     uint64_t playCount( bool lhs ) const;
-    std::shared_ptr<SMediaUserData> lhsUserData() const { return fLHSUserData; }
-    std::shared_ptr<SMediaUserData> rhsUserData() const { return fRHSUserData; }
+
+    std::shared_ptr<SMediaUserData> userMediaData( bool lhs ) const { return lhs ? fLHSUserMediaData : fRHSUserMediaData; }
+
+    std::shared_ptr<SMediaUserData> lhsUserMediaData() const { return fLHSUserMediaData; }
+    std::shared_ptr<SMediaUserData> rhsUserMediaData() const { return fRHSUserMediaData; }
 
     QString getDirectionLabel() const;
     int getDirectionValue() const;
@@ -130,8 +142,8 @@ private:
     QString fName;
     std::map< QString, QString > fProviders;
 
-    std::shared_ptr< SMediaUserData > fLHSUserData;
-    std::shared_ptr< SMediaUserData > fRHSUserData;
+    std::shared_ptr< SMediaUserData > fLHSUserMediaData;
+    std::shared_ptr< SMediaUserData > fRHSUserMediaData;
 
     static std::function< QString( uint64_t ) > sMSecsToStringFunc;
 };
