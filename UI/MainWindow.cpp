@@ -53,7 +53,6 @@ CMainWindow::CMainWindow( QWidget * parent )
     fImpl->directionTree->setMaximumWidth( 40 );
     fImpl->directionTree->header()->setMaximumWidth( 40 );
 
-
     int scrollBarExtent = 2* fImpl->lhsMedia->horizontalScrollBar()->style()->pixelMetric( QStyle::PM_ScrollBarExtent, nullptr, this );
     fImpl->scrollSpacer->changeSize( 20, scrollBarExtent, QSizePolicy::Minimum, QSizePolicy::Fixed );
     fSettings = std::make_shared< CSettings >();
@@ -178,19 +177,23 @@ CMainWindow::CMainWindow( QWidget * parent )
     connect( fImpl->rhsMedia->horizontalScrollBar(), &QScrollBar::sliderMoved, fImpl->lhsMedia->horizontalScrollBar(), &QScrollBar::setValue );
     connect( fImpl->rhsMedia->horizontalScrollBar(), &QScrollBar::valueChanged, fImpl->lhsMedia->horizontalScrollBar(), &QScrollBar::setValue );
 
+    connect( fImpl->applyToLeft, &QToolButton::clicked, this, &CMainWindow::slotApplyToLeft );
+    connect( fImpl->applyToRight, &QToolButton::clicked, this, &CMainWindow::slotApplyToRight );
+    connect( fImpl->uploadUserMediaData, &QToolButton::clicked, this, &CMainWindow::slotUploadUserMediaData );
+
     fImpl->lhsMedia->horizontalScrollBar()->installEventFilter( this );
     fImpl->rhsMedia->horizontalScrollBar()->installEventFilter( this );
-    fImpl->mainSplitter->setStretchFactor( 0, 1 );
-    fImpl->mainSplitter->setStretchFactor( 1, 1 );
-    fImpl->mainSplitter->setStretchFactor( 2, 0 );
-    fImpl->mainSplitter->setStretchFactor( 3, 1 );
+    fImpl->upperSplitter->setStretchFactor( 0, 1 );
+    fImpl->upperSplitter->setStretchFactor( 1, 1 );
+    fImpl->upperSplitter->setStretchFactor( 2, 0 );
+    fImpl->upperSplitter->setStretchFactor( 3, 1 );
 
-    connect( fImpl->mainSplitter, &QSplitter::splitterMoved,
+    connect( fImpl->upperSplitter, &QSplitter::splitterMoved,
              [this]( int /*pos*/, int index )
              {
                  if ( ( index == 2 ) || ( index == 3 ) )
                  {
-                     auto sizes = fImpl->mainSplitter->sizes();
+                     auto sizes = fImpl->upperSplitter->sizes();
                      auto newValue = sizes[ 2 ];
                      auto diff = newValue - 40;
                      sizes[ 2 ] = 40;
@@ -202,9 +205,10 @@ CMainWindow::CMainWindow( QWidget * parent )
                      {
                          sizes[ 1 ] += diff;
                      }
-                     fImpl->mainSplitter->setSizes( sizes );
+                     fImpl->upperSplitter->setSizes( sizes );
                  }
              } );
+
 
     auto recentProjects = fSettings->recentProjectList();
     if ( !recentProjects.isEmpty() )
@@ -215,6 +219,7 @@ CMainWindow::CMainWindow( QWidget * parent )
                                 loadFile( project );
                             } );
     }
+    slotSetCurrentMediaItem( QModelIndex(), QModelIndex() );
 }
 
 void CMainWindow::hideColumns( QTreeView * treeView, EWhichTree whichTree )
@@ -245,20 +250,27 @@ void CMainWindow::slotSetCurrentMediaItem( const QModelIndex & current, const QM
     fImpl->lhsMedia->setCurrentIndex( current );
     fImpl->directionTree->setCurrentIndex( current );
     fImpl->rhsMedia->setCurrentIndex( current );
+
+    auto mediaInfo = getMediaData( current );
+
+    fImpl->currMediaBox->setEnabled( mediaInfo.get() != nullptr );
+    fImpl->currMediaName->setText( mediaInfo ? mediaInfo->name() : QString() );
+    fImpl->lhsUserMediaData->setMediaUserData( mediaInfo ? mediaInfo->userMediaData( true ) : std::shared_ptr< SMediaUserData >()  );
+    fImpl->rhsUserMediaData->setMediaUserData( mediaInfo ? mediaInfo->userMediaData( false ) : std::shared_ptr< SMediaUserData >() );
 }
 
 
 void CMainWindow::showEvent( QShowEvent * /*event*/ )
 {
-    if ( ( fImpl->mainSplitter->sizes()[ 2 ] != 0 ) && ( fImpl->mainSplitter->sizes()[ 2 ] != 40 ) )
+    if ( ( fImpl->upperSplitter->sizes()[ 2 ] != 0 ) && ( fImpl->upperSplitter->sizes()[ 2 ] != 40 ) )
     {
-        auto sizes = fImpl->mainSplitter->sizes();
+        auto sizes = fImpl->upperSplitter->sizes();
         auto newValue = sizes[ 2 ];
         auto diff = newValue - 40;
         sizes[ 2 ] = 40;
         sizes[ 1 ] += diff / 2;
         sizes[ 3 ] += diff / 2;
-        fImpl->mainSplitter->setSizes( sizes );
+        fImpl->upperSplitter->setSizes( sizes );
 
     }
 }
@@ -451,8 +463,8 @@ void CMainWindow::slotCurrentUserChanged( const QModelIndex & index )
         return;
 
     if ( prevUserData )
-        prevUserData->clearWatchedMedia();
-    userData->clearWatchedMedia();
+        prevUserData->clearMedia();
+    userData->clearMedia();
     fSyncSystem->resetMedia();
     fMediaModel->clear();
 
@@ -564,7 +576,7 @@ void CMainWindow::slotRHSMediaDoubleClicked()
     changeMediaUserData( currIdx );
 }
 
-void CMainWindow::changeMediaUserData( QModelIndex idx )
+void CMainWindow::changeMediaUserData( const QModelIndex & idx )
 {
     if ( !idx.isValid() )
         return;
@@ -573,12 +585,7 @@ void CMainWindow::changeMediaUserData( QModelIndex idx )
     if ( !userData )
         return;
 
-    if ( idx.model() != fMediaModel )
-    {
-        idx = fMediaFilterModel->mapToSource( idx );
-    }
-
-    auto mediaData = fMediaModel->getMediaData( idx );
+    auto mediaData = getMediaData( idx );
     if ( !mediaData )
         return;
 
@@ -586,6 +593,17 @@ void CMainWindow::changeMediaUserData( QModelIndex idx )
     
     CUserDataDlg dlg( isLHS, userData, mediaData, fSyncSystem, fSettings, this );
     dlg.exec();
+}
+
+std::shared_ptr< CMediaData > CMainWindow::getMediaData( QModelIndex idx ) const
+{
+    if ( idx.model() != fMediaModel )
+    {
+        idx = fMediaFilterModel->mapToSource( idx );
+    }
+
+    auto mediaData = fMediaModel->getMediaData( idx );
+    return mediaData;
 }
 
 void CMainWindow::slotPendingMediaUpdate()
@@ -605,5 +623,26 @@ void CMainWindow::slotPendingMediaUpdate()
     }
     fPendingMediaUpdateTimer->stop();
     fPendingMediaUpdateTimer->start();
+}
+
+void CMainWindow::slotApplyToLeft()
+{
+    fImpl->lhsUserMediaData->applyMediaUserData( fImpl->rhsUserMediaData->createMediaUserData() );
+}
+
+void CMainWindow::slotApplyToRight()
+{
+    fImpl->rhsUserMediaData->applyMediaUserData( fImpl->lhsUserMediaData->createMediaUserData() );
+}
+
+void CMainWindow::slotUploadUserMediaData()
+{
+    auto currIdx = fImpl->lhsMedia->selectionModel()->currentIndex();
+    auto mediaInfo = getMediaData( currIdx );
+    if ( !mediaInfo )
+        return;
+
+    fSyncSystem->updateUserDataForMedia( mediaInfo, fImpl->lhsUserMediaData->createMediaUserData(), true );
+    fSyncSystem->updateUserDataForMedia( mediaInfo, fImpl->rhsUserMediaData->createMediaUserData(), false );
 }
 
