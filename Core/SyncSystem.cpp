@@ -137,13 +137,13 @@ void CSyncSystem::loadUsersMedia( std::shared_ptr< CUserData > userData )
 
     fCurrUserData = userData;
 
-    emit sigAddToLog( QString( "Loading watched media for '%1'" ).arg( fCurrUserData->name() ) );
+    emit sigAddToLog( QString( "Loading media for '%1'" ).arg( fCurrUserData->name() ) );
 
     fLHSMedia.clear();
     fRHSMedia.clear();
     fLHSProviderSearchMap.clear();
     fRHSProviderSearchMap.clear();
-    fCurrUserData->clearWatchedMedia();
+    fCurrUserData->clearMedia();
 
     if ( !fCurrUserData->onLHSServer() && !fCurrUserData->onRHSServer() )
         return;
@@ -159,7 +159,7 @@ void CSyncSystem::clearCurrUser()
 {
     if ( fCurrUserData )
     {
-        fCurrUserData->clearWatchedMedia();
+        fCurrUserData->clearMedia();
         fCurrUserData.reset();
     }
     resetMedia();
@@ -297,7 +297,7 @@ void CSyncSystem::requestUsersPlayedMedia( bool isLHSServer )
     QUrlQuery query;
 
     query.addQueryItem( "api_key", isLHSServer ? fSettings->lhsAPI() : fSettings->rhsAPI() );
-    query.addQueryItem( "Filters", "IsPlayed" );
+    //query.addQueryItem( "Filters", "IsPlayed" );
     query.addQueryItem( "IncludeItemTypes", "Movie,Episode,Video" );
     query.addQueryItem( "SortBy", "SortName" );
     query.addQueryItem( "SortOrder", "Ascending" );
@@ -308,7 +308,7 @@ void CSyncSystem::requestUsersPlayedMedia( bool isLHSServer )
     //qDebug() << url;
     auto request = QNetworkRequest( url );
 
-    emit sigAddToLog( QString( "Requesting Played media for '%1' from server '%2'" ).arg( fCurrUserData->name() ).arg( fSettings->getServerName( isLHSServer ) ) );
+    emit sigAddToLog( QString( "Requesting media for '%1' from server '%2'" ).arg( fCurrUserData->name() ).arg( fSettings->getServerName( isLHSServer ) ) );
 
     auto reply = fManager->get( request );
     setIsLHS( reply, isLHSServer );
@@ -340,7 +340,7 @@ bool CSyncSystem::processData( std::shared_ptr< CMediaData > mediaData, bool for
         lhsNeedsUpdating = true;
     else if ( forceRight )
         lhsNeedsUpdating = false;
-    auto newData = lhsNeedsUpdating ? mediaData->rhsUserData() : mediaData->lhsUserData();
+    auto newData = lhsNeedsUpdating ? mediaData->rhsUserMediaData() : mediaData->lhsUserMediaData();
     updateUserDataForMedia( mediaData, newData, lhsNeedsUpdating );
     return true;
 }
@@ -356,8 +356,8 @@ void CSyncSystem::requestUpdateUserDataForMedia( std::shared_ptr< CMediaData > m
     if ( !mediaData || !newData )
         return;
 
-    if ( ( lhsNeedsUpdating && ( *mediaData->lhsUserData() == *newData ) )
-         || ( !lhsNeedsUpdating && ( *mediaData->rhsUserData() == *newData ) ) )
+    if ( ( lhsNeedsUpdating && ( *mediaData->lhsUserMediaData() == *newData ) )
+      || ( !lhsNeedsUpdating && ( *mediaData->rhsUserMediaData() == *newData ) ) )
         return;
 
 
@@ -658,17 +658,23 @@ void CSyncSystem::slotMergeMedia()
 
     fProgressFuncs.resetProgress();
     fProgressFuncs.setupProgress( tr( "Merging media data" ) );
-    fProgressFuncs.setMaximum( 0 );
+    fProgressFuncs.setMaximum( static_cast< int >( fLHSMedia.size() * 3 + fRHSMedia.size() * 3 ) );
 
 
     mergeMediaData( fLHSMedia, fRHSMedia, true );
     mergeMediaData( fRHSMedia, fLHSMedia, false );
 
     for ( auto && ii : fLHSMedia )
+    {
         fAllMedia.insert( ii.second );
+        fProgressFuncs.incProgress();
+    }
 
     for ( auto && ii : fRHSMedia )
+    {
         fAllMedia.insert( ii.second );
+        fProgressFuncs.incProgress();
+    }
 
     fLHSProviderSearchMap.clear();
     fRHSProviderSearchMap.clear();
@@ -777,8 +783,6 @@ void CSyncSystem::loadMediaInfo( const QByteArray & data, const QString & mediaN
     //qDebug() << doc.toJson();
     auto mediaList = doc[ "Items" ].toArray();
     //fProgressFuncs.setMaximum( mediaList.count() );
-
-    //emit sigAddToLog( QString( "%1 has %2 watched media items on server '%3' that match search name for '%4'- %5 remaining" ).arg( fCurrUserData->name() ).arg( mediaList.count() ).arg( fSettings->getServerName( isLHSServer ) ).arg( mediaName ).arg( fMissingMedia.size() ) );
 
     bool found = false;
     for ( auto && ii : mediaList )
@@ -897,10 +901,12 @@ void CSyncSystem::loadMediaList( const QByteArray & data, bool isLHSServer )
         return;
     }
     fProgressFuncs.resetProgress();
-    fProgressFuncs.setupProgress( tr( "Loading Users Played Media Data" ) );
+    fProgressFuncs.setupProgress( tr( "Loading Users Media Data" ) );
     fProgressFuncs.setMaximum( mediaList.count() );
 
-    emit sigAddToLog( QString( "%1 has %2 watched media items on server '%3'" ).arg( fCurrUserData->name() ).arg( mediaList.count() ).arg( fSettings->getServerName( isLHSServer ) ) );
+    emit sigAddToLog( QString( "%1 has %2 media items on server '%3'" ).arg( fCurrUserData->name() ).arg( mediaList.count() ).arg( fSettings->getServerName( isLHSServer ) ) );
+    if ( fSettings->maxItems() > 0 )
+        emit sigAddToLog( QString( "Loading %2 media items" ).arg( fSettings->maxItems() ) );
 
     int curr = 0;
     for ( auto && ii : mediaList )
@@ -948,7 +954,7 @@ void CSyncSystem::loadMedia( QJsonObject & media, bool isLHSServer )
     */
 
     addMediaInfo( mediaData, media, isLHSServer );
-    fCurrUserData->addPlayedMedia( mediaData );
+    fCurrUserData->addMedia( mediaData );
     fProgressFuncs.incProgress();
 }
 
