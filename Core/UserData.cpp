@@ -44,9 +44,9 @@ void CUserData::setUserID( const QString & id, bool isLHS )
         fUserID.second = id;
 }
 
-void CUserData::clearWatchedMedia()
+void CUserData::clearMedia()
 {
-    fPlayedMedia.clear();
+    fMedia.clear();
 }
 
 bool CUserData::onLHSServer() const
@@ -59,22 +59,22 @@ bool CUserData::onRHSServer() const
     return !fUserID.second.isEmpty();
 }
 
-void CUserData::addPlayedMedia( std::shared_ptr< CMediaData > mediaData )
+void CUserData::addMedia( std::shared_ptr< CMediaData > mediaData )
 {
-    fPlayedMedia.push_back( mediaData );
+    fMedia.push_back( mediaData );
 }
 
 const std::list< std::shared_ptr< CMediaData > > & CUserData::playedMedia() const
 {
-    return fPlayedMedia;
+    return fMedia;
 }
 
 bool CUserData::hasMedia() const
 {
-    return !fPlayedMedia.empty();
+    return !fMedia.empty();
 }
 
 int CUserData::numPlayedMedia() const
 {
-    return static_cast<int>( fPlayedMedia.size() );
+    return static_cast<int>( fMedia.size() );
 }

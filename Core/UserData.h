@@ -43,13 +43,13 @@ public:
     QString getUserID( bool isLHS ) const;
     void setUserID( const QString & id, bool isLHS );
 
-    void clearWatchedMedia();
+    void clearMedia();
 
     bool onLHSServer() const;
     bool onRHSServer() const;
 
 
-    void addPlayedMedia( std::shared_ptr< CMediaData > mediaData );
+    void addMedia( std::shared_ptr< CMediaData > mediaData );
     const std::list< std::shared_ptr< CMediaData > > & playedMedia() const;
     bool hasMedia() const;
     int numPlayedMedia() const;
@@ -57,6 +57,6 @@ private:
     QString fName;
     std::pair< QString, QString > fUserID;
     QTreeWidgetItem * fItem{ nullptr };
-    std::list< std::shared_ptr< CMediaData > > fPlayedMedia;
+    std::list< std::shared_ptr< CMediaData > > fMedia;
 };
 #endif 
