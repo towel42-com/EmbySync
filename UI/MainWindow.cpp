@@ -22,7 +22,6 @@
 
 #include "MainWindow.h"
 #include "SettingsDlg.h"
-#include "UserDataDlg.h"
 
 #include "Core/SyncSystem.h"
 #include "Core/UserData.h"
@@ -583,25 +582,6 @@ void CMainWindow::incProgressDlg()
         return;
 
     fProgressDlg->setValue( fProgressDlg->value() + 1 );
-}
-
-void CMainWindow::changeMediaUserData( const QModelIndex & idx )
-{
-    if ( !idx.isValid() )
-        return;
-
-    auto userData = fSyncSystem->currUser();
-    if ( !userData )
-        return;
-
-    auto mediaData = getMediaData( idx );
-    if ( !mediaData )
-        return;
-
-    bool isLHS = fMediaModel->isLHSColumn( idx.column() );
-    
-    CUserDataDlg dlg( isLHS, userData, mediaData, fSyncSystem, fSettings, this );
-    dlg.exec();
 }
 
 std::shared_ptr< CMediaData > CMainWindow::getMediaData( QModelIndex idx ) const

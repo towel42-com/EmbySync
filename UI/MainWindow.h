@@ -96,7 +96,6 @@ private Q_SLOTS:
     void slotUploadUserMediaData();
 private:
     void hideColumns( QTreeView * treeView, EWhichTree whichTree );
-    void changeMediaUserData( const QModelIndex & idx );
 
     std::shared_ptr< CMediaData > getMediaData( QModelIndex idx ) const;
         
