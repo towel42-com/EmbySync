@@ -57,7 +57,7 @@ struct SMediaUserData
 
     bool userDataEqual( const SMediaUserData & rhs ) const;
 
-    QJsonObject toJSON() const;
+    QJsonObject userDataJSON() const;
     void loadUserDataFromJSON( const QJsonObject & userDataObj );
 
     bool fBeenLoaded{ false };
@@ -97,7 +97,11 @@ public:
     QUrlQuery getSearchForMediaQuery() const;
 
     QString getProviderID( const QString & provider );
-    const std::map< QString, QString > & getProviders() const { return fProviders; }
+    std::map< QString, QString > getProviders( bool addKeyIfEmpty = false ) const;
+    std::map< QString, QString > getExternalUrls() const { return fExternalUrls; }
+
+    QString externalUrlsText() const;
+
     bool userDataEqual() const;
 
     QString getMediaID( bool isLHS ) const;
@@ -141,6 +145,8 @@ private:
     QString fType;
     QString fName;
     std::map< QString, QString > fProviders;
+    std::map< QString, QString > fExternalUrls;
+
 
     std::shared_ptr< SMediaUserData > fLHSUserMediaData;
     std::shared_ptr< SMediaUserData > fRHSUserMediaData;

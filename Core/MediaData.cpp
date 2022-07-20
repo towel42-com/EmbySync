@@ -23,11 +23,12 @@
 #include "MediaData.h"
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonArray>
 
 #include <QObject>
 #include <chrono>
 
-QJsonObject SMediaUserData::toJSON() const
+QJsonObject SMediaUserData::userDataJSON() const
 {
     QJsonObject obj;
     obj[ "IsFavorite" ] = fIsFavorite;
@@ -142,6 +143,17 @@ void CMediaData::loadUserDataFromJSON( const QJsonObject & media, bool isLHSServ
 {
     //auto tmp = QJsonDocument( media );
     //qDebug() << tmp.toJson();
+
+    auto externalUrls = media[ "ExternalUrls" ].toArray();
+    for ( auto && ii : externalUrls )
+    {
+        auto urlObj = ii.toObject();
+        auto name = urlObj[ "Name" ].toString();
+        auto url = urlObj[ "Url" ].toString();
+        fExternalUrls[ name ] = url;
+    }
+
+
     auto userDataObj = media[ "UserData" ].toObject();
 
     //auto tmp = QJsonDocument( userDataObj );
@@ -164,6 +176,21 @@ void CMediaData::loadUserDataFromJSON( const QJsonObject & media, bool isLHSServ
         auto providerID = ii.value().toString();
         addProvider( providerName, providerID );
     }
+
+}
+
+QString CMediaData::externalUrlsText() const
+{
+    auto retVal = QString( "External Urls:</br>\n<ul>\n%1\n</ul>" );
+
+    QStringList externalUrls;
+    for ( auto && ii : fExternalUrls )
+    {
+        auto curr = QString( R"(<li>%1 - <a href="%2">%2</a></li>)" ).arg( ii.first ).arg( ii.second );
+        externalUrls << curr;
+    }
+    retVal = retVal.arg( externalUrls.join( "\n" ) );
+    return retVal;
 }
 
 bool CMediaData::userDataEqual() const
@@ -325,6 +352,17 @@ QString CMediaData::getProviderID( const QString & provider )
     if ( pos == fProviders.end() )
         return {};
     return ( *pos ).second;
+}
+
+std::map< QString, QString > CMediaData::getProviders( bool addKeyIfEmpty /*= false */ ) const
+{
+    auto retVal = fProviders;
+    if ( addKeyIfEmpty && retVal.empty() )
+    {
+        retVal[ fType ] = fName;
+    }
+
+    return std::move( retVal );
 }
 
 void CMediaData::addProvider( const QString & providerName, const QString & providerID )
