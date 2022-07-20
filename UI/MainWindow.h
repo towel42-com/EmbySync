@@ -73,19 +73,17 @@ public Q_SLOTS:
     void slotSave();
     void slotRecentMenuAboutToShow();
     void slotUserMediaCompletelyLoaded();
-
-    void slotLHSMediaDoubleClicked();
-
-    void slotRHSMediaDoubleClicked();
     void slotPendingMediaUpdate();
 private Q_SLOTS:
     void slotCurrentUserChanged( const QModelIndex & index );
 
     void slotReloadServers();
     void slotReloadCurrentUser();
+    
     void slotToggleOnlyShowSyncableUsers();
-
     void slotToggleOnlyShowMediaWithDifferences();
+    void slotToggleShowMediaWithIssues();
+
     void slotAddToLog( const QString & msg );
 
     void slotLoadingUsersFinished();
@@ -110,6 +108,7 @@ private:
 
     void onlyShowSyncableUsers();
     void onlyShowMediaWithDifferences();
+    void showMediaWithIssues();
     std::shared_ptr< CUserData > getCurrUserData() const;
 
     void loadFile( const QString & fileName );

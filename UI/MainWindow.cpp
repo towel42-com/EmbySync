@@ -143,16 +143,13 @@ CMainWindow::CMainWindow( QWidget * parent )
     connect( fImpl->menuLoadRecent, &QMenu::aboutToShow, this, &CMainWindow::slotRecentMenuAboutToShow );
     connect( fImpl->actionReloadServers, &QAction::triggered, this, &CMainWindow::slotReloadServers );
     connect( fImpl->actionReloadCurrentUser, &QAction::triggered, this, &CMainWindow::slotReloadCurrentUser );
-    connect( fImpl->actionProcess, &QAction::triggered, fSyncSystem.get(), &CSyncSystem::slotProcess );
-    connect( fImpl->actionProcessToLeft, &QAction::triggered, fSyncSystem.get(), &CSyncSystem::slotProcessToLeft );
-    connect( fImpl->actionProcessToRight, &QAction::triggered, fSyncSystem.get(), &CSyncSystem::slotProcessToRight );
+
     connect( fImpl->actionOnlyShowSyncableUsers, &QAction::triggered, this, &CMainWindow::slotToggleOnlyShowSyncableUsers );
     connect( fImpl->actionOnlyShowMediaWithDifferences, &QAction::triggered, this, &CMainWindow::slotToggleOnlyShowMediaWithDifferences );
+    connect( fImpl->actionShowMediaWithIssues, &QAction::triggered, this, &CMainWindow::slotToggleShowMediaWithIssues );
+    
     connect( fImpl->actionSave, &QAction::triggered, this, &CMainWindow::slotSave );
     connect( fImpl->actionSettings, &QAction::triggered, this, &CMainWindow::slotSettings );
-
-    connect( fImpl->lhsMedia, &QTreeView::doubleClicked, this, &CMainWindow::slotLHSMediaDoubleClicked );
-    connect( fImpl->rhsMedia, &QTreeView::doubleClicked, this, &CMainWindow::slotRHSMediaDoubleClicked );
 
     connect( fImpl->users, &QTreeView::clicked, this, &CMainWindow::slotCurrentUserChanged );
 
@@ -180,6 +177,10 @@ CMainWindow::CMainWindow( QWidget * parent )
     connect( fImpl->applyToLeft, &QToolButton::clicked, this, &CMainWindow::slotApplyToLeft );
     connect( fImpl->applyToRight, &QToolButton::clicked, this, &CMainWindow::slotApplyToRight );
     connect( fImpl->uploadUserMediaData, &QToolButton::clicked, this, &CMainWindow::slotUploadUserMediaData );
+
+    connect( fImpl->actionProcess, &QAction::triggered, fSyncSystem.get(), &CSyncSystem::slotProcess );
+    connect( fImpl->actionProcessToLeft, &QAction::triggered, fSyncSystem.get(), &CSyncSystem::slotProcessToLeft );
+    connect( fImpl->actionProcessToRight, &QAction::triggered, fSyncSystem.get(), &CSyncSystem::slotProcessToRight );
 
     fImpl->lhsMedia->horizontalScrollBar()->installEventFilter( this );
     fImpl->rhsMedia->horizontalScrollBar()->installEventFilter( this );
@@ -255,6 +256,8 @@ void CMainWindow::slotSetCurrentMediaItem( const QModelIndex & current, const QM
 
     fImpl->currMediaBox->setEnabled( mediaInfo.get() != nullptr );
     fImpl->currMediaName->setText( mediaInfo ? mediaInfo->name() : QString() );
+    fImpl->externalUrls->setText( mediaInfo ? mediaInfo->externalUrlsText() : tr( "External Urls:" ) );
+    fImpl->externalUrls->setTextFormat( Qt::RichText );
     fImpl->lhsUserMediaData->setMediaUserData( mediaInfo ? mediaInfo->userMediaData( true ) : std::shared_ptr< SMediaUserData >()  );
     fImpl->rhsUserMediaData->setMediaUserData( mediaInfo ? mediaInfo->userMediaData( false ) : std::shared_ptr< SMediaUserData >() );
 }
@@ -422,8 +425,6 @@ void CMainWindow::slotUserMediaLoaded()
     hideColumns( fImpl->lhsMedia, EWhichTree::eLHS );
     hideColumns( fImpl->directionTree, EWhichTree::eDir );
     hideColumns( fImpl->rhsMedia, EWhichTree::eRHS );
-
-    QTimer::singleShot( 0, fSyncSystem.get(), &CSyncSystem::slotFindMissingMedia );
 }
 
 void CMainWindow::slotReloadServers()
@@ -506,6 +507,12 @@ void CMainWindow::slotToggleOnlyShowMediaWithDifferences()
     onlyShowMediaWithDifferences();
 }
 
+void CMainWindow::slotToggleShowMediaWithIssues()
+{
+    fSettings->setShowMediaWithIssues( fImpl->actionShowMediaWithIssues->isChecked() );
+    showMediaWithIssues();
+}
+
 void CMainWindow::onlyShowMediaWithDifferences()
 {
     auto mediaSummary = fMediaModel->settingsChanged();
@@ -518,6 +525,21 @@ void CMainWindow::onlyShowMediaWithDifferences()
         .arg( mediaSummary.fRHSNeedsUpdating ).arg( fSettings->rhsURL() )
         .arg( mediaSummary.fMissingData )
         .arg( mediaSummary.fTotalMedia ) 
+    );
+}
+
+void CMainWindow::showMediaWithIssues()
+{
+    auto mediaSummary = fMediaModel->settingsChanged();
+
+    resetProgressDlg();
+    fImpl->mediaSummaryLabel->setText(
+        tr( "Media Summary: %1 Items need Syncing, %2 on %3, %4 From %5, %6 can not be compared, %7 Total" )
+        .arg( mediaSummary.fNeedsSyncing )
+        .arg( mediaSummary.fLHSNeedsUpdating ).arg( fSettings->lhsURL() )
+        .arg( mediaSummary.fRHSNeedsUpdating ).arg( fSettings->rhsURL() )
+        .arg( mediaSummary.fMissingData )
+        .arg( mediaSummary.fTotalMedia )
     );
 }
 
@@ -561,19 +583,6 @@ void CMainWindow::incProgressDlg()
         return;
 
     fProgressDlg->setValue( fProgressDlg->value() + 1 );
-}
-
-
-void CMainWindow::slotLHSMediaDoubleClicked()
-{
-    auto currIdx = fImpl->lhsMedia->selectionModel()->currentIndex();
-    changeMediaUserData( currIdx );
-}
-
-void CMainWindow::slotRHSMediaDoubleClicked()
-{
-    auto currIdx = fImpl->lhsMedia->selectionModel()->currentIndex();
-    changeMediaUserData( currIdx );
 }
 
 void CMainWindow::changeMediaUserData( const QModelIndex & idx )
