@@ -134,9 +134,13 @@ bool CMediaData::isMissing( bool isLHS ) const
     return isLHS ? fLHSUserMediaData->fMediaID.isEmpty() : fRHSUserMediaData->fMediaID.isEmpty();
 }
 
-bool CMediaData::hasMissingInfo() const
+bool CMediaData::hasMissingInfo( bool checkForProviders ) const
 {
-    return isMissing( true ) || isMissing( false );
+    if ( isMissing( true ) || isMissing( false ) )
+        return true;
+    if ( checkForProviders && getProviders().empty() )
+        return true;
+    return false;
 }
 
 void CMediaData::loadUserDataFromJSON( const QJsonObject & media, bool isLHSServer  )
@@ -222,9 +226,6 @@ QString SMediaUserData::playbackPosition() const
 QTime SMediaUserData::playbackPositionTime() const
 {
     auto playbackMS = playbackPositionMSecs();
-    if ( playbackMS == 0 )
-        return {};
-
     return QTime::fromMSecsSinceStartOfDay( playbackMS );
 }
 
