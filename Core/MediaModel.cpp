@@ -120,7 +120,7 @@ QVariant CMediaModel::getColor( const QModelIndex & index, bool background ) con
     auto mediaData = fData[ index.row() ];
 
     if ( mediaData->hasMissingInfo() )
-        return fSettings->mediaDataMissingColor( background );
+        return fSettings->dataMissingColor( background );
 
     if ( !mediaData->userDataEqual() )
     {

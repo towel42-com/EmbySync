@@ -34,28 +34,13 @@
           </widget>
          </item>
          <item>
-          <widget class="QTreeWidget" name="users">
+          <widget class="QTreeView" name="users">
            <property name="alternatingRowColors">
             <bool>true</bool>
            </property>
            <property name="sortingEnabled">
             <bool>true</bool>
            </property>
-           <column>
-            <property name="text">
-             <string>Name</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>On LHS Server?</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>On RHS Server?</string>
-            </property>
-           </column>
           </widget>
          </item>
         </layout>
@@ -71,9 +56,6 @@
          </item>
          <item>
           <widget class="QTreeView" name="lhsMedia">
-           <property name="horizontalScrollBarPolicy">
-            <enum>Qt::ScrollBarAsNeeded</enum>
-           </property>
            <property name="alternatingRowColors">
             <bool>true</bool>
            </property>
@@ -162,9 +144,6 @@
          </item>
          <item>
           <widget class="QTreeView" name="rhsMedia">
-           <property name="horizontalScrollBarPolicy">
-            <enum>Qt::ScrollBarAsNeeded</enum>
-           </property>
            <property name="alternatingRowColors">
             <bool>true</bool>
            </property>

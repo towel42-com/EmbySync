@@ -56,7 +56,7 @@ private:
     std::shared_ptr< CSettings > fSettings;
     QColor fMediaSourceColor;
     QColor fMediaDestColor;
-    QColor fMediaMissingColor;
+    QColor fDataMissingColor;
 
 };
 #endif 

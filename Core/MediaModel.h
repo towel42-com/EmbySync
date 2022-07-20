@@ -85,8 +85,8 @@ private:
     void updateProviderColumns( std::shared_ptr< CMediaData > ii );
 
     std::vector< std::shared_ptr< CMediaData > > fData;
-    std::unordered_map< std::shared_ptr< CMediaData >, size_t > fMediaToPos;
     std::shared_ptr< CSettings > fSettings;
+    std::unordered_map< std::shared_ptr< CMediaData >, size_t > fMediaToPos;
     std::unordered_set< QString > fProviderColumnsByName;
     std::unordered_map< int, std::pair< bool, QString > > fProviderColumnsByColumn;
     EDirSort fDirSort{ eNoSort };

@@ -156,16 +156,16 @@
     </widget>
    </item>
    <item row="5" column="1">
-    <widget class="QToolButton" name="mediaMissingColor">
+    <widget class="QToolButton" name="dataMissingColor">
      <property name="text">
       <string>...</string>
      </property>
     </widget>
    </item>
    <item row="5" column="0">
-    <widget class="QLabel" name="mediaMissing">
+    <widget class="QLabel" name="dataMissing">
      <property name="text">
-      <string>Media is missing:</string>
+      <string>Data is missing:</string>
      </property>
     </widget>
    </item>
@@ -178,7 +178,7 @@
   <tabstop>embyAPI2</tabstop>
   <tabstop>mediaSourceColor</tabstop>
   <tabstop>mediaDestColor</tabstop>
-  <tabstop>mediaMissingColor</tabstop>
+  <tabstop>dataMissingColor</tabstop>
   <tabstop>maxItems</tabstop>
  </tabstops>
  <resources/>

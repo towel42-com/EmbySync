@@ -28,6 +28,7 @@
 #include "Core/UserData.h"
 #include "Core/MediaData.h"
 #include "Core/MediaModel.h"
+#include "Core/UsersModel.h"
 #include "Core/Settings.h"
 #include "SABUtils/QtUtils.h"
 
@@ -56,17 +57,22 @@ CMainWindow::CMainWindow( QWidget * parent )
     int scrollBarExtent = 2* fImpl->lhsMedia->horizontalScrollBar()->style()->pixelMetric( QStyle::PM_ScrollBarExtent, nullptr, this );
     fImpl->scrollSpacer->changeSize( 20, scrollBarExtent, QSizePolicy::Minimum, QSizePolicy::Fixed );
     fSettings = std::make_shared< CSettings >();
+
     fMediaModel = new CMediaModel( fSettings, this );
-    fFilterModel = new CMediaFilterModel( this );
-    fFilterModel->setSourceModel( fMediaModel );
-    fFilterModel->setDynamicSortFilter( false );
-    fFilterModel->sort( 0, Qt::SortOrder::AscendingOrder );
+    fMediaFilterModel = new CMediaFilterModel( this );
+    fMediaFilterModel->setSourceModel( fMediaModel );
+    fMediaFilterModel->sort( 0, Qt::SortOrder::AscendingOrder );
 
-    fImpl->users->sortItems( 0, Qt::SortOrder::AscendingOrder );
+    fUsersModel = new CUsersModel( fSettings, this );
+    fUsersFilterModel = new CUsersFilterModel( this );
+    fUsersFilterModel->setSourceModel( fUsersModel );
+    fUsersFilterModel->sort( 0, Qt::SortOrder::AscendingOrder );
 
-    fImpl->lhsMedia->setModel( fFilterModel );
-    fImpl->rhsMedia->setModel( fFilterModel );
-    fImpl->directionTree->setModel( fFilterModel );
+    fImpl->lhsMedia->setModel( fMediaFilterModel );
+    fImpl->rhsMedia->setModel( fMediaFilterModel );
+    fImpl->directionTree->setModel( fMediaFilterModel );
+
+    fImpl->users->setModel( fUsersFilterModel );
 
 
     hideColumns( fImpl->lhsMedia, EWhichTree::eLHS );
@@ -81,20 +87,13 @@ CMainWindow::CMainWindow( QWidget * parent )
     connect( fSyncSystem.get(), &CSyncSystem::sigFindingMediaInfoFinished, this, &CMainWindow::slotUserMediaCompletelyLoaded );
     
 
-    fSyncSystem->setUserItemFunc(
+    fSyncSystem->setAddUserItemFunc(
         [this]( std::shared_ptr< CUserData > userData )
         {
             if ( !userData )
                 return;
 
-            if ( !userData->getItem() )
-            {
-                auto columns = QStringList() << userData->name() << QString() << QString();
-                userData->setItem( new QTreeWidgetItem( columns ) );
-                fImpl->users->addTopLevelItem( userData->getItem() );
-            }
-            userData->getItem()->setText( 1, userData->onLHSServer() ? "Yes" : "No" );
-            userData->getItem()->setText( 2, userData->onRHSServer() ? "Yes" : "No" );
+            fUsersModel->addUser( userData );
         } );
 
     fSyncSystem->setMediaItemFunc(
@@ -151,10 +150,10 @@ CMainWindow::CMainWindow( QWidget * parent )
     connect( fImpl->actionSave, &QAction::triggered, this, &CMainWindow::slotSave );
     connect( fImpl->actionSettings, &QAction::triggered, this, &CMainWindow::slotSettings );
 
-    connect( fImpl->lhsMedia, &QTreeWidget::doubleClicked, this, &CMainWindow::slotLHSMediaDoubleClicked );
-    connect( fImpl->rhsMedia, &QTreeWidget::doubleClicked, this, &CMainWindow::slotRHSMediaDoubleClicked );
+    connect( fImpl->lhsMedia, &QTreeView::doubleClicked, this, &CMainWindow::slotLHSMediaDoubleClicked );
+    connect( fImpl->rhsMedia, &QTreeView::doubleClicked, this, &CMainWindow::slotRHSMediaDoubleClicked );
 
-    connect( fImpl->users, &QTreeWidget::currentItemChanged, this, &CMainWindow::slotCurrentUserChanged );
+    connect( fImpl->users, &QTreeView::clicked, this, &CMainWindow::slotCurrentUserChanged );
 
     connect( fImpl->lhsMedia->selectionModel(), &QItemSelectionModel::currentChanged, this, &CMainWindow::slotSetCurrentMediaItem );
     connect( fImpl->rhsMedia->selectionModel(), &QItemSelectionModel::currentChanged, this, &CMainWindow::slotSetCurrentMediaItem );
@@ -319,7 +318,7 @@ void CMainWindow::reset()
 
 void CMainWindow::resetServers()
 {
-    fImpl->users->clear();
+    fUsersModel->clear();
     fMediaModel->clear();
     fSyncSystem->reset();
 }
@@ -398,6 +397,9 @@ void CMainWindow::slotLoadingUsersFinished()
 void CMainWindow::slotUserMediaLoaded()
 {
     auto currUser = getCurrUserData();
+    if ( !currUser )
+        return;
+
     auto lhsTree = currUser->onLHSServer() ? fImpl->lhsMedia : nullptr;
     auto directionTree = fImpl->directionTree;
     auto rhsTree = currUser->onRHSServer() ? fImpl->rhsMedia : nullptr;
@@ -419,25 +421,27 @@ void CMainWindow::slotReloadServers()
 void CMainWindow::slotReloadCurrentUser()
 {
     fSyncSystem->clearCurrUser();
-    auto currItem = fImpl->users->currentItem();
-    slotCurrentUserChanged( currItem, currItem );
+    auto currIdx = fImpl->users->selectionModel()->currentIndex();
+    slotCurrentUserChanged( currIdx );
 }
 
-void CMainWindow::slotCurrentUserChanged( QTreeWidgetItem * curr, QTreeWidgetItem * prev )
+void CMainWindow::slotCurrentUserChanged( const QModelIndex & index )
 {
-    fImpl->actionReloadCurrentUser->setEnabled( curr != nullptr );
+    fImpl->actionReloadCurrentUser->setEnabled( index.isValid() );
 
     if ( fSyncSystem->isRunning() )
         return;
 
-    auto prevUserData = userDataForItem( prev );
-    if ( !curr )
-        curr = fImpl->users->currentItem();
+    auto prevUserData = fSyncSystem->currUser();
 
-    if ( !curr )
+    auto idx = index;
+    if ( !idx.isValid() )
+        idx = fImpl->users->selectionModel()->currentIndex();
+
+    if ( !index.isValid() )
         return;
 
-    auto userData = userDataForItem( curr );
+    auto userData = fUsersModel->userDataForName( idx.data( CUsersModel::eNameRole ).toString() );
     if ( !userData )
         return;
 
@@ -458,28 +462,17 @@ void CMainWindow::slotUserMediaCompletelyLoaded()
     NSABUtils::autoSize( fImpl->lhsMedia );
     NSABUtils::autoSize( fImpl->rhsMedia );
     onlyShowMediaWithDifferences();
-    fFilterModel->sort( fFilterModel->sortColumn(), fFilterModel->sortOrder() );
+    fMediaFilterModel->sort( fMediaFilterModel->sortColumn(), fMediaFilterModel->sortOrder() );
 }
 
 std::shared_ptr< CUserData > CMainWindow::getCurrUserData() const
 {
-    auto curr = fImpl->users->currentItem();
-    if ( !curr || curr->isHidden() )
+    auto idx = fImpl->users->selectionModel()->currentIndex();
+    if ( !idx.isValid() )
         return {};
 
-    return userDataForItem( curr );
+    return fUsersModel->userDataForName( idx.data( CUsersModel::eNameRole ).toString() );
 }
-
-std::shared_ptr< CUserData > CMainWindow::userDataForItem( QTreeWidgetItem * item ) const
-{
-    if ( !item )
-        return {};
-
-    auto name = item->text( 0 );
-    auto userData = fSyncSystem->getUserData( name );
-    return userData;
-}
-
 
 void CMainWindow::slotToggleOnlyShowSyncableUsers()
 {
@@ -489,35 +482,8 @@ void CMainWindow::slotToggleOnlyShowSyncableUsers()
 
 void CMainWindow::onlyShowSyncableUsers()
 {
-    bool onlyShowSync = fSettings->onlyShowSyncableUsers();
-    
-    auto currItem = fImpl->users->currentItem();
-    int totalUsers = 0;
-    int syncableUsers = 0;
-    fSyncSystem->forEachUser(
-        [this, onlyShowSync, &totalUsers, &syncableUsers]( std::shared_ptr< CUserData > userData )
-        {
-            if ( !userData )
-                return;
-
-            auto item = userData->getItem();
-            if ( !item )
-                return;
-
-            totalUsers++;
-            auto hidden = onlyShowSync && ( !userData->onLHSServer() || !userData->onRHSServer() );
-            if ( !hidden )
-                syncableUsers++;
-
-            item->setHidden( hidden );
-        }
-    );
-
-    fImpl->usersLabel->setText( tr( "Users: %1 syncable out of %2 total users" ).arg( syncableUsers ).arg( totalUsers ) );
-    auto newItem = NSABUtils::nextVisibleItem( currItem );
-    if ( currItem == newItem )
-        fImpl->users->setCurrentItem( nullptr );
-    fImpl->users->setCurrentItem( newItem );
+    auto usersSummary = fUsersModel->settingsChanged();
+    fImpl->usersLabel->setText( tr( "Users: %1 sync-able out of %2 total users" ).arg( usersSummary.fSyncable ).arg( usersSummary.fTotal ) );
 }
 
 void CMainWindow::slotToggleOnlyShowMediaWithDifferences()
@@ -528,8 +494,6 @@ void CMainWindow::slotToggleOnlyShowMediaWithDifferences()
 
 void CMainWindow::onlyShowMediaWithDifferences()
 {
-    bool onlyShowMediaWithDiff = fSettings->onlyShowMediaWithDifferences();
-
     auto mediaSummary = fMediaModel->settingsChanged();
 
     resetProgressDlg();
@@ -614,7 +578,7 @@ void CMainWindow::changeMediaUserData( QModelIndex idx )
 
     if ( idx.model() != fMediaModel )
     {
-        idx = fFilterModel->mapToSource( idx );
+        idx = fMediaFilterModel->mapToSource( idx );
     }
 
     auto mediaData = fMediaModel->getMediaData( idx );
