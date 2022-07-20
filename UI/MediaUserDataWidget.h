@@ -20,47 +20,44 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef _USERDATADLG_H
-#define _USERDATADLG_H
+#ifndef _MEDIAUSERDATAWIDGET_H
+#define _MEDIAUSERDATAWIDGET_H
 
-#include <QDialog>
+#include <QGroupBox>
 #include <memory>
+
 namespace Ui
 {
-    class CUserDataDlg;
+    class CMediaUserDataWidget;
 }
 
-class QLabel;
 class CUserData;
-class CMediaData;
-class CSyncSystem;
-class CSettings;
 struct SMediaUserData;
-
-class CUserDataDlg : public QDialog
+class CMediaUserDataWidget : public QGroupBox
 {
     Q_OBJECT
 public:
-    CUserDataDlg( bool origFromLHS, std::shared_ptr< CUserData > userData, std::shared_ptr< CMediaData > mediaData, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CSettings > settings, QWidget * parentWidget=nullptr );
+    CMediaUserDataWidget( QWidget * parentWidget = nullptr );
+    CMediaUserDataWidget( const QString & title, QWidget * parentWidget = nullptr );
+    CMediaUserDataWidget( std::shared_ptr< SMediaUserData > mediaData, QWidget * parentWidget = nullptr );
+    
+    virtual ~CMediaUserDataWidget() override;
 
-    virtual ~CUserDataDlg() override;
-    virtual void accept() override;
+    void setMediaUserData( std::shared_ptr< SMediaUserData > mediaData );
+    void applyMediaUserData( std::shared_ptr< SMediaUserData > mediaData );  // mediaData is not owned, mediaID is NOT changed
 
-    void load();
-    void save();
+    void setReadOnly( bool readOnly );
+    bool readOnly() const { return fReadOnly; }
 
-    std::shared_ptr< SMediaUserData > createMediaUserData() const;
+    std::shared_ptr< SMediaUserData > createMediaUserData() const; // creates a new user data based on current settings
 
 public Q_SLOTS:
+    void slotChanged();
 private:
+    void load( std::shared_ptr< SMediaUserData > mediaData );
 
-    std::unique_ptr< Ui::CUserDataDlg > fImpl;
-
-    std::shared_ptr< CUserData > fUserData;
-    bool fFromLHS{ false };
-    std::shared_ptr< CMediaData > fMediaData;
-    std::shared_ptr< CSyncSystem > fSyncSystem;
-    std::shared_ptr< CSettings > fSettings;
-
+    std::unique_ptr< Ui::CMediaUserDataWidget > fImpl;
+    std::shared_ptr< SMediaUserData > fMediaUserData;
+    bool fReadOnly{ false };
 };
 #endif 
