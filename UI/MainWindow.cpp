@@ -144,7 +144,9 @@ CMainWindow::CMainWindow( QWidget * parent )
     connect( fImpl->menuLoadRecent, &QMenu::aboutToShow, this, &CMainWindow::slotRecentMenuAboutToShow );
     connect( fImpl->actionReloadServers, &QAction::triggered, this, &CMainWindow::slotReloadServers );
     connect( fImpl->actionReloadCurrentUser, &QAction::triggered, this, &CMainWindow::slotReloadCurrentUser );
-    connect( fImpl->actionProcess, &QAction::triggered, this, &CMainWindow::slotProcess );
+    connect( fImpl->actionProcess, &QAction::triggered, fSyncSystem.get(), &CSyncSystem::slotProcess );
+    connect( fImpl->actionProcessToLeft, &QAction::triggered, fSyncSystem.get(), &CSyncSystem::slotProcessToLeft );
+    connect( fImpl->actionProcessToRight, &QAction::triggered, fSyncSystem.get(), &CSyncSystem::slotProcessToRight );
     connect( fImpl->actionOnlyShowSyncableUsers, &QAction::triggered, this, &CMainWindow::slotToggleOnlyShowSyncableUsers );
     connect( fImpl->actionOnlyShowMediaWithDifferences, &QAction::triggered, this, &CMainWindow::slotToggleOnlyShowMediaWithDifferences );
     connect( fImpl->actionSave, &QAction::triggered, this, &CMainWindow::slotSave );
@@ -505,11 +507,6 @@ void CMainWindow::onlyShowMediaWithDifferences()
         .arg( mediaSummary.fMissingData )
         .arg( mediaSummary.fTotalMedia ) 
     );
-}
-
-void CMainWindow::slotProcess()
-{
-    fSyncSystem->process();
 }
 
 void CMainWindow::slotAddToLog( const QString & msg )

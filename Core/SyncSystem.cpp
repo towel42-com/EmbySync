@@ -165,10 +165,31 @@ void CSyncSystem::clearCurrUser()
     resetMedia();
 }
 
-void CSyncSystem::process()
+void CSyncSystem::slotProcess()
 {
-    fProgressFuncs.setupProgress( "Processing Data" );
-    
+    process( false, false );
+}
+
+void CSyncSystem::slotProcessToLeft()
+{
+    process( true, false );
+}
+
+void CSyncSystem::slotProcessToRight()
+{
+    process( false, true );
+}
+
+void CSyncSystem::process( bool forceLeft, bool forceRight )
+{
+    auto title = QString( "Processing Data" );
+    if ( forceLeft )
+        title += " To the Left";
+    else if ( forceLeft )
+        title += " To the Right";
+
+    fProgressFuncs.setupProgress( title );
+
     int cnt = 0;
     for ( auto && ii : fAllMedia )
     {
@@ -191,7 +212,7 @@ void CSyncSystem::process()
             continue;
 
         fProgressFuncs.incProgress();
-        bool dataProcessed = processData( ii );
+        bool dataProcessed = processData( ii, forceLeft, forceRight );
         (void)dataProcessed;
     }
 }
@@ -295,7 +316,7 @@ void CSyncSystem::requestUsersPlayedMedia( bool isLHSServer )
     setExtraData( reply, fCurrUserData->name() );
 }
 
-bool CSyncSystem::processData( std::shared_ptr< CMediaData > mediaData )
+bool CSyncSystem::processData( std::shared_ptr< CMediaData > mediaData, bool forceLeft, bool forceRight )
 {
     if ( !mediaData || mediaData->userDataEqual() )
         return false;
@@ -315,6 +336,10 @@ bool CSyncSystem::processData( std::shared_ptr< CMediaData > mediaData )
 
     //qDebug() << "processing " << mediaData->name();
     bool lhsNeedsUpdating = mediaData->lhsNeedsUpdating();
+    if ( forceLeft )
+        lhsNeedsUpdating = true;
+    else if ( forceRight )
+        lhsNeedsUpdating = false;
     auto newData = lhsNeedsUpdating ? mediaData->rhsUserData() : mediaData->lhsUserData();
     updateUserDataForMedia( mediaData, newData, lhsNeedsUpdating );
     return true;

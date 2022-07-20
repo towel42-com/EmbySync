@@ -33,7 +33,10 @@ QJsonObject SMediaUserData::toJSON() const
     obj[ "IsFavorite" ] = fIsFavorite;
     obj[ "Played" ] = fPlayed;
     obj[ "PlayCount" ] = static_cast<int64_t>( fPlayCount );
-    obj[ "LastPlayedDate" ] = fLastPlayedDate.toUTC().toString( Qt::ISODateWithMs );
+    if ( fLastPlayedDate.isNull() )
+        obj[ "LastPlayedDate" ] = QJsonValue::Null;
+    else
+        obj[ "LastPlayedDate" ] = fLastPlayedDate.toUTC().toString( Qt::ISODateWithMs );
 
     auto ticks = static_cast<int64_t>( fPlaybackPositionTicks );
     if ( fPlaybackPositionTicks >= static_cast<uint64_t>( std::numeric_limits< int64_t >::max() ) )
@@ -173,7 +176,8 @@ bool SMediaUserData::userDataEqual( const SMediaUserData & rhs ) const
     auto equal = true;
     equal = equal && fIsFavorite == rhs.fIsFavorite;
     equal = equal && fPlayed == rhs.fPlayed;
-    equal = equal && fLastPlayedDate == rhs.fLastPlayedDate;
+    if ( !fLastPlayedDate.isNull() && !rhs.fLastPlayedDate.isNull() )
+        equal = equal && fLastPlayedDate == rhs.fLastPlayedDate;
     equal = equal && fPlayCount == rhs.fPlayCount;
     equal = equal && fPlaybackPositionTicks == rhs.fPlaybackPositionTicks;
     return equal;
@@ -266,6 +270,8 @@ bool CMediaData::bothFavorites() const
 
 bool CMediaData::lastPlayedTheSame() const
 {
+    if ( fLHSUserData->fLastPlayedDate.isNull() || fRHSUserData->fLastPlayedDate.isNull() )
+        return true;
     return fLHSUserData->fLastPlayedDate == fRHSUserData->fLastPlayedDate;
 }
 
