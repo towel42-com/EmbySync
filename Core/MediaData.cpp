@@ -79,11 +79,16 @@ void CMediaData::setMSecsToStringFunc( std::function< QString( uint64_t ) > func
     sMSecsToStringFunc = func;
 }
 
+std::function< QString( uint64_t ) > CMediaData::mecsToStringFunc()
+{
+    return sMSecsToStringFunc;
+}
+
 CMediaData::CMediaData( const QString & name, const QString & type ) :
     fName( name ),
     fType( type ),
-    fLHSUserData( std::make_shared< SMediaUserData >() ),
-    fRHSUserData( std::make_shared< SMediaUserData >() )
+    fLHSUserMediaData( std::make_shared< SMediaUserData >() ),
+    fRHSUserMediaData( std::make_shared< SMediaUserData >() )
 {
 }
 
@@ -125,7 +130,7 @@ QString CMediaData::computeName( QJsonObject & media )
 
 bool CMediaData::isMissing( bool isLHS ) const
 {
-    return isLHS ? fLHSUserData->fMediaID.isEmpty() : fRHSUserData->fMediaID.isEmpty();
+    return isLHS ? fLHSUserMediaData->fMediaID.isEmpty() : fRHSUserMediaData->fMediaID.isEmpty();
 }
 
 bool CMediaData::hasMissingInfo() const
@@ -144,11 +149,11 @@ void CMediaData::loadUserDataFromJSON( const QJsonObject & media, bool isLHSServ
 
     if ( isLHSServer )
     {
-        fLHSUserData->loadUserDataFromJSON( userDataObj );
+        fLHSUserMediaData->loadUserDataFromJSON( userDataObj );
     }
     else
     {
-        fRHSUserData->loadUserDataFromJSON( userDataObj );
+        fRHSUserMediaData->loadUserDataFromJSON( userDataObj );
     }
 
 
@@ -163,12 +168,47 @@ void CMediaData::loadUserDataFromJSON( const QJsonObject & media, bool isLHSServ
 
 bool CMediaData::userDataEqual() const
 {
-    return fLHSUserData->userDataEqual( *fRHSUserData );
+    return fLHSUserMediaData->userDataEqual( *fRHSUserMediaData );
 }
 
 bool operator==( const SMediaUserData & lhs, const SMediaUserData & rhs )
 {
     return lhs.userDataEqual( rhs );
+}
+
+uint64_t SMediaUserData::playbackPositionMSecs() const
+{
+    return fPlaybackPositionTicks / 10000;
+}
+
+QString SMediaUserData::playbackPosition() const
+{
+    auto playbackMS = playbackPositionMSecs();
+    if ( playbackMS == 0 )
+        return {};
+
+    if ( CMediaData::mecsToStringFunc() )
+        return CMediaData::mecsToStringFunc()( playbackMS );
+    return QString::number( playbackMS );
+}
+
+QTime SMediaUserData::playbackPositionTime() const
+{
+    auto playbackMS = playbackPositionMSecs();
+    if ( playbackMS == 0 )
+        return {};
+
+    return QTime::fromMSecsSinceStartOfDay( playbackMS );
+}
+
+void SMediaUserData::setPlaybackPosition( const QTime & time )
+{
+    setPlaybackPositionMSecs( 10000ULL * time.msecsSinceStartOfDay() );
+}
+
+void SMediaUserData::setPlaybackPositionMSecs( uint64_t msecs )
+{
+    fPlaybackPositionTicks = ( 10000ULL * msecs );
 }
 
 bool SMediaUserData::userDataEqual( const SMediaUserData & rhs ) const
@@ -202,56 +242,47 @@ QString CMediaData::getProviderList() const
 
 bool CMediaData::isPlayed( bool lhs ) const
 {
-    return lhs ? fLHSUserData->fPlayed : fRHSUserData->fPlayed;
+    return lhs ? fLHSUserMediaData->fPlayed : fRHSUserMediaData->fPlayed;
 }
 
 uint64_t CMediaData::playCount( bool lhs ) const
 {
-    return lhs ? fLHSUserData->fPlayCount : fRHSUserData->fPlayCount;
+    return lhs ? fLHSUserMediaData->fPlayCount : fRHSUserMediaData->fPlayCount;
 }
 
 bool CMediaData::isFavorite( bool lhs ) const
 {
-    return lhs ? fLHSUserData->fIsFavorite : fRHSUserData->fIsFavorite;
+    return lhs ? fLHSUserMediaData->fIsFavorite : fRHSUserMediaData->fIsFavorite;
 }
 
 QDateTime CMediaData::lastPlayed( bool lhs ) const
 {
-    return lhs ? fLHSUserData->fLastPlayedDate : fRHSUserData->fLastPlayedDate;
+    return lhs ? fLHSUserMediaData->fLastPlayedDate : fRHSUserMediaData->fLastPlayedDate;
 }
 
 // 1 tick = 10000 ms
 uint64_t CMediaData::playbackPositionTicks( bool lhs ) const
 {
-    return lhs ? fLHSUserData->fPlaybackPositionTicks : fRHSUserData->fPlaybackPositionTicks;
-}
-
-QString CMediaData::playbackPosition( bool lhs ) const
-{
-    auto playbackMS = playbackPositionMSecs( lhs );
-    if ( playbackMS == 0 )
-        return {};
-
-    if ( sMSecsToStringFunc )
-        return sMSecsToStringFunc( playbackMS );
-    return QString::number( playbackMS );
-}
-
-QTime CMediaData::playbackPositionTime( bool lhs ) const
-{
-    auto playbackMS = playbackPositionMSecs( lhs );
-    if ( playbackMS == 0 )
-        return {};
-
-    return QTime::fromMSecsSinceStartOfDay( playbackMS );
+    return lhs ? fLHSUserMediaData->fPlaybackPositionTicks : fRHSUserMediaData->fPlaybackPositionTicks;
 }
 
 // stored in ticks
 // 1 tick = 10000 ms
 uint64_t CMediaData::playbackPositionMSecs( bool lhs ) const
 {
-    return playbackPositionTicks( lhs ) / 10000;
+    return lhs ? fLHSUserMediaData->playbackPositionMSecs() : fRHSUserMediaData->playbackPositionMSecs();
 }
+
+QString CMediaData::playbackPosition( bool lhs ) const
+{
+    return lhs ? fLHSUserMediaData->playbackPosition() : fRHSUserMediaData->playbackPosition();
+}
+
+QTime CMediaData::playbackPositionTime( bool lhs ) const
+{
+    return lhs ? fLHSUserMediaData->playbackPositionTime() : fRHSUserMediaData->playbackPositionTime();
+}
+
 
 bool CMediaData::bothPlayed() const
 {
@@ -270,9 +301,9 @@ bool CMediaData::bothFavorites() const
 
 bool CMediaData::lastPlayedTheSame() const
 {
-    if ( fLHSUserData->fLastPlayedDate.isNull() || fRHSUserData->fLastPlayedDate.isNull() )
+    if ( fLHSUserMediaData->fLastPlayedDate.isNull() || fRHSUserMediaData->fLastPlayedDate.isNull() )
         return true;
-    return fLHSUserData->fLastPlayedDate == fRHSUserData->fLastPlayedDate;
+    return fLHSUserMediaData->fLastPlayedDate == fRHSUserMediaData->fLastPlayedDate;
 }
 
 QUrlQuery CMediaData::getSearchForMediaQuery() const
@@ -304,36 +335,36 @@ void CMediaData::addProvider( const QString & providerName, const QString & prov
 void CMediaData::setMediaID( const QString & id, bool isLHS )
 {
     if ( isLHS )
-        fLHSUserData->fMediaID = id;
+        fLHSUserMediaData->fMediaID = id;
     else
-        fRHSUserData->fMediaID = id;
+        fRHSUserMediaData->fMediaID = id;
 }
 
 QString CMediaData::getMediaID( bool isLHS ) const
 {
     if ( isLHS )
-        return fLHSUserData->fMediaID;
+        return fLHSUserMediaData->fMediaID;
     else
-        return fRHSUserData->fMediaID;
+        return fRHSUserMediaData->fMediaID;
 }
 
 bool CMediaData::beenLoaded( bool isLHS ) const
 {
-    return isLHS ? fLHSUserData->fBeenLoaded : fRHSUserData->fBeenLoaded;
+    return isLHS ? fLHSUserMediaData->fBeenLoaded : fRHSUserMediaData->fBeenLoaded;
 }
 
 bool CMediaData::rhsNeedsUpdating() const
 {
     //qDebug() << fLHSServer->fLastPlayedDate;
     //qDebug() << fRHSServer->fLastPlayedDate;
-    return fLHSUserData->fLastPlayedDate > fRHSUserData->fLastPlayedDate;
+    return fLHSUserMediaData->fLastPlayedDate > fRHSUserMediaData->fLastPlayedDate;
 }
 
 bool CMediaData::lhsNeedsUpdating() const
 {
     //qDebug() << fLHSServer->fLastPlayedDate;
     //qDebug() << fRHSServer->fLastPlayedDate;
-    return fRHSUserData->fLastPlayedDate > fLHSUserData->fLastPlayedDate;
+    return fRHSUserMediaData->fLastPlayedDate > fLHSUserMediaData->fLastPlayedDate;
 }
 
 QString CMediaData::getDirectionLabel() const
@@ -372,7 +403,7 @@ int CMediaData::getDirectionValue() const
 void CMediaData::updateFromOther( std::shared_ptr< CMediaData > other, bool toLHS )
 {
     if ( toLHS )
-        fLHSUserData = other->fLHSUserData;
+        fLHSUserMediaData = other->fLHSUserMediaData;
     else
-        fRHSUserData = other->fRHSUserData;
+        fRHSUserMediaData = other->fRHSUserMediaData;
 }
