@@ -26,11 +26,13 @@ set(qtproject_SRCS
     SyncSystem.cpp
     Settings.cpp
     UserData.cpp
+    UsersModel.cpp
 )
 
 set(qtproject_H
     SyncSystem.h
     MediaModel.h
+    UsersModel.h
 )
 
 set(project_H

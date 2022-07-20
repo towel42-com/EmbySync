@@ -33,7 +33,6 @@ namespace Ui
 {
     class CMainWindow;
 }
-class QTreeWidgetItem;
 class CMediaData;
 class CUserData;
 class CSettings;
@@ -41,6 +40,8 @@ class CSyncSystem;
 class QProgressDialog;
 class CMediaModel;
 class CMediaFilterModel;
+class CUsersModel;
+class CUsersFilterModel;
 class QTreeView;
 
 
@@ -78,7 +79,7 @@ public Q_SLOTS:
     void slotRHSMediaDoubleClicked();
     void slotPendingMediaUpdate();
 private Q_SLOTS:
-    void slotCurrentUserChanged( QTreeWidgetItem *, QTreeWidgetItem * );
+    void slotCurrentUserChanged( const QModelIndex & index );
 
     void slotReloadServers();
     void slotReloadCurrentUser();
@@ -105,7 +106,6 @@ private:
     void onlyShowSyncableUsers();
     void onlyShowMediaWithDifferences();
     std::shared_ptr< CUserData > getCurrUserData() const;
-    std::shared_ptr< CUserData > userDataForItem( QTreeWidgetItem * item ) const;
 
     void loadFile( const QString & fileName );
 
@@ -124,7 +124,11 @@ private:
     QProgressDialog * fProgressDlg{ nullptr };
 
     CMediaModel * fMediaModel{ nullptr };
-    CMediaFilterModel * fFilterModel{ nullptr };
+    CMediaFilterModel * fMediaFilterModel{ nullptr };
+
+    CUsersModel * fUsersModel{ nullptr };
+    CUsersFilterModel * fUsersFilterModel{ nullptr };
+
     QTimer * fPendingMediaUpdateTimer{ nullptr };
 
 };

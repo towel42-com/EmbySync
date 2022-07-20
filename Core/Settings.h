@@ -100,8 +100,8 @@ public:
     QColor mediaDestColor( bool forBackground = true ) const;
     void setMediaDestColor( const QColor & color );
 
-    QColor mediaDataMissingColor( bool forBackground = true ) const;
-    void setMediaDataMissingColor( const QColor & color );
+    QColor dataMissingColor( bool forBackground = true ) const;
+    void setDataMissingColor( const QColor & color );
 
     int maxItems() const { return fMaxItems; }
     void setMaxItems( int maxItems );

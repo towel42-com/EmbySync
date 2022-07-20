@@ -36,13 +36,13 @@ CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, QWidget * par
 {
     fImpl->setupUi( this );
     load();
-    connect( fImpl->mediaMissingColor, &QToolButton::clicked,
+    connect( fImpl->dataMissingColor, &QToolButton::clicked,
              [this]()
              {
-                 auto newColor = QColorDialog::getColor( fMediaMissingColor, this, tr( "Select Color" ) );
+                 auto newColor = QColorDialog::getColor( fDataMissingColor, this, tr( "Select Color" ) );
                  if ( newColor.isValid() )
                  {
-                     fMediaMissingColor = newColor;
+                     fDataMissingColor = newColor;
                      updateColors();
                  }
              } );
@@ -97,7 +97,7 @@ void CSettingsDlg::load()
 
     fMediaSourceColor = fSettings->mediaSourceColor();
     fMediaDestColor = fSettings->mediaDestColor();
-    fMediaMissingColor = fSettings->mediaDataMissingColor();
+    fDataMissingColor = fSettings->dataMissingColor();
     updateColors();
     auto maxItems = fSettings->maxItems();
     if ( maxItems < fImpl->maxItems->minimum() )
@@ -114,7 +114,7 @@ void CSettingsDlg::save()
 
     fSettings->setMediaSourceColor( fMediaSourceColor );
     fSettings->setMediaDestColor( fMediaDestColor );
-    fSettings->setMediaDataMissingColor( fMediaMissingColor );
+    fSettings->setDataMissingColor( fDataMissingColor );
     fSettings->setMaxItems( ( fImpl->maxItems->value() == fImpl->maxItems->minimum() ) ? -1 : fImpl->maxItems->value() );
 }
 
@@ -123,7 +123,7 @@ void CSettingsDlg::updateColors()
 {
     updateColor( fImpl->mediaSource, fMediaSourceColor);
     updateColor( fImpl->mediaDest, fMediaDestColor );
-    updateColor( fImpl->mediaMissing, fMediaMissingColor );
+    updateColor( fImpl->dataMissing, fDataMissingColor );
 }
 
 void CSettingsDlg::updateColor( QLabel * label, const QColor & color )

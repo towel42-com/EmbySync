@@ -132,6 +132,8 @@ bool CMediaData::hasMissingInfo() const
 
 void CMediaData::loadUserDataFromJSON( const QJsonObject & media, bool isLHSServer  )
 {
+    //auto tmp = QJsonDocument( media );
+    //qDebug() << tmp.toJson();
     auto userDataObj = media[ "UserData" ].toObject();
 
     //auto tmp = QJsonDocument( userDataObj );
@@ -144,6 +146,15 @@ void CMediaData::loadUserDataFromJSON( const QJsonObject & media, bool isLHSServ
     else
     {
         fRHSUserData->loadUserDataFromJSON( userDataObj );
+    }
+
+
+    auto providerIDsObj = media[ "ProviderIds" ].toObject();
+    for ( auto && ii = providerIDsObj.begin(); ii != providerIDsObj.end(); ++ii )
+    {
+        auto providerName = ii.key();
+        auto providerID = ii.value().toString();
+        addProvider( providerName, providerID );
     }
 }
 

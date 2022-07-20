@@ -48,7 +48,6 @@ enum class ERequestType
     eUsers,
     eMediaList,
     eGetMediaInfo,
-    eMediaData,
     eReloadMediaData,
     eUpdateData,
     eUpdateFavorite
@@ -97,7 +96,7 @@ class CSyncSystem : public QObject
     Q_OBJECT
 public:
     CSyncSystem( std::shared_ptr< CSettings > settings, QObject * parent = nullptr );
-    void setUserItemFunc( std::function< void( std::shared_ptr< CUserData > userData ) > updateUserFunc );
+    void setAddUserItemFunc( std::function< void( std::shared_ptr< CUserData > userData ) > updateUserFunc );
     void setMediaItemFunc( std::function< void( std::shared_ptr< CMediaData > userData ) > mediaItemFunc );
     void setProcessNewMediaFunc( std::function< void( std::shared_ptr< CMediaData > userData ) > processMediaFunc );
     void setUserMsgFunc( std::function< void( const QString & title, const QString & msg, bool isCritical ) > userMsgFunc );
@@ -176,8 +175,7 @@ private:
 
     void addMediaInfo( std::shared_ptr<CMediaData> mediaData, const QJsonObject & mediaInfo, bool isLHSServer );
 
-    void loadMediaData();
-    void requestMediaData( std::shared_ptr< CMediaData > mediaData, bool isLHS, bool reload );
+    void requestReloadMediaData( std::shared_ptr< CMediaData > mediaData, bool isLHS );
     void loadMediaData( const QByteArray & data, bool isLHS, const QString & id );
     void reloadMediaData( const QByteArray & data, bool isLHS, const QString & id );
     void mergeMediaData( TMediaIDToMediaData & lhs, TMediaIDToMediaData & rhs, bool lhsIsLHS );
@@ -210,7 +208,7 @@ private:
     std::unordered_map< ERequestType, int > fRequests;
     std::unordered_map< QNetworkReply *, std::unordered_map< int, QVariant > > fAttributes;
 
-    std::function< void( std::shared_ptr< CUserData > userData ) > fUpdateUserFunc;
+    std::function< void( std::shared_ptr< CUserData > userData ) > fAddUserFunc;
     std::function< void( std::shared_ptr< CMediaData > mediaData ) > fUpdateMediaFunc;
     std::function< void( std::shared_ptr< CMediaData > mediaData ) > fProcessNewMediaFunc;
     std::function< void( const QString & title, const QString & msg, bool isCritical ) > fUserMsgFunc;

@@ -244,12 +244,12 @@ void CSettings::setMediaDestColor( const QColor & color )
     updateValue( fMediaDestColor, color );
 }
 
-QColor CSettings::mediaDataMissingColor( bool forBackground /*= true */ ) const
+QColor CSettings::dataMissingColor( bool forBackground /*= true */ ) const
 {
     return getColor( fMediaDataMissingColor, forBackground );
 }
 
-void CSettings::setMediaDataMissingColor( const QColor & color )
+void CSettings::setDataMissingColor( const QColor & color )
 {
     updateValue( fMediaDataMissingColor, color );
 }
