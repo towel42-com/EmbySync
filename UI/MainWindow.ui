@@ -216,6 +216,9 @@
     <addaction name="actionReloadServers"/>
     <addaction name="actionReloadCurrentUser"/>
     <addaction name="separator"/>
+    <addaction name="actionProcessToRight"/>
+    <addaction name="actionProcessToLeft"/>
+    <addaction name="separator"/>
     <addaction name="actionProcess"/>
     <addaction name="separator"/>
     <addaction name="actionExit"/>
@@ -251,6 +254,8 @@
    <addaction name="actionReloadCurrentUser"/>
    <addaction name="separator"/>
    <addaction name="actionProcess"/>
+   <addaction name="actionProcessToLeft"/>
+   <addaction name="actionProcessToRight"/>
   </widget>
   <action name="actionSettings">
    <property name="icon">
@@ -296,7 +301,7 @@
   <action name="actionProcess">
    <property name="icon">
     <iconset resource="EmbySync.qrc">
-     <normaloff>:/resources/generate.png</normaloff>:/resources/generate.png</iconset>
+     <normaloff>:/resources/process.png</normaloff>:/resources/process.png</iconset>
    </property>
    <property name="text">
     <string>Process User</string>
@@ -359,6 +364,24 @@
    </property>
    <property name="toolTip">
     <string>Reload Current User</string>
+   </property>
+  </action>
+  <action name="actionProcessToRight">
+   <property name="icon">
+    <iconset resource="EmbySync.qrc">
+     <normaloff>:/resources/processRight.png</normaloff>:/resources/processRight.png</iconset>
+   </property>
+   <property name="text">
+    <string>Force Process to RHS Server</string>
+   </property>
+  </action>
+  <action name="actionProcessToLeft">
+   <property name="icon">
+    <iconset resource="EmbySync.qrc">
+     <normaloff>:/resources/processLeft.png</normaloff>:/resources/processLeft.png</iconset>
+   </property>
+   <property name="text">
+    <string>Force Process to LHS Server</string>
    </property>
   </action>
  </widget>

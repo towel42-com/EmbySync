@@ -111,7 +111,6 @@ public:
     void loadUsers();
     void loadUsersMedia( std::shared_ptr< CUserData > user );
     void clearCurrUser();
-    void process();
 
     std::shared_ptr< CUserData > getUserData( const QString & name ) const;
 
@@ -131,9 +130,14 @@ Q_SIGNALS:
     void sigFindingMediaInfoFinished();
 public Q_SLOTS:
     void slotFindMissingMedia();
+
+    void slotProcess();
+    void slotProcessToLeft();
+    void slotProcessToRight();
 private:
+    void process( bool forceLeft, bool forceRight );
     void requestUsersPlayedMedia( bool isLHSServer );
-    bool processData( std::shared_ptr< CMediaData > mediaData );
+    bool processData( std::shared_ptr< CMediaData > mediaData, bool forceLeft, bool forceRight );
 
     void requestUsers( bool forLHSServer );
 

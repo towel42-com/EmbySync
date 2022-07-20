@@ -83,7 +83,6 @@ private Q_SLOTS:
 
     void slotReloadServers();
     void slotReloadCurrentUser();
-    void slotProcess();
     void slotToggleOnlyShowSyncableUsers();
 
     void slotToggleOnlyShowMediaWithDifferences();
