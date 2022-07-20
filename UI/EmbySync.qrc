@@ -1,5 +1,7 @@
 <RCC>
     <qresource prefix="/">
+        <file>resources/arrowleft.png</file>
+        <file>resources/arrowright.png</file>
         <file>resources/embysync.png</file>
         <file>resources/embysync.ico</file>
         <file>resources/process.png</file>
@@ -13,5 +15,6 @@
         <file>resources/syncusers.png</file>
         <file>resources/reloadUsers.png</file>
         <file>resources/reloadServers.png</file>
+        <file>resources/upload.png</file>
     </qresource>
 </RCC>

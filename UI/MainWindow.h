@@ -92,10 +92,16 @@ private Q_SLOTS:
     void slotUserMediaLoaded();
 
     void slotSetCurrentMediaItem( const QModelIndex & current, const QModelIndex & previous );
+
+    void slotApplyToLeft();
+    void slotApplyToRight();
+    void slotUploadUserMediaData();
 private:
     void hideColumns( QTreeView * treeView, EWhichTree whichTree );
-    void changeMediaUserData( QModelIndex idx );
+    void changeMediaUserData( const QModelIndex & idx );
 
+    std::shared_ptr< CMediaData > getMediaData( QModelIndex idx ) const;
+        
     void setupProgressDlg( const QString & title );
 
     void setProgressMaximum( int count );
