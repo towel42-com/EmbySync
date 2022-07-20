@@ -136,7 +136,7 @@ public Q_SLOTS:
     void slotProcessToRight();
 private:
     void process( bool forceLeft, bool forceRight );
-    void requestUsersPlayedMedia( bool isLHSServer );
+    void requestUsersMediaList( bool isLHSServer );
     bool processData( std::shared_ptr< CMediaData > mediaData, bool forceLeft, bool forceRight );
 
     void requestUsers( bool forLHSServer );

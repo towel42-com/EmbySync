@@ -73,6 +73,9 @@ CSyncSystem::CSyncSystem( std::shared_ptr< CSettings > settings, QObject * paren
     connect( fManager, &QNetworkAccessManager::proxyAuthenticationRequired, this, &CSyncSystem::slotProxyAuthenticationRequired );
     connect( fManager, &QNetworkAccessManager::sslErrors, this, &CSyncSystem::slotSSlErrors );
     connect( fManager, &QNetworkAccessManager::finished, this, &CSyncSystem::slotRequestFinished );
+
+
+    connect( this, &CSyncSystem::sigUserMediaLoaded, this, &CSyncSystem::slotFindMissingMedia );
 }
 
 void CSyncSystem::setAddUserItemFunc( std::function< void( std::shared_ptr< CUserData > userData ) > addUserFunc )
@@ -148,11 +151,11 @@ void CSyncSystem::loadUsersMedia( std::shared_ptr< CUserData > userData )
     if ( !fCurrUserData->onLHSServer() && !fCurrUserData->onRHSServer() )
         return;
 
-    fProgressFuncs.setupProgress( tr( "Loading Users Played Media" ) );
+    fProgressFuncs.setupProgress( tr( "Loading Users Media" ) );
     if ( fCurrUserData->onLHSServer() )
-        requestUsersPlayedMedia( true );
+        requestUsersMediaList( true );
     if ( fCurrUserData->onRHSServer() )
-        requestUsersPlayedMedia( false );
+        requestUsersMediaList( false );
 }
 
 void CSyncSystem::clearCurrUser()
@@ -271,7 +274,7 @@ void CSyncSystem::slotFindMissingMedia()
     if ( checkForMissingMedia() )
         return;
 
-    fProgressFuncs.setupProgress( "Finding Un-played Media Info" );
+    fProgressFuncs.setupProgress( "Finding Media Info" );
     fProgressFuncs.setMaximum( static_cast<int>( fMissingMedia.size() ) );
 
     for ( auto && ii : fMissingMedia )
@@ -283,7 +286,7 @@ void CSyncSystem::slotFindMissingMedia()
     }
 }
 
-void CSyncSystem::requestUsersPlayedMedia( bool isLHSServer )
+void CSyncSystem::requestUsersMediaList( bool isLHSServer )
 {
     if ( !fCurrUserData )
         return;
@@ -302,7 +305,8 @@ void CSyncSystem::requestUsersPlayedMedia( bool isLHSServer )
     query.addQueryItem( "SortBy", "SortName" );
     query.addQueryItem( "SortOrder", "Ascending" );
     query.addQueryItem( "Recursive", "True" );
-    query.addQueryItem( "Fields", "ProviderIds" );
+    query.addQueryItem( "IsMissing", "False" );
+    query.addQueryItem( "Fields", "ProviderIds,ExternalUrls,Missing" );
     url.setQuery( query );
 
     //qDebug() << url;
@@ -368,7 +372,7 @@ void CSyncSystem::requestUpdateUserDataForMedia( std::shared_ptr< CMediaData > m
     if ( userID.isEmpty() || mediaID.isEmpty() )
         return;
 
-    auto obj = newData->toJSON();
+    auto obj = newData->userDataJSON();
     QByteArray data = QJsonDocument( obj ).toJson();
 
     //qDebug() << "userID" << userID;
@@ -966,7 +970,7 @@ void CSyncSystem::addMediaInfo( std::shared_ptr<CMediaData> mediaData, const QJs
     else
         fRHSMedia[ mediaData->getMediaID( isLHSServer ) ] = mediaData;
 
-    auto && providers = mediaData->getProviders();
+    auto && providers = mediaData->getProviders( true );
     for ( auto && ii : providers )
     {
         if ( isLHSServer )
@@ -1060,6 +1064,7 @@ void CSyncSystem::loadMediaData( const QByteArray & data, bool isLHSServer, cons
             fRHSProviderSearchMap[ providerName ][ providerID ] = mediaData;
         }
     }
+
     if ( fProcessNewMediaFunc )
         fProcessNewMediaFunc( mediaData );
 }
@@ -1080,7 +1085,7 @@ void CSyncSystem::mergeMediaData( TMediaIDToMediaData & lhs, bool lhsIsLHS )
         if ( !mediaData )
             continue;
         QStringList dupeProviderForMedia;
-        for ( auto && jj : mediaData->getProviders() )
+        for ( auto && jj : mediaData->getProviders( true ) )
         {
             auto providerName = jj.first;
             auto providerID = jj.second;
