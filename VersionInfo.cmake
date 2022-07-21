@@ -26,7 +26,7 @@ find_package(CreateVersion REQUIRED)
 GetGitInfo(${CMAKE_SOURCE_DIR} GIT_VERSION_INFO)
 STRING(TIMESTAMP BUILD_DATE "%m/%d/%Y")
 
-SET( MAJOR_VERSION    0.0 )
+SET( MAJOR_VERSION    0 )
 SET( MINOR_VERSION    2 )
 SET( APP_NAME         "Emby Sync" )
 SET( VENDOR           "Scott Aron Bloom" )
