@@ -2,6 +2,7 @@
     <qresource prefix="/">
         <file>resources/arrowleft.png</file>
         <file>resources/arrowright.png</file>
+        <file>resources/clock.png</file>
         <file>resources/embysync.png</file>
         <file>resources/embysync.ico</file>
         <file>resources/process.png</file>
