@@ -864,8 +864,6 @@ void CSyncSystem::requestMediaInformation( std::shared_ptr< CMediaData > mediaDa
     }
 
     auto path = url.path();
-    if ( !path.endsWith( "/" ) )
-        path += "/";
     path += QString( "Items" );
     url.setPath( path );
 
