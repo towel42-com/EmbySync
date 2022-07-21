@@ -82,12 +82,17 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
         return color;
     }
 
+    if ( ( role == Qt::DecorationRole ) && ( index.column() == eDirection ) )
+    {
+        return mediaData->getDirectionIcon();
+    }
+
     if ( role != Qt::DisplayRole )
         return {};
 
     if ( index.column() == eDirection )
     {
-        return mediaData->getDirectionLabel();
+        return {};
     }
 
     auto pos = fProviderColumnsByColumn.find( index.column() );
@@ -178,27 +183,28 @@ QVariant CMediaModel::headerData( int section, Qt::Orientation orientation, int 
 {
     if ( section < 0 || section > columnCount() )
         return QAbstractTableModel::headerData( section, orientation, role );
-    if ( role != Qt::DisplayRole )
-        return QAbstractTableModel::headerData( section, orientation, role );
     if ( orientation != Qt::Horizontal )
         return QAbstractTableModel::headerData( section, orientation, role );
 
-    if ( section == eDirection )
+    if ( ( role == Qt::DecorationRole ) && ( section == eDirection ) )
     {
         switch ( fDirSort )
         {
             case EDirSort::eNoSort:
-                return QString();
+                return QIcon();
             case EDirSort::eLeftToRight:
-                return ">>>";
+                return QIcon( ":/resources/arrowright.png" );
             case EDirSort::eRightToLeft:
-                return "<<<";
+                return QIcon( ":/resources/arrowleft.png" );
             case EDirSort::eEqual:
-                return "   =";
+                return QIcon( ":/resources/equal.png" );
         }
 
-        return "";
+        return QIcon();
     }
+
+    if ( role != Qt::DisplayRole )
+        return QAbstractTableModel::headerData( section, orientation, role );
 
     auto pos = fProviderColumnsByColumn.find( section );
     if ( pos != fProviderColumnsByColumn.end() )

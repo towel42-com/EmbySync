@@ -27,6 +27,7 @@
 #include <QMap>
 #include <QUrlQuery>
 #include <QDateTime>
+#include <QIcon>
 
 class QVariant;
 class QListWidgetItem;
@@ -139,6 +140,7 @@ public:
 
     QString getDirectionLabel() const;
     int getDirectionValue() const;
+    QIcon getDirectionIcon() const;
 private:
     QString getProviderList() const;
 
