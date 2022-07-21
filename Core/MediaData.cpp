@@ -406,6 +406,23 @@ bool CMediaData::lhsNeedsUpdating() const
     return fRHSUserMediaData->fLastPlayedDate > fLHSUserMediaData->fLastPlayedDate;
 }
 
+QIcon CMediaData::getDirectionIcon() const
+{
+    QIcon retVal;
+    if ( hasMissingInfo() )
+        retVal = QIcon( ":/resources/error.png" );
+    else if ( userDataEqual() )
+        retVal = QIcon( ":/resources/equal.png" );
+    else if ( rhsNeedsUpdating() )
+        retVal = QIcon( ":/resources/arrowright.png" );
+    else if ( lhsNeedsUpdating() )
+        retVal = QIcon( ":/resources/arrowleft.png" );
+    else
+        retVal = {};
+
+    return retVal;
+}
+
 QString CMediaData::getDirectionLabel() const
 {
     QString retVal;
