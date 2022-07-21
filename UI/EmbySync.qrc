@@ -2,9 +2,11 @@
     <qresource prefix="/">
         <file>resources/arrowleft.png</file>
         <file>resources/arrowright.png</file>
+        <file>resources/equal.png</file>
         <file>resources/clock.png</file>
         <file>resources/embysync.png</file>
         <file>resources/embysync.ico</file>
+        <file>resources/error.png</file>
         <file>resources/process.png</file>
         <file>resources/issues.png</file>
         <file>resources/processLeft.png</file>
