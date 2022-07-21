@@ -50,6 +50,8 @@ int main( int argc, char ** argv )
     appl.setOrganizationDomain( "github.com/towel42-com/EmbySync" ); // QString::fromStdString( NVersion::HOMEPAGE ) );
 
     CMainWindow mainWindow;
+    mainWindow.setWindowTitle( QString::fromStdString( NVersion::getWindowTitle() ) );
+
     mainWindow.show();
     return appl.exec();
 }
