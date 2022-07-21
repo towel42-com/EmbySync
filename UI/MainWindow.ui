@@ -167,82 +167,9 @@
         </layout>
        </widget>
       </widget>
-      <widget class="QGroupBox" name="currMediaBox">
-       <property name="title">
-        <string>Current Media Selection</string>
-       </property>
-       <layout class="QGridLayout" name="gridLayout">
-        <item row="4" column="1">
-         <spacer name="verticalSpacer">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>105</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item row="2" column="2" rowspan="5">
-         <widget class="CMediaUserDataWidget" name="rhsUserMediaData">
-          <property name="title">
-           <string>RHS User Data:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="1">
-         <widget class="QToolButton" name="applyToLeft">
-          <property name="text">
-           <string>...</string>
-          </property>
-          <property name="icon">
-           <iconset resource="EmbySync.qrc">
-            <normaloff>:/resources/arrowleft.png</normaloff>:/resources/arrowleft.png</iconset>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="1">
-         <widget class="QToolButton" name="uploadUserMediaData">
-          <property name="text">
-           <string>...</string>
-          </property>
-          <property name="icon">
-           <iconset resource="EmbySync.qrc">
-            <normaloff>:/resources/upload.png</normaloff>:/resources/upload.png</iconset>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="1">
-         <widget class="QToolButton" name="applyToRight">
-          <property name="text">
-           <string>...</string>
-          </property>
-          <property name="icon">
-           <iconset resource="EmbySync.qrc">
-            <normaloff>:/resources/arrowright.png</normaloff>:/resources/arrowright.png</iconset>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0" rowspan="5">
-         <widget class="CMediaUserDataWidget" name="lhsUserMediaData">
-          <property name="title">
-           <string>LHS User Data:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0" colspan="3">
-         <widget class="QLabel" name="externalUrls">
-          <property name="text">
-           <string>External Urls:</string>
-          </property>
-          <property name="openExternalLinks">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="3">
+      <widget class="QWidget" name="">
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <item>
          <spacer name="horizontalSpacer">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -255,23 +182,102 @@
           </property>
          </spacer>
         </item>
-        <item row="0" column="0" colspan="4">
-         <layout class="QHBoxLayout" name="horizontalLayout">
-          <item>
-           <widget class="QLabel" name="label">
-            <property name="text">
-             <string>Name:</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLineEdit" name="currMediaName">
-            <property name="readOnly">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-         </layout>
+        <item>
+         <widget class="QGroupBox" name="currMediaBox">
+          <property name="title">
+           <string>Current Media Selection</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout">
+           <item row="2" column="0" rowspan="5">
+            <widget class="CMediaUserDataWidget" name="lhsUserMediaData">
+             <property name="title">
+              <string>LHS User Data:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QToolButton" name="applyToLeft">
+             <property name="text">
+              <string>...</string>
+             </property>
+             <property name="icon">
+              <iconset resource="EmbySync.qrc">
+               <normaloff>:/resources/arrowleft.png</normaloff>:/resources/arrowleft.png</iconset>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="1">
+            <spacer name="verticalSpacer">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>105</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item row="0" column="0" colspan="4">
+            <layout class="QHBoxLayout" name="horizontalLayout">
+             <item>
+              <widget class="QLabel" name="label">
+               <property name="text">
+                <string>Name:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="currMediaName">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item row="5" column="1">
+            <widget class="QToolButton" name="uploadUserMediaData">
+             <property name="text">
+              <string>...</string>
+             </property>
+             <property name="icon">
+              <iconset resource="EmbySync.qrc">
+               <normaloff>:/resources/upload.png</normaloff>:/resources/upload.png</iconset>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="2" rowspan="5">
+            <widget class="CMediaUserDataWidget" name="rhsUserMediaData">
+             <property name="title">
+              <string>RHS User Data:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QToolButton" name="applyToRight">
+             <property name="text">
+              <string>...</string>
+             </property>
+             <property name="icon">
+              <iconset resource="EmbySync.qrc">
+               <normaloff>:/resources/arrowright.png</normaloff>:/resources/arrowright.png</iconset>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0" colspan="3">
+            <widget class="QLabel" name="externalUrls">
+             <property name="text">
+              <string>External Urls:</string>
+             </property>
+             <property name="openExternalLinks">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
         </item>
        </layout>
       </widget>
