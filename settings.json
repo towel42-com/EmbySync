@@ -2,7 +2,7 @@
     "MaxItems": -1,
     "MediaDestColor": "#ffff00",
     "MediaSourceColor": "#ffff00",
-    "OnlyShowMediaWithDifferences": false,
+    "OnlyShowMediaWithDifferences": true,
     "OnlyShowSyncableUsers": true,
     "ShowMediaWithIssues": false,
     "lhs": {
