@@ -134,13 +134,9 @@ bool CMediaData::isMissing( bool isLHS ) const
     return isLHS ? fLHSUserMediaData->fMediaID.isEmpty() : fRHSUserMediaData->fMediaID.isEmpty();
 }
 
-bool CMediaData::hasMissingInfo( bool checkForProviders ) const
+bool CMediaData::hasMissingInfo() const
 {
-    if ( isMissing( true ) || isMissing( false ) )
-        return true;
-    if ( checkForProviders && getProviders().empty() )
-        return true;
-    return false;
+    return ( isMissing( true ) || isMissing( false ) );
 }
 
 void CMediaData::loadUserDataFromJSON( const QJsonObject & media, bool isLHSServer  )

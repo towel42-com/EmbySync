@@ -4,7 +4,7 @@
     "MediaSourceColor": "#ffff00",
     "OnlyShowMediaWithDifferences": false,
     "OnlyShowSyncableUsers": true,
-    "ShowMediaWithIssues": false,
+    "ShowMediaWithIssues": true,
     "lhs": {
         "api": "616aa9a8501f4fa2be62f92363d9e7dd",
         "url": "http://mediabox:8096"

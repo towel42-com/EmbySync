@@ -46,7 +46,7 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
         if ( !mediaData )
             return false;
 
-        if ( mediaData->hasMissingInfo( true ) )
+        if ( mediaData->hasMissingInfo() )
             return fSettings->showMediaWithIssues();
 
         if ( !fSettings->onlyShowMediaWithDifferences() )
@@ -124,7 +124,7 @@ QVariant CMediaModel::getColor( const QModelIndex & index, bool background ) con
 {
     auto mediaData = fData[ index.row() ];
 
-    if ( mediaData->hasMissingInfo( true ) )
+    if ( mediaData->hasMissingInfo() )
         return fSettings->dataMissingColor( background );
 
     if ( !mediaData->userDataEqual() )
@@ -319,7 +319,7 @@ CMediaModel::SMediaSummary CMediaModel::getMediaSummary() const
     for ( auto && ii : fData )
     {
         retVal.fTotalMedia++;
-        if ( ii->hasMissingInfo( true ) )
+        if ( ii->hasMissingInfo() )
         {
             retVal.fMissingData++;
             continue;
