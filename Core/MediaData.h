@@ -106,9 +106,9 @@ public:
 
     QString getMediaID( bool isLHS ) const;
     void setMediaID( const QString & id, bool isLHS );
-    bool isMissing( bool isLHS ) const;
 
-    bool hasMissingInfo( bool checkForProviders=false ) const;
+    bool isMissingOnServer( bool isLHS ) const;
+    bool isMissingOnEitherServer() const;
 
     bool hasProviderIDs() const;
     void addProvider( const QString & providerName, const QString & providerID );
