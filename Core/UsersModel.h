@@ -43,17 +43,16 @@ public:
     };
 
     SUsersSummary settingsChanged();
-
     SUsersSummary getMediaSummary() const;
 
-
     void addUser( std::shared_ptr< CUserData > userData );
+    void setUsers( const std::list< std::shared_ptr< CUserData > > & users );
     std::shared_ptr< CUserData > userDataForName( const QString & name );
     void clear();
 private:
     QVariant getColor( const QModelIndex & index, bool background ) const;
         
-    std::vector< std::shared_ptr< CUserData > > fData;
+    std::vector< std::shared_ptr< CUserData > > fUsers;
     std::unordered_map< std::shared_ptr< CUserData >, size_t > fUsersToPos;
     std::shared_ptr< CSettings > fSettings;
 };
