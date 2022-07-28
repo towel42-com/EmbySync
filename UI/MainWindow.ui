@@ -94,7 +94,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QTreeView" name="directionTree">
+          <widget class="QTreeView" name="direction">
            <property name="verticalScrollBarPolicy">
             <enum>Qt::ScrollBarAlwaysOff</enum>
            </property>
@@ -113,6 +113,12 @@
            <property name="sortingEnabled">
             <bool>true</bool>
            </property>
+           <attribute name="headerDefaultSectionSize">
+            <number>40</number>
+           </attribute>
+           <attribute name="headerStretchLastSection">
+            <bool>false</bool>
+           </attribute>
           </widget>
          </item>
          <item>
@@ -167,7 +173,7 @@
         </layout>
        </widget>
       </widget>
-      <widget class="QWidget" name="">
+      <widget class="QWidget" name="layoutWidget">
        <layout class="QHBoxLayout" name="horizontalLayout_2">
         <item>
          <spacer name="horizontalSpacer">
@@ -437,7 +443,7 @@
      <normaloff>:/resources/reloadServers.png</normaloff>:/resources/reloadServers.png</iconset>
    </property>
    <property name="text">
-    <string>Reload Servers</string>
+    <string>Reload Users from Servers</string>
    </property>
    <property name="toolTip">
     <string>Reload Servers</string>
@@ -535,7 +541,7 @@
  <tabstops>
   <tabstop>users</tabstop>
   <tabstop>lhsMedia</tabstop>
-  <tabstop>directionTree</tabstop>
+  <tabstop>direction</tabstop>
   <tabstop>rhsMedia</tabstop>
   <tabstop>currMediaName</tabstop>
  </tabstops>
