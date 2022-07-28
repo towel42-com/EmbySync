@@ -242,9 +242,10 @@ void CMediaModel::clear()
     endResetModel();
 }
 
-void CMediaModel::setMedia( const std::unordered_set< std::shared_ptr< CMediaData > > & media )
+void CMediaModel::setMedia( const std::list< std::shared_ptr< CMediaData > > & media )
 {
     beginResetModel();
+    clear();
     fData.reserve( media.size() );
     for ( auto && ii : media )
     {

@@ -96,7 +96,6 @@ class CSyncSystem : public QObject
     Q_OBJECT
 public:
     CSyncSystem( std::shared_ptr< CSettings > settings, QObject * parent = nullptr );
-    void setAddUserItemFunc( std::function< void( std::shared_ptr< CUserData > userData ) > updateUserFunc );
     void setMediaItemFunc( std::function< void( std::shared_ptr< CMediaData > userData ) > mediaItemFunc );
     void setProcessNewMediaFunc( std::function< void( std::shared_ptr< CMediaData > userData ) > processMediaFunc );
     void setUserMsgFunc( std::function< void( const QString & title, const QString & msg, bool isCritical ) > userMsgFunc );
@@ -109,16 +108,17 @@ public:
     void resetMedia();
 
     void loadUsers();
+
     void loadUsersMedia( std::shared_ptr< CUserData > user );
     void clearCurrUser();
 
     std::shared_ptr< CUserData > getUserData( const QString & name ) const;
 
-    void forEachUser( std::function< void( std::shared_ptr< CUserData > userData ) > onUser );
-    void forEachMedia( std::function< void( std::shared_ptr< CMediaData > media ) > onMediaItem );
+    std::list< std::shared_ptr< CMediaData > > getAllMedia( bool andClear );
+    std::list< std::shared_ptr< CMediaData > > getAllMedia() const;
 
-    std::unordered_set< std::shared_ptr< CMediaData > > getAllMedia() const { return fAllMedia; }
-
+    std::list< std::shared_ptr< CUserData > > getAllUsers( bool andClear );
+    std::list< std::shared_ptr< CUserData > > getAllUsers() const;
     std::shared_ptr< CUserData > currUser() const;
 
     void updateUserDataForMedia( std::shared_ptr<CMediaData> mediaData, std::shared_ptr<SMediaUserData> newData, bool lhsNeedsUpdating );
@@ -135,11 +135,12 @@ public Q_SLOTS:
     void slotProcessToLeft();
     void slotProcessToRight();
 private:
-    void process( bool forceLeft, bool forceRight );
+    void requestUsers( bool forLHSServer );
+
+        void process( bool forceLeft, bool forceRight );
+
     void requestUsersMediaList( bool isLHSServer );
     bool processData( std::shared_ptr< CMediaData > mediaData, bool forceLeft, bool forceRight );
-
-    void requestUsers( bool forLHSServer );
 
     void setIsLHS( QNetworkReply * reply, bool isLHS );
     bool isLHSServer( QNetworkReply * reply );
@@ -212,7 +213,6 @@ private:
     std::unordered_map< ERequestType, int > fRequests;
     std::unordered_map< QNetworkReply *, std::unordered_map< int, QVariant > > fAttributes;
 
-    std::function< void( std::shared_ptr< CUserData > userData ) > fAddUserFunc;
     std::function< void( std::shared_ptr< CMediaData > mediaData ) > fUpdateMediaFunc;
     std::function< void( std::shared_ptr< CMediaData > mediaData ) > fProcessNewMediaFunc;
     std::function< void( const QString & title, const QString & msg, bool isCritical ) > fUserMsgFunc;
