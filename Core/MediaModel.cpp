@@ -46,7 +46,7 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
         if ( !mediaData )
             return false;
 
-        if ( mediaData->hasMissingInfo( true ) )
+        if ( mediaData->isMissingOnEitherServer() )
             return fSettings->showMediaWithIssues();
 
         if ( !fSettings->onlyShowMediaWithDifferences() )
@@ -99,6 +99,9 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
             return mediaData->getProviderID( ( *pos ).second.second );
     }
 
+    if ( mediaData->isMissingOnServer( isLHS ) )
+        return {};
+
     switch ( column )
     {
         case eLHSName: return mediaData->name();
@@ -119,7 +122,7 @@ QVariant CMediaModel::getColor( const QModelIndex & index, bool background ) con
 {
     auto mediaData = fData[ index.row() ];
 
-    if ( mediaData->hasMissingInfo( true ) )
+    if ( mediaData->isMissingOnEitherServer() )
         return fSettings->dataMissingColor( background );
 
     if ( !mediaData->userDataEqual() )
@@ -194,7 +197,7 @@ QVariant CMediaModel::headerData( int section, Qt::Orientation orientation, int 
             case EDirSort::eRightToLeft:
                 return "<<<";
             case EDirSort::eEqual:
-                return "   =";
+                return "   ==";
         }
 
         return "";
@@ -222,7 +225,9 @@ CMediaModel::EDirSort CMediaModel::nextDirSort()
 {
     if ( fDirSort == eRightToLeft )
         fDirSort = eNoSort;
-    fDirSort = static_cast<EDirSort>( fDirSort + 1 );
+    else
+        fDirSort = static_cast<EDirSort>( fDirSort + 1 );
+
     emit headerDataChanged( Qt::Horizontal, EColumns::eDirection, EColumns::eDirection );
     return fDirSort;
 }
@@ -313,7 +318,7 @@ CMediaModel::SMediaSummary CMediaModel::getMediaSummary() const
     for ( auto && ii : fData )
     {
         retVal.fTotalMedia++;
-        if ( ii->hasMissingInfo( true ) )
+        if ( ii->isMissingOnEitherServer() )
         {
             retVal.fMissingData++;
             continue;
@@ -358,7 +363,7 @@ void CMediaModel::updateMediaData( std::shared_ptr< CMediaData > mediaData )
 CMediaFilterModel::CMediaFilterModel( QObject * parent ) :
     QSortFilterProxyModel( parent )
 {
-
+    setDynamicSortFilter( false );
 }
 
 bool CMediaFilterModel::filterAcceptsRow( int source_row, const QModelIndex & source_parent ) const
@@ -391,30 +396,6 @@ bool CMediaFilterModel::lessThan( const QModelIndex & source_left, const QModelI
         Q_ASSERT( retVal1 != retVal2 );
 
         return retVal1;
-      //switch ( dirSort )
-        //{
-        //    case CMediaModel::EDirSort::eLeftToRight:
-        //    {
-        //        if ( ( leftValue == CMediaModel::EDirSort::eLeftToRight ) && ( rightValue != CMediaModel::EDirSort::eLeftToRight ) )
-        //             return true;
-        //        break;
-        //    }
-        //    case CMediaModel::EDirSort::eRightToLeft:
-        //    {
-        //        if ( ( leftValue == CMediaModel::EDirSort::eRightToLeft ) && ( rightValue != CMediaModel::EDirSort::eRightToLeft ) )
-        //            return true;
-        //        break;
-        //    }
-        //    case CMediaModel::EDirSort::eEqual:
-        //    {
-        //        if ( ( leftValue == CMediaModel::EDirSort::eEqual ) && ( rightValue != CMediaModel::EDirSort::eEqual ) )
-        //            return true;
-        //        break;
-        //    }
-        //    case CMediaModel::EDirSort::eNoSort:
-        //        break;
-        //}
-        //return source_left.row() < source_right.row();
     }
     else
         return QSortFilterProxyModel::lessThan( source_left, source_right );
