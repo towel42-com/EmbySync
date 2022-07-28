@@ -415,7 +415,7 @@ void CMainWindow::slotUserMediaLoaded()
     auto direction = fImpl->direction;
     auto rhsTree = currUser->onRHSServer() ? fImpl->rhsMedia : nullptr;
 
-    fMediaModel->setMedia( fSyncSystem->getAllMedia() );
+    fMediaModel->setMedia( fSyncSystem->getAllMedia( true ) );
     hideColumns( fImpl->lhsMedia, EWhichTree::eLHS );
     hideColumns( fImpl->direction, EWhichTree::eDir );
     hideColumns( fImpl->rhsMedia, EWhichTree::eRHS );
