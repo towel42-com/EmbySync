@@ -468,14 +468,29 @@ void CMainWindow::slotCurrentUserChanged( const QModelIndex & index )
 
 void CMainWindow::slotUserMediaCompletelyLoaded()
 {
-    NSABUtils::autoSize( fImpl->lhsMedia );
+    if ( !fMediaLoadedTimer )
+    {
+        fMediaLoadedTimer = new QTimer( this );
+        fMediaLoadedTimer->setSingleShot( true );
+        fMediaLoadedTimer->setInterval( 500 );
+        connect( fMediaLoadedTimer, &QTimer::timeout,
+            [ this ]()
+            {
+                NSABUtils::autoSize( fImpl->lhsMedia );
 
-    fImpl->direction->setMaximumWidth( 40 );
-    fImpl->direction->header()->setMaximumWidth( 40 );
-    fImpl->direction->header()->resizeSection( CMediaModel::EColumns::eDirection, 40 );
+                fImpl->direction->setMaximumWidth( 40 );
+                fImpl->direction->header()->setMaximumWidth( 40 );
+                fImpl->direction->header()->resizeSection( CMediaModel::EColumns::eDirection, 40 );
 
-    NSABUtils::autoSize( fImpl->rhsMedia );
-    onlyShowMediaWithDifferences();
+                NSABUtils::autoSize( fImpl->rhsMedia );
+                onlyShowMediaWithDifferences();
+                
+                delete fMediaLoadedTimer;
+                fMediaLoadedTimer = nullptr;
+            } );
+    }
+    fMediaLoadedTimer->stop();
+    fMediaLoadedTimer->start();
 }
 
 std::shared_ptr< CUserData > CMainWindow::getCurrUserData() const
