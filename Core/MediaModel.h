@@ -59,7 +59,7 @@ public:
     EDirSort nextDirSort();
 
     void clear();
-    void setMedia( const std::unordered_set< std::shared_ptr< CMediaData > > & media );
+    void setMedia( const std::list< std::shared_ptr< CMediaData > > & media );
 
     void addMedia( std::shared_ptr< CMediaData > mediaData ); 
 

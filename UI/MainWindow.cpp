@@ -49,8 +49,9 @@ CMainWindow::CMainWindow( QWidget * parent )
     fImpl( new Ui::CMainWindow )
 {
     fImpl->setupUi( this );
-    fImpl->directionTree->setMaximumWidth( 40 );
-    fImpl->directionTree->header()->setMaximumWidth( 40 );
+    fImpl->direction->setMaximumWidth( 40 );
+    fImpl->direction->header()->setMaximumWidth( 40 );
+    fImpl->direction->header()->resizeSection( CMediaModel::EColumns::eDirection, 40 );
 
     int scrollBarExtent = 2* fImpl->lhsMedia->horizontalScrollBar()->style()->pixelMetric( QStyle::PM_ScrollBarExtent, nullptr, this );
     fImpl->scrollSpacer->changeSize( 20, scrollBarExtent, QSizePolicy::Minimum, QSizePolicy::Fixed );
@@ -59,22 +60,22 @@ CMainWindow::CMainWindow( QWidget * parent )
     fMediaModel = new CMediaModel( fSettings, this );
     fMediaFilterModel = new CMediaFilterModel( this );
     fMediaFilterModel->setSourceModel( fMediaModel );
-    fMediaFilterModel->sort( 0, Qt::SortOrder::AscendingOrder );
 
     fUsersModel = new CUsersModel( fSettings, this );
     fUsersFilterModel = new CUsersFilterModel( this );
     fUsersFilterModel->setSourceModel( fUsersModel );
-    fUsersFilterModel->sort( 0, Qt::SortOrder::AscendingOrder );
 
     fImpl->lhsMedia->setModel( fMediaFilterModel );
     fImpl->rhsMedia->setModel( fMediaFilterModel );
-    fImpl->directionTree->setModel( fMediaFilterModel );
+    fImpl->direction->setModel( fMediaFilterModel );
 
     fImpl->users->setModel( fUsersFilterModel );
 
+    fMediaFilterModel->sort( -1, Qt::SortOrder::AscendingOrder );
+    fUsersFilterModel->sort( -1, Qt::SortOrder::AscendingOrder );
 
     hideColumns( fImpl->lhsMedia, EWhichTree::eLHS );
-    hideColumns( fImpl->directionTree, EWhichTree::eDir );
+    hideColumns( fImpl->direction, EWhichTree::eDir );
     hideColumns( fImpl->rhsMedia, EWhichTree::eRHS );
 
     fSyncSystem = std::make_shared< CSyncSystem >( fSettings, this );
@@ -84,15 +85,6 @@ CMainWindow::CMainWindow( QWidget * parent )
     connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaCompletelyLoaded, this, &CMainWindow::slotUserMediaCompletelyLoaded );
     connect( fSyncSystem.get(), &CSyncSystem::sigFindingMediaInfoFinished, this, &CMainWindow::slotUserMediaCompletelyLoaded );
     
-
-    fSyncSystem->setAddUserItemFunc(
-        [this]( std::shared_ptr< CUserData > userData )
-        {
-            if ( !userData )
-                return;
-
-            fUsersModel->addUser( userData );
-        } );
 
     fSyncSystem->setMediaItemFunc(
         [this]( std::shared_ptr< CMediaData > mediaData )
@@ -154,7 +146,7 @@ CMainWindow::CMainWindow( QWidget * parent )
 
     connect( fImpl->lhsMedia->selectionModel(), &QItemSelectionModel::currentChanged, this, &CMainWindow::slotSetCurrentMediaItem );
     connect( fImpl->rhsMedia->selectionModel(), &QItemSelectionModel::currentChanged, this, &CMainWindow::slotSetCurrentMediaItem );
-    connect( fImpl->directionTree->selectionModel(), &QItemSelectionModel::currentChanged, this, &CMainWindow::slotSetCurrentMediaItem );
+    connect( fImpl->direction->selectionModel(), &QItemSelectionModel::currentChanged, this, &CMainWindow::slotSetCurrentMediaItem );
 
     connect( fImpl->lhsMedia->verticalScrollBar(), &QScrollBar::sliderMoved, fImpl->rhsMedia->verticalScrollBar(), &QScrollBar::setValue );
     connect( fImpl->lhsMedia->verticalScrollBar(), &QScrollBar::valueChanged, fImpl->rhsMedia->verticalScrollBar(), &QScrollBar::setValue );
@@ -162,10 +154,10 @@ CMainWindow::CMainWindow( QWidget * parent )
     connect( fImpl->rhsMedia->verticalScrollBar(), &QScrollBar::sliderMoved, fImpl->lhsMedia->verticalScrollBar(), &QScrollBar::setValue );
     connect( fImpl->rhsMedia->verticalScrollBar(), &QScrollBar::valueChanged, fImpl->lhsMedia->verticalScrollBar(), &QScrollBar::setValue );
 
-    connect( fImpl->lhsMedia->verticalScrollBar(), &QScrollBar::sliderMoved, fImpl->directionTree->verticalScrollBar(), &QScrollBar::setValue );
-    connect( fImpl->lhsMedia->verticalScrollBar(), &QScrollBar::valueChanged, fImpl->directionTree->verticalScrollBar(), &QScrollBar::setValue );
+    connect( fImpl->lhsMedia->verticalScrollBar(), &QScrollBar::sliderMoved, fImpl->direction->verticalScrollBar(), &QScrollBar::setValue );
+    connect( fImpl->lhsMedia->verticalScrollBar(), &QScrollBar::valueChanged, fImpl->direction->verticalScrollBar(), &QScrollBar::setValue );
 
-    fImpl->directionTree->horizontalScrollBar()->setEnabled( false );
+    fImpl->direction->horizontalScrollBar()->setEnabled( false );
 
     connect( fImpl->lhsMedia->horizontalScrollBar(), &QScrollBar::sliderMoved, fImpl->rhsMedia->horizontalScrollBar(), &QScrollBar::setValue );
     connect( fImpl->lhsMedia->horizontalScrollBar(), &QScrollBar::valueChanged, fImpl->rhsMedia->horizontalScrollBar(), &QScrollBar::setValue );
@@ -248,7 +240,7 @@ CMainWindow::~CMainWindow()
 void CMainWindow::slotSetCurrentMediaItem( const QModelIndex & current, const QModelIndex & /*previous*/ )
 {
     fImpl->lhsMedia->setCurrentIndex( current );
-    fImpl->directionTree->setCurrentIndex( current );
+    fImpl->direction->setCurrentIndex( current );
     fImpl->rhsMedia->setCurrentIndex( current );
 
     auto mediaInfo = getMediaData( current );
@@ -291,12 +283,12 @@ bool CMainWindow::eventFilter( QObject * obj, QEvent * event )
     {
         if ( event->type() == QEvent::Show )
         {
-            //fImpl->directionTree->horizontalScrollBar()->setVisible( true );
+            //fImpl->direction->horizontalScrollBar()->setVisible( true );
             fImpl->rhsMedia->horizontalScrollBar()->setVisible( true );
         }
         else if ( event->type() == QEvent::Hide )
         {
-            //fImpl->directionTree->horizontalScrollBar()->setHidden( true );
+            //fImpl->direction->horizontalScrollBar()->setHidden( true );
             fImpl->rhsMedia->horizontalScrollBar()->setHidden( true );
         }
     }
@@ -304,12 +296,12 @@ bool CMainWindow::eventFilter( QObject * obj, QEvent * event )
     {
         if ( event->type() == QEvent::Show )
         {
-            //fImpl->directionTree->horizontalScrollBar()->setVisible( true );
+            //fImpl->direction->horizontalScrollBar()->setVisible( true );
             fImpl->lhsMedia->horizontalScrollBar()->setVisible( true );
         }
         else if ( event->type() == QEvent::Hide )
         {
-            //fImpl->directionTree->horizontalScrollBar()->setHidden( true );
+            //fImpl->direction->horizontalScrollBar()->setHidden( true );
             fImpl->lhsMedia->horizontalScrollBar()->setHidden( true );
         }
     }
@@ -401,13 +393,16 @@ void CMainWindow::loadSettings()
     fImpl->rhsServerLabel->setText( tr( "Server: %1" ).arg( fSettings->rhsURL() ) );
     fImpl->actionOnlyShowSyncableUsers->setChecked( fSettings->onlyShowSyncableUsers() );
     fImpl->actionOnlyShowMediaWithDifferences->setChecked( fSettings->onlyShowMediaWithDifferences() );
+    fImpl->actionShowMediaWithIssues->setChecked( fSettings->showMediaWithIssues() );
 
     fSyncSystem->loadUsers();
 }
 
 void CMainWindow::slotLoadingUsersFinished()
 {
+    fUsersModel->setUsers( fSyncSystem->getAllUsers( true ) );
     onlyShowSyncableUsers();
+    fUsersFilterModel->sort( 0, Qt::SortOrder::AscendingOrder );
 }
 
 void CMainWindow::slotUserMediaLoaded()
@@ -417,12 +412,12 @@ void CMainWindow::slotUserMediaLoaded()
         return;
 
     auto lhsTree = currUser->onLHSServer() ? fImpl->lhsMedia : nullptr;
-    auto directionTree = fImpl->directionTree;
+    auto direction = fImpl->direction;
     auto rhsTree = currUser->onRHSServer() ? fImpl->rhsMedia : nullptr;
 
     fMediaModel->setMedia( fSyncSystem->getAllMedia() );
     hideColumns( fImpl->lhsMedia, EWhichTree::eLHS );
-    hideColumns( fImpl->directionTree, EWhichTree::eDir );
+    hideColumns( fImpl->direction, EWhichTree::eDir );
     hideColumns( fImpl->rhsMedia, EWhichTree::eRHS );
 }
 
@@ -473,10 +468,29 @@ void CMainWindow::slotCurrentUserChanged( const QModelIndex & index )
 
 void CMainWindow::slotUserMediaCompletelyLoaded()
 {
-    NSABUtils::autoSize( fImpl->lhsMedia );
-    NSABUtils::autoSize( fImpl->rhsMedia );
-    onlyShowMediaWithDifferences();
-    fMediaFilterModel->sort( fMediaFilterModel->sortColumn(), fMediaFilterModel->sortOrder() );
+    if ( !fMediaLoadedTimer )
+    {
+        fMediaLoadedTimer = new QTimer( this );
+        fMediaLoadedTimer->setSingleShot( true );
+        fMediaLoadedTimer->setInterval( 500 );
+        connect( fMediaLoadedTimer, &QTimer::timeout,
+            [ this ]()
+            {
+                NSABUtils::autoSize( fImpl->lhsMedia );
+
+                fImpl->direction->setMaximumWidth( 40 );
+                fImpl->direction->header()->setMaximumWidth( 40 );
+                fImpl->direction->header()->resizeSection( CMediaModel::EColumns::eDirection, 40 );
+
+                NSABUtils::autoSize( fImpl->rhsMedia );
+                onlyShowMediaWithDifferences();
+                
+                delete fMediaLoadedTimer;
+                fMediaLoadedTimer = nullptr;
+            } );
+    }
+    fMediaLoadedTimer->stop();
+    fMediaLoadedTimer->start();
 }
 
 std::shared_ptr< CUserData > CMainWindow::getCurrUserData() const
@@ -525,6 +539,15 @@ void CMainWindow::onlyShowMediaWithDifferences()
         .arg( mediaSummary.fMissingData )
         .arg( mediaSummary.fTotalMedia ) 
     );
+
+    auto column = fMediaFilterModel->sortColumn();
+    auto order = fMediaFilterModel->sortOrder();
+    if ( column == -1 )
+    {
+        column = 0;
+        order = Qt::AscendingOrder;
+    }
+    fMediaFilterModel->sort( column, order );
 }
 
 void CMainWindow::showMediaWithIssues()

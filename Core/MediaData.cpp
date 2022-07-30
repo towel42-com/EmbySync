@@ -129,14 +129,14 @@ QString CMediaData::computeName( QJsonObject & media )
     return retVal;
 }
 
-bool CMediaData::isMissing( bool isLHS ) const
+bool CMediaData::isMissingOnServer( bool isLHS ) const
 {
     return isLHS ? fLHSUserMediaData->fMediaID.isEmpty() : fRHSUserMediaData->fMediaID.isEmpty();
 }
 
-bool CMediaData::hasMissingInfo() const
+bool CMediaData::isMissingOnEitherServer() const
 {
-    return ( isMissing( true ) || isMissing( false ) );
+    return isMissingOnServer( true ) || isMissingOnServer( false );
 }
 
 void CMediaData::loadUserDataFromJSON( const QJsonObject & media, bool isLHSServer  )
@@ -405,7 +405,7 @@ bool CMediaData::lhsNeedsUpdating() const
 QIcon CMediaData::getDirectionIcon() const
 {
     QIcon retVal;
-    if ( hasMissingInfo() )
+    if ( isMissingOnEitherServer() )
         retVal = QIcon( ":/resources/error.png" );
     else if ( userDataEqual() )
         retVal = QIcon( ":/resources/equal.png" );
@@ -422,16 +422,16 @@ QIcon CMediaData::getDirectionIcon() const
 QString CMediaData::getDirectionLabel() const
 {
     QString retVal;
-    if ( hasMissingInfo() )
+    if ( isMissingOnEitherServer() )
         retVal = "<NA>";
     else if ( userDataEqual() )
-        retVal = "   =   ";
+        retVal = "   ==  ";
     else if ( rhsNeedsUpdating() )
         retVal = ">>>";
     else if ( lhsNeedsUpdating() )
         retVal = "<<<";
     else
-        retVal = QString();
+        retVal = "   <>";
 
     return retVal;
 }
@@ -439,7 +439,7 @@ QString CMediaData::getDirectionLabel() const
 int CMediaData::getDirectionValue() const
 {
     int retVal{ 0 };
-    if ( hasMissingInfo() )
+    if ( isMissingOnEitherServer() )
         retVal = 0;
     else if ( userDataEqual() )
         retVal = 2;
