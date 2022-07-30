@@ -16,7 +16,7 @@ int CUsersModel::rowCount( const QModelIndex & parent /* = QModelIndex() */ ) co
     if ( parent.isValid() )
         return 0;
 
-    return static_cast<int>( fData.size() );
+    return static_cast<int>( fUsers.size() );
 }
 
 int CUsersModel::columnCount( const QModelIndex & parent /* = QModelIndex() */ ) const
@@ -31,7 +31,7 @@ QVariant CUsersModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
     if ( !index.isValid() || index.parent().isValid() || ( index.row() >= rowCount() ) )
         return {};
 
-    auto userData = fData[ index.row() ];
+    auto userData = fUsers[ index.row() ];
 
     if ( role == ECustomRoles::eShowItemRole )
     {
@@ -77,7 +77,7 @@ QVariant CUsersModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
 
 QVariant CUsersModel::getColor( const QModelIndex & index, bool background ) const
 {
-    auto userData = fData[ index.row() ];
+    auto userData = fUsers[ index.row() ];
 
     if ( ( index.column() == eOnLHSServer ) && !userData->onLHSServer() )
     {
@@ -122,7 +122,7 @@ CUsersModel::SUsersSummary CUsersModel::getMediaSummary() const
 {
     SUsersSummary retVal;
 
-    for ( auto && ii : fData )
+    for ( auto && ii : fUsers )
     {
         retVal.fTotal++;
         if ( !ii->onLHSServer() || !ii->onRHSServer() )
@@ -135,21 +135,31 @@ CUsersModel::SUsersSummary CUsersModel::getMediaSummary() const
     return retVal;
 }
 
+void CUsersModel::setUsers( const std::list< std::shared_ptr< CUserData > > & users )
+{
+    beginResetModel();
+    clear();
+    fUsers = { users.begin(), users.end() };
+    for ( size_t ii = 0; ii < fUsers.size(); ++ii )
+        fUsersToPos[ fUsers[ ii ] ] = ii;
+    endResetModel();
+}
+
 void CUsersModel::addUser( std::shared_ptr< CUserData > userData )
 {
     auto pos = fUsersToPos.find( userData );
     if ( pos == fUsersToPos.end() )
     {
-        beginInsertRows( QModelIndex(), static_cast<int>( fData.size() ), static_cast<int>( fData.size() ) );
-        fUsersToPos[ userData ] = fData.size();
-        fData.push_back( userData );
+        beginInsertRows( QModelIndex(), static_cast<int>( fUsers.size() ), static_cast<int>( fUsers.size() ) );
+        fUsersToPos[ userData ] = fUsers.size();
+        fUsers.push_back( userData );
         endInsertRows();
     }
 }
 
 std::shared_ptr< CUserData > CUsersModel::userDataForName( const QString & name )
 {
-    for ( auto && ii : fData )
+    for ( auto && ii : fUsers )
     {
         if ( ii->name() == name )
             return ii;
@@ -160,7 +170,7 @@ std::shared_ptr< CUserData > CUsersModel::userDataForName( const QString & name 
 void CUsersModel::clear()
 {
     beginResetModel();
-    fData.clear();
+    fUsers.clear();
     fUsersToPos.clear();
     endResetModel();
 }

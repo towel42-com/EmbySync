@@ -78,11 +78,6 @@ CSyncSystem::CSyncSystem( std::shared_ptr< CSettings > settings, QObject * paren
     connect( this, &CSyncSystem::sigUserMediaLoaded, this, &CSyncSystem::slotFindMissingMedia );
 }
 
-void CSyncSystem::setAddUserItemFunc( std::function< void( std::shared_ptr< CUserData > userData ) > addUserFunc )
-{
-    fAddUserFunc = addUserFunc;
-}
-
 void CSyncSystem::setMediaItemFunc( std::function< void( std::shared_ptr< CMediaData > userData ) > mediaItemFunc )
 {
     fUpdateMediaFunc = mediaItemFunc;
@@ -196,7 +191,7 @@ void CSyncSystem::process( bool forceLeft, bool forceRight )
     int cnt = 0;
     for ( auto && ii : fAllMedia )
     {
-        if ( !ii || ii->userDataEqual() || ii->hasMissingInfo() )
+        if ( !ii || ii->userDataEqual() || ii->isMissingOnEitherServer() )
             continue;
         cnt++;
     }
@@ -211,7 +206,7 @@ void CSyncSystem::process( bool forceLeft, bool forceRight )
 
     for ( auto && ii : fAllMedia )
     {
-        if ( !ii || ii->userDataEqual() || ii->hasMissingInfo() )
+        if ( !ii || ii->userDataEqual() || ii->isMissingOnEitherServer() )
             continue;
 
         fProgressFuncs.incProgress();
@@ -232,20 +227,28 @@ std::shared_ptr< CUserData > CSyncSystem::getUserData( const QString & name ) co
     return userData;
 }
 
-void CSyncSystem::forEachUser( std::function< void( std::shared_ptr< CUserData > media ) > onUser )
+std::list< std::shared_ptr< CMediaData > > CSyncSystem::getAllMedia() const
 {
-    for ( auto && ii : fUsers )
-    {
-        onUser( ii.second );
-    }
+    auto retVal = std::list< std::shared_ptr< CMediaData > >( { fAllMedia.begin(), fAllMedia.end() } );
+    return retVal;
 }
 
-void CSyncSystem::forEachMedia( std::function< void( std::shared_ptr< CMediaData > media ) > onMediaItem )
+std::list< std::shared_ptr< CUserData > > CSyncSystem::getAllUsers( bool andClear )
 {
-    for ( auto && ii : fAllMedia )
+    auto retVal = getAllUsers();
+    if ( andClear )
+        fUsers.clear();
+    return std::move( retVal );
+}
+
+std::list< std::shared_ptr< CUserData > > CSyncSystem::getAllUsers() const
+{
+    std::list< std::shared_ptr< CUserData > > retVal;
+    for ( auto && ii : fUsers )
     {
-        onMediaItem( ii );
+        retVal.emplace_back( ii.second );
     }
+    return std::move( retVal );
 }
 
 std::shared_ptr< CUserData > CSyncSystem::currUser() const
@@ -266,7 +269,7 @@ void CSyncSystem::slotFindMissingMedia()
         if ( !ii->hasProviderIDs() )
             continue;
 
-        if ( !ii->hasMissingInfo() )
+        if ( !ii->isMissingOnEitherServer() )
             continue;
 
         fMissingMedia[ ii->name() ] = ii;
@@ -279,9 +282,9 @@ void CSyncSystem::slotFindMissingMedia()
 
     for ( auto && ii : fMissingMedia )
     {
-        if ( ii.second->isMissing( true ) )
+        if ( ii.second->isMissingOnServer( true ) )
             requestMediaInformation( ii.second, true );
-        if ( ii.second->isMissing( false ) )
+        if ( ii.second->isMissingOnServer( false ) )
             requestMediaInformation( ii.second, false );
     }
 }
@@ -765,8 +768,6 @@ void CSyncSystem::loadUsers( const QByteArray & data, bool isLHSServer )
         }
 
         userData->setUserID( id, isLHSServer );
-        if ( fAddUserFunc )
-            fAddUserFunc( userData );
     }
 }
 

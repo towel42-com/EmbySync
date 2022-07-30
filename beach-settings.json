@@ -2,11 +2,12 @@
     "MaxItems": -1,
     "MediaDestColor": "#ffff00",
     "MediaSourceColor": "#ffff00",
-    "OnlyShowMediaWithDifferences": false,
-    "OnlyShowSyncableUsers": false,
+    "OnlyShowMediaWithDifferences": true,
+    "OnlyShowSyncableUsers": true,
+    "ShowMediaWithIssues": false,
     "lhs": {
-        "api": "bff7356525234545ad26bc2395022758",
-        "url": "http://beachbox:8096"
+        "api": "616aa9a8501f4fa2be62f92363d9e7dd",
+        "url": "http://nas.towel42.com:18096"
     },
     "rhs": {
         "api": "bff7356525234545ad26bc2395022758",

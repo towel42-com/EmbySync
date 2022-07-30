@@ -39,6 +39,12 @@ endif()
 
 get_filename_component( QTDIR ${DEPLOYQT_EXECUTABLE} DIRECTORY )
 
+message( STATUS "QTDIR=${QTDIR}")
+set ( DEBUG_PLUGINPATH 
+        "${QTDIR}/../plugins"
+        )
+message( STATUS "DEBUG_PLUGINPATH=${DEBUG_PLUGINPATH}")
+
 set ( DEBUG_PATH 
         "%PATH%"
         "$<TARGET_FILE_DIR:SABUtils>"

@@ -133,6 +133,7 @@ private:
     CUsersFilterModel * fUsersFilterModel{ nullptr };
 
     QTimer * fPendingMediaUpdateTimer{ nullptr };
+    QTimer * fMediaLoadedTimer{ nullptr };
 
 };
 #endif 
