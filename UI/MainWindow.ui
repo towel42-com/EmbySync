@@ -52,6 +52,9 @@
            <property name="text">
             <string>LHS Server Media:</string>
            </property>
+           <property name="openExternalLinks">
+            <bool>true</bool>
+           </property>
           </widget>
          </item>
          <item>
@@ -145,6 +148,9 @@
           <widget class="QLabel" name="rhsServerLabel">
            <property name="text">
             <string>RHS Server Media:</string>
+           </property>
+           <property name="openExternalLinks">
+            <bool>true</bool>
            </property>
           </widget>
          </item>

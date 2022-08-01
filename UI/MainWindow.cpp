@@ -389,8 +389,8 @@ void CMainWindow::slotSave()
 void CMainWindow::loadSettings()
 {
     slotAddToLog( "Loading Settings" );
-    fImpl->lhsServerLabel->setText( tr( "Server: %1" ).arg( fSettings->lhsURL() ) );
-    fImpl->rhsServerLabel->setText( tr( "Server: %1" ).arg( fSettings->rhsURL() ) );
+    fImpl->lhsServerLabel->setText( tr( "Server: <a href=\"%1\">%1</a>" ).arg( fSettings->lhsURL() ) );
+    fImpl->rhsServerLabel->setText( tr( "Server: <a href=\"%1\">%1</a>" ).arg( fSettings->rhsURL() ) );
     fImpl->actionOnlyShowSyncableUsers->setChecked( fSettings->onlyShowSyncableUsers() );
     fImpl->actionOnlyShowMediaWithDifferences->setChecked( fSettings->onlyShowMediaWithDifferences() );
     fImpl->actionShowMediaWithIssues->setChecked( fSettings->showMediaWithIssues() );
