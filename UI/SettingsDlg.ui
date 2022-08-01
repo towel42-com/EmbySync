@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>381</width>
-    <height>426</height>
+    <height>402</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -63,7 +63,14 @@
        <widget class="QLineEdit" name="embyAPI2"/>
       </item>
       <item row="0" column="1">
-       <widget class="QLineEdit" name="embyURL2"/>
+       <widget class="CHyperLinkLineEdit" name="embyURL2">
+        <property name="verticalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+        <property name="horizontalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+       </widget>
       </item>
       <item row="0" column="0">
        <widget class="QLabel" name="label_3">
@@ -87,6 +94,10 @@
      <property name="text">
       <string>...</string>
      </property>
+     <property name="icon">
+      <iconset resource="EmbySync.qrc">
+       <normaloff>:/resources/colorwheel.png</normaloff>:/resources/colorwheel.png</iconset>
+     </property>
     </widget>
    </item>
    <item row="3" column="0" rowspan="2">
@@ -100,6 +111,10 @@
     <widget class="QToolButton" name="mediaSourceColor">
      <property name="text">
       <string>...</string>
+     </property>
+     <property name="icon">
+      <iconset resource="EmbySync.qrc">
+       <normaloff>:/resources/colorwheel.png</normaloff>:/resources/colorwheel.png</iconset>
      </property>
     </widget>
    </item>
@@ -117,7 +132,14 @@
        </widget>
       </item>
       <item row="0" column="1">
-       <widget class="QLineEdit" name="embyURL1"/>
+       <widget class="CHyperLinkLineEdit" name="embyURL1">
+        <property name="verticalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+        <property name="horizontalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
+        </property>
+       </widget>
       </item>
       <item row="1" column="0">
        <widget class="QLabel" name="label_2">
@@ -160,6 +182,10 @@
      <property name="text">
       <string>...</string>
      </property>
+     <property name="icon">
+      <iconset resource="EmbySync.qrc">
+       <normaloff>:/resources/colorwheel.png</normaloff>:/resources/colorwheel.png</iconset>
+     </property>
     </widget>
    </item>
    <item row="5" column="0">
@@ -171,6 +197,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>CHyperLinkLineEdit</class>
+   <extends>QTextEdit</extends>
+   <header>SABUtils/HyperLinkLineEdit.h</header>
+  </customwidget>
+ </customwidgets>
  <tabstops>
   <tabstop>embyURL1</tabstop>
   <tabstop>embyAPI1</tabstop>
@@ -181,7 +214,9 @@
   <tabstop>dataMissingColor</tabstop>
   <tabstop>maxItems</tabstop>
  </tabstops>
- <resources/>
+ <resources>
+  <include location="EmbySync.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>buttonBox</sender>

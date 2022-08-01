@@ -36,6 +36,7 @@ CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, QWidget * par
 {
     fImpl->setupUi( this );
     load();
+
     connect( fImpl->dataMissingColor, &QToolButton::clicked,
              [this]()
              {
