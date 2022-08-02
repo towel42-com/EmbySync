@@ -83,8 +83,8 @@ CMainWindow::CMainWindow( QWidget * parent )
     connect( fSyncSystem.get(), &CSyncSystem::sigLoadingUsersFinished, this, &CMainWindow::slotLoadingUsersFinished );
     connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaLoaded, this, &CMainWindow::slotUserMediaLoaded );
     connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaCompletelyLoaded, this, &CMainWindow::slotUserMediaCompletelyLoaded );
-    connect( fSyncSystem.get(), &CSyncSystem::sigFindingMediaInfoFinished, this, &CMainWindow::slotUserMediaCompletelyLoaded );
-    
+    connect( fSyncSystem.get(), &CSyncSystem::sigFinishedCheckingForMissingMedia, this, &CMainWindow::slotUserMediaCompletelyLoaded );
+
 
     fSyncSystem->setMediaItemFunc(
         [this]( std::shared_ptr< CMediaData > mediaData )
@@ -369,7 +369,7 @@ void CMainWindow::loadFile( const QString & fileName )
         return;
 
     reset();
-    if ( fSettings->load( fileName, this ) )
+    if ( fSettings->load( fileName, true, this ) )
         loadSettings();
 }
 
@@ -377,7 +377,7 @@ void CMainWindow::slotLoadProject()
 {
     reset();
 
-    if ( fSettings->load( this ) )
+    if ( fSettings->load( true, this ) )
         loadSettings();
 }
 

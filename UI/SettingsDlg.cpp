@@ -70,14 +70,6 @@ CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, QWidget * par
 
 }
 
-CSettings::CSettings( const QString & fileName, QWidget * parentWidget ) :
-    CSettings()
-{
-    fFileName = fileName;
-    load( parentWidget );
-}
-
-
 CSettingsDlg::~CSettingsDlg()
 {
 }
@@ -137,13 +129,13 @@ void CSettingsDlg::updateColor( QLabel * label, const QColor & color )
     label->setStyleSheet( styleSheet );
 }
 
-bool CSettings::load( const QString & fileName, QWidget * parentWidget )
+bool CSettings::load( const QString & fileName, bool addToRecentFileList, QWidget * parentWidget )
 {
     fFileName = fileName;
-    return load( parentWidget );
+    return load( addToRecentFileList, parentWidget );
 }
 
-bool CSettings::load( QWidget * parentWidget )
+bool CSettings::load( bool addToRecentFileList, QWidget * parentWidget )
 {
     if ( fFileName.isEmpty() )
     {
@@ -157,7 +149,7 @@ bool CSettings::load( QWidget * parentWidget )
                  [ parentWidget ]( const QString & title, const QString & msg )
     {
         QMessageBox::critical( parentWidget, title, msg );
-    } );
+    }, addToRecentFileList );
 }
 
 //std::function<QString()> selectFileFunc, std::function<void( const QString & title, const QString & msg )> errorFunc
