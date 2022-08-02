@@ -1,0 +1,10 @@
+1.0 - Initial version
+    Syncs User data, including favorite
+        Requires two calls to sync due to a bug in Emby's API
+    Does not sync "rating" system as thats not availble via the API
+    Does not sync user setup meta data, which is not currently available
+        Ie page layout settings
+    A vs B comparison uses the last played date.
+        Emby doesnt have a "last time the media was modified for a user API call
+    Can not sync users (ie put user X from server A onto server B)
+        No Emby API exists for this
