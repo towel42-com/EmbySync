@@ -392,14 +392,24 @@ bool CMediaData::rhsNeedsUpdating() const
 {
     //qDebug() << fLHSServer->fLastPlayedDate;
     //qDebug() << fRHSServer->fLastPlayedDate;
-    return fLHSUserMediaData->fLastPlayedDate > fRHSUserMediaData->fLastPlayedDate;
+    if ( fLHSUserMediaData->fLastPlayedDate.isValid() && fRHSUserMediaData->fLastPlayedDate.isValid() )
+        return fLHSUserMediaData->fLastPlayedDate > fRHSUserMediaData->fLastPlayedDate;
+    if ( fLHSUserMediaData->fLastPlayedDate.isValid() ) // left is good right isnt
+        return true;
+    //if ( fRHSUserMediaData->fLastPlayedDate.isValid() ) // left is good right isnt
+    return false;
 }
 
 bool CMediaData::lhsNeedsUpdating() const
 {
     //qDebug() << fLHSServer->fLastPlayedDate;
     //qDebug() << fRHSServer->fLastPlayedDate;
-    return fRHSUserMediaData->fLastPlayedDate > fLHSUserMediaData->fLastPlayedDate;
+    if ( fLHSUserMediaData->fLastPlayedDate.isValid() && fRHSUserMediaData->fLastPlayedDate.isValid() )
+        return fRHSUserMediaData->fLastPlayedDate > fLHSUserMediaData->fLastPlayedDate;
+    if ( fLHSUserMediaData->fLastPlayedDate.isValid() ) // left is good right isnt
+        return false;
+    //if ( fRHSUserMediaData->fLastPlayedDate.isValid() ) // left is good right isnt
+    return true;
 }
 
 QIcon CMediaData::getDirectionIcon() const
