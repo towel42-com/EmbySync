@@ -3,6 +3,7 @@ set(qtproject_SRCS
 )
 
 set(qtproject_H
+    main.h
 )
 
 set(project_H

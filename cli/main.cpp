@@ -20,12 +20,20 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include "main.h"
+
 #include "Core/Settings.h"
 #include "Core/SyncSystem.h"
+#include "Core/UserData.h"
 
 #include "Version.h"
+#include <iostream>
 
 #include <QCoreApplication>
+#include <QCommandLineParser>
+#include <QFile>
+#include <QTimer>
+#include <memory>
 
 int main( int argc, char ** argv )
 {
@@ -36,8 +44,207 @@ int main( int argc, char ** argv )
     appl.setOrganizationDomain( QString::fromStdString( NVersion::HOMEPAGE ) );
     appl.setOrganizationDomain( "github.com/towel42-com/EmbySync" ); // QString::fromStdString( NVersion::HOMEPAGE ) );
 
-    auto settings = std::make_shared< CSettings >();
-    auto dataFile = std::make_shared< CSyncSystem >( settings );
+    QCommandLineParser parser;
+    parser.setApplicationDescription( QString::fromStdString( NVersion::APP_NAME + " CLI" ) );
+    auto helpOption = parser.addHelpOption();
+    auto versionOption = parser.addVersionOption();
 
-    return appl.exec();
+
+    auto settingsFileOption = QCommandLineOption( QStringList() << "settings" << "s", "The settings json file", "Settings file" );
+    parser.addOption( settingsFileOption );
+
+    auto usersOption = QCommandLineOption( QStringList() << "users" << "u", "A regex for users to sync (.* for all)", "Users to sync" );
+    parser.addOption( usersOption );
+
+    if ( !parser.parse( appl.arguments() ) )
+    {
+        std::cerr << parser.errorText().toStdString() << "\n";
+        return -1;
+    }
+
+    if ( !parser.unknownOptionNames().isEmpty() )
+    {
+        std::cerr << "The following options were set and are unknown:\n";
+        for ( auto && ii : parser.unknownOptionNames() )
+            std::cerr << "    " << ii.toStdString() << "\n";
+        parser.showHelp();
+        return -1;
+    }
+
+    if ( parser.isSet( helpOption ) )
+    {
+        parser.showHelp();
+        return 0;
+    }
+
+    if ( parser.isSet( versionOption ) )
+    {
+        std::cout << NVersion::APP_NAME << " - " <<  NVersion::getVersionString( true ) << "\n";
+        return 0;
+    }
+
+    if ( !parser.isSet( settingsFileOption ) )
+    {
+        std::cerr << "--settings must be set\n";
+        std::cerr << parser.helpText().toStdString() << "\n";
+        return -1;
+    }
+
+
+    if ( !parser.isSet( usersOption ) )
+    {
+        std::cerr << "--users must be set\n";
+        std::cerr << parser.helpText().toStdString() << "\n";
+        return -1;
+    }
+
+    auto settingsFile = parser.value( settingsFileOption );
+    auto mainObj = std::make_shared< CMain >( settingsFile, parser.value( usersOption ) );
+    QObject::connect( mainObj.get(), &CMain::sigExit, &appl, &QCoreApplication::exit );
+
+    mainObj->run();
+
+    int retVal = appl.exec();
+    return retVal;
 }
+
+
+CMain::CMain( const QString & settingsFile, const QString & usersRegEx, QObject * parent /*= nullptr*/ ) :
+    QObject( parent ),
+    fSettingsFile( settingsFile ),
+    fUserRegEx( usersRegEx )
+{
+
+    fSettings = std::make_shared< CSettings >();
+    if ( !fSettings->load( settingsFile,
+         [settingsFile]( const QString & /*title*/, const QString & msg )
+         {
+             std::cerr << "--settings file '" << settingsFile.toStdString() << "' could not be loaded: " << msg.toStdString() << "\n";
+         }, false ) )
+    {
+        fSettings.reset();
+        return;
+    }
+
+    fSyncSystem = std::make_shared< CSyncSystem >( fSettings );
+
+    connect( fSyncSystem.get(), &CSyncSystem::sigAddToLog, this, &CMain::slotAddToLog );
+    connect( fSyncSystem.get(), &CSyncSystem::sigLoadingUsersFinished, this, &CMain::slotLoadingUsersFinished );
+    connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaLoaded, fSyncSystem.get(), &CSyncSystem::slotProcess );
+
+    connect( fSyncSystem.get(), &CSyncSystem::sigProcessingFinished, this, &CMain::slotProcessingFinished );
+    connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaCompletelyLoaded, this, &CMain::slotUserMediaCompletelyLoaded );
+    connect( fSyncSystem.get(), &CSyncSystem::sigFinishedCheckingForMissingMedia, this, &CMain::slotFinishedCheckingForMissingMedia );
+
+
+
+    SProgressFunctions progressFuncs;
+    progressFuncs.fSetupFunc = []( const QString & title )
+    {
+        std::cout << title.toStdString() << std::endl;
+    };
+
+    fSyncSystem->setProgressFunctions( progressFuncs );
+}
+
+
+void CMain::run()
+{
+    if ( !fSettings || !fSyncSystem )
+        return;
+
+    fSyncSystem->loadUsers();
+}
+
+void CMain::slotAddToLog( const QString & msg )
+{
+    std::cout << msg.toStdString() << "\n";
+}
+
+void CMain::slotLoadingUsersFinished()
+{
+    if ( !fSyncSystem )
+        return;
+
+    auto allUsers = fSyncSystem->getAllUsers();
+    fUsersToSync.clear();
+    for ( auto && ii : allUsers )
+    {
+        if ( ii->isUserNameMatch( fUserRegEx ) )
+            fUsersToSync.push_back( ii );
+    }
+    if ( fUsersToSync.empty() )
+    {
+        std::cerr << "No users matched '" << fUserRegEx.toStdString() << "'" << std::endl;
+
+        emit sigExit( -1 );
+        return;
+    }
+
+    std::list< std::shared_ptr< CUserData > > unsyncable;
+    for ( auto && ii = fUsersToSync.begin(); ii != fUsersToSync.end(); )
+    {
+        if ( !( *ii )->canBeSynced() )
+        {
+            unsyncable.push_back( *ii );
+            ii = fUsersToSync.erase( ii );
+        }
+        else
+            ++ii;
+    }
+
+    if ( !unsyncable.empty() )
+        std::cerr << "Warning: The following users matched but can not be synced\n";
+    for ( auto && ii : unsyncable )
+    {
+        std::cerr << "\t" << ii->name().toStdString();
+        if ( ii->onLHSServer() )
+            std::cerr << " - Missing from '" << fSettings->lhsURL().toStdString();
+        else //if ( ii->onRHSServer() )
+            std::cerr << " - Missing from '" << fSettings->rhsURL().toStdString();
+        std::cerr << "\n";
+    }
+
+    if ( fUsersToSync.empty() )
+    {
+        emit sigExit( -1 );
+        return;
+    }
+
+    QTimer::singleShot( 0, this, &CMain::slotProcessNextUser );
+}
+
+void CMain::slotProcessNextUser()
+{
+    if ( fUsersToSync.empty() )
+    {
+        emit sigExit( 0 );
+        return;
+    }
+
+    auto currUser = fUsersToSync.front();
+    fUsersToSync.pop_front();
+    slotAddToLog( "Processing user: " + currUser->name() );
+
+    fSyncSystem->resetMedia();
+    fSyncSystem->loadUsersMedia( currUser );
+
+    //QTimer::singleShot( 0, this, &CMain::slotProcessNextUser );
+}
+
+void CMain::slotFinishedCheckingForMissingMedia()
+{
+    slotAddToLog( "Finished processing missing media" );
+}
+
+void CMain::slotUserMediaCompletelyLoaded()
+{
+    slotAddToLog( "Finished processing media" );
+}
+
+void CMain::slotProcessingFinished( const QString & userName )
+{
+    slotAddToLog( QString( "Finished processing for user '%1'" ).arg( userName ) );
+    QTimer::singleShot( 0, this, &CMain::slotProcessNextUser );
+}
+
