@@ -180,7 +180,7 @@ void CSyncSystem::slotProcessToRight()
 
 void CSyncSystem::process( bool forceLeft, bool forceRight )
 {
-    auto title = QString( "Processing Data" );
+    auto title = QString( "Processing media for user '%1'" ).arg( fCurrUserData->name() );
     if ( forceLeft )
         title += " To the Left";
     else if ( forceLeft )
@@ -199,6 +199,7 @@ void CSyncSystem::process( bool forceLeft, bool forceRight )
     if ( cnt == 0 )
     {
         fProgressFuncs.resetProgress();
+        emit sigProcessingFinished( fCurrUserData->name() );
         return;
     }
 
@@ -277,7 +278,7 @@ void CSyncSystem::slotFindMissingMedia()
     if ( checkForMissingMedia() )
         return;
 
-    fProgressFuncs.setupProgress( "Finding Media Info" );
+    fProgressFuncs.setupProgress( "Finding missing media data" );
     fProgressFuncs.setMaximum( static_cast<int>( fMissingMedia.size() ) );
 
     for ( auto && ii : fMissingMedia )
@@ -649,7 +650,9 @@ void CSyncSystem::postHandlRequest( ERequestType requestType )
     {
         fProgressFuncs.resetProgress();
         if ( requestType == ERequestType::eGetMediaInfo )
-            emit sigFindingMediaInfoFinished();
+            emit sigUserMediaCompletelyLoaded();
+        else if ( requestType == ERequestType::eReloadMediaData )
+            emit sigProcessingFinished( fCurrUserData->name() );
     }
 }
 
@@ -834,6 +837,9 @@ void CSyncSystem::loadMediaInfo( const QByteArray & data, const QString & mediaN
     if ( !found )
     {
         emit sigAddToLog( QString( "Error:  COULD NOT FIND MEDIA '%1' on %2 server" ).arg( mediaName ).arg( fSettings->getServerName( isLHSServer ) ) );
+        auto pos = fMissingMedia.find( mediaName );
+        if ( pos != fMissingMedia.end() )
+            fMissingMedia.erase( pos );
     }
 
     checkForMissingMedia();
@@ -842,7 +848,7 @@ void CSyncSystem::loadMediaInfo( const QByteArray & data, const QString & mediaN
 bool CSyncSystem::checkForMissingMedia()
 {
     if ( fMissingMedia.empty() )
-        emit sigUserMediaCompletelyLoaded();
+        emit sigFinishedCheckingForMissingMedia();
     return fMissingMedia.empty();
 }
 

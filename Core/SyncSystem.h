@@ -126,7 +126,8 @@ Q_SIGNALS:
     void sigLoadingUsersFinished();
     void sigUserMediaLoaded();
     void sigUserMediaCompletelyLoaded();
-    void sigFindingMediaInfoFinished();
+    void sigFinishedCheckingForMissingMedia();
+    void sigProcessingFinished( const QString & name );
 public Q_SLOTS:
     void slotFindMissingMedia();
 
