@@ -38,6 +38,10 @@ public:
     CMain( const QString & settingsFile, const QString & usersRegEx, QObject * parent = nullptr );
 
     void run();
+    void setForceProcessing( bool forceLeft, bool forceRight )
+    {
+        fForce = { forceLeft, forceRight };
+    }
 Q_SIGNALS:
     void sigExit( int exitCode );
 public Q_SLOTS:
@@ -47,6 +51,7 @@ public Q_SLOTS:
     void slotUserMediaCompletelyLoaded();
     void slotFinishedCheckingForMissingMedia();
     void slotProcessingFinished( const QString & userName );
+    void slotProcess();
 private:
     std::shared_ptr< CSettings > fSettings;
     std::shared_ptr< CSyncSystem > fSyncSystem;
@@ -55,6 +60,7 @@ private:
     QString fUserRegEx;
 
     std::list< std::shared_ptr< CUserData > > fUsersToSync;
+    std::pair< bool, bool > fForce;
 };
 
 #endif

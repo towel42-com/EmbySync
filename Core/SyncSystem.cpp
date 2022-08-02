@@ -651,7 +651,7 @@ void CSyncSystem::postHandlRequest( ERequestType requestType )
         fProgressFuncs.resetProgress();
         if ( requestType == ERequestType::eGetMediaInfo )
             emit sigUserMediaCompletelyLoaded();
-        else if ( requestType == ERequestType::eReloadMediaData )
+        else if ( ( requestType == ERequestType::eReloadMediaData ) || ( requestType == ERequestType::eUpdateData ) )
             emit sigProcessingFinished( fCurrUserData->name() );
     }
 }

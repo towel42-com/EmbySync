@@ -121,6 +121,8 @@ public:
     std::shared_ptr< CUserData > currUser() const;
 
     void updateUserDataForMedia( std::shared_ptr<CMediaData> mediaData, std::shared_ptr<SMediaUserData> newData, bool lhsNeedsUpdating );
+
+    void process( bool forceLeft, bool forceRight );
 Q_SIGNALS:
     void sigAddToLog( const QString & msg );
     void sigLoadingUsersFinished();
@@ -137,7 +139,6 @@ public Q_SLOTS:
 private:
     void requestUsers( bool forLHSServer );
 
-        void process( bool forceLeft, bool forceRight );
 
     void requestUsersMediaList( bool isLHSServer );
     bool processData( std::shared_ptr< CMediaData > mediaData, bool forceLeft, bool forceRight );

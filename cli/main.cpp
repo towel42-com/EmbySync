@@ -45,10 +45,9 @@ int main( int argc, char ** argv )
     appl.setOrganizationDomain( "github.com/towel42-com/EmbySync" ); // QString::fromStdString( NVersion::HOMEPAGE ) );
 
     QCommandLineParser parser;
-    parser.setApplicationDescription( QString::fromStdString( NVersion::APP_NAME + " CLI" ) );
+    parser.setApplicationDescription( QString::fromStdString( NVersion::APP_NAME + " CLI - a tool to sync two emby servers" ) );
     auto helpOption = parser.addHelpOption();
     auto versionOption = parser.addVersionOption();
-
 
     auto settingsFileOption = QCommandLineOption( QStringList() << "settings" << "s", "The settings json file", "Settings file" );
     parser.addOption( settingsFileOption );
@@ -56,12 +55,14 @@ int main( int argc, char ** argv )
     auto usersOption = QCommandLineOption( QStringList() << "users" << "u", "A regex for users to sync (.* for all)", "Users to sync" );
     parser.addOption( usersOption );
 
-    if ( !parser.parse( appl.arguments() ) )
-    {
-        std::cerr << parser.errorText().toStdString() << "\n";
-        return -1;
-    }
+    auto forceLeftOption = QCommandLineOption( QStringList() << "force_left" << "l", "Force process from lhs server to rhs" );
+    parser.addOption( forceLeftOption );
 
+    auto forceRightOption = QCommandLineOption( QStringList() << "force_right" << "r", "Force process from rhs server to lhs" );
+    parser.addOption( forceRightOption );
+
+    parser.process( appl );
+    
     if ( !parser.unknownOptionNames().isEmpty() )
     {
         std::cerr << "The following options were set and are unknown:\n";
@@ -102,6 +103,8 @@ int main( int argc, char ** argv )
     auto mainObj = std::make_shared< CMain >( settingsFile, parser.value( usersOption ) );
     QObject::connect( mainObj.get(), &CMain::sigExit, &appl, &QCoreApplication::exit );
 
+    mainObj->setForceProcessing( parser.isSet( forceLeftOption ), parser.isSet( forceRightOption ) );
+
     mainObj->run();
 
     int retVal = appl.exec();
@@ -130,7 +133,7 @@ CMain::CMain( const QString & settingsFile, const QString & usersRegEx, QObject 
 
     connect( fSyncSystem.get(), &CSyncSystem::sigAddToLog, this, &CMain::slotAddToLog );
     connect( fSyncSystem.get(), &CSyncSystem::sigLoadingUsersFinished, this, &CMain::slotLoadingUsersFinished );
-    connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaLoaded, fSyncSystem.get(), &CSyncSystem::slotProcess );
+    connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaLoaded, this, &CMain::slotProcess );
 
     connect( fSyncSystem.get(), &CSyncSystem::sigProcessingFinished, this, &CMain::slotProcessingFinished );
     connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaCompletelyLoaded, this, &CMain::slotUserMediaCompletelyLoaded );
@@ -239,12 +242,17 @@ void CMain::slotFinishedCheckingForMissingMedia()
 
 void CMain::slotUserMediaCompletelyLoaded()
 {
-    slotAddToLog( "Finished processing media" );
+    slotAddToLog( "Finished loading media information" );
 }
 
 void CMain::slotProcessingFinished( const QString & userName )
 {
-    slotAddToLog( QString( "Finished processing for user '%1'" ).arg( userName ) );
+    slotAddToLog( QString( "Finished processing user '%1'" ).arg( userName ) );
     QTimer::singleShot( 0, this, &CMain::slotProcessNextUser );
+}
+
+void CMain::slotProcess()
+{
+    fSyncSystem->process( fForce.first, fForce.second );
 }
 
