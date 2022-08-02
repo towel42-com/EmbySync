@@ -36,6 +36,7 @@ public:
     CUserData( const QString & name );
 
     QString name() const { return fName; }
+    bool isUserNameMatch( const QString & regEx ) const;
 
     QTreeWidgetItem * getItem() const { return fItem; }
     void setItem( QTreeWidgetItem * item ) { fItem = item; }
@@ -47,7 +48,7 @@ public:
 
     bool onLHSServer() const;
     bool onRHSServer() const;
-
+    bool canBeSynced() const;
 
     void addMedia( std::shared_ptr< CMediaData > mediaData );
     const std::list< std::shared_ptr< CMediaData > > & playedMedia() const;

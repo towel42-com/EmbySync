@@ -21,11 +21,19 @@
 // SOFTWARE.
 
 #include "UserData.h"
+#include <QRegularExpression>
 
 CUserData::CUserData( const QString & name ) :
     fName( name )
 {
 
+}
+
+bool CUserData::isUserNameMatch( const QString & regExStr ) const
+{
+    auto regEx = QRegularExpression( regExStr );
+    auto match = regEx.match( fName );
+    return match.hasMatch() && ( match.captured( 0 ).length() == fName.length() );
 }
 
 QString CUserData::getUserID( bool isLHS ) const
@@ -57,6 +65,11 @@ bool CUserData::onLHSServer() const
 bool CUserData::onRHSServer() const
 {
     return !fUserID.second.isEmpty();
+}
+
+bool CUserData::canBeSynced() const
+{
+    return onLHSServer() && onRHSServer();
 }
 
 void CUserData::addMedia( std::shared_ptr< CMediaData > mediaData )
