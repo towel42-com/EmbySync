@@ -42,7 +42,7 @@ CSettings::~CSettings()
     save();
 }
 
-bool CSettings::load( const QString & fileName, std::function<void( const QString & title, const QString & msg )> errorFunc )
+bool CSettings::load( const QString & fileName, std::function<void( const QString & title, const QString & msg )> errorFunc, bool addToRecentFileList )
 {
     fFileName = fileName;
 
@@ -105,7 +105,8 @@ bool CSettings::load( const QString & fileName, std::function<void( const QStrin
 
     fChanged = false;
 
-    addRecentProject( fFileName );
+    if ( addToRecentFileList )
+        addRecentProject( fFileName );
     return true;
 }
 

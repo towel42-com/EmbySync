@@ -39,15 +39,13 @@ class CSettings
 {
 public:
     CSettings();
-    CSettings( const QString & fileName, QWidget * parentWidget );
-
     virtual ~CSettings();
 
     QString fileName() const { return fFileName; }
 
-    bool load( QWidget * parent );
-    bool load( const QString & fileName, QWidget * parent );
-    bool load( const QString & fileName, std::function<void( const QString & title, const QString & msg )> errorFunc );
+    bool load( bool addToRecentFileList, QWidget * parent );
+    bool load( const QString & fileName, bool addToRecentFileList, QWidget * parent );
+    bool load( const QString & fileName, std::function<void( const QString & title, const QString & msg )> errorFunc, bool addToRecentFileList );
 
     bool save();
 
