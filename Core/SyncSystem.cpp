@@ -49,13 +49,13 @@ QString toString( ERequestType request )
 {
     switch ( request )
     {
-        case ERequestType::eNone: return "eNone";
-        case ERequestType::eUsers: return "eUsers";
-        case ERequestType::eMediaList: return "eMediaList";
-        case ERequestType::eGetMediaInfo: return "eMissingMedia";
-        case ERequestType::eReloadMediaData: return "eReloadMediaData";
-        case ERequestType::eUpdateData: return "eUpdateData";
-        case ERequestType::eUpdateFavorite: return "eUpdateFavorite";
+        case ERequestType::eNone: return "None";
+        case ERequestType::eUsers: return "Users";
+        case ERequestType::eMediaList: return "MediaList";
+        case ERequestType::eGetMediaInfo: return "MissingMedia";
+        case ERequestType::eReloadMediaData: return "ReloadMediaData";
+        case ERequestType::eUpdateData: return "UpdateData";
+        case ERequestType::eUpdateFavorite: return "UpdateFavorite";
     }
     return {};
 }
@@ -96,11 +96,6 @@ void CSyncSystem::setUserMsgFunc( std::function< void( const QString & title, co
 void CSyncSystem::setProgressFunctions( const SProgressFunctions & funcs )
 {
     fProgressFuncs = funcs;
-}
-
-bool CSyncSystem::isRunning() const
-{
-    return !fAttributes.empty();
 }
 
 void CSyncSystem::reset()
@@ -318,7 +313,7 @@ void CSyncSystem::requestUsersMediaList( bool isLHSServer )
 
     emit sigAddToLog( QString( "Requesting media for '%1' from server '%2'" ).arg( fCurrUserData->name() ).arg( fSettings->getServerName( isLHSServer ) ) );
 
-    auto reply = fManager->get( request );
+    auto reply = makeRequest( request );
     setIsLHS( reply, isLHSServer );
     setRequestType( reply, ERequestType::eMediaList );
     setExtraData( reply, fCurrUserData->name() );
@@ -460,7 +455,7 @@ void CSyncSystem::requestUsers( bool isLHSServer )
 
     auto request = QNetworkRequest( url );
 
-    auto reply = fManager->get( request );
+    auto reply = makeRequest( request );
     setIsLHS( reply, isLHSServer );
     setRequestType( reply, ERequestType::eUsers );
 }
@@ -477,20 +472,6 @@ bool CSyncSystem::isLHSServer( QNetworkReply * reply )
     if ( !reply )
         return false;
     return fAttributes[ reply ][ kLHSServer ].toBool();
-}
-
-void CSyncSystem::decRequestCount( ERequestType requestType )
-{
-    auto pos = fRequests.find( requestType );
-    if ( pos == fRequests.end() )
-        return;
-    if ( ( *pos ).second > 0 )
-        ( *pos ).second--;
-
-    if ( ( *pos ).second == 0 )
-    {
-        fRequests.erase( pos );
-    }
 }
 
 void CSyncSystem::setRequestType( QNetworkReply * reply, ERequestType requestType )
@@ -643,10 +624,24 @@ void CSyncSystem::loadMediaData( const QString & mediaID, bool isLHSServer )
     }
 }
 
+void CSyncSystem::decRequestCount( ERequestType requestType )
+{
+    auto pos = fRequests.find( requestType );
+    if ( pos == fRequests.end() )
+        return;
+    if ( ( *pos ).second > 0 )
+        ( *pos ).second--;
+
+    if ( ( *pos ).second == 0 )
+    {
+        fRequests.erase( pos );
+    }
+}
+
 void CSyncSystem::postHandlRequest( ERequestType requestType )
 {
     decRequestCount( requestType );
-    if ( fAttributes.empty() )
+    if ( !isRunning() )
     {
         fProgressFuncs.resetProgress();
         if ( requestType == ERequestType::eGetMediaInfo )
@@ -655,6 +650,28 @@ void CSyncSystem::postHandlRequest( ERequestType requestType )
             emit sigProcessingFinished( fCurrUserData->name() );
     }
 }
+
+void CSyncSystem::slotCheckPendingRequests()
+{
+    if ( !isRunning() )
+    {
+        fPendingRequestTimer->stop();
+        return;
+    }
+    for ( auto && ii : fRequests )
+    {
+        if ( ii.second )
+        {
+            emit sigAddToLog( QString( "Info: %1 pending '%2' request%3" ).arg( ii.second ).arg( toString( ii.first ) ).arg( ( ii.second != 1 ) ? "s" : "" ) );
+        }
+    }
+}
+
+bool CSyncSystem::isRunning() const
+{
+    return !fAttributes.empty() && !fRequests.empty();
+}
+
 
 void CSyncSystem::slotMergeMedia()
 {
@@ -882,10 +899,24 @@ void CSyncSystem::requestMediaInformation( std::shared_ptr< CMediaData > mediaDa
     //qDebug() << mediaData->name() << url;
     auto request = QNetworkRequest( url );
 
-    auto reply = fManager->get( request );
+    auto reply = makeRequest( request );
+
     setIsLHS( reply, forLHS );
     setExtraData( reply, mediaData->name() );
     setRequestType( reply, ERequestType::eGetMediaInfo );
+}
+
+QNetworkReply * CSyncSystem::makeRequest( const QNetworkRequest & request )
+{
+    if ( !fPendingRequestTimer )
+    {
+        fPendingRequestTimer = new QTimer( this );
+        fPendingRequestTimer->setSingleShot( false );
+        fPendingRequestTimer->setInterval( 1500 );
+        connect( fPendingRequestTimer, &QTimer::timeout, this, &CSyncSystem::slotCheckPendingRequests );
+    }
+    fPendingRequestTimer->start();
+    return fManager->get( request );
 }
 
 void CSyncSystem::loadMediaList( const QByteArray & data, bool isLHSServer )
@@ -995,7 +1026,7 @@ void CSyncSystem::requestReloadMediaData( std::shared_ptr< CMediaData > mediaDat
     //qDebug() << url;
     auto request = QNetworkRequest( url );
 
-    auto reply = fManager->get( request );
+    auto reply = makeRequest( request );
 
     setIsLHS( reply, isLHSServer );
     setRequestType( reply, ERequestType::eReloadMediaData );

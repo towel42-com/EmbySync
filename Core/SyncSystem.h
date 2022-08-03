@@ -165,6 +165,7 @@ private Q_SLOTS:
     void slotProxyAuthenticationRequired( const QNetworkProxy & proxy, QAuthenticator * authenticator );
     void slotSSlErrors( QNetworkReply * reply, const QList<QSslError> & errors );
 
+    void slotCheckPendingRequests();
 private:
     void loadMediaData( const QString & mediaID, bool isLHSServer );
     bool isLastRequestOfType( ERequestType type ) const;
@@ -176,6 +177,8 @@ private:
     void requestMediaInformation( std::shared_ptr< CMediaData > mediaData, bool forLHS );
 
     void loadMediaList( const QByteArray & data, bool isLHS );
+
+    QNetworkReply * makeRequest( const QNetworkRequest & request );
 
     void loadMedia( QJsonObject & media, bool isLHSServer );
 
@@ -196,6 +199,7 @@ private:
     std::shared_ptr< CSettings > fSettings;
 
     QNetworkAccessManager * fManager{ nullptr };
+    QTimer * fPendingRequestTimer{ nullptr };
     bool fLoadingMediaData{ false };
     std::map< QString, std::shared_ptr< CUserData > > fUsers;
 
