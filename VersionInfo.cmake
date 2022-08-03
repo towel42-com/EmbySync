@@ -27,7 +27,7 @@ GetGitInfo(${CMAKE_SOURCE_DIR} GIT_VERSION_INFO)
 STRING(TIMESTAMP BUILD_DATE "%m/%d/%Y")
 
 SET( MAJOR_VERSION    1 )
-SET( MINOR_VERSION    0 )
+SET( MINOR_VERSION    1 )
 SET( APP_NAME         "EmbySync" )
 SET( VENDOR           "Scott Aron Bloom" )
 SET( HOMEPAGE         "www.towel42.com" )
