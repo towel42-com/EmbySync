@@ -33,8 +33,6 @@
 
 #include "ui_MainWindow.h"
 
-#include <unordered_set>
-
 #include <QTimer>
 #include <QScrollBar>
 #include <QFileInfo>
@@ -410,10 +408,6 @@ void CMainWindow::slotUserMediaLoaded()
     auto currUser = getCurrUserData();
     if ( !currUser )
         return;
-
-    auto lhsTree = currUser->onLHSServer() ? fImpl->lhsMedia : nullptr;
-    auto direction = fImpl->direction;
-    auto rhsTree = currUser->onRHSServer() ? fImpl->rhsMedia : nullptr;
 
     fMediaModel->setMedia( fSyncSystem->getAllMedia() );
     hideColumns( fImpl->lhsMedia, EWhichTree::eLHS );

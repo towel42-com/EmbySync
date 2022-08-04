@@ -25,9 +25,11 @@
 
 #include <QString>
 #include <QColor>
+#include <QUrl>
+
 #include <memory>
 #include <tuple>
-#include <QUrl>
+#include <functional>
 
 class QWidget;
 namespace Ui

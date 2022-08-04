@@ -29,6 +29,8 @@
 #include <QDateTime>
 #include <QIcon>
 
+#include <memory>
+
 class QVariant;
 class QListWidgetItem;
 class QJsonObject;
@@ -87,7 +89,7 @@ public:
     static QStringList getHeaderLabels();
     static void setMSecsToStringFunc( std::function< QString( uint64_t ) > func );
     static std::function< QString( uint64_t ) > mecsToStringFunc();
-    static QString computeName( QJsonObject & media );
+    static QString computeName( const QJsonObject & media );
 
     CMediaData( const QString & name, const QString & type );
     QString name() const;

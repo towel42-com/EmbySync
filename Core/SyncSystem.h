@@ -28,8 +28,13 @@
 #include <QDateTime>
 #include <QNetworkRequest>
 #include <unordered_set>
+#include <unordered_map>
 #include <optional>
 #include <functional>
+
+#include "SABUtils/HashUtils.h"
+
+#include <memory>
 
 class QNetworkReply;
 class QAuthenticator;
@@ -41,6 +46,7 @@ class CUserData;
 class CMediaData;
 struct SMediaUserData;
 class CSettings;
+class QTimer;
 
 enum class ERequestType
 {
@@ -180,7 +186,7 @@ private:
 
     QNetworkReply * makeRequest( const QNetworkRequest & request );
 
-    void loadMedia( QJsonObject & media, bool isLHSServer );
+    void loadMedia( const QJsonObject & media, bool isLHSServer );
 
     void addMediaInfo( std::shared_ptr<CMediaData> mediaData, const QJsonObject & mediaInfo, bool isLHSServer );
 

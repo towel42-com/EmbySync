@@ -398,8 +398,6 @@ bool CMediaFilterModel::lessThan( const QModelIndex & source_left, const QModelI
     {
         bool retVal1 = dirLessThan( source_left, source_right );
         bool retVal2 = dirLessThan( source_right, source_left );
-        if ( retVal1 == retVal2 )
-            int xyz = 0;
         Q_ASSERT( retVal1 != retVal2 );
 
         return retVal1;

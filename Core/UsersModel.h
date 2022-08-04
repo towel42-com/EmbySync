@@ -3,9 +3,7 @@
 
 #include <QAbstractTableModel>
 #include <QSortFilterProxyModel>
-//#include <vector>
-//#include <unordered_set>
-//#include <map>
+#include <memory>
 
 class CSettings;
 class CUserData;

@@ -1,11 +1,15 @@
 #ifndef __MEDIAMODEL_H
 #define __MEDIAMODEL_H
 
+#include "SABUtils/HashUtils.h"
+
 #include <QAbstractTableModel>
 #include <QSortFilterProxyModel>
+
 #include <vector>
 #include <unordered_set>
-#include <map>
+#include <unordered_map>
+#include <memory>
 
 class CSettings;
 class CMediaData;

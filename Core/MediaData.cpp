@@ -21,11 +21,14 @@
 // SOFTWARE.
 
 #include "MediaData.h"
+
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
 
 #include <QObject>
+#include <QVariant>
+
 #include <chrono>
 
 QJsonObject SMediaUserData::userDataJSON() const
@@ -33,17 +36,17 @@ QJsonObject SMediaUserData::userDataJSON() const
     QJsonObject obj;
     obj[ "IsFavorite" ] = fIsFavorite;
     obj[ "Played" ] = fPlayed;
-    obj[ "PlayCount" ] = static_cast<int64_t>( fPlayCount );
+    obj[ "PlayCount" ] = static_cast<qlonglong>( fPlayCount );
     if ( fLastPlayedDate.isNull() )
         obj[ "LastPlayedDate" ] = QJsonValue::Null;
     else
         obj[ "LastPlayedDate" ] = fLastPlayedDate.toUTC().toString( Qt::ISODateWithMs );
 
     auto ticks = static_cast<int64_t>( fPlaybackPositionTicks );
-    if ( fPlaybackPositionTicks >= static_cast<uint64_t>( std::numeric_limits< int64_t >::max() ) )
-        ticks = std::numeric_limits< int64_t >::max() - 1;
+    if ( fPlaybackPositionTicks >= static_cast<uint64_t>( std::numeric_limits< qlonglong >::max() ) )
+        ticks = std::numeric_limits< qlonglong >::max() - 1;
 
-    obj[ "PlaybackPositionTicks" ] = static_cast<int64_t>( ticks );
+    obj[ "PlaybackPositionTicks" ] = static_cast<qlonglong>( ticks );
 
     return obj;
 }
@@ -86,8 +89,8 @@ std::function< QString( uint64_t ) > CMediaData::mecsToStringFunc()
 }
 
 CMediaData::CMediaData( const QString & name, const QString & type ) :
-    fName( name ),
     fType( type ),
+    fName( name ),
     fLHSUserMediaData( std::make_shared< SMediaUserData >() ),
     fRHSUserMediaData( std::make_shared< SMediaUserData >() )
 {
@@ -98,7 +101,7 @@ QString CMediaData::name() const
     return fName;
 }
 
-QString CMediaData::computeName( QJsonObject & media )
+QString CMediaData::computeName( const QJsonObject & media )
 {
     auto name = media[ "Name" ].toString();
     QString retVal = name;

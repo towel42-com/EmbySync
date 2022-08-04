@@ -65,7 +65,9 @@ CSyncSystem::CSyncSystem( std::shared_ptr< CSettings > settings, QObject * paren
     fSettings( settings )
 {
     fManager = new QNetworkAccessManager( this );
+#if QT_VERSION > QT_VERSION_CHECK( 5, 14, 0 )
     fManager->setAutoDeleteReplies( true );
+#endif
 
     connect( fManager, &QNetworkAccessManager::authenticationRequired, this, &CSyncSystem::slotAuthenticationRequired );
     connect( fManager, &QNetworkAccessManager::encrypted, this, &CSyncSystem::slotEncrypted );
@@ -970,7 +972,7 @@ void CSyncSystem::loadMediaList( const QByteArray & data, bool isLHSServer )
     fProgressFuncs.resetProgress();
 }
 
-void CSyncSystem::loadMedia( QJsonObject & media, bool isLHSServer )
+void CSyncSystem::loadMedia( const QJsonObject & media, bool isLHSServer )
 {
     auto id = media[ "Id" ].toString();
     std::shared_ptr< CMediaData > mediaData;

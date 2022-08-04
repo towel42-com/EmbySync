@@ -25,7 +25,6 @@
 
 #include <QMainWindow>
 #include <memory>
-#include <unordered_set>
 #include <tuple>
 #include <optional>
 #include <QPointer>
