@@ -51,7 +51,6 @@ public:
     enum class EWhichTree
     {
         eLHS,
-        eDir,
         eRHS
     };
     CMainWindow( QWidget * parent = nullptr );

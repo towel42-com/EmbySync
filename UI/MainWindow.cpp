@@ -47,12 +47,6 @@ CMainWindow::CMainWindow( QWidget * parent )
     fImpl( new Ui::CMainWindow )
 {
     fImpl->setupUi( this );
-    fImpl->direction->setMaximumWidth( 40 );
-    fImpl->direction->header()->setMaximumWidth( 40 );
-    fImpl->direction->header()->resizeSection( CMediaModel::EColumns::eDirection, 40 );
-
-    int scrollBarExtent = 2* fImpl->lhsMedia->horizontalScrollBar()->style()->pixelMetric( QStyle::PM_ScrollBarExtent, nullptr, this );
-    fImpl->scrollSpacer->changeSize( 20, scrollBarExtent, QSizePolicy::Minimum, QSizePolicy::Fixed );
     fSettings = std::make_shared< CSettings >();
 
     fMediaModel = new CMediaModel( fSettings, this );
@@ -65,7 +59,6 @@ CMainWindow::CMainWindow( QWidget * parent )
 
     fImpl->lhsMedia->setModel( fMediaFilterModel );
     fImpl->rhsMedia->setModel( fMediaFilterModel );
-    fImpl->direction->setModel( fMediaFilterModel );
 
     fImpl->users->setModel( fUsersFilterModel );
 
@@ -73,7 +66,6 @@ CMainWindow::CMainWindow( QWidget * parent )
     fUsersFilterModel->sort( -1, Qt::SortOrder::AscendingOrder );
 
     hideColumns( fImpl->lhsMedia, EWhichTree::eLHS );
-    hideColumns( fImpl->direction, EWhichTree::eDir );
     hideColumns( fImpl->rhsMedia, EWhichTree::eRHS );
 
     fSyncSystem = std::make_shared< CSyncSystem >( fSettings, this );
@@ -144,18 +136,12 @@ CMainWindow::CMainWindow( QWidget * parent )
 
     connect( fImpl->lhsMedia->selectionModel(), &QItemSelectionModel::currentChanged, this, &CMainWindow::slotSetCurrentMediaItem );
     connect( fImpl->rhsMedia->selectionModel(), &QItemSelectionModel::currentChanged, this, &CMainWindow::slotSetCurrentMediaItem );
-    connect( fImpl->direction->selectionModel(), &QItemSelectionModel::currentChanged, this, &CMainWindow::slotSetCurrentMediaItem );
 
     connect( fImpl->lhsMedia->verticalScrollBar(), &QScrollBar::sliderMoved, fImpl->rhsMedia->verticalScrollBar(), &QScrollBar::setValue );
     connect( fImpl->lhsMedia->verticalScrollBar(), &QScrollBar::valueChanged, fImpl->rhsMedia->verticalScrollBar(), &QScrollBar::setValue );
 
     connect( fImpl->rhsMedia->verticalScrollBar(), &QScrollBar::sliderMoved, fImpl->lhsMedia->verticalScrollBar(), &QScrollBar::setValue );
     connect( fImpl->rhsMedia->verticalScrollBar(), &QScrollBar::valueChanged, fImpl->lhsMedia->verticalScrollBar(), &QScrollBar::setValue );
-
-    connect( fImpl->lhsMedia->verticalScrollBar(), &QScrollBar::sliderMoved, fImpl->direction->verticalScrollBar(), &QScrollBar::setValue );
-    connect( fImpl->lhsMedia->verticalScrollBar(), &QScrollBar::valueChanged, fImpl->direction->verticalScrollBar(), &QScrollBar::setValue );
-
-    fImpl->direction->horizontalScrollBar()->setEnabled( false );
 
     connect( fImpl->lhsMedia->horizontalScrollBar(), &QScrollBar::sliderMoved, fImpl->rhsMedia->horizontalScrollBar(), &QScrollBar::setValue );
     connect( fImpl->lhsMedia->horizontalScrollBar(), &QScrollBar::valueChanged, fImpl->rhsMedia->horizontalScrollBar(), &QScrollBar::setValue );
@@ -173,32 +159,6 @@ CMainWindow::CMainWindow( QWidget * parent )
 
     fImpl->lhsMedia->horizontalScrollBar()->installEventFilter( this );
     fImpl->rhsMedia->horizontalScrollBar()->installEventFilter( this );
-    fImpl->upperSplitter->setStretchFactor( 0, 1 );
-    fImpl->upperSplitter->setStretchFactor( 1, 1 );
-    fImpl->upperSplitter->setStretchFactor( 2, 0 );
-    fImpl->upperSplitter->setStretchFactor( 3, 1 );
-
-    connect( fImpl->upperSplitter, &QSplitter::splitterMoved,
-             [this]( int /*pos*/, int index )
-             {
-                 if ( ( index == 2 ) || ( index == 3 ) )
-                 {
-                     auto sizes = fImpl->upperSplitter->sizes();
-                     auto newValue = sizes[ 2 ];
-                     auto diff = newValue - 40;
-                     sizes[ 2 ] = 40;
-                     if ( index == 2 ) // lhs
-                     {
-                         sizes[ 3 ] += diff;
-                     }
-                     else if ( index == 3 ) // rhs
-                     {
-                         sizes[ 1 ] += diff;
-                     }
-                     fImpl->upperSplitter->setSizes( sizes );
-                 }
-             } );
-
 
     auto recentProjects = fSettings->recentProjectList();
     if ( !recentProjects.isEmpty() )
@@ -214,15 +174,12 @@ CMainWindow::CMainWindow( QWidget * parent )
 
 void CMainWindow::hideColumns( QTreeView * treeView, EWhichTree whichTree )
 {
-    for ( int ii = CMediaModel::eLHSName; ii <= fMediaModel->columnCount(); ++ii )
+    for ( int ii = 0; ii <= fMediaModel->columnCount(); ++ii )
     {
         switch ( whichTree )
         {
             case EWhichTree::eLHS:
                 treeView->setColumnHidden( ii, !fMediaModel->isLHSColumn( ii ) );
-                break;
-            case EWhichTree::eDir:
-                treeView->setColumnHidden( ii, ii != CMediaModel::eDirection );
                 break;
             case EWhichTree::eRHS:
                 treeView->setColumnHidden( ii, !fMediaModel->isRHSColumn( ii ) );
@@ -238,7 +195,6 @@ CMainWindow::~CMainWindow()
 void CMainWindow::slotSetCurrentMediaItem( const QModelIndex & current, const QModelIndex & /*previous*/ )
 {
     fImpl->lhsMedia->setCurrentIndex( current );
-    fImpl->direction->setCurrentIndex( current );
     fImpl->rhsMedia->setCurrentIndex( current );
 
     auto mediaInfo = getMediaData( current );
@@ -254,17 +210,6 @@ void CMainWindow::slotSetCurrentMediaItem( const QModelIndex & current, const QM
 
 void CMainWindow::showEvent( QShowEvent * /*event*/ )
 {
-    if ( ( fImpl->upperSplitter->sizes()[ 2 ] != 0 ) && ( fImpl->upperSplitter->sizes()[ 2 ] != 40 ) )
-    {
-        auto sizes = fImpl->upperSplitter->sizes();
-        auto newValue = sizes[ 2 ];
-        auto diff = newValue - 40;
-        sizes[ 2 ] = 40;
-        sizes[ 1 ] += diff / 2;
-        sizes[ 3 ] += diff / 2;
-        fImpl->upperSplitter->setSizes( sizes );
-
-    }
 }
 
 void CMainWindow::closeEvent( QCloseEvent * event )
@@ -281,12 +226,10 @@ bool CMainWindow::eventFilter( QObject * obj, QEvent * event )
     {
         if ( event->type() == QEvent::Show )
         {
-            //fImpl->direction->horizontalScrollBar()->setVisible( true );
             fImpl->rhsMedia->horizontalScrollBar()->setVisible( true );
         }
         else if ( event->type() == QEvent::Hide )
         {
-            //fImpl->direction->horizontalScrollBar()->setHidden( true );
             fImpl->rhsMedia->horizontalScrollBar()->setHidden( true );
         }
     }
@@ -294,12 +237,10 @@ bool CMainWindow::eventFilter( QObject * obj, QEvent * event )
     {
         if ( event->type() == QEvent::Show )
         {
-            //fImpl->direction->horizontalScrollBar()->setVisible( true );
             fImpl->lhsMedia->horizontalScrollBar()->setVisible( true );
         }
         else if ( event->type() == QEvent::Hide )
         {
-            //fImpl->direction->horizontalScrollBar()->setHidden( true );
             fImpl->lhsMedia->horizontalScrollBar()->setHidden( true );
         }
     }
@@ -411,7 +352,6 @@ void CMainWindow::slotUserMediaLoaded()
 
     fMediaModel->setMedia( fSyncSystem->getAllMedia() );
     hideColumns( fImpl->lhsMedia, EWhichTree::eLHS );
-    hideColumns( fImpl->direction, EWhichTree::eDir );
     hideColumns( fImpl->rhsMedia, EWhichTree::eRHS );
 }
 
@@ -471,11 +411,6 @@ void CMainWindow::slotUserMediaCompletelyLoaded()
             [ this ]()
             {
                 NSABUtils::autoSize( fImpl->lhsMedia );
-
-                fImpl->direction->setMaximumWidth( 40 );
-                fImpl->direction->header()->setMaximumWidth( 40 );
-                fImpl->direction->header()->resizeSection( CMediaModel::EColumns::eDirection, 40 );
-
                 NSABUtils::autoSize( fImpl->rhsMedia );
                 onlyShowMediaWithDifferences();
                 

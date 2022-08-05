@@ -82,18 +82,13 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
         return color;
     }
 
-    if ( ( role == Qt::DecorationRole ) && ( index.column() == eDirection ) )
+    if ( ( role == Qt::DecorationRole ) && ( ( index.column() == eLHSName ) || ( index.column() == eRHSName ) ) )
     {
         return mediaData->getDirectionIcon();
     }
 
     if ( role != Qt::DisplayRole )
         return {};
-
-    if ( index.column() == eDirection )
-    {
-        return {};
-    }
 
     auto pos = fProviderColumnsByColumn.find( index.column() );
     if ( pos != fProviderColumnsByColumn.end() )
@@ -189,23 +184,6 @@ QVariant CMediaModel::headerData( int section, Qt::Orientation orientation, int 
     if ( orientation != Qt::Horizontal )
         return QAbstractTableModel::headerData( section, orientation, role );
 
-    if ( ( role == Qt::DecorationRole ) && ( section == eDirection ) )
-    {
-        switch ( fDirSort )
-        {
-            case EDirSort::eNoSort:
-                return QIcon();
-            case EDirSort::eLeftToRight:
-                return QIcon( ":/resources/arrowright.png" );
-            case EDirSort::eRightToLeft:
-                return QIcon( ":/resources/arrowleft.png" );
-            case EDirSort::eEqual:
-                return QIcon( ":/resources/equal.png" );
-        }
-
-        return QIcon();
-    }
-
     if ( role != Qt::DisplayRole )
         return QAbstractTableModel::headerData( section, orientation, role );
 
@@ -225,17 +203,6 @@ QVariant CMediaModel::headerData( int section, Qt::Orientation orientation, int 
     };
 
     return {};
-}
-
-CMediaModel::EDirSort CMediaModel::nextDirSort()
-{
-    if ( fDirSort == eRightToLeft )
-        fDirSort = eNoSort;
-    else
-        fDirSort = static_cast<EDirSort>( fDirSort + 1 );
-
-    emit headerDataChanged( Qt::Horizontal, EColumns::eDirection, EColumns::eDirection );
-    return fDirSort;
 }
 
 void CMediaModel::clear()
@@ -290,10 +257,8 @@ void CMediaModel::updateProviderColumns( std::shared_ptr< CMediaData > mediaData
 
 bool CMediaModel::isLHSColumn( int column ) const
 {
-    if ( column < CMediaModel::eDirection )
+    if ( column < CMediaModel::eRHSName )
         return true;
-    if ( column == CMediaModel::eDirection )
-        return false;
     if ( column <= CMediaModel::eRHSPlaybackPosition )
         return false;
 
@@ -305,8 +270,6 @@ bool CMediaModel::isLHSColumn( int column ) const
 
 bool CMediaModel::isRHSColumn( int column ) const
 {
-    if ( column == CMediaModel::eDirection )
-        return false;
     return !isLHSColumn( column );
 }
 
@@ -383,27 +346,12 @@ bool CMediaFilterModel::filterAcceptsRow( int source_row, const QModelIndex & so
 
 void CMediaFilterModel::sort( int column, Qt::SortOrder order /*= Qt::AscendingOrder */ )
 {
-    if ( column == CMediaModel::EColumns::eDirection )
-    {
-        dynamic_cast< CMediaModel * >( sourceModel() )->nextDirSort();
-        order = Qt::AscendingOrder;
-    }
-
     QSortFilterProxyModel::sort( column, order );
 }
 
 bool CMediaFilterModel::lessThan( const QModelIndex & source_left, const QModelIndex & source_right ) const
 {
-    if ( sortColumn() == CMediaModel::EColumns::eDirection )
-    {
-        bool retVal1 = dirLessThan( source_left, source_right );
-        bool retVal2 = dirLessThan( source_right, source_left );
-        Q_ASSERT( retVal1 != retVal2 );
-
-        return retVal1;
-    }
-    else
-        return QSortFilterProxyModel::lessThan( source_left, source_right );
+    return QSortFilterProxyModel::lessThan( source_left, source_right );
 }
 
 bool CMediaFilterModel::dirLessThan( const QModelIndex & source_left, const QModelIndex & source_right ) const

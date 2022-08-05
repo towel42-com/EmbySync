@@ -35,7 +35,6 @@ public:
         eLHSLastPlayed,
         eLHSPlayCount,
         eLHSPlaybackPosition,
-        eDirection,
         eRHSName,
         eRHSMediaID,
         eRHSFavorite,
@@ -59,8 +58,6 @@ public:
     virtual QVariant data( const QModelIndex & index, int role = Qt::DisplayRole ) const override;
 
     virtual QVariant headerData( int section, Qt::Orientation orientation, int role = Qt::DisplayRole ) const override;
-
-    EDirSort nextDirSort();
 
     void clear();
     void setMedia( const std::list< std::shared_ptr< CMediaData > > & media );
