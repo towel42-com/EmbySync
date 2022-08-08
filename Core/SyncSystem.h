@@ -153,6 +153,8 @@ private:
     bool isLHSServer( QNetworkReply * reply );
 
     void setRequestType( QNetworkReply * reply, ERequestType requestType );
+    QString hostName( QNetworkReply * reply );
+
     ERequestType requestType( QNetworkReply * reply );
 
     void setExtraData( QNetworkReply * reply, QVariant extraData );
@@ -160,8 +162,8 @@ private:
 
 private Q_SLOTS:
     void slotRequestFinished( QNetworkReply * reply );
-    void postHandlRequest( ERequestType requestType );
-    void decRequestCount( ERequestType requestType );
+    void postHandlRequest( ERequestType requestType, QNetworkReply * reply );
+    void decRequestCount( ERequestType requestType, QNetworkReply * reply );
 
     void slotMergeMedia();
 
@@ -221,7 +223,7 @@ private:
     std::unordered_map< QString, std::unordered_map< QString, std::shared_ptr< CMediaData > > > fLHSProviderSearchMap; // provider name, to map of id to mediadata
     std::unordered_map< QString, std::unordered_map< QString, std::shared_ptr< CMediaData > > > fRHSProviderSearchMap;
 
-    std::unordered_map< ERequestType, int > fRequests;
+    std::unordered_map< ERequestType, std::unordered_map< QString, int > > fRequests; // request type -> host -> count
     std::unordered_map< QNetworkReply *, std::unordered_map< int, QVariant > > fAttributes;
 
     std::function< void( std::shared_ptr< CMediaData > mediaData ) > fUpdateMediaFunc;

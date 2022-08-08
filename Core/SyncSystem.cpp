@@ -481,7 +481,17 @@ void CSyncSystem::setRequestType( QNetworkReply * reply, ERequestType requestTyp
     if ( !reply )
         return;
     fAttributes[ reply ][ kRequestType ] = static_cast<int>( requestType );
-    fRequests[ requestType ]++;
+    fRequests[ requestType ][ hostName( reply ) ]++;
+}
+
+QString CSyncSystem::hostName( QNetworkReply * reply )
+{
+    if ( !reply )
+        return {};
+
+    auto url = reply->url();
+    auto retVal = url.toString( QUrl::RemovePath | QUrl::RemoveQuery );
+    return retVal;
 }
 
 ERequestType CSyncSystem::requestType( QNetworkReply * reply )
@@ -539,7 +549,7 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
                 break;
         }
 
-        postHandlRequest( requestType );
+        postHandlRequest( requestType, reply );
         return;
     }
 
@@ -614,7 +624,7 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
         }
     }
 
-    postHandlRequest( requestType );
+    postHandlRequest( requestType, reply );
 }
 
 void CSyncSystem::loadMediaData( const QString & mediaID, bool isLHSServer )
@@ -626,23 +636,31 @@ void CSyncSystem::loadMediaData( const QString & mediaID, bool isLHSServer )
     }
 }
 
-void CSyncSystem::decRequestCount( ERequestType requestType )
+void CSyncSystem::decRequestCount( ERequestType requestType, QNetworkReply * reply )
 {
     auto pos = fRequests.find( requestType );
     if ( pos == fRequests.end() )
         return;
-    if ( ( *pos ).second > 0 )
-        ( *pos ).second--;
+    
+    auto pos2 = ( *pos ).second.find( hostName( reply ) );
+    if ( pos2 == (*pos).second.end() )
+        return;
 
-    if ( ( *pos ).second == 0 )
+    if ( ( *pos2 ).second > 0 )
+        ( *pos2 ).second--;
+
+    if ( (*pos2).second == 0 )
     {
-        fRequests.erase( pos );
+        ( *pos ).second.erase( pos2 );
     }
+
+    if ( ( *pos ).second.empty() )
+        fRequests.erase( pos );
 }
 
-void CSyncSystem::postHandlRequest( ERequestType requestType )
+void CSyncSystem::postHandlRequest( ERequestType requestType, QNetworkReply * reply )
 {
-    decRequestCount( requestType );
+    decRequestCount( requestType, reply );
     if ( !isRunning() )
     {
         fProgressFuncs.resetProgress();
@@ -662,9 +680,12 @@ void CSyncSystem::slotCheckPendingRequests()
     }
     for ( auto && ii : fRequests )
     {
-        if ( ii.second )
+        for ( auto && jj : ii.second )
         {
-            emit sigAddToLog( QString( "Info: %1 pending '%2' request%3" ).arg( ii.second ).arg( toString( ii.first ) ).arg( ( ii.second != 1 ) ? "s" : "" ) );
+            if ( jj.second )
+            {
+                emit sigAddToLog( QString( "Info: %1 pending '%2' request%3 on server '%4'" ).arg( jj.second ).arg( toString( ii.first ) ).arg( ( jj.second != 1 ) ? "s" : "" ).arg( jj.first ) );
+            }
         }
     }
 }
@@ -1205,7 +1226,9 @@ bool CSyncSystem::isLastRequestOfType( ERequestType type ) const
     auto pos = fRequests.find( type );
     if ( pos == fRequests.end() )
         return true;
-    auto value = ( *pos ).second;
-    return value <= 1;
+    int cnt = 0;
+    for ( auto && jj : ( *pos ).second )
+        cnt += jj.second;
+    return cnt <= 1;
 }
 
