@@ -8,3 +8,11 @@
         Emby doesnt have a "last time the media was modified for a user API call
     Can not sync users (ie put user X from server A onto server B)
         No Emby API exists for this
+1.1 - Minor update
+    Feedback on when waiting on a request from a server
+    Fix for building on linux
+    remove directional view, move the icon to the first column
+    Update the images
+
+    
+
