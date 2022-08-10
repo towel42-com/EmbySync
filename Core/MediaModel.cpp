@@ -105,6 +105,7 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
     switch ( column )
     {
         case eLHSName: return mediaData->name();
+        case eLHSType: return mediaData->mediaType();
         case eLHSMediaID: return mediaData->getMediaID( isLHS );
         case eLHSFavorite: return mediaData->isFavorite( isLHS ) ? "Yes" : "No";
         case eLHSPlayed: return mediaData->isPlayed( isLHS ) ? "Yes" : "No";

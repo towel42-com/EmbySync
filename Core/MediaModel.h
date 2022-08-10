@@ -29,6 +29,7 @@ public:
     enum EColumns
     {
         eLHSName,
+        eLHSType,
         eLHSMediaID,
         eLHSFavorite,
         eLHSPlayed,
@@ -36,6 +37,7 @@ public:
         eLHSPlayCount,
         eLHSPlaybackPosition,
         eRHSName,
+        eRHSType,
         eRHSMediaID,
         eRHSFavorite,
         eRHSPlayed,
