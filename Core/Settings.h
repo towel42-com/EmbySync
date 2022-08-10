@@ -85,6 +85,8 @@ public:
     QString rhsAPI() const { return fRHSServer.second; }
     void setRHSAPI( const QString & api );
 
+    bool canSync() const;
+
     bool changed() const { return fChanged; }
     void reset()
     {
@@ -106,6 +108,34 @@ public:
     int maxItems() const { return fMaxItems; }
     void setMaxItems( int maxItems );
 
+    bool syncAudio() const { return fSyncAudio; }
+    void setSyncAudio( bool value );
+
+    bool syncVideo() const { return fSyncVideo; }
+    void setSyncVideo( bool value );
+
+    bool syncEpisode() const { return fSyncEpisode; }
+    void setSyncEpisode( bool value );
+
+    bool syncMovie() const { return fSyncMovie; }
+    void setSyncMovie( bool value );
+
+    bool syncTrailer() const { return fSyncTrailer; }
+    void setSyncTrailer( bool value );
+
+    bool syncAdultVideo() const { return fSyncAdultVideo; }
+    void setSyncAdultVideo( bool value );
+
+    bool syncMusicVideo() const { return fSyncMusicVideo; }
+    void setSyncMusicVideo( bool value );
+
+    bool syncGame() const { return fSyncGame; }
+    void setSyncGame( bool value );
+
+    bool syncBook() const { return fSyncBook; }
+    void setSyncBook( bool value );
+
+    QString getSyncItemTypes() const;
     QString getServerName( bool lhs );
     bool onlyShowSyncableUsers() { return fOnlyShowSyncableUsers; };
     void setOnlyShowSyncableUsers( bool value ) { fOnlyShowSyncableUsers = value; };
@@ -141,11 +171,22 @@ private:
     QColor fMediaSourceColor{ "yellow" };
     QColor fMediaDestColor{ "yellow" };
     QColor fMediaDataMissingColor{ "red" };
-    int fMaxItems{ 0 };
+    int fMaxItems{ -1 };
 
     bool fOnlyShowSyncableUsers{ true };
     bool fOnlyShowMediaWithDifferences{ true };
     bool fShowMediaWithIssues{ false };
+
+    bool fSyncAudio{ true };
+    bool fSyncVideo{ true };
+    bool fSyncEpisode{ true };
+    bool fSyncMovie{ true };
+    bool fSyncTrailer{ true };
+    bool fSyncAdultVideo{ true };
+    bool fSyncMusicVideo{ true };
+    bool fSyncGame{ true };
+    bool fSyncBook{ true };
+
     bool fChanged{ false };
 };
 

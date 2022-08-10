@@ -220,6 +220,11 @@ void CSettings::setRHSAPI( const QString & api )
     updateValue( fRHSServer.second, api );
 }
 
+bool CSettings::canSync() const
+{
+    return getUrl( true ).isValid() && getUrl( false ).isValid();
+}
+
 QColor CSettings::getColor( const QColor & clr, bool forBackground /*= true */ ) const
 {
     if (clr == Qt::black )
@@ -266,6 +271,75 @@ void CSettings::setDataMissingColor( const QColor & color )
 void CSettings::setMaxItems( int maxItems )
 {
     updateValue( fMaxItems, maxItems );
+}
+
+void CSettings::setSyncAudio( bool value )
+{
+    updateValue( fSyncAudio, value );
+}
+
+void CSettings::setSyncVideo( bool value )
+{
+    updateValue( fSyncVideo, value );
+}
+
+void CSettings::setSyncEpisode( bool value )
+{
+    updateValue( fSyncEpisode, value );
+}
+
+void CSettings::setSyncMovie( bool value )
+{
+    updateValue( fSyncMovie, value );
+}
+
+void CSettings::setSyncTrailer( bool value )
+{
+    updateValue( fSyncTrailer, value );
+}
+
+void CSettings::setSyncAdultVideo( bool value )
+{
+    updateValue( fSyncAdultVideo, value );
+}
+
+void CSettings::setSyncMusicVideo( bool value )
+{
+    updateValue( fSyncMusicVideo, value );
+}
+
+void CSettings::setSyncGame( bool value )
+{
+    updateValue( fSyncGame, value );
+}
+
+void CSettings::setSyncBook( bool value )
+{
+    fSyncBook = value;
+}
+
+QString CSettings::getSyncItemTypes() const
+{
+    QStringList values;
+    if ( syncAudio() )
+        values << "Audio";
+    if ( syncVideo() )
+        values << "Video";
+    if ( syncEpisode() )
+        values << "Episode";
+    if ( syncTrailer() )
+        values << "Trailer";
+    if ( syncMovie() )
+        values << "Movie";
+    if ( syncAdultVideo() )
+        values << "AdultVideo";
+    if ( syncMusicVideo() )
+        values << "MusicVideo";
+    if ( syncGame() )
+        values << "Game";
+    if ( syncBook() )
+        values << "Book";
+    return values.join( "," );
 }
 
 QString CSettings::getServerName( bool lhs )
