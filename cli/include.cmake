@@ -1,9 +1,10 @@
 set(qtproject_SRCS
     main.cpp    
+    MainObj.cpp
 )
 
 set(qtproject_H
-    main.h
+    MainObj.h
 )
 
 set(project_H

@@ -21,26 +21,32 @@
 // SOFTWARE.
 
 
-#ifndef __MAIN_H
-#define __MAIN_H
+#ifndef __MAINOBJ_H
+#define __MAINOBJ_H
 
 #include <QObject>
+#include <QRegularExpression>
 #include <list>
 #include <memory>
+#include <tuple>
 
 class CSettings;
 class CSyncSystem;
 class CUserData;
-class CMain : public QObject
+class CMainObj : public QObject
 {
     Q_OBJECT;
 public:
-    CMain( const QString & settingsFile, const QString & usersRegEx, QObject * parent = nullptr );
+    CMainObj( const QString & settingsFile, const QString & usersRegEx, QObject * parent = nullptr );
 
     void run();
     void setForceProcessing( bool forceLeft, bool forceRight )
     {
         fForce = { forceLeft, forceRight };
+    }
+    bool aOK() const
+    {
+        return fAOK;
     }
 Q_SIGNALS:
     void sigExit( int exitCode );
@@ -57,7 +63,10 @@ private:
     std::shared_ptr< CSyncSystem > fSyncSystem;
 
     QString fSettingsFile;
-    QString fUserRegEx;
+    QRegularExpression fUserRegExp;
+    bool fAOK{ false };
+
+    std::tuple< int, QString, QString > fCurrentProgress{ 0, QString(), QString() };
 
     std::list< std::shared_ptr< CUserData > > fUsersToSync;
     std::pair< bool, bool > fForce;
