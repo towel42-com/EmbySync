@@ -200,7 +200,7 @@ void CMain::slotLoadingUsersFinished()
         std::cerr << "Warning: The following users matched but can not be synced\n";
     for ( auto && ii : unsyncable )
     {
-        std::cerr << "\t" << ii->name().toStdString();
+        std::cerr << "\t" << ii->displayName().toStdString();
         if ( ii->onLHSServer() )
             std::cerr << " - Missing from '" << fSettings->lhsURL().toStdString();
         else //if ( ii->onRHSServer() )
@@ -227,7 +227,7 @@ void CMain::slotProcessNextUser()
 
     auto currUser = fUsersToSync.front();
     fUsersToSync.pop_front();
-    slotAddToLog( "Processing user: " + currUser->name() );
+    slotAddToLog( "Processing user: " + currUser->displayName() );
 
     fSyncSystem->resetMedia();
     fSyncSystem->loadUsersMedia( currUser );
