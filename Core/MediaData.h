@@ -37,8 +37,6 @@ class QJsonObject;
 class QTreeWidget;
 class QListWidget;
 class QColor;
-class QStandardItemModel;
-class QStandardItem;
 class CSettings;
 
 struct SMediaUserData
@@ -75,17 +73,6 @@ inline bool operator!=( const SMediaUserData & lhs, const SMediaUserData & rhs )
 class CMediaData
 {
 public:
-    enum EColumn
-    {
-        eName = 0,
-        eMediaID,
-        eFavorite,
-        ePlayed,
-        eLastPlayed,
-        ePlayCount,
-        ePlaybackPosition
-    };
-
     static QStringList getHeaderLabels();
     static void setMSecsToStringFunc( std::function< QString( uint64_t ) > func );
     static std::function< QString( uint64_t ) > mecsToStringFunc();
@@ -93,6 +80,7 @@ public:
 
     CMediaData( const QString & name, const QString & type );
     QString name() const;
+    QString mediaType() const;
     bool beenLoaded( bool isLHS ) const;
 
     void loadUserDataFromJSON( const QJsonObject & object, bool isLHSServer );

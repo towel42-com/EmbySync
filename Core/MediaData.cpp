@@ -101,6 +101,11 @@ QString CMediaData::name() const
     return fName;
 }
 
+QString CMediaData::mediaType() const
+{
+    return fType;
+}
+
 QString CMediaData::computeName( const QJsonObject & media )
 {
     auto name = media[ "Name" ].toString();
