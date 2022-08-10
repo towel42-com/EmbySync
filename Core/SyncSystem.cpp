@@ -132,7 +132,7 @@ void CSyncSystem::loadUsersMedia( std::shared_ptr< CUserData > userData )
 
     fCurrUserData = userData;
 
-    emit sigAddToLog( QString( "Loading media for '%1'" ).arg( fCurrUserData->name() ) );
+    emit sigAddToLog( QString( "Loading media for '%1'" ).arg( fCurrUserData->displayName() ) );
 
     fLHSMedia.clear();
     fRHSMedia.clear();
@@ -177,7 +177,7 @@ void CSyncSystem::slotProcessToRight()
 
 void CSyncSystem::process( bool forceLeft, bool forceRight )
 {
-    auto title = QString( "Processing media for user '%1'" ).arg( fCurrUserData->name() );
+    auto title = QString( "Processing media for user '%1'" ).arg( fCurrUserData->displayName() );
     if ( forceLeft )
         title += " To the Left";
     else if ( forceLeft )
@@ -196,7 +196,7 @@ void CSyncSystem::process( bool forceLeft, bool forceRight )
     if ( cnt == 0 )
     {
         fProgressFuncs.resetProgress();
-        emit sigProcessingFinished( fCurrUserData->name() );
+        emit sigProcessingFinished( fCurrUserData->displayName() );
         return;
     }
 
@@ -302,7 +302,7 @@ void CSyncSystem::requestUsersMediaList( bool isLHSServer )
 
     query.addQueryItem( "api_key", isLHSServer ? fSettings->lhsAPI() : fSettings->rhsAPI() );
     //query.addQueryItem( "Filters", "IsPlayed" );
-    query.addQueryItem( "IncludeItemTypes", "Movie,Episode,Video" );
+    query.addQueryItem( "IncludeItemTypes", fSettings->getSyncItemTypes() );
     query.addQueryItem( "SortBy", "SortName" );
     query.addQueryItem( "SortOrder", "Ascending" );
     query.addQueryItem( "Recursive", "True" );
@@ -313,12 +313,12 @@ void CSyncSystem::requestUsersMediaList( bool isLHSServer )
     //qDebug() << url;
     auto request = QNetworkRequest( url );
 
-    emit sigAddToLog( QString( "Requesting media for '%1' from server '%2'" ).arg( fCurrUserData->name() ).arg( fSettings->getServerName( isLHSServer ) ) );
+    emit sigAddToLog( QString( "Requesting media for '%1' from server '%2'" ).arg( fCurrUserData->displayName() ).arg( fSettings->getServerName( isLHSServer ) ) );
 
     auto reply = makeRequest( request );
     setIsLHS( reply, isLHSServer );
     setRequestType( reply, ERequestType::eMediaList );
-    setExtraData( reply, fCurrUserData->name() );
+    setExtraData( reply, fCurrUserData->displayName() );
 }
 
 bool CSyncSystem::processData( std::shared_ptr< CMediaData > mediaData, bool forceLeft, bool forceRight )
@@ -667,7 +667,7 @@ void CSyncSystem::postHandlRequest( ERequestType requestType, QNetworkReply * re
         if ( requestType == ERequestType::eGetMediaInfo )
             emit sigUserMediaCompletelyLoaded();
         else if ( ( requestType == ERequestType::eReloadMediaData ) || ( requestType == ERequestType::eUpdateData ) )
-            emit sigProcessingFinished( fCurrUserData->name() );
+            emit sigProcessingFinished( fCurrUserData->displayName() );
     }
 }
 
@@ -675,6 +675,7 @@ void CSyncSystem::slotCheckPendingRequests()
 {
     if ( !isRunning() )
     {
+        emit sigAddToLog( QString( "Info: 0 pending requests on any server" ) );
         fPendingRequestTimer->stop();
         return;
     }
@@ -803,13 +804,25 @@ void CSyncSystem::loadUsers( const QByteArray & data, bool isLHSServer )
         if ( name.isEmpty() || id.isEmpty() )
             continue;
 
-        auto userData = getUserData( name );
+        auto linkType = user[ "ConnectLinkType" ].toString();
+        QString connectedID;
+        if ( linkType == "LinkedUser" )
+            connectedID = user[ "ConnectUserName" ].toString();
+
+        auto userData = getUserData( connectedID );
+        if ( !userData )
+            userData = getUserData( name );
+
         if ( !userData )
         {
-            userData = std::make_shared< CUserData >( name );
-            fUsers[ userData->name() ] = userData;
+            userData = std::make_shared< CUserData >( name, connectedID, isLHSServer );
+            if ( !connectedID.isEmpty() )
+                fUsers[ userData->connectedID() ] = userData;
+            else
+                fUsers[ userData->name( isLHSServer ) ] = userData;
         }
 
+        userData->setName( name, isLHSServer );
         userData->setUserID( id, isLHSServer );
     }
 }
@@ -967,7 +980,7 @@ void CSyncSystem::loadMediaList( const QByteArray & data, bool isLHSServer )
     fProgressFuncs.setupProgress( tr( "Loading Users Media Data" ) );
     fProgressFuncs.setMaximum( mediaList.count() );
 
-    emit sigAddToLog( QString( "%1 has %2 media items on server '%3'" ).arg( fCurrUserData->name() ).arg( mediaList.count() ).arg( fSettings->getServerName( isLHSServer ) ) );
+    emit sigAddToLog( QString( "%1 has %2 media items on server '%3'" ).arg( fCurrUserData->displayName() ).arg( mediaList.count() ).arg( fSettings->getServerName( isLHSServer ) ) );
     if ( fSettings->maxItems() > 0 )
         emit sigAddToLog( QString( "Loading %2 media items" ).arg( fSettings->maxItems() ) );
 
