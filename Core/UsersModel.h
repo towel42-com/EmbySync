@@ -14,7 +14,9 @@ class CUsersModel : public QAbstractTableModel
 public:
     enum EColumns
     {
-        eName,
+        eLHSName,
+        eRHSName,
+        eConnectedID,
         eOnLHSServer,
         eOnRHSServer
     };
@@ -22,7 +24,9 @@ public:
     enum ECustomRoles
     {
         eShowItemRole=Qt::UserRole+1,
-        eNameRole
+        eLHSNameRole,
+        eRHSNameRole,
+        eConnectedIDRole
     };
 
     CUsersModel( std::shared_ptr< CSettings > settings, QObject * parent );

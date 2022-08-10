@@ -23,17 +23,67 @@
 #include "UserData.h"
 #include <QRegularExpression>
 
-CUserData::CUserData( const QString & name ) :
-    fName( name )
+CUserData::CUserData( const QString & name, const QString & connectedID, bool isLHS ) :
+    fConnectedID( connectedID )
 {
+    setName( name, isLHS );
+}
 
+QString CUserData::name( bool isLHS ) const
+{
+    if ( isLHS )
+        return fName.first;
+    else
+        return fName.second;
+}
+
+void CUserData::setName( const QString & name, bool isLHS )
+{
+    if ( isLHS )
+        fName.first = name;
+    else
+        fName.second = name;
+}
+
+QString CUserData::displayName() const
+{
+    QString retVal = fName.first;
+    bool needsParen = false;
+    if ( fName.first != fName.second )
+    {
+        needsParen = true;
+        retVal += "(";
+        retVal += fName.second;
+    }
+    if ( !connectedID().isEmpty() )
+    {
+        if ( !needsParen )
+        {
+            needsParen = true;
+            retVal += "(";
+        }
+        else
+            retVal += "-";
+        retVal += connectedID();
+    }
+
+    if ( needsParen )
+        retVal += ")";
+    return retVal;
 }
 
 bool CUserData::isUserNameMatch( const QString & regExStr ) const
 {
     auto regEx = QRegularExpression( regExStr );
-    auto match = regEx.match( fName );
-    return match.hasMatch() && ( match.captured( 0 ).length() == fName.length() );
+
+    auto match = regEx.match( fName.first );
+    if ( match.hasMatch() && ( match.captured( 0 ).length() == fName.first.length() ) )
+        return true;
+
+    match = regEx.match( fName.second );
+    if ( match.hasMatch() && ( match.captured( 0 ).length() == fName.second.length() ) )
+        return true;
+    return false;
 }
 
 QString CUserData::getUserID( bool isLHS ) const

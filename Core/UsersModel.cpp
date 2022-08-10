@@ -23,7 +23,7 @@ int CUsersModel::columnCount( const QModelIndex & parent /* = QModelIndex() */ )
 {
     if ( parent.isValid() )
         return 0;
-    return 3;
+    return static_cast<int>( eOnRHSServer ) + 1;
 }
 
 QVariant CUsersModel::data( const QModelIndex & index, int role /*= Qt::DisplayRole */ ) const
@@ -40,8 +40,12 @@ QVariant CUsersModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
         return userData->onLHSServer() && userData->onRHSServer();
     }
 
-    if ( role == ECustomRoles::eNameRole )
-        return userData->name();
+    if ( role == ECustomRoles::eLHSNameRole )
+        return userData->name( true );
+    else if ( role == ECustomRoles::eRHSNameRole )
+        return userData->name( false );
+    else if ( role == ECustomRoles::eConnectedIDRole )
+        return userData->connectedID();
 
     //// reverse for black background
     if ( role == Qt::ForegroundRole )
@@ -65,7 +69,9 @@ QVariant CUsersModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
 
     switch ( index.column() )
     {
-        case eName: return userData->name();
+        case eLHSName: return userData->name( true );
+        case eRHSName: return userData->name( false );
+        case eConnectedID: return userData->connectedID();
         case eOnLHSServer: return userData->onLHSServer() ? "Yes" : "No";
         case eOnRHSServer: return userData->onRHSServer() ? "Yes" : "No";
         default:
@@ -103,7 +109,9 @@ QVariant CUsersModel::headerData( int section, Qt::Orientation orientation, int 
 
     switch ( section )
     {
-        case eName: return "Name";
+        case eLHSName: return "LHS Name";
+        case eRHSName: return "RHS Name";
+        case eConnectedID: return "Connected ID";
         case eOnLHSServer: return "On LHS Server?";
         case eOnRHSServer: return "On RHS Server?";
     };
@@ -161,7 +169,7 @@ std::shared_ptr< CUserData > CUsersModel::userDataForName( const QString & name 
 {
     for ( auto && ii : fUsers )
     {
-        if ( ii->name() == name )
+        if ( ( ii->name( true ) == name ) || ( ii->name( false ) == name ) || ( ii->connectedID() == name ) )
             return ii;
     }
     return {};

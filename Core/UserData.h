@@ -33,9 +33,12 @@ class QTreeWidgetItem;
 class CUserData
 {
 public:
-    CUserData( const QString & name );
+    CUserData( const QString & name, const QString & connectedID, bool isLHSName );
 
-    QString name() const { return fName; }
+    QString name( bool forLHS ) const;
+    void setName( const QString & name, bool isLHS );
+    QString displayName() const;
+    QString connectedID() const { return fConnectedID; }
     bool isUserNameMatch( const QString & regEx ) const;
 
     QTreeWidgetItem * getItem() const { return fItem; }
@@ -55,7 +58,8 @@ public:
     bool hasMedia() const;
     int numPlayedMedia() const;
 private:
-    QString fName;
+    std::pair< QString, QString > fName;
+    QString fConnectedID;
     std::pair< QString, QString > fUserID;
     QTreeWidgetItem * fItem{ nullptr };
     std::list< std::shared_ptr< CMediaData > > fMedia;
