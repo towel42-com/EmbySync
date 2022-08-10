@@ -49,7 +49,7 @@ QString CUserData::displayName() const
 {
     QString retVal = fName.first;
     bool needsParen = false;
-    if ( fName.first != fName.second )
+    if ( ( fName.first.isEmpty() && !fName.second.isEmpty() ) && ( fName.first != fName.second ) )
     {
         needsParen = true;
         retVal += "(";
@@ -72,18 +72,25 @@ QString CUserData::displayName() const
     return retVal;
 }
 
-bool CUserData::isUserNameMatch( const QString & regExStr ) const
+bool CUserData::isUser( const QRegularExpression & regEx ) const
 {
-    auto regEx = QRegularExpression( regExStr );
+    if ( !regEx.isValid() )
+        return false;
 
-    auto match = regEx.match( fName.first );
-    if ( match.hasMatch() && ( match.captured( 0 ).length() == fName.first.length() ) )
+    if ( isMatch( regEx, fConnectedID ) )
+        return true;
+    if ( isMatch( regEx, fName.first ) )
+        return true;
+    if ( isMatch( regEx, fName.second ) )
         return true;
 
-    match = regEx.match( fName.second );
-    if ( match.hasMatch() && ( match.captured( 0 ).length() == fName.second.length() ) )
-        return true;
     return false;
+}
+
+bool CUserData::isMatch( const QRegularExpression & regEx, const QString & value ) const
+{
+    auto match = regEx.match( value );
+    return ( match.hasMatch() && ( match.captured( 0 ).length() == value.length() ) );
 }
 
 QString CUserData::getUserID( bool isLHS ) const

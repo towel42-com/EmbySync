@@ -39,7 +39,8 @@ public:
     void setName( const QString & name, bool isLHS );
     QString displayName() const;
     QString connectedID() const { return fConnectedID; }
-    bool isUserNameMatch( const QString & regEx ) const;
+    
+    bool isUser( const QRegularExpression & regEx ) const;
 
     QTreeWidgetItem * getItem() const { return fItem; }
     void setItem( QTreeWidgetItem * item ) { fItem = item; }
@@ -58,6 +59,8 @@ public:
     bool hasMedia() const;
     int numPlayedMedia() const;
 private:
+    bool isMatch( const QRegularExpression & regEx, const QString & value ) const;
+
     std::pair< QString, QString > fName;
     QString fConnectedID;
     std::pair< QString, QString > fUserID;
