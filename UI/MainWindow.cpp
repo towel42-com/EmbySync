@@ -38,7 +38,6 @@
 #include <QFileInfo>
 #include <QProgressDialog>
 #include <QMessageBox>
-#include <QStandardItemModel>
 #include <QSortFilterProxyModel>
 #include <QRegularExpression>
 
@@ -201,6 +200,7 @@ void CMainWindow::slotSetCurrentMediaItem( const QModelIndex & current, const QM
 
     fImpl->currMediaBox->setEnabled( mediaInfo.get() != nullptr );
     fImpl->currMediaName->setText( mediaInfo ? mediaInfo->name() : QString() );
+    fImpl->currMediaType->setText( mediaInfo ? mediaInfo->mediaType() : QString() );
     fImpl->externalUrls->setText( mediaInfo ? mediaInfo->externalUrlsText() : tr( "External Urls:" ) );
     fImpl->externalUrls->setTextFormat( Qt::RichText );
     fImpl->lhsUserMediaData->setMediaUserData( mediaInfo ? mediaInfo->userMediaData( true ) : std::shared_ptr< SMediaUserData >()  );
@@ -328,13 +328,15 @@ void CMainWindow::slotSave()
 void CMainWindow::loadSettings()
 {
     slotAddToLog( "Loading Settings" );
+
     fImpl->lhsServerLabel->setText( tr( "Server: <a href=\"%1\">%1</a>" ).arg( fSettings->lhsURL() ) );
     fImpl->rhsServerLabel->setText( tr( "Server: <a href=\"%1\">%1</a>" ).arg( fSettings->rhsURL() ) );
     fImpl->actionOnlyShowSyncableUsers->setChecked( fSettings->onlyShowSyncableUsers() );
     fImpl->actionOnlyShowMediaWithDifferences->setChecked( fSettings->onlyShowMediaWithDifferences() );
     fImpl->actionShowMediaWithIssues->setChecked( fSettings->showMediaWithIssues() );
 
-    fSyncSystem->loadUsers();
+    if ( fSettings->canSync() )
+        fSyncSystem->loadUsers();
 }
 
 void CMainWindow::slotLoadingUsersFinished()
@@ -358,7 +360,8 @@ void CMainWindow::slotUserMediaLoaded()
 void CMainWindow::slotReloadServers()
 {
     resetServers();
-    fSyncSystem->loadUsers();
+    if ( fSettings->canSync() )
+        fSyncSystem->loadUsers();
 }
 
 void CMainWindow::slotReloadCurrentUser()
@@ -384,7 +387,7 @@ void CMainWindow::slotCurrentUserChanged( const QModelIndex & index )
     if ( !index.isValid() )
         return;
 
-    auto userData = fUsersModel->userDataForName( idx.data( CUsersModel::eNameRole ).toString() );
+    auto userData = getUserData( idx );
     if ( !userData )
         return;
 
@@ -428,7 +431,18 @@ std::shared_ptr< CUserData > CMainWindow::getCurrUserData() const
     if ( !idx.isValid() )
         return {};
 
-    return fUsersModel->userDataForName( idx.data( CUsersModel::eNameRole ).toString() );
+    return getUserData( idx );
+}
+
+std::shared_ptr< CUserData > CMainWindow::getUserData( const QModelIndex & idx ) const
+{
+    auto retVal = fUsersModel->userDataForName( idx.data( CUsersModel::eConnectedIDRole ).toString() );
+    if ( !retVal )
+        retVal = fUsersModel->userDataForName( idx.data( CUsersModel::eLHSNameRole ).toString() );
+    if ( !retVal )
+        retVal = fUsersModel->userDataForName( idx.data( CUsersModel::eRHSNameRole ).toString() );
+    
+    return retVal;
 }
 
 void CMainWindow::slotToggleOnlyShowSyncableUsers()

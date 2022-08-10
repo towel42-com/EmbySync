@@ -107,6 +107,7 @@ private:
     void onlyShowMediaWithDifferences();
     void showMediaWithIssues();
     std::shared_ptr< CUserData > getCurrUserData() const;
+    std::shared_ptr< CUserData > getUserData( const QModelIndex & idx ) const;
 
     void loadFile( const QString & fileName );
 
