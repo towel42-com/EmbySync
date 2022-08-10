@@ -67,7 +67,7 @@ CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, QWidget * par
                      updateColors();
                  }
              } );
-
+    fImpl->tabWidget->setCurrentIndex( 0 );
 }
 
 CSettingsDlg::~CSettingsDlg()
@@ -96,6 +96,16 @@ void CSettingsDlg::load()
     if ( maxItems < fImpl->maxItems->minimum() )
         maxItems = fImpl->maxItems->minimum();
     fImpl->maxItems->setValue( maxItems );
+
+    fImpl->syncAudio->setChecked( fSettings->syncAudio() );
+    fImpl->syncVideo->setChecked( fSettings->syncVideo() );
+    fImpl->syncEpisode->setChecked( fSettings->syncEpisode() );
+    fImpl->syncMovie->setChecked( fSettings->syncMovie() );
+    fImpl->syncTrailer->setChecked( fSettings->syncTrailer() );
+    fImpl->syncAdultVideo->setChecked( fSettings->syncAdultVideo() );
+    fImpl->syncMusicVideo->setChecked( fSettings->syncMusicVideo() );
+    fImpl->syncGame->setChecked( fSettings->syncGame() );
+    fImpl->syncBook->setChecked( fSettings->syncBook() );
 }
 
 void CSettingsDlg::save()
@@ -109,6 +119,16 @@ void CSettingsDlg::save()
     fSettings->setMediaDestColor( fMediaDestColor );
     fSettings->setDataMissingColor( fDataMissingColor );
     fSettings->setMaxItems( ( fImpl->maxItems->value() == fImpl->maxItems->minimum() ) ? -1 : fImpl->maxItems->value() );
+
+    fSettings->setSyncAudio( fImpl->syncAudio->isChecked() );
+    fSettings->setSyncVideo( fImpl->syncVideo->isChecked() );
+    fSettings->setSyncEpisode( fImpl->syncEpisode->isChecked() );
+    fSettings->setSyncMovie( fImpl->syncMovie->isChecked() );
+    fSettings->setSyncTrailer( fImpl->syncTrailer->isChecked() );
+    fSettings->setSyncAdultVideo( fImpl->syncAdultVideo->isChecked() );
+    fSettings->setSyncMusicVideo( fImpl->syncMusicVideo->isChecked() );
+    fSettings->setSyncGame( fImpl->syncGame->isChecked() );
+    fSettings->setSyncBook( fImpl->syncBook->isChecked() );
 }
 
 
