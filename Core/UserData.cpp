@@ -48,27 +48,17 @@ void CUserData::setName( const QString & name, bool isLHS )
 QString CUserData::displayName() const
 {
     QString retVal = fName.first;
-    bool needsParen = false;
-    if ( ( fName.first.isEmpty() && !fName.second.isEmpty() ) && ( fName.first != fName.second ) )
+    if ( ( !fName.first.isEmpty() && !fName.second.isEmpty() ) && ( fName.first != fName.second ) )
     {
-        needsParen = true;
-        retVal += "(";
+        retVal += "/";
         retVal += fName.second;
     }
     if ( !connectedID().isEmpty() )
     {
-        if ( !needsParen )
-        {
-            needsParen = true;
-            retVal += "(";
-        }
-        else
-            retVal += "-";
+        retVal += "(";
         retVal += connectedID();
-    }
-
-    if ( needsParen )
         retVal += ")";
+    }
     return retVal;
 }
 
