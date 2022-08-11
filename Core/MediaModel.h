@@ -13,6 +13,9 @@
 
 class CSettings;
 class CMediaData;
+class CProgressSystem;
+
+using TMediaIDToMediaData = std::map< QString, std::shared_ptr< CMediaData > >;
 
 class CMediaModel : public QAbstractTableModel
 {
@@ -62,7 +65,6 @@ public:
     virtual QVariant headerData( int section, Qt::Orientation orientation, int role = Qt::DisplayRole ) const override;
 
     void clear();
-    void setMedia( const std::list< std::shared_ptr< CMediaData > > & media );
 
     void addMedia( std::shared_ptr< CMediaData > mediaData ); 
 
@@ -83,9 +85,33 @@ public:
 
     std::shared_ptr< CMediaData > getMediaData( const QModelIndex & idx ) const;
     void updateMediaData( std::shared_ptr< CMediaData > mediaData );
+    std::shared_ptr< CMediaData > getMediaDataForID( const QString & mediaID, bool isLHS ) const;
+    std::shared_ptr< CMediaData > loadMedia( const QJsonObject & media, bool isLHSServer );
+    std::shared_ptr< CMediaData > reloadMedia( const QJsonObject & media, const QString & mediaID, bool isLHSServer );
+
+    bool mergeMedia( std::shared_ptr< CProgressSystem > progressSystem );
+    std::unordered_set< std::shared_ptr< CMediaData > > getAllMedia() const { return fAllMedia; }
+Q_SIGNALS:
+    void sigPendingMediaUpdate();
 private:
+    void addMediaInfo( std::shared_ptr<CMediaData> mediaData, const QJsonObject & mediaInfo, bool isLHSServer );
+    std::shared_ptr< CMediaData > findMediaForProvider( const QString & providerName, const QString & providerID, bool fromLHS ) const;
+    void setMediaForProvider( const QString & providerName, const QString & providerID, std::shared_ptr< CMediaData > mediaData, bool isLHS );
+    void mergeMediaData( TMediaIDToMediaData & lhs, TMediaIDToMediaData & rhs, bool lhsIsLHS, std::shared_ptr< CProgressSystem > progressSystem );
+    void mergeMediaData( TMediaIDToMediaData & lhs, bool lhsIsLHS, std::shared_ptr< CProgressSystem > progressSystem );
+    void loadMergedData( std::shared_ptr< CProgressSystem > progressSystem );
+
     QVariant getColor( const QModelIndex & index, bool background ) const;
     void updateProviderColumns( std::shared_ptr< CMediaData > ii );
+
+    TMediaIDToMediaData fLHSMedia; //server media ID -> media Data
+    TMediaIDToMediaData fRHSMedia;
+
+    std::unordered_set< std::shared_ptr< CMediaData > > fAllMedia;
+
+    // provider name -> provider ID -> mediaData
+    std::unordered_map< QString, std::unordered_map< QString, std::shared_ptr< CMediaData > > > fLHSProviderSearchMap; // provider name, to map of id to mediadata
+    std::unordered_map< QString, std::unordered_map< QString, std::shared_ptr< CMediaData > > > fRHSProviderSearchMap;
 
     std::vector< std::shared_ptr< CMediaData > > fData;
     std::shared_ptr< CSettings > fSettings;

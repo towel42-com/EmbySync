@@ -4,6 +4,7 @@
 
 #include <QColor>
 #include <set>
+#include <QJsonObject>
 
 CUsersModel::CUsersModel( std::shared_ptr< CSettings > settings, QObject * parent ) :
     QAbstractTableModel( parent ),
@@ -144,28 +145,6 @@ CUsersModel::SUsersSummary CUsersModel::getMediaSummary() const
     return retVal;
 }
 
-void CUsersModel::setUsers( const std::list< std::shared_ptr< CUserData > > & users )
-{
-    beginResetModel();
-    clear();
-    fUsers = { users.begin(), users.end() };
-    for ( size_t ii = 0; ii < fUsers.size(); ++ii )
-        fUsersToPos[ fUsers[ ii ] ] = ii;
-    endResetModel();
-}
-
-void CUsersModel::addUser( std::shared_ptr< CUserData > userData )
-{
-    auto pos = fUsersToPos.find( userData );
-    if ( pos == fUsersToPos.end() )
-    {
-        beginInsertRows( QModelIndex(), static_cast<int>( fUsers.size() ), static_cast<int>( fUsers.size() ) );
-        fUsersToPos[ userData ] = fUsers.size();
-        fUsers.push_back( userData );
-        endInsertRows();
-    }
-}
-
 std::shared_ptr< CUserData > CUsersModel::userDataForName( const QString & name )
 {
     for ( auto && ii : fUsers )
@@ -180,31 +159,90 @@ void CUsersModel::clear()
 {
     beginResetModel();
     fUsers.clear();
-    fUsersToPos.clear();
+    fUserMap.clear();
     endResetModel();
 }
 
-std::vector< std::shared_ptr< CUserData > > CUsersModel::allKnownUsers() const
+std::shared_ptr< CUserData > CUsersModel::getUserData( const QString & name ) const
 {
-    std::map< QString, std::shared_ptr< CUserData > > sortedUsers;
-    for ( auto && ii : fUsers )
+    auto pos = fUserMap.find( name );
+    if ( pos == fUserMap.end() )
+        return {};
+
+    auto userData = ( *pos ).second;
+    if ( !userData )
+        return {};
+    return userData;
+}
+
+std::vector< std::shared_ptr< CUserData > > CUsersModel::getAllUsers( bool sorted ) const
+{
+    if ( sorted )
     {
-        if ( ii->name( true ).isEmpty() && ii->name( false ).isEmpty() && ii->connectedID().isEmpty() )
-            continue;
-        if ( !ii->name( true ).isEmpty() )
-            sortedUsers[ ii->name( true ) ] = ii;
-        else if ( !ii->name( false ).isEmpty() )
-            sortedUsers[ ii->name( false ) ] = ii;
-        else if ( !ii->connectedID().isEmpty() )
-            sortedUsers[ ii->connectedID() ] = ii;
+        std::vector< std::shared_ptr< CUserData > > retVal;
+        retVal.reserve( fUsers.size() );
+        std::map< QString, std::shared_ptr< CUserData > > sortedUsers;
+        for ( auto && ii : fUsers )
+        {
+            if ( ii->name( true ).isEmpty() && ii->name( false ).isEmpty() && ii->connectedID().isEmpty() )
+                continue;
+            if ( !ii->name( true ).isEmpty() )
+                sortedUsers[ ii->name( true ) ] = ii;
+            else if ( !ii->name( false ).isEmpty() )
+                sortedUsers[ ii->name( false ) ] = ii;
+            else if ( !ii->connectedID().isEmpty() )
+                sortedUsers[ ii->connectedID() ] = ii;
+        }
+        for ( auto && ii : sortedUsers )
+        {
+            retVal.push_back( ii.second );
+        }
+        return std::move( retVal );
     }
-    std::vector< std::shared_ptr< CUserData > > retVal;
-    retVal.reserve( fUsers.size() );
-    for ( auto && ii : sortedUsers )
+    else
     {
-        retVal.push_back( ii.second );
+        return fUsers;
     }
-    return retVal;
+}
+
+std::shared_ptr< CUserData > CUsersModel::loadUser( const QJsonObject & user, bool isLHSServer )
+{
+    auto currName = user[ "Name" ].toString();
+    auto id = user[ "Id" ].toString();
+    if ( currName.isEmpty() || id.isEmpty() )
+        return {};
+
+    auto linkType = user[ "ConnectLinkType" ].toString();
+    QString connectedID;
+    if ( linkType == "LinkedUser" )
+        connectedID = user[ "ConnectUserName" ].toString();
+
+    auto userData = getUserData( connectedID );
+    if ( !userData )
+        userData = getUserData( currName );
+
+    if ( !userData )
+    {
+        userData = std::make_shared< CUserData >( currName, connectedID, isLHSServer );
+        beginInsertRows( QModelIndex(), static_cast<int>( fUsers.size() ), static_cast<int>( fUsers.size() ) );
+        fUsers.push_back( userData );
+        if ( !connectedID.isEmpty() )
+            fUserMap[ userData->connectedID() ] = userData;
+        else
+            fUserMap[ userData->name( isLHSServer ) ] = userData;
+        endInsertRows();
+    }
+    int ii = 0;
+    for ( ; ii < static_cast< int >( fUsers.size() ); ++ii )
+    {
+        if ( fUsers[ ii ] == userData )
+            break;
+    }
+    Q_ASSERT( ii != fUsers.size() );
+    userData->setName( currName, isLHSServer );
+    userData->setUserID( id, isLHSServer );
+    dataChanged( index( ii, 0 ), index( ii, columnCount() - 1 ) );
+    return userData;
 }
 
 CUsersFilterModel::CUsersFilterModel( QObject * parent ) :

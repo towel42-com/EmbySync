@@ -23,6 +23,7 @@
 set(qtproject_SRCS
     MediaData.cpp
     MediaModel.cpp
+    ProgressSystem.cpp
     SyncSystem.cpp
     Settings.cpp
     UserData.cpp
@@ -30,15 +31,16 @@ set(qtproject_SRCS
 )
 
 set(qtproject_H
-    SyncSystem.h
     MediaModel.h
+    SyncSystem.h
     UsersModel.h
 )
 
 set(project_H
     MediaData.h
-    UserData.h
+    ProgressSystem.h
     Settings.h
+    UserData.h
 )
 
 set(qtproject_UIS

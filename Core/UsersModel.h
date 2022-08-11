@@ -47,17 +47,18 @@ public:
     SUsersSummary settingsChanged();
     SUsersSummary getMediaSummary() const;
 
-    void addUser( std::shared_ptr< CUserData > userData );
-    void setUsers( const std::list< std::shared_ptr< CUserData > > & users );
     std::shared_ptr< CUserData > userDataForName( const QString & name );
     void clear();
 
-    std::vector< std::shared_ptr< CUserData > > allKnownUsers() const;
+    std::shared_ptr< CUserData > loadUser( const QJsonObject & user, bool isLHSServer );
+    std::vector< std::shared_ptr< CUserData > > getAllUsers( bool sorted ) const;
 private:
+    std::shared_ptr< CUserData > getUserData( const QString & name ) const;
+    
     QVariant getColor( const QModelIndex & index, bool background ) const;
         
+    std::map< QString, std::shared_ptr< CUserData > > fUserMap;
     std::vector< std::shared_ptr< CUserData > > fUsers;
-    std::unordered_map< std::shared_ptr< CUserData >, size_t > fUsersToPos;
     std::shared_ptr< CSettings > fSettings;
 };
 

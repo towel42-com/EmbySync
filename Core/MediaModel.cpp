@@ -2,7 +2,9 @@
 #include "MediaData.h"
 
 #include "Settings.h"
+#include "ProgressSystem.h"
 
+#include <QJsonObject>
 #include <QColor>
 
 CMediaModel::CMediaModel( std::shared_ptr< CSettings > settings, QObject * parent ) :
@@ -119,6 +121,24 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
     return {};
 }
 
+void CMediaModel::addMediaInfo( std::shared_ptr<CMediaData> mediaData, const QJsonObject & mediaInfo, bool isLHSServer )
+{
+    mediaData->loadUserDataFromJSON( mediaInfo, isLHSServer );
+    if ( isLHSServer )
+        fLHSMedia[ mediaData->getMediaID( isLHSServer ) ] = mediaData;
+    else
+        fRHSMedia[ mediaData->getMediaID( isLHSServer ) ] = mediaData;
+
+    auto && providers = mediaData->getProviders( true );
+    for ( auto && ii : providers )
+    {
+        if ( isLHSServer )
+            fLHSProviderSearchMap[ ii.first ][ ii.second ] = mediaData;
+        else
+            fRHSProviderSearchMap[ ii.first ][ ii.second ] = mediaData;
+    }
+}
+
 QVariant CMediaModel::getColor( const QModelIndex & index, bool background ) const
 {
     auto mediaData = fData[ index.row() ];
@@ -213,29 +233,13 @@ void CMediaModel::clear()
     fMediaToPos.clear();
     fProviderColumnsByColumn.clear();
     fProviderColumnsByName.clear();
-    endResetModel();
-}
 
-void CMediaModel::setMedia( const std::list< std::shared_ptr< CMediaData > > & media )
-{
-    beginResetModel();
-    clear();
-    fData.reserve( media.size() );
-    for ( auto && ii : media )
-    {
-        fMediaToPos[ ii ] = fData.size();
-        fData.push_back( ii );
-        updateProviderColumns( ii );
-    }
+    fLHSMedia.clear();
+    fRHSMedia.clear();
+    fLHSProviderSearchMap.clear();
+    fRHSProviderSearchMap.clear();
+    fAllMedia.clear();
     endResetModel();
-}
-
-void CMediaModel::addMedia( std::shared_ptr< CMediaData > mediaData )
-{
-    beginInsertRows( QModelIndex(), static_cast<int>( fData.size() ), static_cast<int>( fData.size() ) );
-    fData.push_back( mediaData );
-    updateProviderColumns( mediaData );
-    endInsertRows();
 }
 
 void CMediaModel::updateProviderColumns( std::shared_ptr< CMediaData > mediaData )
@@ -331,6 +335,16 @@ void CMediaModel::updateMediaData( std::shared_ptr< CMediaData > mediaData )
     emit dataChanged( index( row, 0 ), index( row, columnCount() - 1 ) );
 }
 
+std::shared_ptr< CMediaData > CMediaModel::getMediaDataForID( const QString & mediaID, bool isLHSServer ) const
+{
+    QString name;
+    auto && map = isLHSServer ? fLHSMedia : fRHSMedia;
+    auto pos = map.find( mediaID );
+    if ( pos != map.end() )
+        return ( *pos ).second;
+    return {};
+}
+
 CMediaFilterModel::CMediaFilterModel( QObject * parent ) :
     QSortFilterProxyModel( parent )
 {
@@ -380,4 +394,166 @@ bool CMediaFilterModel::dirLessThan( const QModelIndex & source_left, const QMod
     return source_left.row() < source_right.row();
 }
 
+std::shared_ptr< CMediaData > CMediaModel::loadMedia( const QJsonObject & media, bool isLHSServer )
+{
+    auto id = media[ "Id" ].toString();
+    std::shared_ptr< CMediaData > mediaData;
+    auto pos = ( isLHSServer ? fLHSMedia.find( id ) : fRHSMedia.find( id ) );
+    if ( pos == ( isLHSServer ? fLHSMedia.end() : fRHSMedia.end() ) )
+        mediaData = std::make_shared< CMediaData >( CMediaData::computeName( media ), media[ "Type" ].toString() );
+    else
+        mediaData = ( *pos ).second;
+    //qDebug() << isLHSServer << mediaData->name();
 
+    mediaData->setMediaID( id, isLHSServer );
+
+    /*
+    "UserData": {
+    "IsFavorite": false,
+    "LastPlayedDate": "2022-01-15T20:28:39.0000000Z",
+    "PlayCount": 1,
+    "PlaybackPositionTicks": 0,
+    "Played": true
+    }
+    */
+
+    addMediaInfo( mediaData, media, isLHSServer );
+    return mediaData;
+}
+
+std::shared_ptr< CMediaData > CMediaModel::reloadMedia( const QJsonObject & media, const QString & mediaID, bool isLHSServer )
+{
+    auto mediaData = getMediaDataForID( mediaID, isLHSServer );
+    if ( !mediaData )
+        return {};
+
+    if ( media.find( "UserData" ) == media.end() )
+        return {};
+
+
+    addMediaInfo( mediaData, media, isLHSServer );
+    updateMediaData( mediaData );
+    emit sigPendingMediaUpdate();
+    return mediaData;
+}
+
+void CMediaModel::mergeMediaData( TMediaIDToMediaData & lhs, TMediaIDToMediaData & rhs, bool lhsIsLHS, std::shared_ptr< CProgressSystem > progressSystem )
+{
+    mergeMediaData( lhs, lhsIsLHS, progressSystem );
+    mergeMediaData( rhs, !lhsIsLHS, progressSystem );
+}
+
+bool CMediaModel::mergeMedia( std::shared_ptr< CProgressSystem > progressSystem )
+{
+    progressSystem->resetProgress();
+    progressSystem->setTitle( tr( "Merging media data" ) );
+    progressSystem->setMaximum( static_cast<int>( fLHSMedia.size() * 3 + fRHSMedia.size() * 3 ) );
+
+
+    mergeMediaData( fLHSMedia, fRHSMedia, true, progressSystem );
+    mergeMediaData( fRHSMedia, fLHSMedia, false, progressSystem );
+
+    if ( !progressSystem->wasCanceled() )
+    {
+        loadMergedData( progressSystem );
+    }
+    else
+    {
+        clear();
+    }
+    fLHSProviderSearchMap.clear();
+    fRHSProviderSearchMap.clear();
+
+
+    return !progressSystem->wasCanceled();
+}
+
+void CMediaModel::loadMergedData( std::shared_ptr< CProgressSystem > progressSystem )
+{
+    for ( auto && ii : fLHSMedia )
+    {
+        fAllMedia.insert( ii.second );
+        progressSystem->incProgress();
+    }
+
+    for ( auto && ii : fRHSMedia )
+    {
+        fAllMedia.insert( ii.second );
+        progressSystem->incProgress();
+    }
+
+    progressSystem->pushState();
+    progressSystem->setTitle( tr( "Loading merged media data" ) );
+    progressSystem->setMaximum( static_cast< int >( fAllMedia.size() ) );
+    progressSystem->setValue( 0 );
+    beginResetModel();
+    fData.reserve( fAllMedia.size() );
+    for ( auto && ii : fAllMedia )
+    {
+        fMediaToPos[ ii ] = fData.size();
+        fData.push_back( ii );
+        updateProviderColumns( ii );
+    }
+    endResetModel();
+    progressSystem->popState();
+}
+
+std::shared_ptr< CMediaData > CMediaModel::findMediaForProvider( const QString & provider, const QString & id, bool lhs ) const
+{
+    auto && map = lhs ? fLHSProviderSearchMap : fRHSProviderSearchMap;
+    auto pos = map.find( provider );
+    if ( pos == map.end() )
+        return {};
+
+    auto pos2 = ( *pos ).second.find( id );
+    if ( pos2 == ( *pos ).second.end() )
+        return {};
+    return ( *pos2 ).second;
+}
+
+
+void CMediaModel::setMediaForProvider( const QString & providerName, const QString & providerID, std::shared_ptr< CMediaData > mediaData, bool isLHS )
+{
+    ( isLHS ? fLHSProviderSearchMap : fRHSProviderSearchMap )[ providerName ][ providerID ] = mediaData;
+}
+
+void CMediaModel::mergeMediaData( TMediaIDToMediaData & lhs, bool lhsIsLHS, std::shared_ptr< CProgressSystem > progressSystem )
+{
+    std::unordered_map< std::shared_ptr< CMediaData >, std::shared_ptr< CMediaData > > replacementMap;
+    for ( auto && ii : lhs )
+    {
+        if ( progressSystem->wasCanceled() )
+            break;
+
+        progressSystem->incProgress();
+        auto mediaData = ii.second;
+        if ( !mediaData )
+            continue;
+        QStringList dupeProviderForMedia;
+        for ( auto && jj : mediaData->getProviders( true ) )
+        {
+            auto providerName = jj.first;
+            auto providerID = jj.second;
+
+            auto myMappedMedia = findMediaForProvider( providerName, providerID, lhsIsLHS );
+            if ( myMappedMedia != mediaData )
+            {
+                replacementMap[ mediaData ] = myMappedMedia;
+                continue;
+            }
+
+            auto otherData = findMediaForProvider( providerName, providerID, !lhsIsLHS );
+            if ( otherData != mediaData )
+                setMediaForProvider( providerName, providerID, mediaData, !lhsIsLHS );
+        }
+    }
+    for ( auto && ii : replacementMap )
+    {
+        auto currMediaID = ii.first->getMediaID( lhsIsLHS );
+        auto pos = lhs.find( currMediaID );
+        lhs.erase( pos );
+        ii.second->updateFromOther( ii.first, lhsIsLHS );
+
+        lhs[ currMediaID ] = ii.second;
+    }
+}

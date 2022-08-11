@@ -21,6 +21,7 @@
 // SOFTWARE.
 
 #include "SyncSystem.h"
+#include "ProgressSystem.h"
 #include "UserData.h"
 #include "Settings.h"
 #include "MediaData.h"
@@ -49,9 +50,8 @@ QString toString( ERequestType request )
     switch ( request )
     {
         case ERequestType::eNone: return "None";
-        case ERequestType::eUsers: return "Users";
-        case ERequestType::eMediaList: return "MediaList";
-        case ERequestType::eGetMediaInfo: return "MissingMedia";
+        case ERequestType::eGetUsers: return "GetUsers";
+        case ERequestType::eGetMediaList: return "GetMediaList";
         case ERequestType::eReloadMediaData: return "ReloadMediaData";
         case ERequestType::eUpdateData: return "UpdateData";
         case ERequestType::eUpdateFavorite: return "UpdateFavorite";
@@ -81,7 +81,8 @@ QString createMessage( EMsgType msgType, const QString & msg )
 
 CSyncSystem::CSyncSystem( std::shared_ptr< CSettings > settings, QObject * parent ) :
     QObject( parent ),
-    fSettings( settings )
+    fSettings( settings ),
+    fProgressSystem( new CProgressSystem )
 {
     fManager = new QNetworkAccessManager( this );
 #if QT_VERSION > QT_VERSION_CHECK( 5, 14, 0 )
@@ -94,14 +95,6 @@ CSyncSystem::CSyncSystem( std::shared_ptr< CSettings > settings, QObject * paren
     connect( fManager, &QNetworkAccessManager::proxyAuthenticationRequired, this, &CSyncSystem::slotProxyAuthenticationRequired );
     connect( fManager, &QNetworkAccessManager::sslErrors, this, &CSyncSystem::slotSSlErrors );
     connect( fManager, &QNetworkAccessManager::finished, this, &CSyncSystem::slotRequestFinished );
-
-
-    connect( this, &CSyncSystem::sigUserMediaLoaded, this, &CSyncSystem::slotFindMissingMedia );
-}
-
-void CSyncSystem::setMediaItemFunc( std::function< void( std::shared_ptr< CMediaData > userData ) > mediaItemFunc )
-{
-    fUpdateMediaFunc = mediaItemFunc;
 }
 
 void CSyncSystem::setProcessNewMediaFunc( std::function< void( std::shared_ptr< CMediaData > userData ) > processNewMediaFunc )
@@ -114,34 +107,65 @@ void CSyncSystem::setUserMsgFunc( std::function< void( const QString & title, co
     fUserMsgFunc = userMsgFunc;
 }
 
-void CSyncSystem::setProgressFunctions( const SProgressFunctions & funcs )
+void CSyncSystem::setProgressSystem( std::shared_ptr< CProgressSystem > funcs )
 {
-    fProgressFuncs = funcs;
+    fProgressSystem = funcs;
+}
+
+void CSyncSystem::setLoadUserFunc( std::function< std::shared_ptr< CUserData >( const QJsonObject & user, bool isLHS ) > loadUserFunc )
+{
+    fLoadUserFunc = loadUserFunc;
+}
+
+void CSyncSystem::setLoadMediaFunc( std::function< std::shared_ptr< CMediaData >( const QJsonObject & media, bool isLHS ) > loadMediaFunc )
+{
+    fLoadMediaFunc = loadMediaFunc;
+}
+
+void CSyncSystem::setReloadMediaFunc( std::function< std::shared_ptr< CMediaData >( const QJsonObject & media, const QString & itemID, bool isLHS ) > reloadMediaFunc )
+{
+    fReloadMediaFunc = reloadMediaFunc;
+}
+
+void CSyncSystem::setGetMediaDataForIDFunc( std::function< std::shared_ptr< CMediaData >( const QString & mediaID, bool isLHS ) > getMediaDataForIDFunc )
+{
+    fGetMediaDataForIDFunc = getMediaDataForIDFunc;
+}
+
+void CSyncSystem::setMergeMediaFunc( std::function< bool( std::shared_ptr< CProgressSystem > progressSystem ) > mergeMediaFunc )
+{
+    fMergeMediaFunc = mergeMediaFunc;
+}
+
+void CSyncSystem::setGetAllMediaFunc( std::function< std::unordered_set< std::shared_ptr< CMediaData > >() > getAllMediaFunc )
+{
+    fGetAllMediaFunc = getAllMediaFunc;
 }
 
 void CSyncSystem::reset()
 {
-    fUsers.clear();
     fAttributes.clear();
     resetMedia();
 }
 
 void CSyncSystem::resetMedia()
 {
-    fAllMedia.clear();
-    fMissingMedia.clear();
-    fLHSMedia.clear();
-    fRHSMedia.clear();
-    fLHSProviderSearchMap.clear();
-    fRHSProviderSearchMap.clear();
 }
 
 void CSyncSystem::loadUsers()
 {
-    fProgressFuncs.setupProgress( tr( "Loading Users" ) );
+    if ( !fSettings->canSync() )
+    {
+        if ( fUserMsgFunc )
+            fUserMsgFunc( tr( "Server Settings are not Setup" ), tr( "Server Settings are not setup.  Please fix and try again" ), true );
+        return;
+    }
 
-    requestUsers( true );
-    requestUsers( false );
+    fProgressSystem->setTitle( tr( "Loading Users" ) );
+    fProgressSystem->setMaximum( 2 );
+
+    requestGetUsers( true );
+    requestGetUsers( false );
 }
 
 void CSyncSystem::loadUsersMedia( std::shared_ptr< CUserData > userData )
@@ -153,16 +177,10 @@ void CSyncSystem::loadUsersMedia( std::shared_ptr< CUserData > userData )
 
     emit sigAddToLog( EMsgType::eInfo, QString( "Loading media for '%1'" ).arg( fCurrUserData->displayName() ) );
 
-    fLHSMedia.clear();
-    fRHSMedia.clear();
-    fLHSProviderSearchMap.clear();
-    fRHSProviderSearchMap.clear();
-    fCurrUserData->clearMedia();
-
     if ( !fCurrUserData->onLHSServer() && !fCurrUserData->onRHSServer() )
         return;
 
-    fProgressFuncs.setupProgress( tr( "Loading Users Media" ) );
+    fProgressSystem->setTitle( tr( "Loading Users Media" ) );
     if ( fCurrUserData->onLHSServer() )
         requestUsersMediaList( true );
     if ( fCurrUserData->onRHSServer() )
@@ -172,10 +190,7 @@ void CSyncSystem::loadUsersMedia( std::shared_ptr< CUserData > userData )
 void CSyncSystem::clearCurrUser()
 {
     if ( fCurrUserData )
-    {
-        fCurrUserData->clearMedia();
         fCurrUserData.reset();
-    }
     resetMedia();
 }
 
@@ -194,6 +209,21 @@ void CSyncSystem::slotProcessToRight()
     process( false, true );
 }
 
+void CSyncSystem::slotCanceled()
+{
+    auto tmp = fAttributes;
+    for ( auto && ii : tmp )
+    {
+        ii.first->abort();
+    }
+    fCurrUserData.reset();
+}
+
+std::shared_ptr< CUserData > CSyncSystem::currUser() const
+{
+    return fCurrUserData;
+}
+
 void CSyncSystem::process( bool forceLeft, bool forceRight )
 {
     auto title = QString( "Processing media for user '%1'" ).arg( fCurrUserData->displayName() );
@@ -202,10 +232,16 @@ void CSyncSystem::process( bool forceLeft, bool forceRight )
     else if ( forceLeft )
         title += " To the Right";
 
-    fProgressFuncs.setupProgress( title );
+    fProgressSystem->setTitle( title );
+
+    Q_ASSERT( fGetAllMediaFunc );
+    if ( !fGetAllMediaFunc )
+        return;
+
+    auto allMedia = fGetAllMediaFunc();
 
     int cnt = 0;
-    for ( auto && ii : fAllMedia )
+    for ( auto && ii : allMedia )
     {
         if ( !ii || ii->userDataEqual() || ii->isMissingOnEitherServer() )
             continue;
@@ -214,133 +250,25 @@ void CSyncSystem::process( bool forceLeft, bool forceRight )
 
     if ( cnt == 0 )
     {
-        fProgressFuncs.resetProgress();
+        fProgressSystem->resetProgress();
         emit sigProcessingFinished( fCurrUserData->displayName() );
         return;
     }
 
-    fProgressFuncs.setMaximum( static_cast<int>( cnt ) );
+    fProgressSystem->setMaximum( static_cast<int>( cnt ) );
 
-    for ( auto && ii : fAllMedia )
+    for ( auto && ii : allMedia )
     {
         if ( !ii || ii->userDataEqual() || ii->isMissingOnEitherServer() )
             continue;
 
-        fProgressFuncs.incProgress();
-        bool dataProcessed = processData( ii, forceLeft, forceRight );
+        fProgressSystem->incProgress();
+        bool dataProcessed = processMedia( ii, forceLeft, forceRight );
         (void)dataProcessed;
     }
 }
 
-std::shared_ptr< CUserData > CSyncSystem::getUserData( const QString & name ) const
-{
-    auto pos = fUsers.find( name );
-    if ( pos == fUsers.end() )
-        return {};
-
-    auto userData = ( *pos ).second;
-    if ( !userData )
-        return {};
-    return userData;
-}
-
-std::list< std::shared_ptr< CMediaData > > CSyncSystem::getAllMedia() const
-{
-    auto retVal = std::list< std::shared_ptr< CMediaData > >( { fAllMedia.begin(), fAllMedia.end() } );
-    return retVal;
-}
-
-std::list< std::shared_ptr< CUserData > > CSyncSystem::getAllUsers( bool andClear )
-{
-    auto retVal = getAllUsers();
-    if ( andClear )
-        fUsers.clear();
-    return std::move( retVal );
-}
-
-std::list< std::shared_ptr< CUserData > > CSyncSystem::getAllUsers() const
-{
-    std::list< std::shared_ptr< CUserData > > retVal;
-    for ( auto && ii : fUsers )
-    {
-        retVal.emplace_back( ii.second );
-    }
-    return std::move( retVal );
-}
-
-std::shared_ptr< CUserData > CSyncSystem::currUser() const
-{
-    return fCurrUserData;
-}
-
-void CSyncSystem::slotFindMissingMedia()
-{
-    if ( !fCurrUserData->onLHSServer() || !fCurrUserData->onRHSServer() )
-    {
-        checkForMissingMedia();
-        return;
-    }
-
-    for ( auto && ii : fAllMedia )
-    {
-        if ( !ii->hasProviderIDs() )
-            continue;
-
-        if ( !ii->isMissingOnEitherServer() )
-            continue;
-
-        fMissingMedia[ ii->name() ] = ii;
-    }
-    if ( checkForMissingMedia() )
-        return;
-
-    fProgressFuncs.setupProgress( "Finding missing media data" );
-    fProgressFuncs.setMaximum( static_cast<int>( fMissingMedia.size() ) );
-
-    for ( auto && ii : fMissingMedia )
-    {
-        if ( ii.second->isMissingOnServer( true ) )
-            requestMediaInformation( ii.second, true );
-        if ( ii.second->isMissingOnServer( false ) )
-            requestMediaInformation( ii.second, false );
-    }
-}
-
-void CSyncSystem::requestUsersMediaList( bool isLHSServer )
-{
-    if ( !fCurrUserData )
-        return;
-
-    auto && url = fSettings->getServerURL( isLHSServer );
-    auto path = url.path();
-    path += QString( "Users/%1/Items" ).arg( fCurrUserData->getUserID( isLHSServer ) );
-    //path += QString( "/%1" ).arg( isLHSServer ? "209179" : "110303" );
-    url.setPath( path );
-
-    QUrlQuery query;
-
-    query.addQueryItem( "api_key", isLHSServer ? fSettings->lhsAPI() : fSettings->rhsAPI() );
-    //query.addQueryItem( "Filters", "IsPlayed" );
-    query.addQueryItem( "IncludeItemTypes", fSettings->getSyncItemTypes() );
-    query.addQueryItem( "SortBy", "SortName" );
-    query.addQueryItem( "SortOrder", "Ascending" );
-    query.addQueryItem( "Recursive", "True" );
-    query.addQueryItem( "IsMissing", "False" );
-    query.addQueryItem( "Fields", "ProviderIds,ExternalUrls,Missing" );
-    url.setQuery( query );
-
-    //qDebug() << url;
-    auto request = QNetworkRequest( url );
-
-    emit sigAddToLog( EMsgType::eInfo, QString( "Requesting media for '%1' from server '%2'" ).arg( fCurrUserData->displayName() ).arg( fSettings->getServerName( isLHSServer ) ) );
-
-    auto reply = makeRequest( request );
-    setIsLHS( reply, isLHSServer );
-    setRequestType( reply, ERequestType::eMediaList );
-    setExtraData( reply, fCurrUserData->displayName() );
-}
-
-bool CSyncSystem::processData( std::shared_ptr< CMediaData > mediaData, bool forceLeft, bool forceRight )
+bool CSyncSystem::processMedia( std::shared_ptr< CMediaData > mediaData, bool forceLeft, bool forceRight )
 {
     if ( !mediaData || mediaData->userDataEqual() )
         return false;
@@ -459,28 +387,6 @@ void CSyncSystem::requestSetFavorite( std::shared_ptr< CMediaData > mediaData, s
     setRequestType( reply, ERequestType::eUpdateFavorite );
 }
 
-
-void CSyncSystem::requestUsers( bool isLHSServer )
-{
-    emit sigAddToLog( EMsgType::eInfo, tr( "Loading users from server '%1'" ).arg( fSettings->getServerName( isLHSServer ) ) );;
-    auto && url = fSettings->getServerURL( isLHSServer );
-    if ( !url.isValid() )
-        return;
-
-    emit sigAddToLog( EMsgType::eInfo, tr( "Server URL: %1" ).arg( url.toString() ) );
-
-    auto path = url.path();
-    path += "Users";
-    url.setPath( path );
-    //qDebug() << url;
-
-    auto request = QNetworkRequest( url );
-
-    auto reply = makeRequest( request );
-    setIsLHS( reply, isLHSServer );
-    setRequestType( reply, ERequestType::eUsers );
-}
-
 void CSyncSystem::setIsLHS( QNetworkReply * reply, bool isLHSServer )
 {
     if ( !reply )
@@ -532,129 +438,6 @@ QVariant CSyncSystem::extraData( QNetworkReply * reply )
     return fAttributes[ reply ][ kExtraData ];
 }
 
-void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
-{
-    auto isLHSServer = this->isLHSServer( reply );
-    auto requestType = this->requestType( reply );
-    auto extraData = this->extraData( reply );
-
-    auto pos = fAttributes.find( reply );
-    if ( pos != fAttributes.end() )
-    {
-        fAttributes.erase( pos );
-    }
-
-    //emit sigAddToLog( EMsgType::eInfo, QString( "Request Completed: %1" ).arg( reply->url().toString() ) );
-    //emit sigAddToLog( EMsgType::eInfo, QString( "Is LHS? %1" ).arg( isLHSServer ? "Yes" : "No" ) );
-    //emit sigAddToLog( EMsgType::eInfo, QString( "Request Type: %1" ).arg( toString( requestType ) ) );
-    //emit sigAddToLog( EMsgType::eInfo, QString( "Extra Data: %1" ).arg( extraData.toString() ) );
-
-    if ( !handleError( reply ) )
-    {
-        switch ( requestType )
-        {
-            case ERequestType::eUsers:
-                emit sigLoadingUsersFinished();
-                break;
-            case ERequestType::eMediaList:
-                emit sigUserMediaLoaded();
-                break;
-            case ERequestType::eNone:
-            case ERequestType::eGetMediaInfo:
-            case ERequestType::eReloadMediaData:
-            case ERequestType::eUpdateData:
-            case ERequestType::eUpdateFavorite:
-            default:
-                break;
-        }
-
-        postHandlRequest( requestType, reply );
-        return;
-    }
-
-    //qDebug() << "Requests Remaining" << fAttributes.size();
-    auto data = reply->readAll();
-    //qDebug() << data;
-
-    switch ( requestType )
-    {
-        case ERequestType::eNone:
-            break;
-        case ERequestType::eUsers:
-            if ( !fProgressFuncs.wasCanceled() )
-            {
-                loadUsers( data, isLHSServer );
-
-                if ( isLastRequestOfType( ERequestType::eUsers ) )
-                {
-                    emit sigLoadingUsersFinished();
-                }
-            }
-            break;
-        case ERequestType::eMediaList:
-            if ( !fProgressFuncs.wasCanceled() )
-            {
-                loadMediaList( data, isLHSServer );
-
-                if ( isLastRequestOfType( ERequestType::eMediaList ) )
-                {
-                    fProgressFuncs.resetProgress();
-                    slotMergeMedia();
-                }
-            }
-            break;
-        case ERequestType::eGetMediaInfo:
-            if ( !fProgressFuncs.wasCanceled() )
-            {
-                loadMediaInfo( data, extraData.toString(), isLHSServer );
-                fProgressFuncs.incProgress();
-            }
-            break;
-        case ERequestType::eReloadMediaData:
-        {
-            reloadMediaData( data, isLHSServer, extraData.toString() );
-            break;
-        }
-        case ERequestType::eUpdateData:
-        {
-            loadMediaData( extraData.toString(), isLHSServer );
-            QString name;
-            if ( isLHSServer )
-            {
-                auto pos = fLHSMedia.find( extraData.toString() );
-                if ( pos != fLHSMedia.end() )
-                    name = ( *pos ).second->name();
-            }
-            else
-            {
-                auto pos = fRHSMedia.find( extraData.toString() );
-                if ( pos != fRHSMedia.end() )
-                    name = ( *pos ).second->name();
-            }
-
-            emit sigAddToLog( EMsgType::eInfo, QString( "Updated '%1(%2)' on Server '%3' successfully" ).arg( name ).arg( extraData.toString() ).arg( fSettings->getServerName( isLHSServer ) ) );
-            break;
-        }
-        case ERequestType::eUpdateFavorite:
-        {
-            loadMediaData( extraData.toString(), isLHSServer );
-            emit sigAddToLog( EMsgType::eInfo, QString( "Updated Favorite status for '%1' on Server '%2' successfully" ).arg( extraData.toString() ).arg( fSettings->getServerName( isLHSServer ) ) );
-            break;
-        }
-    }
-
-    postHandlRequest( requestType, reply );
-}
-
-void CSyncSystem::loadMediaData( const QString & mediaID, bool isLHSServer )
-{
-    auto pos = isLHSServer ? fLHSMedia.find( mediaID ) : fRHSMedia.find( mediaID );
-    if ( pos != ( isLHSServer ? fLHSMedia.end() : fRHSMedia.end() ) )
-    {
-        requestReloadMediaData( ( *pos ).second, isLHSServer );
-    }
-}
-
 void CSyncSystem::decRequestCount( ERequestType requestType, QNetworkReply * reply )
 {
     auto pos = fRequests.find( requestType );
@@ -682,10 +465,8 @@ void CSyncSystem::postHandlRequest( ERequestType requestType, QNetworkReply * re
     decRequestCount( requestType, reply );
     if ( !isRunning() )
     {
-        fProgressFuncs.resetProgress();
-        if ( requestType == ERequestType::eGetMediaInfo )
-            emit sigUserMediaCompletelyLoaded();
-        else if ( ( requestType == ERequestType::eReloadMediaData ) || ( requestType == ERequestType::eUpdateData ) )
+        fProgressSystem->resetProgress();
+        if ( ( requestType == ERequestType::eReloadMediaData ) || ( requestType == ERequestType::eUpdateData ) )
             emit sigProcessingFinished( fCurrUserData->displayName() );
     }
 }
@@ -694,27 +475,32 @@ void CSyncSystem::slotCheckPendingRequests()
 {
     if ( !isRunning() )
     {
-        emit sigAddToLog( EMsgType::eInfo, QString( "0 pending requests on any server" ) );
+        emit sigAddToLog( EMsgType::eInfo, QString( "0 pending requests on all servers" ) );
         fPendingRequestTimer->stop();
         return;
     }
+    QStringList msgs;
+    int numRequestsTotal = 0;
     for ( auto && ii : fRequests )
     {
         for ( auto && jj : ii.second )
         {
             if ( jj.second )
             {
-                emit sigAddToLog( EMsgType::eInfo, QString( "%1 pending '%2' request%3 on server '%4'" ).arg( jj.second ).arg( toString( ii.first ) ).arg( ( jj.second != 1 ) ? "s" : "" ).arg( jj.first ) );
+                numRequestsTotal += jj.second;
+                msgs.push_back( QString( "|---> %1 pending '%2' request%3 on server '%4'" ).arg( jj.second ).arg( toString( ii.first ) ).arg( ( jj.second != 1 ) ? "s" : "" ).arg( jj.first ) );
             }
         }
     }
+    emit sigAddToLog( EMsgType::eInfo, QString( "There are %1 total pending requests on all servers" ).arg( numRequestsTotal ) );
+    for ( auto && ii : msgs )
+        emit sigAddToLog( EMsgType::eInfo, ii );
 }
 
 bool CSyncSystem::isRunning() const
 {
     return !fAttributes.empty() && !fRequests.empty();
 }
-
 
 void CSyncSystem::slotMergeMedia()
 {
@@ -724,30 +510,12 @@ void CSyncSystem::slotMergeMedia()
         return;
     }
 
-    fLoadingMediaData = false;
+    Q_ASSERT( fMergeMediaFunc );
+    if ( !fMergeMediaFunc )
+        return;
 
-    fProgressFuncs.resetProgress();
-    fProgressFuncs.setupProgress( tr( "Merging media data" ) );
-    fProgressFuncs.setMaximum( static_cast< int >( fLHSMedia.size() * 3 + fRHSMedia.size() * 3 ) );
-
-
-    mergeMediaData( fLHSMedia, fRHSMedia, true );
-    mergeMediaData( fRHSMedia, fLHSMedia, false );
-
-    for ( auto && ii : fLHSMedia )
-    {
-        fAllMedia.insert( ii.second );
-        fProgressFuncs.incProgress();
-    }
-
-    for ( auto && ii : fRHSMedia )
-    {
-        fAllMedia.insert( ii.second );
-        fProgressFuncs.incProgress();
-    }
-
-    fLHSProviderSearchMap.clear();
-    fRHSProviderSearchMap.clear();
+    if ( !fMergeMediaFunc( fProgressSystem ) )
+        fCurrUserData.reset();
 
     emit sigUserMediaLoaded();
 }
@@ -777,190 +545,6 @@ void CSyncSystem::slotSSlErrors( QNetworkReply * /*reply*/, const QList<QSslErro
     //qDebug() << "slotSSlErrors: 0x" << Qt::hex << reply << errors;
 }
 
-bool CSyncSystem::handleError( QNetworkReply * reply )
-{
-    Q_ASSERT( reply );
-    if ( !reply )
-        return false;
-
-    if ( reply && ( reply->error() != QNetworkReply::NoError ) ) // replys with an error do not get cached
-    {
-        auto data = reply->readAll();
-        if ( fUserMsgFunc )
-            fUserMsgFunc( tr( "Error response from server" ), tr( "Error from Server: %1%2" ).arg( reply->errorString() ).arg( data.isEmpty() ? QString() : QString( " - %1" ).arg( QString( data ) ) ), true );
-        return false;
-    }
-    return true;
-}
-
-void CSyncSystem::loadUsers( const QByteArray & data, bool isLHSServer )
-{
-    QJsonParseError error;
-    auto doc = QJsonDocument::fromJson( data, &error );
-    if ( error.error != QJsonParseError::NoError )
-    {
-        if ( fUserMsgFunc )
-            fUserMsgFunc( tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ), true );
-        return;
-    }
-
-    //qDebug() << doc.toJson();
-    auto users = doc.array();
-    fProgressFuncs.setMaximum( users.count() );
-
-    emit sigAddToLog( EMsgType::eInfo, QString( "Server '%1' has %2 Users" ).arg( fSettings->getServerName( isLHSServer ) ).arg( users.count() ) );
-
-    for ( auto && ii : users )
-    {
-        if ( fProgressFuncs.wasCanceled() )
-            break;
-        fProgressFuncs.incProgress();
-
-
-        auto user = ii.toObject();
-        auto name = user[ "Name" ].toString();
-        auto id = user[ "Id" ].toString();
-        if ( name.isEmpty() || id.isEmpty() )
-            continue;
-
-        auto linkType = user[ "ConnectLinkType" ].toString();
-        QString connectedID;
-        if ( linkType == "LinkedUser" )
-            connectedID = user[ "ConnectUserName" ].toString();
-
-        auto userData = getUserData( connectedID );
-        if ( !userData )
-            userData = getUserData( name );
-
-        if ( !userData )
-        {
-            userData = std::make_shared< CUserData >( name, connectedID, isLHSServer );
-            if ( !connectedID.isEmpty() )
-                fUsers[ userData->connectedID() ] = userData;
-            else
-                fUsers[ userData->name( isLHSServer ) ] = userData;
-        }
-
-        userData->setName( name, isLHSServer );
-        userData->setUserID( id, isLHSServer );
-    }
-}
-
-void CSyncSystem::loadMediaInfo( const QByteArray & data, const QString & mediaName, bool isLHSServer )
-{
-    fProgressFuncs.incProgress();
-    //qDebug() << progressDlg()->value() << fMissingMedia.size();
-
-    QJsonParseError error;
-    auto doc = QJsonDocument::fromJson( data, &error );
-    if ( error.error != QJsonParseError::NoError )
-    {
-        if ( fUserMsgFunc )
-            fUserMsgFunc( tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ), true );
-        return;
-    }
-
-    //qDebug() << doc.toJson();
-    auto mediaList = doc[ "Items" ].toArray();
-    //fProgressFuncs.setMaximum( mediaList.count() );
-
-    bool found = false;
-    for ( auto && ii : mediaList )
-    {
-        auto media = ii.toObject();
-
-        //auto tmp = QJsonDocument( media );
-        //qDebug() << tmp.toJson();
-
-        auto id = media[ "Id" ].toString();
-        auto name = CMediaData::computeName( media );
-
-        auto pos = fMissingMedia.find( name );
-        //Q_ASSERT( pos != fMissingMedia.end() );
-        if ( pos == fMissingMedia.end() )
-            continue;
-
-        found = true;
-        auto mediaData = ( *pos ).second;
-        fMissingMedia.erase( pos );
-        if ( isLHSServer )
-            mediaData->setMediaID( id, isLHSServer );
-        else
-            mediaData->setMediaID( id, !isLHSServer );
-
-        //qDebug() << isLHSServer << mediaData->name();
-
-
-        /*
-        "UserData": {
-        "IsFavorite": false,
-        "LastPlayedDate": "2022-01-15T20:28:39.0000000Z",
-        "PlayCount": 1,
-        "PlaybackPositionTicks": 0,
-        "Played": true
-        }
-        */
-
-        addMediaInfo( mediaData, media, isLHSServer );
-        if ( fUpdateMediaFunc && fMissingMedia.empty() )
-            fUpdateMediaFunc( mediaData );
-        break;
-    }
-    if ( !found )
-    {
-        emit sigAddToLog( EMsgType::eError, QString( "COULD NOT FIND MEDIA '%1' on %2 server" ).arg( mediaName ).arg( fSettings->getServerName( isLHSServer ) ) );
-        auto pos = fMissingMedia.find( mediaName );
-        if ( pos != fMissingMedia.end() )
-            fMissingMedia.erase( pos );
-    }
-
-    checkForMissingMedia();
-}
-
-bool CSyncSystem::checkForMissingMedia()
-{
-    if ( fMissingMedia.empty() )
-        emit sigFinishedCheckingForMissingMedia();
-    return fMissingMedia.empty();
-}
-
-void CSyncSystem::requestMediaInformation( std::shared_ptr< CMediaData > mediaData, bool forLHS )
-{
-    if ( !mediaData || !mediaData->hasProviderIDs() )
-        return;
-
-    QUrl url;
-    QString apiKey;
-    if ( forLHS )
-    {
-        url = fSettings->getServerURL( true );
-        apiKey = fSettings->lhsAPI();
-    }
-    else
-    {
-        url = fSettings->getServerURL( false );
-        apiKey = fSettings->rhsAPI();
-    }
-
-    auto path = url.path();
-    path += QString( "Items" );
-    url.setPath( path );
-
-    auto query = mediaData->getSearchForMediaQuery();
-    query.addQueryItem( "api_key", forLHS ? fSettings->lhsAPI() : fSettings->rhsAPI() );
-    url.setQuery( query );
-
-
-    //qDebug() << mediaData->name() << url;
-    auto request = QNetworkRequest( url );
-
-    auto reply = makeRequest( request );
-
-    setIsLHS( reply, forLHS );
-    setExtraData( reply, mediaData->name() );
-    setRequestType( reply, ERequestType::eGetMediaInfo );
-}
-
 QNetworkReply * CSyncSystem::makeRequest( const QNetworkRequest & request )
 {
     if ( !fPendingRequestTimer )
@@ -974,11 +558,176 @@ QNetworkReply * CSyncSystem::makeRequest( const QNetworkRequest & request )
     return fManager->get( request );
 }
 
-void CSyncSystem::loadMediaList( const QByteArray & data, bool isLHSServer )
+std::shared_ptr< CMediaData > CSyncSystem::loadMedia( const QJsonObject & media, bool isLHSServer )
 {
-    if ( !fCurrUserData )
+    Q_ASSERT( fLoadMediaFunc );
+    if ( !fLoadMediaFunc )
+        return{};
+    return fLoadMediaFunc( media, isLHSServer );
+}
+
+std::shared_ptr<CUserData> CSyncSystem::loadUser( const QJsonObject & user, bool isLHSServer )
+{
+    Q_ASSERT( fLoadUserFunc );
+    if ( !fLoadUserFunc )
+        return {};
+    return fLoadUserFunc( user, isLHSServer );
+}
+
+bool CSyncSystem::isLastRequestOfType( ERequestType type ) const
+{
+    auto pos = fRequests.find( type );
+    if ( pos == fRequests.end() )
+        return true;
+    int cnt = 0;
+    for ( auto && jj : ( *pos ).second )
+        cnt += jj.second;
+    return cnt <= 1;
+}
+
+// functions to handle the responses from the servers
+bool CSyncSystem::handleError( QNetworkReply * reply, bool isLHSServer )
+{
+    Q_ASSERT( reply );
+    if ( !reply )
+        return false;
+
+    if ( reply && ( reply->error() != QNetworkReply::NoError ) ) // replys with an error do not get cached
+    {
+        if ( reply->error() == QNetworkReply::OperationCanceledError )
+        {
+            emit sigAddToLog( EMsgType::eWarning, QString( "Request canceled on server '%1'" ).arg( fSettings->getServerName( isLHSServer ) ) );
+            return false;
+        }
+
+        auto data = reply->readAll();
+        if ( fUserMsgFunc )
+            fUserMsgFunc( tr( "Error response from server" ), tr( "Error from Server: %1%2" ).arg( reply->errorString() ).arg( data.isEmpty() ? QString() : QString( " - %1" ).arg( QString( data ) ) ), true );
+        return false;
+    }
+    return true;
+}
+
+void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
+{
+    auto isLHSServer = this->isLHSServer( reply );
+    auto requestType = this->requestType( reply );
+    auto extraData = this->extraData( reply );
+
+    auto pos = fAttributes.find( reply );
+    if ( pos != fAttributes.end() )
+    {
+        fAttributes.erase( pos );
+    }
+
+    //emit sigAddToLog( EMsgType::eInfo, QString( "Request Completed: %1" ).arg( reply->url().toString() ) );
+    //emit sigAddToLog( EMsgType::eInfo, QString( "Is LHS? %1" ).arg( isLHSServer ? "Yes" : "No" ) );
+    //emit sigAddToLog( EMsgType::eInfo, QString( "Request Type: %1" ).arg( toString( requestType ) ) );
+    //emit sigAddToLog( EMsgType::eInfo, QString( "Extra Data: %1" ).arg( extraData.toString() ) );
+
+    if ( !handleError( reply, isLHSServer ) )
+    {
+        switch ( requestType )
+        {
+        case ERequestType::eGetUsers:
+            emit sigLoadingUsersFinished();
+            break;
+        case ERequestType::eGetMediaList:
+            emit sigUserMediaLoaded();
+            break;
+        case ERequestType::eNone:
+        case ERequestType::eReloadMediaData:
+        case ERequestType::eUpdateData:
+        case ERequestType::eUpdateFavorite:
+        default:
+            break;
+        }
+
+        postHandlRequest( requestType, reply );
+        return;
+    }
+
+    //qDebug() << "Requests Remaining" << fAttributes.size();
+    auto data = reply->readAll();
+    //qDebug() << data;
+
+    switch ( requestType )
+    {
+    case ERequestType::eNone:
+        break;
+    case ERequestType::eGetUsers:
+        if ( !fProgressSystem->wasCanceled() )
+        {
+            handleGetUsersResponse( data, isLHSServer );
+
+            if ( isLastRequestOfType( ERequestType::eGetUsers ) )
+            {
+                emit sigLoadingUsersFinished();
+            }
+        }
+        break;
+    case ERequestType::eGetMediaList:
+        if ( !fProgressSystem->wasCanceled() )
+        {
+            handleGetMediaListResponse( data, isLHSServer );
+
+            if ( isLastRequestOfType( ERequestType::eGetMediaList ) )
+            {
+                fProgressSystem->resetProgress();
+                slotMergeMedia();
+            }
+        }
+        break;
+    case ERequestType::eReloadMediaData:
+    {
+        handleReloadMediaResponse( data, isLHSServer, extraData.toString() );
+        break;
+    }
+    case ERequestType::eUpdateData:
+    {
+        requestReloadMediaItemData( extraData.toString(), isLHSServer );
+        if ( fGetMediaDataForIDFunc )
+        {
+            auto mediaData = fGetMediaDataForIDFunc( extraData.toString(), isLHSServer );
+            if ( mediaData )
+                emit sigAddToLog( EMsgType::eInfo, QString( "Updated '%1(%2)' on Server '%3' successfully" ).arg( mediaData->name() ).arg( extraData.toString() ).arg( fSettings->getServerName( isLHSServer ) ) );
+        }
+        break;
+    }
+    case ERequestType::eUpdateFavorite:
+    {
+        requestReloadMediaItemData( extraData.toString(), isLHSServer );
+        emit sigAddToLog( EMsgType::eInfo, QString( "Updated Favorite status for '%1' on Server '%2' successfully" ).arg( extraData.toString() ).arg( fSettings->getServerName( isLHSServer ) ) );
+        break;
+    }
+    }
+
+    postHandlRequest( requestType, reply );
+}
+
+void CSyncSystem::requestGetUsers( bool isLHSServer )
+{
+    emit sigAddToLog( EMsgType::eInfo, tr( "Loading users from server '%1'" ).arg( fSettings->getServerName( isLHSServer ) ) );;
+    auto && url = fSettings->getServerURL( isLHSServer );
+    if ( !url.isValid() )
         return;
 
+    emit sigAddToLog( EMsgType::eInfo, tr( "Server URL: %1" ).arg( url.toString() ) );
+
+    auto path = url.path();
+    path += "Users";
+    url.setPath( path );
+    //qDebug() << url;
+
+    auto request = QNetworkRequest( url );
+
+    auto reply = makeRequest( request );
+    setIsLHS( reply, isLHSServer );
+    setRequestType( reply, ERequestType::eGetUsers );
+}
+
+void CSyncSystem::handleGetUsersResponse( const QByteArray & data, bool isLHSServer )
+{
     QJsonParseError error;
     auto doc = QJsonDocument::fromJson( data, &error );
     if ( error.error != QJsonParseError::NoError )
@@ -989,15 +738,85 @@ void CSyncSystem::loadMediaList( const QByteArray & data, bool isLHSServer )
     }
 
     //qDebug() << doc.toJson();
+    auto users = doc.array();
+    fProgressSystem->pushState();
+
+    emit sigAddToLog( EMsgType::eInfo, QString( "Server '%1' has %2 Users" ).arg( fSettings->getServerName( isLHSServer ) ).arg( users.count() ) );
+
+    for ( auto && ii : users )
+    {
+        if ( fProgressSystem->wasCanceled() )
+            break;
+        fProgressSystem->incProgress();
+
+        auto user = ii.toObject();
+        loadUser( user, isLHSServer );
+    }
+    fProgressSystem->popState();
+    fProgressSystem->incProgress();
+}
+
+void CSyncSystem::requestUsersMediaList( bool isLHSServer )
+{
+    if ( !fCurrUserData )
+        return;
+
+    auto && url = fSettings->getServerURL( isLHSServer );
+    auto path = url.path();
+    path += QString( "Users/%1/Items" ).arg( fCurrUserData->getUserID( isLHSServer ) );
+    //path += QString( "/%1" ).arg( isLHSServer ? "209179" : "110303" );
+    url.setPath( path );
+
+    QUrlQuery query;
+
+    query.addQueryItem( "api_key", isLHSServer ? fSettings->lhsAPI() : fSettings->rhsAPI() );
+    //query.addQueryItem( "Filters", "IsPlayed" );
+    query.addQueryItem( "IncludeItemTypes", fSettings->getSyncItemTypes() );
+    query.addQueryItem( "SortBy", "SortName" );
+    query.addQueryItem( "SortOrder", "Ascending" );
+    query.addQueryItem( "Recursive", "True" );
+    query.addQueryItem( "IsMissing", "False" );
+    query.addQueryItem( "Fields", "ProviderIds,ExternalUrls,Missing" );
+    url.setQuery( query );
+
+    //qDebug() << url;
+    auto request = QNetworkRequest( url );
+
+    emit sigAddToLog( EMsgType::eInfo, QString( "Requesting media for '%1' from server '%2'" ).arg( fCurrUserData->displayName() ).arg( fSettings->getServerName( isLHSServer ) ) );
+
+    auto reply = makeRequest( request );
+    setIsLHS( reply, isLHSServer );
+    setRequestType( reply, ERequestType::eGetMediaList );
+    setExtraData( reply, fCurrUserData->displayName() );
+}
+
+void CSyncSystem::handleGetMediaListResponse( const QByteArray & data, bool isLHSServer )
+{
+    QJsonParseError error;
+    auto doc = QJsonDocument::fromJson( data, &error );
+    if ( error.error != QJsonParseError::NoError )
+    {
+        if ( fUserMsgFunc )
+            fUserMsgFunc( tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ), true );
+        return;
+    }
+
+    if ( !fCurrUserData )
+        return;
+
+    //qDebug() << doc.toJson();
     auto mediaList = doc[ "Items" ].toArray();
     if ( mediaList.size() == 0 )
     {
         loadMedia( doc.object(), isLHSServer );
         return;
     }
-    fProgressFuncs.resetProgress();
-    fProgressFuncs.setupProgress( tr( "Loading Users Media Data" ) );
-    fProgressFuncs.setMaximum( mediaList.count() );
+
+    fProgressSystem->pushState();
+
+    fProgressSystem->resetProgress();
+    fProgressSystem->setTitle( tr( "Loading Users Media Data" ) );
+    fProgressSystem->setMaximum( mediaList.count() );
 
     emit sigAddToLog( EMsgType::eInfo, QString( "%1 has %2 media items on server '%3'" ).arg( fCurrUserData->displayName() ).arg( mediaList.count() ).arg( fSettings->getServerName( isLHSServer ) ) );
     if ( fSettings->maxItems() > 0 )
@@ -1013,65 +832,32 @@ void CSyncSystem::loadMediaList( const QByteArray & data, bool isLHSServer )
         }
         curr++;
 
-        if ( fProgressFuncs.wasCanceled() )
+        if ( fProgressSystem->wasCanceled() )
             break;
-        fProgressFuncs.incProgress();
+        fProgressSystem->incProgress();
 
         auto media = ii.toObject();
 
         loadMedia( media, isLHSServer );
-
     }
-    fProgressFuncs.resetProgress();
+    fProgressSystem->resetProgress();
+    fProgressSystem->popState();
+    fProgressSystem->incProgress();
 }
 
-void CSyncSystem::loadMedia( const QJsonObject & media, bool isLHSServer )
+void CSyncSystem::requestReloadMediaItemData( const QString & mediaID, bool isLHSServer )
 {
-    auto id = media[ "Id" ].toString();
-    std::shared_ptr< CMediaData > mediaData;
-    auto pos = ( isLHSServer ? fLHSMedia.find( id ) : fRHSMedia.find( id ) );
-    if ( pos == ( isLHSServer ? fLHSMedia.end() : fRHSMedia.end() ) )
-        mediaData = std::make_shared< CMediaData >( CMediaData::computeName( media ), media[ "Type" ].toString() );
-    else
-        mediaData = ( *pos ).second;
-    //qDebug() << isLHSServer << mediaData->name();
+    if ( !fGetMediaDataForIDFunc )
+        return;
 
-    mediaData->setMediaID( id, isLHSServer );
+    auto mediaData = fGetMediaDataForIDFunc( mediaID, isLHSServer );
+    if ( !mediaData )
+        return;
 
-    /*
-    "UserData": {
-    "IsFavorite": false,
-    "LastPlayedDate": "2022-01-15T20:28:39.0000000Z",
-    "PlayCount": 1,
-    "PlaybackPositionTicks": 0,
-    "Played": true
-    }
-    */
-
-    addMediaInfo( mediaData, media, isLHSServer );
-    fCurrUserData->addMedia( mediaData );
-    fProgressFuncs.incProgress();
+    requestReloadMediaItemData( mediaData, isLHSServer );
 }
 
-void CSyncSystem::addMediaInfo( std::shared_ptr<CMediaData> mediaData, const QJsonObject & mediaInfo, bool isLHSServer )
-{
-    mediaData->loadUserDataFromJSON( mediaInfo, isLHSServer );
-    if ( isLHSServer )
-        fLHSMedia[ mediaData->getMediaID( isLHSServer ) ] = mediaData;
-    else
-        fRHSMedia[ mediaData->getMediaID( isLHSServer ) ] = mediaData;
-
-    auto && providers = mediaData->getProviders( true );
-    for ( auto && ii : providers )
-    {
-        if ( isLHSServer )
-            fLHSProviderSearchMap[ ii.first ][ ii.second ] = mediaData;
-        else
-            fRHSProviderSearchMap[ ii.first ][ ii.second ] = mediaData;
-    }
-}
-
-void CSyncSystem::requestReloadMediaData( std::shared_ptr< CMediaData > mediaData, bool isLHSServer )
+void CSyncSystem::requestReloadMediaItemData( std::shared_ptr< CMediaData > mediaData, bool isLHSServer )
 {
     auto && url = fSettings->getServerURL( isLHSServer );
     auto path = url.path();
@@ -1089,16 +875,8 @@ void CSyncSystem::requestReloadMediaData( std::shared_ptr< CMediaData > mediaDat
     //qDebug() << "Media Data for " << mediaData->name() << reply;
 }
 
-void CSyncSystem::reloadMediaData( const QByteArray & data, bool isLHSServer, const QString & itemID )
+void CSyncSystem::handleReloadMediaResponse( const QByteArray & data, bool isLHSServer, const QString & itemID )
 {
-    auto pos = ( isLHSServer ? fLHSMedia.find( itemID ) : fRHSMedia.find( itemID ) );
-    if ( pos == ( isLHSServer ? fLHSMedia.end() : fRHSMedia.end() ) )
-        return;
-
-    auto mediaData = ( *pos ).second;
-    if ( !mediaData )
-        return;
-
     QJsonParseError error;
     auto doc = QJsonDocument::fromJson( data, &error );
     if ( error.error != QJsonParseError::NoError )
@@ -1107,160 +885,13 @@ void CSyncSystem::reloadMediaData( const QByteArray & data, bool isLHSServer, co
             fUserMsgFunc( tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ), true );
         return;
     }
-
 
     auto media = doc.object();
-    if ( media.find( "UserData" ) == media.end() )
+
+    Q_ASSERT( fReloadMediaFunc );
+    if ( !fReloadMediaFunc )
         return;
 
-    addMediaInfo( mediaData, media, isLHSServer );
-    if ( fUpdateMediaFunc )
-        fUpdateMediaFunc( mediaData );
-
-}
-
-void CSyncSystem::loadMediaData( const QByteArray & data, bool isLHSServer, const QString & itemID )
-{
-    auto pos = ( isLHSServer ? fLHSMedia.find( itemID ) : fRHSMedia.find( itemID ) );
-    if ( pos == ( isLHSServer ? fLHSMedia.end() : fRHSMedia.end() ) )
-        return;
-
-    auto mediaData = ( *pos ).second;
-    if ( !mediaData )
-        return;
-
-    QJsonParseError error;
-    auto doc = QJsonDocument::fromJson( data, &error );
-    if ( error.error != QJsonParseError::NoError )
-    {
-        if ( fUserMsgFunc )
-            fUserMsgFunc( tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ), true );
-        return;
-    }
-
-    //qDebug() << doc.toJson();
-    auto mediaObject = doc.object();
-    auto providerIDsObj = mediaObject[ "ProviderIds" ].toObject();
-    for ( auto && ii = providerIDsObj.begin(); ii != providerIDsObj.end(); ++ii )
-    {
-        auto providerName = ii.key();
-        auto providerID = ii.value().toString();
-        mediaData->addProvider( providerName, providerID );
-        if ( isLHSServer )
-        {
-            fLHSProviderSearchMap[ providerName ][ providerID ] = mediaData;
-        }
-        else
-        {
-            fRHSProviderSearchMap[ providerName ][ providerID ] = mediaData;
-        }
-    }
-
-    if ( fProcessNewMediaFunc )
-        fProcessNewMediaFunc( mediaData );
-}
-
-void CSyncSystem::mergeMediaData( TMediaIDToMediaData & lhs, TMediaIDToMediaData & rhs, bool lhsIsLHS )
-{
-    mergeMediaData( lhs, lhsIsLHS );
-    mergeMediaData( rhs, !lhsIsLHS );
-}
-
-void CSyncSystem::mergeMediaData( TMediaIDToMediaData & lhs, bool lhsIsLHS )
-{
-    std::unordered_map< std::shared_ptr< CMediaData >, std::shared_ptr< CMediaData > > replacementMap;
-    for ( auto && ii : lhs )
-    {
-        fProgressFuncs.incProgress();
-        auto mediaData = ii.second;
-        if ( !mediaData )
-            continue;
-        QStringList dupeProviderForMedia;
-        for ( auto && jj : mediaData->getProviders( true ) )
-        {
-            auto providerName = jj.first;
-            auto providerID = jj.second;
-
-            auto myMappedMedia = findMediaForProvider( providerName, providerID, lhsIsLHS );
-            if ( myMappedMedia != mediaData )
-            {
-                replacementMap[ mediaData ] = myMappedMedia;
-                continue;
-            }
-
-            auto otherData = findMediaForProvider( providerName, providerID, !lhsIsLHS );
-            if ( otherData != mediaData )
-                setMediaForProvider( providerName, providerID, mediaData, !lhsIsLHS );
-        }
-    }
-    for ( auto && ii : replacementMap )
-    {
-        auto currMediaID = ii.first->getMediaID( lhsIsLHS );
-        auto pos = lhs.find( currMediaID );
-        lhs.erase( pos );
-        ii.second->updateFromOther( ii.first, lhsIsLHS );
-
-        lhs[ currMediaID ] = ii.second;
-    }
-}
-
-std::shared_ptr< CMediaData > CSyncSystem::findMediaForProvider( const QString & provider, const QString & id, bool lhs )
-{
-    auto && map = lhs ? fLHSProviderSearchMap : fRHSProviderSearchMap;
-    auto pos = map.find( provider );
-    if ( pos == map.end() )
-        return {};
-
-    auto pos2 = ( *pos ).second.find( id );
-    if ( pos2 == ( *pos ).second.end() )
-        return {};
-    return ( *pos2 ).second;
-}
-
-void CSyncSystem::setMediaForProvider( const QString & providerName, const QString & providerID, std::shared_ptr< CMediaData > mediaData, bool isLHS )
-{
-    ( isLHS ? fLHSProviderSearchMap : fRHSProviderSearchMap )[ providerName ][ providerID ] = mediaData;
-}
-
-void SProgressFunctions::setupProgress( const QString & title )
-{
-    if ( fSetupFunc )
-        fSetupFunc( title );
-}
-
-void SProgressFunctions::setMaximum( int count )
-{
-    if ( fSetMaximumFunc )
-        fSetMaximumFunc( count );
-}
-
-void SProgressFunctions::incProgress()
-{
-    if ( fIncFunc )
-        fIncFunc();
-}
-
-void SProgressFunctions::resetProgress() const
-{
-    if ( fResetFunc )
-        fResetFunc();
-}
-
-bool SProgressFunctions::wasCanceled() const
-{
-    if ( fWasCanceledFunc )
-        return fWasCanceledFunc();
-    return false;
-}
-
-bool CSyncSystem::isLastRequestOfType( ERequestType type ) const
-{
-    auto pos = fRequests.find( type );
-    if ( pos == fRequests.end() )
-        return true;
-    int cnt = 0;
-    for ( auto && jj : ( *pos ).second )
-        cnt += jj.second;
-    return cnt <= 1;
+    fReloadMediaFunc( media, itemID, isLHSServer );
 }
 
