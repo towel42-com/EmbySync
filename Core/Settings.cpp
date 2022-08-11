@@ -34,7 +34,7 @@
 
 CSettings::CSettings()
 {
-
+    fSyncUserList = QStringList() << ".*";
 }
 
 CSettings::~CSettings()
@@ -102,6 +102,61 @@ bool CSettings::load( const QString & fileName, std::function<void( const QStrin
     else
         setMaxItems( json[ "MaxItems" ].toInt() );
 
+    if ( json.object().find( "SyncAudio" ) == json.object().end() )
+        setSyncAudio( true );
+    else
+        setSyncAudio( json[ "SyncAudio" ].toBool() );
+
+    if ( json.object().find( "SyncVideo" ) == json.object().end() )
+        setSyncVideo( true );
+    else
+        setSyncVideo( json[ "SyncVideo" ].toBool() );
+
+    if ( json.object().find( "SyncEpisode" ) == json.object().end() )
+        setSyncEpisode( true );
+    else
+        setSyncEpisode( json[ "SyncEpisode" ].toBool() );
+
+    if ( json.object().find( "SyncMovie" ) == json.object().end() )
+        setSyncMovie( true );
+    else
+        setSyncMovie( json[ "SyncMovie" ].toBool() );
+
+    if ( json.object().find( "SyncTrailer" ) == json.object().end() )
+        setSyncTrailer( true );
+    else
+        setSyncTrailer( json[ "SyncTrailer" ].toBool() );
+
+    if ( json.object().find( "SyncAdultVideo" ) == json.object().end() )
+        setSyncAdultVideo( true );
+    else
+        setSyncAdultVideo( json[ "SyncAdultVideo" ].toBool() );
+
+    if ( json.object().find( "SyncMusicVideo" ) == json.object().end() )
+        setSyncMusicVideo( true );
+    else
+        setSyncMusicVideo( json[ "SyncMusicVideo" ].toBool() );
+
+    if ( json.object().find( "SyncGame" ) == json.object().end() )
+        setSyncGame( true );
+    else
+        setSyncGame( json[ "SyncGame" ].toBool() );
+
+    if ( json.object().find( "SyncBook" ) == json.object().end() )
+        setSyncBook( true );
+    else
+        setSyncBook( json[ "SyncBook" ].toBool() );
+
+    if ( json.object().find( "SyncUserList" ) == json.object().end() )
+        setSyncUserList( QStringList() << ".*" );
+    else
+    {
+        QStringList userList;
+        auto tmp = json[ "SyncUserList" ].toArray();
+        for ( auto && ii : tmp )
+            userList << ii.toString();
+        setSyncUserList( userList );
+    }
 
     fChanged = false;
 
@@ -150,6 +205,20 @@ bool CSettings::save( std::function<void( const QString & title, const QString &
     root[ "MediaDestColor" ] = mediaDestColor().name();
     root[ "MaxItems" ] = maxItems();
 
+    root[ "SyncAudio" ] = syncAudio();
+    root[ "SyncVideo" ] = syncVideo();
+    root[ "SyncEpisode" ] = syncEpisode();
+    root[ "SyncMovie" ] = syncMovie();
+    root[ "SyncTrailer" ] = syncTrailer();
+    root[ "SyncAdultVideo" ] = syncAdultVideo();
+    root[ "SyncMusicVideo" ] = syncMusicVideo();
+    root[ "SyncGame" ] = syncGame();
+    root[ "SyncBook" ] = syncBook();
+    
+    auto userList = QJsonArray();
+    for ( auto && ii : fSyncUserList )
+        userList.push_back( ii );
+    root[ "SyncUserList" ] = userList;
     auto lhs = json.object();
 
     lhs[ "url" ] = lhsURL();
@@ -243,6 +312,36 @@ QColor CSettings::mediaSourceColor( bool forBackground /*= true */ ) const
     return getColor( fMediaSourceColor, forBackground );
 }
 
+
+QString CSettings::getSyncItemTypes() const
+{
+    QStringList values;
+    if ( syncAudio() )
+        values << "Audio";
+    if ( syncVideo() )
+        values << "Video";
+    if ( syncEpisode() )
+        values << "Episode";
+    if ( syncTrailer() )
+        values << "Trailer";
+    if ( syncMovie() )
+        values << "Movie";
+    if ( syncAdultVideo() )
+        values << "AdultVideo";
+    if ( syncMusicVideo() )
+        values << "MusicVideo";
+    if ( syncGame() )
+        values << "Game";
+    if ( syncBook() )
+        values << "Book";
+    return values.join( "," );
+}
+
+QString CSettings::getServerName( bool lhs )
+{
+    return lhs ? fLHSServer.first : fRHSServer.first;
+}
+
 void CSettings::setMediaSourceColor( const QColor & color )
 {
     updateValue( fMediaSourceColor, color );
@@ -315,35 +414,27 @@ void CSettings::setSyncGame( bool value )
 
 void CSettings::setSyncBook( bool value )
 {
-    fSyncBook = value;
+    updateValue( fSyncBook, value );
 }
 
-QString CSettings::getSyncItemTypes() const
+void CSettings::setOnlyShowSyncableUsers( bool value )
 {
-    QStringList values;
-    if ( syncAudio() )
-        values << "Audio";
-    if ( syncVideo() )
-        values << "Video";
-    if ( syncEpisode() )
-        values << "Episode";
-    if ( syncTrailer() )
-        values << "Trailer";
-    if ( syncMovie() )
-        values << "Movie";
-    if ( syncAdultVideo() )
-        values << "AdultVideo";
-    if ( syncMusicVideo() )
-        values << "MusicVideo";
-    if ( syncGame() )
-        values << "Game";
-    if ( syncBook() )
-        values << "Book";
-    return values.join( "," );
+    fOnlyShowSyncableUsers = value;
 }
 
-QString CSettings::getServerName( bool lhs )
+void CSettings::setOnlyShowMediaWithDifferences( bool value )
 {
-    return lhs ? fLHSServer.first : fRHSServer.first;
+    fOnlyShowMediaWithDifferences = value;
 }
+
+void CSettings::setShowMediaWithIssues( bool value )
+{
+    fShowMediaWithIssues = value;
+}
+
+void CSettings::setSyncUserList( const QStringList & value )
+{
+    updateValue( fSyncUserList, value );
+}
+
 

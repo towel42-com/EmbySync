@@ -138,15 +138,17 @@ public:
     QString getSyncItemTypes() const;
     QString getServerName( bool lhs );
     bool onlyShowSyncableUsers() { return fOnlyShowSyncableUsers; };
-    void setOnlyShowSyncableUsers( bool value ) { fOnlyShowSyncableUsers = value; };
+    void setOnlyShowSyncableUsers( bool value );;
 
     bool onlyShowMediaWithDifferences() { return fOnlyShowMediaWithDifferences; };
-    void setOnlyShowMediaWithDifferences( bool value ) { fOnlyShowMediaWithDifferences = value; };
+    void setOnlyShowMediaWithDifferences( bool value );;
 
     bool showMediaWithIssues() { return fShowMediaWithIssues; };
-    void setShowMediaWithIssues( bool value ) { fShowMediaWithIssues = value; };
+    void setShowMediaWithIssues( bool value );;
 
-    
+    QStringList syncUserList() const { return fSyncUserList; }
+    void setSyncUserList( const QStringList & value );
+
     void addRecentProject( const QString & fileName );
     QStringList recentProjectList() const;
 private:
@@ -186,6 +188,8 @@ private:
     bool fSyncMusicVideo{ true };
     bool fSyncGame{ true };
     bool fSyncBook{ true };
+
+    QStringList fSyncUserList;
 
     bool fChanged{ false };
 };
