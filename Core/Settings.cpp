@@ -291,7 +291,11 @@ void CSettings::setRHSAPI( const QString & api )
 
 bool CSettings::canSync() const
 {
-    return getUrl( true ).isValid() && getUrl( false ).isValid();
+    return getUrl( true ).isValid()
+        && !lhsAPI().isEmpty()
+        && getUrl( false ).isValid()
+        && !rhsAPI().isEmpty()
+        ;
 }
 
 QColor CSettings::getColor( const QColor & clr, bool forBackground /*= true */ ) const
