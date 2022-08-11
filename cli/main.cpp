@@ -67,9 +67,9 @@ int main( int argc, char ** argv )
         return 0;
     }
 
+    std::cout << NVersion::APP_NAME << " - " << NVersion::getVersionString( true ) << "\n";
     if ( parser.isSet( versionOption ) )
     {
-        std::cout << NVersion::APP_NAME << " - " <<  NVersion::getVersionString( true ) << "\n";
         return 0;
     }
 
