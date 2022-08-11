@@ -22,19 +22,29 @@
 
 #include "SettingsDlg.h"
 #include "Core/Settings.h"
+#include "Core/UserData.h"
+#include "SABUtils/ButtonEnabler.h"
 
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QColorDialog>
+#include <QInputDialog>
+#include <QDebug>
 
 #include "ui_SettingsDlg.h"
 
-CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, QWidget * parentWidget )
+CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, const std::vector< std::shared_ptr< CUserData > > & knownUsers, QWidget * parentWidget )
     : QDialog( parentWidget ),
     fImpl( new Ui::CSettingsDlg ),
     fSettings( settings )
 {
     fImpl->setupUi( this );
+    new NSABUtils::CButtonEnabler( fImpl->usersList, fImpl->delUser );
+
+    for ( auto && ii : knownUsers )
+    {
+        fKnownUsers.push_back( std::make_pair( ii, new QTreeWidgetItem( fImpl->knownUsers, QStringList() << ii->name( true ) << ii->name( false ) << ii->connectedID() ) ) );
+    }
     load();
 
     connect( fImpl->dataMissingColor, &QToolButton::clicked,
@@ -67,6 +77,36 @@ CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, QWidget * par
                      updateColors();
                  }
              } );
+    connect( fImpl->addUser, &QToolButton::clicked,
+        [ this ]()
+        {
+            auto newUserName = QInputDialog::getText( this, tr( "Regular Expression" ), tr( "Regular Expression matching User names to sync:" ) );
+            if ( newUserName.isEmpty() )
+                return;
+            new QListWidgetItem( newUserName, fImpl->usersList );
+            updateKnownUsers();
+        } );
+    connect( fImpl->delUser, &QToolButton::clicked,
+        [ this ]()
+        {
+            auto curr = fImpl->usersList->currentItem();
+            if ( !curr )
+                return;
+            delete curr;
+            updateKnownUsers();
+        } );
+    connect( fImpl->usersList, &QListWidget::itemDoubleClicked, 
+        [ this ]( QListWidgetItem *item )
+        {
+            if ( !item )
+                return;
+
+            auto newUserName = QInputDialog::getText( this, tr( "Regular Expression" ), tr( "Regular Expression matching User names to sync:" ), QLineEdit::EchoMode::Normal, item->text() );
+            if ( newUserName.isEmpty() || ( newUserName == item->text() ) )
+                return;
+            item->setText( newUserName );
+            updateKnownUsers();
+        } );
     fImpl->tabWidget->setCurrentIndex( 0 );
 }
 
@@ -106,6 +146,16 @@ void CSettingsDlg::load()
     fImpl->syncMusicVideo->setChecked( fSettings->syncMusicVideo() );
     fImpl->syncGame->setChecked( fSettings->syncGame() );
     fImpl->syncBook->setChecked( fSettings->syncBook() );
+
+    auto syncUsers = fSettings->syncUserList();
+    for ( auto && ii : syncUsers )
+    {
+        if ( ii.isEmpty() )
+            continue;
+        new QListWidgetItem( ii, fImpl->usersList );
+    }
+
+    updateKnownUsers();
 }
 
 void CSettingsDlg::save()
@@ -129,8 +179,58 @@ void CSettingsDlg::save()
     fSettings->setSyncMusicVideo( fImpl->syncMusicVideo->isChecked() );
     fSettings->setSyncGame( fImpl->syncGame->isChecked() );
     fSettings->setSyncBook( fImpl->syncBook->isChecked() );
+    fSettings->setSyncUserList( syncUserStrings() );
 }
 
+QStringList CSettingsDlg::syncUserStrings() const
+{
+    QStringList syncUsers;
+    for ( int ii = 0; ii < fImpl->usersList->count(); ++ii )
+    {
+        auto curr = fImpl->usersList->item( ii );
+        if ( !curr )
+            continue;
+        syncUsers << curr->text();
+    }
+    return syncUsers;
+}
+
+void CSettingsDlg::updateKnownUsers()
+{
+    QStringList syncUsers;
+    for ( int ii = 0; ii < fImpl->usersList->count(); ++ii )
+    {
+        auto curr = fImpl->usersList->item( ii );
+        if ( !curr )
+            continue;
+        if ( !QRegularExpression( curr->text() ).isValid() )
+        {
+            curr->setBackground( Qt::red );
+            continue;
+        }
+        else
+            curr->setBackground( QBrush() );
+
+        syncUsers << "(" + curr->text() + ")";
+    }
+
+    auto regExpStr = syncUsers.join( "|" );
+    QRegularExpression regExp;
+    if ( !regExpStr.isEmpty() )
+        regExp = QRegularExpression( regExpStr );
+    qDebug() << regExp << regExp.isValid() << regExp.pattern();
+    for ( auto && ii : fKnownUsers )
+    {
+        bool isMatch = ii.first->isUser( regExp );
+        for ( int column = 0; column < ii.second->columnCount(); ++column )
+        {
+            if ( isMatch )
+                ii.second->setBackground( column, Qt::green );
+            else
+                ii.second->setBackground( column, QBrush() );
+        }
+    }
+}
 
 void CSettingsDlg::updateColors()
 {

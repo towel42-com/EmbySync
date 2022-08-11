@@ -26,6 +26,10 @@
 #include <QDialog>
 #include <QColor>
 #include <memory>
+#include <vector>
+
+class QTreeWidgetItem;
+
 namespace Ui
 {
     class CSettingsDlg;
@@ -33,11 +37,12 @@ namespace Ui
 
 class QLabel;
 class CSettings;
+class CUserData;
 class CSettingsDlg : public QDialog
 {
     Q_OBJECT
 public:
-    CSettingsDlg( std::shared_ptr< CSettings > settings, QWidget * parent = nullptr );
+    CSettingsDlg( std::shared_ptr< CSettings > settings, const std::vector< std::shared_ptr< CUserData > > & knownUsers, QWidget * parent = nullptr );
 
     void load();
 
@@ -51,12 +56,14 @@ public Q_SLOTS:
 private:
     void updateColors();
     void updateColor( QLabel * label, const QColor & color );
+    void updateKnownUsers();
+    QStringList syncUserStrings() const;
 
     std::unique_ptr< Ui::CSettingsDlg > fImpl;
     std::shared_ptr< CSettings > fSettings;
     QColor fMediaSourceColor;
     QColor fMediaDestColor;
     QColor fDataMissingColor;
-
+    std::vector< std::pair< std::shared_ptr< CUserData >, QTreeWidgetItem * > > fKnownUsers;
 };
 #endif 
