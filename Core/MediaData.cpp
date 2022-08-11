@@ -412,15 +412,19 @@ bool CMediaData::lhsNeedsUpdating() const
 
 QIcon CMediaData::getDirectionIcon() const
 {
+    static QIcon sErrorIcon( ":/resources/error.png" );
+    static QIcon sEqualIcon( ":/resources/equal.png" );
+    static QIcon sArrowRightIcon( ":/resources/arrowright.png" );
+    static QIcon sArrowLeftIcon( ":/resources/arrowleft.png" );
     QIcon retVal;
     if ( isMissingOnEitherServer() )
-        retVal = QIcon( ":/resources/error.png" );
+        retVal = sErrorIcon;
     else if ( userDataEqual() )
-        retVal = QIcon( ":/resources/equal.png" );
+        retVal = sEqualIcon;
     else if ( rhsNeedsUpdating() )
-        retVal = QIcon( ":/resources/arrowright.png" );
+        retVal = sArrowRightIcon;
     else if ( lhsNeedsUpdating() )
-        retVal = QIcon( ":/resources/arrowleft.png" );
+        retVal = sArrowLeftIcon;
     else
         retVal = {};
 
