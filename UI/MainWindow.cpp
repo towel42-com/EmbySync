@@ -250,9 +250,10 @@ bool CMainWindow::eventFilter( QObject * obj, QEvent * event )
 
 void CMainWindow::slotSettings()
 {
-    CSettingsDlg settings( fSettings, this );
+    CSettingsDlg settings( fSettings, fUsersModel->allKnownUsers(), this );
     settings.exec();
-    loadSettings();
+    if ( fSettings->changed() )
+        loadSettings();
 }
 
 void CMainWindow::reset()
