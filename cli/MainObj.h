@@ -33,6 +33,8 @@
 class CSettings;
 class CSyncSystem;
 class CUserData;
+class CMediaModel;
+class CUsersModel;
 class CMainObj : public QObject
 {
     Q_OBJECT;
@@ -55,12 +57,14 @@ public Q_SLOTS:
     void slotLoadingUsersFinished();
     void slotProcessNextUser();
     void slotUserMediaCompletelyLoaded();
-    void slotFinishedCheckingForMissingMedia();
     void slotProcessingFinished( const QString & userName );
     void slotProcess();
 private:
     std::shared_ptr< CSettings > fSettings;
     std::shared_ptr< CSyncSystem > fSyncSystem;
+
+    CMediaModel * fMediaModel{ nullptr };
+    CUsersModel * fUsersModel{ nullptr };
 
     QString fSettingsFile;
     QRegularExpression fUserRegExp;

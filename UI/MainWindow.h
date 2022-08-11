@@ -97,11 +97,13 @@ private:
 
     std::shared_ptr< CMediaData > getMediaData( QModelIndex idx ) const;
         
-    void setupProgressDlg( const QString & title );
+    void progressSetup( const QString & title );
 
-    void setProgressMaximum( int count );
-    void incProgressDlg();
-    void resetProgressDlg();
+    void progressSetMaximum( int count );
+    int progressValue() const;
+    void progressSetValue( int value );
+    void progressIncValue();
+    void progressReset();
 
     void onlyShowSyncableUsers();
     void onlyShowMediaWithDifferences();

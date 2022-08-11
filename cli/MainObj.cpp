@@ -25,12 +25,16 @@
 #include "Core/Settings.h"
 #include "Core/SyncSystem.h"
 #include "Core/UserData.h"
+#include "Core/ProgressSystem.h"
+#include "Core/UsersModel.h"
+#include "Core/MediaModel.h"
 
 #include "Version.h"
 #include <iostream>
 
 #include <QTimer>
 #include <QDateTime>
+#include <QJsonObject>
 
 CMainObj::CMainObj( const QString & settingsFile, QObject * parent /*= nullptr*/ ) :
     QObject( parent ),
@@ -80,32 +84,35 @@ CMainObj::CMainObj( const QString & settingsFile, QObject * parent /*= nullptr*/
 
     connect( fSyncSystem.get(), &CSyncSystem::sigProcessingFinished, this, &CMainObj::slotProcessingFinished );
     connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaCompletelyLoaded, this, &CMainObj::slotUserMediaCompletelyLoaded );
-    connect( fSyncSystem.get(), &CSyncSystem::sigFinishedCheckingForMissingMedia, this, &CMainObj::slotFinishedCheckingForMissingMedia );
+    
+    fUsersModel = new CUsersModel( fSettings, this );
+    fMediaModel = new CMediaModel( fSettings, this );
 
-    SProgressFunctions progressFuncs;
-    progressFuncs.fSetupFunc = [ this ]( const QString & title )
+    auto progressSystem = std::make_shared< CProgressSystem >();
+    progressSystem->setSetTitleFunc( [ this ]( const QString & title )
     {
         fCurrentProgress = { 0, title, QString() };
         std::cout << "\r" << std::get< 1 >( fCurrentProgress ).toStdString() << std::endl;
-    };
-    progressFuncs.fIncFunc = [this]()
+    } );
+    progressSystem->setIncFunc( [this]()
     {
         std::get< 0 >( fCurrentProgress )++;
         static constexpr auto chars = R"(|||///---***---\\\)";
         static auto cnt = strlen( chars );
         auto value = std::get< 0 >( fCurrentProgress ) % cnt;
         std::cout << chars[ value ] << '\b';
-    };
-    progressFuncs.fResetFunc = [this]()
+    } );
+    progressSystem->setResetFunc( [this]()
     {
         if ( std::get< 1 >( fCurrentProgress ) != std::get< 2 >( fCurrentProgress ) )
         {
             std::cout << '\r' << "Finished " << std::get< 1 >( fCurrentProgress ).toStdString() << std::endl;
             std::get< 2 >( fCurrentProgress ) = std::get< 1 >( fCurrentProgress );
         }
-    };
+    } );
 
-    fSyncSystem->setProgressFunctions( progressFuncs );
+
+    fSyncSystem->setProgressSystem( progressSystem );
     fSyncSystem->setUserMsgFunc(
         []( const QString & /*title*/, const QString & msg, bool isCritical )
         {
@@ -114,6 +121,39 @@ CMainObj::CMainObj( const QString & settingsFile, QObject * parent /*= nullptr*/
             else 
                 std::cout << "\r" << "INFO: " << msg.toStdString() << std::endl;
         } );
+
+    fSyncSystem->setLoadUserFunc(
+        [ this ]( const QJsonObject & userData, bool isLHSServer )
+        {
+            return fUsersModel->loadUser( userData, isLHSServer );
+        } );
+    fSyncSystem->setLoadMediaFunc(
+        [ this ]( const QJsonObject & mediaData, bool isLHSServer )
+        {
+            return fMediaModel->loadMedia( mediaData, isLHSServer );
+        } );
+    fSyncSystem->setGetMediaDataForIDFunc(
+        [ this ]( const QString & mediaID, bool isLHSServer )
+        {
+            return fMediaModel->getMediaDataForID( mediaID, isLHSServer );
+        } );
+    fSyncSystem->setMergeMediaFunc(
+        [ this ]( std::shared_ptr< CProgressSystem > progressSystem )
+        {
+            return fMediaModel->mergeMedia( progressSystem );
+        } );
+    fSyncSystem->setGetAllMediaFunc(
+        [ this ]()
+        {
+            return fMediaModel->getAllMedia();
+        } );
+    fSyncSystem->setReloadMediaFunc(
+        [ this ]( const QJsonObject & mediaData, const QString & mediaID, bool isLHSServer )
+        {
+            return fMediaModel->reloadMedia( mediaData, mediaID, isLHSServer );
+        } );
+
+
     fAOK = true;
 }
 
@@ -136,9 +176,9 @@ void CMainObj::slotLoadingUsersFinished()
     if ( !fSyncSystem )
         return;
 
-    auto allUsers = fSyncSystem->getAllUsers();
     fUsersToSync.clear();
-    for ( auto && ii : allUsers )
+    auto users = fUsersModel->getAllUsers( false );
+    for ( auto && ii : users )
     {
         if ( ii->isUser( fUserRegExp ) )
             fUsersToSync.push_back( ii );
@@ -201,14 +241,11 @@ void CMainObj::slotProcessNextUser()
     slotAddToLog( EMsgType::eInfo, "Processing user: " + currUser->displayName() );
 
     fSyncSystem->resetMedia();
+    //fLHSMedia.clear();
+    //fRHSMedia.clear();
     fSyncSystem->loadUsersMedia( currUser );
 
     //QTimer::singleShot( 0, this, &CMain::slotProcessNextUser );
-}
-
-void CMainObj::slotFinishedCheckingForMissingMedia()
-{
-    slotAddToLog( EMsgType::eInfo, "Finished processing missing media" );
 }
 
 void CMainObj::slotUserMediaCompletelyLoaded()
@@ -226,4 +263,3 @@ void CMainObj::slotProcess()
 {
     fSyncSystem->process( fForce.first, fForce.second );
 }
-
