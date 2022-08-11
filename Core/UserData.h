@@ -48,16 +48,9 @@ public:
     QString getUserID( bool isLHS ) const;
     void setUserID( const QString & id, bool isLHS );
 
-    void clearMedia();
-
     bool onLHSServer() const;
     bool onRHSServer() const;
     bool canBeSynced() const;
-
-    void addMedia( std::shared_ptr< CMediaData > mediaData );
-    const std::list< std::shared_ptr< CMediaData > > & playedMedia() const;
-    bool hasMedia() const;
-    int numPlayedMedia() const;
 private:
     bool isMatch( const QRegularExpression & regEx, const QString & value ) const;
 
@@ -65,6 +58,5 @@ private:
     QString fConnectedID;
     std::pair< QString, QString > fUserID;
     QTreeWidgetItem * fItem{ nullptr };
-    std::list< std::shared_ptr< CMediaData > > fMedia;
 };
 #endif 
