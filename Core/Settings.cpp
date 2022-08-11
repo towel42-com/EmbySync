@@ -66,10 +66,10 @@ bool CSettings::load( const QString & fileName, std::function<void( const QStrin
     }
 
     setLHSURL( json[ "lhs" ][ "url" ].toString() );
-    setLHSAPI( json[ "lhs" ][ "api" ].toString() );
+    setLHSAPIKey( json[ "lhs" ][ "api_key" ].toString() );
 
     setRHSURL( json[ "rhs" ][ "url" ].toString() );
-    setRHSAPI( json[ "rhs" ][ "api" ].toString() );
+    setRHSAPIKey( json[ "rhs" ][ "api_key" ].toString() );
 
     if ( json.object().find( "OnlyShowSyncableUsers" ) == json.object().end() )
         setOnlyShowSyncableUsers( true );
@@ -222,14 +222,14 @@ bool CSettings::save( std::function<void( const QString & title, const QString &
     auto lhs = json.object();
 
     lhs[ "url" ] = lhsURL();
-    lhs[ "api" ] = lhsAPI();
+    lhs[ "api_key" ] = lhsAPIKey();
 
     root[ "lhs" ] = lhs;
 
     auto rhs = json.object();
 
     rhs[ "url" ] = rhsURL();
-    rhs[ "api" ] = rhsAPI();
+    rhs[ "api_key" ] = rhsAPIKey();
 
     root[ "rhs" ] = rhs;
 
@@ -250,22 +250,41 @@ bool CSettings::save( std::function<void( const QString & title, const QString &
     return true;
 }
 
+//QUrl CSettings::getServerURL( bool lhs )
+//{
+//    return lhs ? lhsURL() : rhsURL();
+//}
+
 QUrl CSettings::getUrl( bool lhs ) const
+{
+    return getUrl( QString(), std::list< std::pair< QString, QString > >(), lhs );
+}
+
+QUrl CSettings::getUrl( const QString & extraPath, const std::list< std::pair< QString, QString > > & queryItems, bool lhs ) const
 {
     auto path = lhs ? lhsURL() : rhsURL();
     if ( path.isEmpty() )
         return {};
 
-    if ( !path.endsWith( "/" ) )
-        path += "/";
+    if ( !extraPath.isEmpty() )
+    {
+        if ( !path.endsWith( "/" ) )
+            path += "/";
+        path += extraPath;
+    }
 
     QUrl retVal( path );
 
-    const auto && api = lhs ? lhsAPI() : rhsAPI();
-
     QUrlQuery query;
-    query.addQueryItem( "api_key", api );
+    query.addQueryItem( "api_key", lhs ? lhsAPIKey() : rhsAPIKey() );
+    for ( auto && ii : queryItems )
+    {
+        query.addQueryItem( ii.first, ii.second );
+    }
     retVal.setQuery( query );
+
+    //qDebug() << url;
+
     return retVal;
 }
 
@@ -274,9 +293,9 @@ void CSettings::setLHSURL( const QString & url )
     updateValue( fLHSServer.first, url );
 }
 
-void CSettings::setLHSAPI( const QString & api )
+void CSettings::setLHSAPIKey( const QString & apiKey )
 {
-    updateValue( fLHSServer.second, api );
+    updateValue( fLHSServer.second, apiKey );
 }
 
 void CSettings::setRHSURL( const QString & url )
@@ -284,17 +303,17 @@ void CSettings::setRHSURL( const QString & url )
     updateValue( fRHSServer.first, url );
 }
 
-void CSettings::setRHSAPI( const QString & api )
+void CSettings::setRHSAPIKey( const QString & apiKey )
 {
-    updateValue( fRHSServer.second, api );
+    updateValue( fRHSServer.second, apiKey );
 }
 
 bool CSettings::canSync() const
 {
     return getUrl( true ).isValid()
-        && !lhsAPI().isEmpty()
+        && !lhsAPIKey().isEmpty()
         && getUrl( false ).isValid()
-        && !rhsAPI().isEmpty()
+        && !rhsAPIKey().isEmpty()
         ;
 }
 

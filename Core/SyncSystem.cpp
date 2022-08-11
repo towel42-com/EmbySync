@@ -313,11 +313,13 @@ void CSyncSystem::requestUpdateUserDataForMedia( std::shared_ptr< CMediaData > m
         return;
 
 
-    auto && url = fSettings->getServerURL( lhsNeedsUpdating );
     auto && mediaID = mediaData->getMediaID( lhsNeedsUpdating );
     auto && userID = fCurrUserData->getUserID( lhsNeedsUpdating );
-
     if ( userID.isEmpty() || mediaID.isEmpty() )
+        return;
+
+    auto && url = fSettings->getUrl( QString( "Users/%1/Items/%2/UserData" ).arg( userID ).arg( mediaID ), {}, lhsNeedsUpdating );
+    if ( !url.isValid() )
         return;
 
     auto obj = newData->userDataJSON();
@@ -325,14 +327,6 @@ void CSyncSystem::requestUpdateUserDataForMedia( std::shared_ptr< CMediaData > m
 
     //qDebug() << "userID" << userID;
     //qDebug() << "mediaID" << mediaID;
-
-    auto path = url.path();
-    path += QString( "Users/%1/Items/%2/UserData" ).arg( userID ).arg( mediaID );
-    url.setPath( path );
-    QUrlQuery query;
-
-    query.addQueryItem( "api_key", lhsNeedsUpdating ? fSettings->lhsAPI() : fSettings->rhsAPI() );
-    url.setQuery( query );
 
     //qDebug() << url;
 
@@ -353,25 +347,18 @@ void CSyncSystem::requestSetFavorite( std::shared_ptr< CMediaData > mediaData, s
     if ( mediaData->isFavorite( lhsNeedsUpdating ) == newData->fIsFavorite )
         return;
 
-    auto && url = fSettings->getServerURL( lhsNeedsUpdating );
     auto && mediaID = mediaData->getMediaID( lhsNeedsUpdating );
     auto && userID = fCurrUserData->getUserID( lhsNeedsUpdating );
+    if ( userID.isEmpty() || mediaID.isEmpty() )
+        return;
+
+    auto && url = fSettings->getUrl( QString( "Users/%1/FavoriteItems/%3" ).arg( userID ).arg( mediaID ), {}, lhsNeedsUpdating );
+    if ( !url.isValid() )
+        return;
 
     //qDebug() << "userID" << userID;
     //qDebug() << "mediaID" << mediaID;
     //qDebug() << "updateType" << updateType;
-
-    if ( mediaID.isEmpty() || userID.isEmpty() )
-        return;
-
-    auto path = url.path();
-    path += QString( "Users/%1/FavoriteItems/%3" ).arg( userID ).arg( mediaID );
-    url.setPath( path );
-    //qDebug() << url;
-
-    QUrlQuery query;
-    query.addQueryItem( "api_key", lhsNeedsUpdating ? fSettings->lhsAPI() : fSettings->rhsAPI() );
-    url.setQuery( query );
 
     auto request = QNetworkRequest( url );
 
@@ -708,16 +695,11 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
 void CSyncSystem::requestGetUsers( bool isLHSServer )
 {
     emit sigAddToLog( EMsgType::eInfo, tr( "Loading users from server '%1'" ).arg( fSettings->getServerName( isLHSServer ) ) );;
-    auto && url = fSettings->getServerURL( isLHSServer );
+    auto && url = fSettings->getUrl( "Users", {}, isLHSServer );
     if ( !url.isValid() )
         return;
 
     emit sigAddToLog( EMsgType::eInfo, tr( "Server URL: %1" ).arg( url.toString() ) );
-
-    auto path = url.path();
-    path += "Users";
-    url.setPath( path );
-    //qDebug() << url;
 
     auto request = QNetworkRequest( url );
 
@@ -761,23 +743,19 @@ void CSyncSystem::requestUsersMediaList( bool isLHSServer )
     if ( !fCurrUserData )
         return;
 
-    auto && url = fSettings->getServerURL( isLHSServer );
-    auto path = url.path();
-    path += QString( "Users/%1/Items" ).arg( fCurrUserData->getUserID( isLHSServer ) );
-    //path += QString( "/%1" ).arg( isLHSServer ? "209179" : "110303" );
-    url.setPath( path );
+    std::list< std::pair< QString, QString > > queryItems =
+    {
+        std::make_pair( "IncludeItemTypes", fSettings->getSyncItemTypes() ),
+        std::make_pair( "SortBy", "SortName" ),
+        std::make_pair( "SortOrder", "Ascending" ),
+        std::make_pair( "Recursive", "True" ),
+        std::make_pair( "IsMissing", "False" ),
+        std::make_pair( "Fields", "ProviderIds,ExternalUrls,Missing" )
+    };
 
-    QUrlQuery query;
-
-    query.addQueryItem( "api_key", isLHSServer ? fSettings->lhsAPI() : fSettings->rhsAPI() );
-    //query.addQueryItem( "Filters", "IsPlayed" );
-    query.addQueryItem( "IncludeItemTypes", fSettings->getSyncItemTypes() );
-    query.addQueryItem( "SortBy", "SortName" );
-    query.addQueryItem( "SortOrder", "Ascending" );
-    query.addQueryItem( "Recursive", "True" );
-    query.addQueryItem( "IsMissing", "False" );
-    query.addQueryItem( "Fields", "ProviderIds,ExternalUrls,Missing" );
-    url.setQuery( query );
+    auto && url = fSettings->getUrl( QString( "Users/%1/Items" ).arg( fCurrUserData->getUserID( isLHSServer ) ), queryItems, isLHSServer );
+    if ( !url.isValid() )
+        return;
 
     //qDebug() << url;
     auto request = QNetworkRequest( url );
@@ -859,10 +837,9 @@ void CSyncSystem::requestReloadMediaItemData( const QString & mediaID, bool isLH
 
 void CSyncSystem::requestReloadMediaItemData( std::shared_ptr< CMediaData > mediaData, bool isLHSServer )
 {
-    auto && url = fSettings->getServerURL( isLHSServer );
-    auto path = url.path();
-    path += QString( "Users/%1/Items/%2" ).arg( fCurrUserData->getUserID( isLHSServer ) ).arg( mediaData->getMediaID( isLHSServer ) );
-    url.setPath( path );
+    auto && url = fSettings->getUrl( QString( "Users/%1/Items/%2" ).arg( fCurrUserData->getUserID( isLHSServer ) ).arg( mediaData->getMediaID( isLHSServer ) ), {}, isLHSServer );
+    if ( !url.isValid() )
+        return;
 
     //qDebug() << url;
     auto request = QNetworkRequest( url );

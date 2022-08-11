@@ -56,34 +56,20 @@ public:
     bool save( QWidget * parent, std::function<QString()> selectFileFunc, std::function<void( const QString & title, const QString & msg )> errorFunc );
     bool save( std::function<void( const QString & title, const QString & msg )> errorFunc );
 
-    QUrl getServerURL( bool lhs )
-    {
-        return lhs ? getLHSURL() : getRHSURL();
-    }
-
-    QUrl getLHSURL() const
-    {
-        return getUrl( true );
-    }
-
-    QUrl getRHSURL() const
-    {
-        return getUrl( false );
-    }
-
     QUrl getUrl( bool lhs ) const;
+    QUrl getUrl( const QString & extraPath, const std::list< std::pair< QString, QString > > & queryItems, bool lhs ) const;
 
     QString lhsURL() const { return fLHSServer.first; }
     void setLHSURL( const QString & url );
 
-    QString lhsAPI() const { return fLHSServer.second; }
-    void setLHSAPI( const QString & api );
+    QString lhsAPIKey() const { return fLHSServer.second; }
+    void setLHSAPIKey( const QString & apiKey );
 
     QString rhsURL() const { return fRHSServer.first; }
     void setRHSURL( const QString & url );
 
-    QString rhsAPI() const { return fRHSServer.second; }
-    void setRHSAPI( const QString & api );
+    QString rhsAPIKey() const { return fRHSServer.second; }
+    void setRHSAPIKey( const QString & apiKey );
 
     bool canSync() const;
 

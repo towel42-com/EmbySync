@@ -124,9 +124,9 @@ void CSettingsDlg::accept()
 void CSettingsDlg::load()
 {
     fImpl->embyURL1->setText( fSettings->lhsURL() );
-    fImpl->embyAPI1->setText( fSettings->lhsAPI() );
+    fImpl->embyAPI1->setText( fSettings->lhsAPIKey() );
     fImpl->embyURL2->setText( fSettings->rhsURL() );
-    fImpl->embyAPI2->setText( fSettings->rhsAPI() );
+    fImpl->embyAPI2->setText( fSettings->rhsAPIKey() );
 
     fMediaSourceColor = fSettings->mediaSourceColor();
     fMediaDestColor = fSettings->mediaDestColor();
@@ -161,9 +161,9 @@ void CSettingsDlg::load()
 void CSettingsDlg::save()
 {
     fSettings->setLHSURL( fImpl->embyURL1->text() );
-    fSettings->setLHSAPI( fImpl->embyAPI1->text() );
+    fSettings->setLHSAPIKey( fImpl->embyAPI1->text() );
     fSettings->setRHSURL( fImpl->embyURL2->text() );
-    fSettings->setRHSAPI( fImpl->embyAPI2->text() );
+    fSettings->setRHSAPIKey( fImpl->embyAPI2->text() );
 
     fSettings->setMediaSourceColor( fMediaSourceColor );
     fSettings->setMediaDestColor( fMediaDestColor );
