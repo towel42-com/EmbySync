@@ -31,10 +31,9 @@
 
 #include <QTimer>
 
-CMainObj::CMainObj( const QString & settingsFile, const QString & usersRegEx, QObject * parent /*= nullptr*/ ) :
+CMainObj::CMainObj( const QString & settingsFile, QObject * parent /*= nullptr*/ ) :
     QObject( parent ),
-    fSettingsFile( settingsFile ),
-    fUserRegExp( usersRegEx )
+    fSettingsFile( settingsFile )
 {
     fSettings = std::make_shared< CSettings >();
     if ( !fSettings->load( settingsFile,
@@ -47,9 +46,28 @@ CMainObj::CMainObj( const QString & settingsFile, const QString & usersRegEx, QO
         return;
     }
 
+    auto userRegExList = fSettings->syncUserList();
+    QStringList syncUsers;
+    for ( auto && ii : userRegExList )
+    {
+        if ( !QRegularExpression( ii ).isValid() )
+        {
+            std::cerr << "SyncUserList contains invalid regular expression: '" << ii.toStdString() << "'.\n";
+            return;
+        }
+        syncUsers << "(" + ii + ")";
+    }
+    auto regExStr = syncUsers.join( "|" );
+    fUserRegExp = QRegularExpression( regExStr );
     if ( !fUserRegExp.isValid() )
     {
-        std::cerr << "--users <regexp> '" << usersRegEx.toStdString() << "' is not valid: " << fUserRegExp.errorString().toStdString() << " @ " << fUserRegExp.patternErrorOffset() << ".\n";
+        std::cerr << "SyncUserList creates an invalid regular expression: '" << regExStr.toStdString() << "'.\n";
+        return;
+    }
+
+    if ( regExStr.isEmpty() )
+    {
+        std::cerr << "SyncUserList is not set in the settings file.\n";
         return;
     }
 
@@ -90,6 +108,10 @@ CMainObj::CMainObj( const QString & settingsFile, const QString & usersRegEx, QO
     fAOK = true;
 }
 
+void CMainObj::slotAddToLog( const QString & msg )
+{
+    std::cout << msg.toStdString() << "\n";
+}
 
 void CMainObj::run()
 {
@@ -97,11 +119,6 @@ void CMainObj::run()
         return;
 
     fSyncSystem->loadUsers();
-}
-
-void CMainObj::slotAddToLog( const QString & msg )
-{
-    std::cout << msg.toStdString() << "\n";
 }
 
 void CMainObj::slotLoadingUsersFinished()

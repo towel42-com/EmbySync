@@ -44,9 +44,6 @@ int main( int argc, char ** argv )
     auto settingsFileOption = QCommandLineOption( QStringList() << "settings" << "s", "The settings json file", "Settings file" );
     parser.addOption( settingsFileOption );
 
-    auto usersOption = QCommandLineOption( QStringList() << "users" << "u", "A regex for users to sync (Default .* for all)", "Users to sync" );
-    parser.addOption( usersOption );
-
     auto forceLeftOption = QCommandLineOption( QStringList() << "force_left" << "l", "Force process from lhs server to rhs" );
     parser.addOption( forceLeftOption );
 
@@ -83,9 +80,8 @@ int main( int argc, char ** argv )
         return -1;
     }
 
-    auto users = parser.isSet( usersOption ) ? parser.value( usersOption ) : ".*";
     auto settingsFile = parser.value( settingsFileOption );
-    auto mainObj = std::make_shared< CMainObj >( settingsFile, users );
+    auto mainObj = std::make_shared< CMainObj >( settingsFile );
     if ( !mainObj->aOK() )
     {
         return -1;

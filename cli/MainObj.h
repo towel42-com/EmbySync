@@ -37,7 +37,7 @@ class CMainObj : public QObject
 {
     Q_OBJECT;
 public:
-    CMainObj( const QString & settingsFile, const QString & usersRegEx, QObject * parent = nullptr );
+    CMainObj( const QString & settingsFile, QObject * parent = nullptr );
 
     void run();
     void setForceProcessing( bool forceLeft, bool forceRight )
