@@ -74,7 +74,7 @@ QString CUserData::displayName() const
 
 bool CUserData::isUser( const QRegularExpression & regEx ) const
 {
-    if ( !regEx.isValid() )
+    if ( !regEx.isValid() || regEx.pattern().isEmpty() )
         return false;
 
     if ( isMatch( regEx, fConnectedID ) )
