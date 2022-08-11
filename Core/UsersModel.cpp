@@ -3,6 +3,7 @@
 #include "Settings.h"
 
 #include <QColor>
+#include <set>
 
 CUsersModel::CUsersModel( std::shared_ptr< CSettings > settings, QObject * parent ) :
     QAbstractTableModel( parent ),
@@ -181,6 +182,29 @@ void CUsersModel::clear()
     fUsers.clear();
     fUsersToPos.clear();
     endResetModel();
+}
+
+std::vector< std::shared_ptr< CUserData > > CUsersModel::allKnownUsers() const
+{
+    std::map< QString, std::shared_ptr< CUserData > > sortedUsers;
+    for ( auto && ii : fUsers )
+    {
+        if ( ii->name( true ).isEmpty() && ii->name( false ).isEmpty() && ii->connectedID().isEmpty() )
+            continue;
+        if ( !ii->name( true ).isEmpty() )
+            sortedUsers[ ii->name( true ) ] = ii;
+        else if ( !ii->name( false ).isEmpty() )
+            sortedUsers[ ii->name( false ) ] = ii;
+        else if ( !ii->connectedID().isEmpty() )
+            sortedUsers[ ii->connectedID() ] = ii;
+    }
+    std::vector< std::shared_ptr< CUserData > > retVal;
+    retVal.reserve( fUsers.size() );
+    for ( auto && ii : sortedUsers )
+    {
+        retVal.push_back( ii.second );
+    }
+    return retVal;
 }
 
 CUsersFilterModel::CUsersFilterModel( QObject * parent ) :

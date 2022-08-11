@@ -51,6 +51,8 @@ public:
     void setUsers( const std::list< std::shared_ptr< CUserData > > & users );
     std::shared_ptr< CUserData > userDataForName( const QString & name );
     void clear();
+
+    std::vector< std::shared_ptr< CUserData > > allKnownUsers() const;
 private:
     QVariant getColor( const QModelIndex & index, bool background ) const;
         
