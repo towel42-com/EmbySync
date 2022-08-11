@@ -130,7 +130,7 @@ public:
 
     void process( bool forceLeft, bool forceRight );
 Q_SIGNALS:
-    void sigAddToLog( const QString & msg );
+    void sigAddToLog( const QString & type, const QString & msg );
     void sigLoadingUsersFinished();
     void sigUserMediaLoaded();
     void sigUserMediaCompletelyLoaded();

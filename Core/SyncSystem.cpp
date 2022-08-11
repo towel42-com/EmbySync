@@ -28,7 +28,6 @@
 #include <unordered_set>
 
 #include <QTimer>
-#include <QMessageBox>
 #include <QDebug>
 #include <QCloseEvent>
 #include <QNetworkAccessManager>
@@ -132,7 +131,7 @@ void CSyncSystem::loadUsersMedia( std::shared_ptr< CUserData > userData )
 
     fCurrUserData = userData;
 
-    emit sigAddToLog( QString( "Loading media for '%1'" ).arg( fCurrUserData->displayName() ) );
+    emit sigAddToLog( "Info", QString( "Loading media for '%1'" ).arg( fCurrUserData->displayName() ) );
 
     fLHSMedia.clear();
     fRHSMedia.clear();
@@ -313,7 +312,7 @@ void CSyncSystem::requestUsersMediaList( bool isLHSServer )
     //qDebug() << url;
     auto request = QNetworkRequest( url );
 
-    emit sigAddToLog( QString( "Requesting media for '%1' from server '%2'" ).arg( fCurrUserData->displayName() ).arg( fSettings->getServerName( isLHSServer ) ) );
+    emit sigAddToLog( "Info", QString( "Requesting media for '%1' from server '%2'" ).arg( fCurrUserData->displayName() ).arg( fSettings->getServerName( isLHSServer ) ) );
 
     auto reply = makeRequest( request );
     setIsLHS( reply, isLHSServer );
@@ -443,12 +442,12 @@ void CSyncSystem::requestSetFavorite( std::shared_ptr< CMediaData > mediaData, s
 
 void CSyncSystem::requestUsers( bool isLHSServer )
 {
-    emit sigAddToLog( tr( "Loading users from server '%1'" ).arg( fSettings->getServerName( isLHSServer ) ) );;
+    emit sigAddToLog( "Info", tr( "Loading users from server '%1'" ).arg( fSettings->getServerName( isLHSServer ) ) );;
     auto && url = fSettings->getServerURL( isLHSServer );
     if ( !url.isValid() )
         return;
 
-    emit sigAddToLog( tr( "Server URL: %1" ).arg( url.toString() ) );
+    emit sigAddToLog( "Info", tr( "Server URL: %1" ).arg( url.toString() ) );
 
     auto path = url.path();
     path += "Users";
@@ -525,10 +524,10 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
         fAttributes.erase( pos );
     }
 
-    //emit sigAddToLog( QString( "Request Completed: %1" ).arg( reply->url().toString() ) );
-    //emit sigAddToLog( QString( "Is LHS? %1" ).arg( isLHSServer ? "Yes" : "No" ) );
-    //emit sigAddToLog( QString( "Request Type: %1" ).arg( toString( requestType ) ) );
-    //emit sigAddToLog( QString( "Extra Data: %1" ).arg( extraData.toString() ) );
+    //emit sigAddToLog( "Info", QString( "Request Completed: %1" ).arg( reply->url().toString() ) );
+    //emit sigAddToLog( "Info", QString( "Is LHS? %1" ).arg( isLHSServer ? "Yes" : "No" ) );
+    //emit sigAddToLog( "Info", QString( "Request Type: %1" ).arg( toString( requestType ) ) );
+    //emit sigAddToLog( "Info", QString( "Extra Data: %1" ).arg( extraData.toString() ) );
 
     if ( !handleError( reply ) )
     {
@@ -613,13 +612,13 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
                     name = ( *pos ).second->name();
             }
 
-            emit sigAddToLog( QString( "Updated '%1(%2)' on Server '%3' successfully" ).arg( name ).arg( extraData.toString() ).arg( fSettings->getServerName( isLHSServer ) ) );
+            emit sigAddToLog( "Info", QString( "Updated '%1(%2)' on Server '%3' successfully" ).arg( name ).arg( extraData.toString() ).arg( fSettings->getServerName( isLHSServer ) ) );
             break;
         }
         case ERequestType::eUpdateFavorite:
         {
             loadMediaData( extraData.toString(), isLHSServer );
-            emit sigAddToLog( QString( "Updated Favorite status for '%1' on Server '%2' successfully" ).arg( extraData.toString() ).arg( fSettings->getServerName( isLHSServer ) ) );
+            emit sigAddToLog( "Info", QString( "Updated Favorite status for '%1' on Server '%2' successfully" ).arg( extraData.toString() ).arg( fSettings->getServerName( isLHSServer ) ) );
             break;
         }
     }
@@ -675,7 +674,7 @@ void CSyncSystem::slotCheckPendingRequests()
 {
     if ( !isRunning() )
     {
-        emit sigAddToLog( QString( "Info: 0 pending requests on any server" ) );
+        emit sigAddToLog( "Info", QString( "0 pending requests on any server" ) );
         fPendingRequestTimer->stop();
         return;
     }
@@ -685,7 +684,7 @@ void CSyncSystem::slotCheckPendingRequests()
         {
             if ( jj.second )
             {
-                emit sigAddToLog( QString( "Info: %1 pending '%2' request%3 on server '%4'" ).arg( jj.second ).arg( toString( ii.first ) ).arg( ( jj.second != 1 ) ? "s" : "" ).arg( jj.first ) );
+                emit sigAddToLog( "Info", QString( "%1 pending '%2' request%3 on server '%4'" ).arg( jj.second ).arg( toString( ii.first ) ).arg( ( jj.second != 1 ) ? "s" : "" ).arg( jj.first ) );
             }
         }
     }
@@ -789,7 +788,7 @@ void CSyncSystem::loadUsers( const QByteArray & data, bool isLHSServer )
     auto users = doc.array();
     fProgressFuncs.setMaximum( users.count() );
 
-    emit sigAddToLog( QString( "Server '%1' has %2 Users" ).arg( fSettings->getServerName( isLHSServer ) ).arg( users.count() ) );
+    emit sigAddToLog( "Info", QString( "Server '%1' has %2 Users" ).arg( fSettings->getServerName( isLHSServer ) ).arg( users.count() ) );
 
     for ( auto && ii : users )
     {
@@ -889,7 +888,7 @@ void CSyncSystem::loadMediaInfo( const QByteArray & data, const QString & mediaN
     }
     if ( !found )
     {
-        emit sigAddToLog( QString( "Error:  COULD NOT FIND MEDIA '%1' on %2 server" ).arg( mediaName ).arg( fSettings->getServerName( isLHSServer ) ) );
+        emit sigAddToLog( "Error", QString( "COULD NOT FIND MEDIA '%1' on %2 server" ).arg( mediaName ).arg( fSettings->getServerName( isLHSServer ) ) );
         auto pos = fMissingMedia.find( mediaName );
         if ( pos != fMissingMedia.end() )
             fMissingMedia.erase( pos );
@@ -980,9 +979,9 @@ void CSyncSystem::loadMediaList( const QByteArray & data, bool isLHSServer )
     fProgressFuncs.setupProgress( tr( "Loading Users Media Data" ) );
     fProgressFuncs.setMaximum( mediaList.count() );
 
-    emit sigAddToLog( QString( "%1 has %2 media items on server '%3'" ).arg( fCurrUserData->displayName() ).arg( mediaList.count() ).arg( fSettings->getServerName( isLHSServer ) ) );
+    emit sigAddToLog( "Info", QString( "%1 has %2 media items on server '%3'" ).arg( fCurrUserData->displayName() ).arg( mediaList.count() ).arg( fSettings->getServerName( isLHSServer ) ) );
     if ( fSettings->maxItems() > 0 )
-        emit sigAddToLog( QString( "Loading %2 media items" ).arg( fSettings->maxItems() ) );
+        emit sigAddToLog( "Info", QString( "Loading %2 media items" ).arg( fSettings->maxItems() ) );
 
     int curr = 0;
     for ( auto && ii : mediaList )
