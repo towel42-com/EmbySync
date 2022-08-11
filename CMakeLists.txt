@@ -50,7 +50,7 @@ SET( SAB_ENABLE_TESTING ON )
 add_subdirectory( SABUtils )
 add_subdirectory( UI )
 add_subdirectory( Core )
-add_subdirectory( App )
+add_subdirectory( gui )
 add_subdirectory( cli )
 
 INSTALL( FILES License.txt DESTINATION . )
