@@ -96,6 +96,15 @@ constexpr int kRequestType = QNetworkRequest::User + 2; // ERequestType
 constexpr int kExtraData = QNetworkRequest::User + 3; // QVariant
 
 using TMediaIDToMediaData = std::map< QString, std::shared_ptr< CMediaData > >;
+enum EMsgType
+{
+    eError,
+    eWarning,
+    eInfo
+};
+
+QString toString( EMsgType type );
+QString createMessage( EMsgType msgType, const QString & msg );
 
 class CSyncSystem : public QObject
 {
@@ -130,7 +139,7 @@ public:
 
     void process( bool forceLeft, bool forceRight );
 Q_SIGNALS:
-    void sigAddToLog( const QString & type, const QString & msg );
+    void sigAddToLog( int msgType, const QString & msg );
     void sigLoadingUsersFinished();
     void sigUserMediaLoaded();
     void sigUserMediaCompletelyLoaded();

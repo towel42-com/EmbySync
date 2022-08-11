@@ -30,6 +30,7 @@
 #include <iostream>
 
 #include <QTimer>
+#include <QDateTime>
 
 CMainObj::CMainObj( const QString & settingsFile, QObject * parent /*= nullptr*/ ) :
     QObject( parent ),
@@ -105,12 +106,21 @@ CMainObj::CMainObj( const QString & settingsFile, QObject * parent /*= nullptr*/
     };
 
     fSyncSystem->setProgressFunctions( progressFuncs );
+    fSyncSystem->setUserMsgFunc(
+        []( const QString & /*title*/, const QString & msg, bool isCritical )
+        {
+            if ( isCritical )
+                std::cerr << "\r" << "ERROR: " << msg.toStdString() << std::endl;
+            else 
+                std::cout << "\r" << "INFO: " << msg.toStdString() << std::endl;
+        } );
     fAOK = true;
 }
 
-void CMainObj::slotAddToLog( const QString & msg )
+void CMainObj::slotAddToLog( int msgType, const QString & msg )
 {
-    std::cout << msg.toStdString() << "\n";
+    auto stream = ( msgType != EMsgType::eInfo ) ? &std::cerr : &std::cout;
+    ( *stream ) << "\r" << createMessage( static_cast< EMsgType >( msgType ), msg ).toStdString() << "\n";
 }
 
 void CMainObj::run()
@@ -153,17 +163,21 @@ void CMainObj::slotLoadingUsersFinished()
             ++ii;
     }
 
+
+    QString unsyncableMsg;
     if ( !unsyncable.empty() )
-        std::cerr << "Warning: The following users matched but can not be synced\n";
+        unsyncableMsg = "The following users matched but can not be synced\n";
     for ( auto && ii : unsyncable )
     {
-        std::cerr << "\t" << ii.second->displayName().toStdString();
-        if ( ii.second->onLHSServer() )
-            std::cerr << " - Missing from '" << fSettings->lhsURL().toStdString();
+        unsyncableMsg += "\t" + ii.second->displayName() + " - Missing from '";
+        if ( !ii.second->onLHSServer() )
+            unsyncableMsg += fSettings->lhsURL();
         else //if ( ii->onRHSServer() )
-            std::cerr << " - Missing from '" << fSettings->rhsURL().toStdString();
-        std::cerr << "\n";
+            unsyncableMsg += fSettings->rhsURL();
+        unsyncableMsg += "'\n";
     }
+    if ( !unsyncableMsg.isEmpty() )
+        slotAddToLog( EMsgType::eWarning, unsyncableMsg );
 
     if ( fUsersToSync.empty() )
     {
@@ -184,7 +198,7 @@ void CMainObj::slotProcessNextUser()
 
     auto currUser = fUsersToSync.front();
     fUsersToSync.pop_front();
-    slotAddToLog( "Processing user: " + currUser->displayName() );
+    slotAddToLog( EMsgType::eInfo, "Processing user: " + currUser->displayName() );
 
     fSyncSystem->resetMedia();
     fSyncSystem->loadUsersMedia( currUser );
@@ -194,17 +208,17 @@ void CMainObj::slotProcessNextUser()
 
 void CMainObj::slotFinishedCheckingForMissingMedia()
 {
-    slotAddToLog( "Finished processing missing media" );
+    slotAddToLog( EMsgType::eInfo, "Finished processing missing media" );
 }
 
 void CMainObj::slotUserMediaCompletelyLoaded()
 {
-    slotAddToLog( "Finished loading media information" );
+    slotAddToLog( EMsgType::eInfo, "Finished loading media information" );
 }
 
 void CMainObj::slotProcessingFinished( const QString & userName )
 {
-    slotAddToLog( QString( "Finished processing user '%1'" ).arg( userName ) );
+    slotAddToLog( EMsgType::eInfo, QString( "Finished processing user '%1'" ).arg( userName ) );
     QTimer::singleShot( 0, this, &CMainObj::slotProcessNextUser );
 }
 

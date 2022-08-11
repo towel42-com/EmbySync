@@ -82,7 +82,7 @@ private Q_SLOTS:
     void slotToggleOnlyShowMediaWithDifferences();
     void slotToggleShowMediaWithIssues();
 
-    void slotAddToLog( const QString & msg );
+    void slotAddToLog( int msgType, const QString & msg );
 
     void slotLoadingUsersFinished();
     void slotUserMediaLoaded();

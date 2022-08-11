@@ -51,7 +51,7 @@ public:
 Q_SIGNALS:
     void sigExit( int exitCode );
 public Q_SLOTS:
-    void slotAddToLog( const QString & msg );
+    void slotAddToLog( int msgType, const QString & msg );
     void slotLoadingUsersFinished();
     void slotProcessNextUser();
     void slotUserMediaCompletelyLoaded();

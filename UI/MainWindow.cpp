@@ -40,6 +40,7 @@
 #include <QMessageBox>
 #include <QSortFilterProxyModel>
 #include <QRegularExpression>
+#include <QDateTime>
 
 CMainWindow::CMainWindow( QWidget * parent )
     : QMainWindow( parent ),
@@ -328,7 +329,7 @@ void CMainWindow::slotSave()
 
 void CMainWindow::loadSettings()
 {
-    slotAddToLog( "Loading Settings" );
+    slotAddToLog( EMsgType::eInfo, "Loading Settings" );
 
     fImpl->lhsServerLabel->setText( tr( "Server: <a href=\"%1\">%1</a>" ).arg( fSettings->lhsURL() ) );
     fImpl->rhsServerLabel->setText( tr( "Server: <a href=\"%1\">%1</a>" ).arg( fSettings->rhsURL() ) );
@@ -509,11 +510,12 @@ void CMainWindow::showMediaWithIssues()
     );
 }
 
-void CMainWindow::slotAddToLog( const QString & msg )
+void CMainWindow::slotAddToLog( int msgType, const QString & msg )
 {
-    qDebug() << msg;
-    fImpl->log->appendPlainText( QString( "%1" ).arg( msg.endsWith( '\n' ) ? msg.left( msg.length() - 1 ) : msg ) );
-    fImpl->statusbar->showMessage( msg, 500 );
+    auto fullMsg = createMessage( static_cast<EMsgType>( msgType ), msg );
+    qDebug() << fullMsg;
+    fImpl->log->appendPlainText( fullMsg );
+    fImpl->statusbar->showMessage( fullMsg, 500 );
 }
 
 void CMainWindow::resetProgressDlg()
