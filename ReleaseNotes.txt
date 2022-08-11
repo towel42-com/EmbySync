@@ -5,6 +5,7 @@
 	Users to sync is stored in the settings file
 	Fix for tool always reloading from servers when the settings dialog changes
 	Refactor the CLI code base
+    Move the analysis out of the sync manager into the models
 1.1 - Minor update
     Feedback on when waiting on a request from a server
     Fix for building on linux
