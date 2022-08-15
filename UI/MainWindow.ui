@@ -139,16 +139,6 @@
            <string>Current Media Selection</string>
           </property>
           <layout class="QGridLayout" name="gridLayout">
-           <item row="2" column="0">
-            <widget class="QLabel" name="externalUrls">
-             <property name="text">
-              <string>External Urls:</string>
-             </property>
-             <property name="openExternalLinks">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
            <item row="3" column="0" rowspan="4">
             <widget class="CMediaUserDataWidget" name="lhsUserMediaData">
              <property name="title">
@@ -245,6 +235,16 @@
              </item>
             </layout>
            </item>
+           <item row="2" column="0" colspan="3">
+            <widget class="QLabel" name="externalUrls">
+             <property name="text">
+              <string>External Urls:</string>
+             </property>
+             <property name="openExternalLinks">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
           </layout>
          </widget>
         </item>
@@ -296,11 +296,11 @@
     </property>
     <widget class="QMenu" name="menuLoadRecent">
      <property name="title">
-      <string>Load Recent</string>
+      <string>Load Recent Settings</string>
      </property>
      <addaction name="actionNoRecentFiles"/>
     </widget>
-    <addaction name="actionLoadProject"/>
+    <addaction name="actionLoadSettings"/>
     <addaction name="menuLoadRecent"/>
     <addaction name="separator"/>
     <addaction name="actionSave"/>
@@ -337,7 +337,7 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="actionLoadProject"/>
+   <addaction name="actionLoadSettings"/>
    <addaction name="actionSave"/>
    <addaction name="actionOnlyShowSyncableUsers"/>
    <addaction name="actionOnlyShowMediaWithDifferences"/>
@@ -359,13 +359,13 @@
     <string>Edit Settings</string>
    </property>
   </action>
-  <action name="actionLoadProject">
+  <action name="actionLoadSettings">
    <property name="icon">
     <iconset resource="EmbySync.qrc">
      <normaloff>:/resources/open.png</normaloff>:/resources/open.png</iconset>
    </property>
    <property name="text">
-    <string>Load Project...</string>
+    <string>Load Settings...</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+O</string>

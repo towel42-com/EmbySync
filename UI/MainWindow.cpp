@@ -56,6 +56,7 @@ CMainWindow::CMainWindow( QWidget * parent )
     connect( fMediaModel, &CMediaModel::sigPendingMediaUpdate, this, &CMainWindow::slotPendingMediaUpdate );
 
     fUsersModel = new CUsersModel( fSettings, this );
+    connect( this, &CMainWindow::sigSettingsLoaded, fUsersModel, &CUsersModel::slotSettingsChanged );
     fUsersFilterModel = new CUsersFilterModel( this );
     fUsersFilterModel->setSourceModel( fUsersModel );
 
@@ -160,7 +161,7 @@ CMainWindow::CMainWindow( QWidget * parent )
 
     fSyncSystem->setProgressSystem( progressSystem );
 
-    connect( fImpl->actionLoadProject, &QAction::triggered, this, &CMainWindow::slotLoadProject );
+    connect( fImpl->actionLoadSettings, &QAction::triggered, this, &CMainWindow::slotLoadSettings );
     connect( fImpl->menuLoadRecent, &QMenu::aboutToShow, this, &CMainWindow::slotRecentMenuAboutToShow );
     connect( fImpl->actionReloadServers, &QAction::triggered, this, &CMainWindow::slotReloadServers );
     connect( fImpl->actionReloadCurrentUser, &QAction::triggered, this, &CMainWindow::slotReloadCurrentUser );
@@ -203,11 +204,18 @@ CMainWindow::CMainWindow( QWidget * parent )
     auto recentProjects = fSettings->recentProjectList();
     if ( !recentProjects.isEmpty() )
     {
-        auto project = recentProjects[ 0 ];
-        QTimer::singleShot( 0, [ this, project ]()
+        for ( int ii = 0; ii < recentProjects.size(); ++ii )
+        {
+            if ( QFile( recentProjects[ ii ] ).exists() )
             {
-                loadFile( project );
-            } );
+                auto project = recentProjects[ ii ];
+                QTimer::singleShot( 0, [this, project]()
+                                    {
+                                        loadFile( project );
+                                    } );
+                break;
+            }
+        }
     }
     slotSetCurrentMediaItem( QModelIndex(), QModelIndex() );
 }
@@ -354,7 +362,7 @@ void CMainWindow::loadFile( const QString & fileName )
         loadSettings();
 }
 
-void CMainWindow::slotLoadProject()
+void CMainWindow::slotLoadSettings()
 {
     reset();
 
@@ -371,19 +379,21 @@ void CMainWindow::loadSettings()
 {
     slotAddToLog( EMsgType::eInfo, "Loading Settings" );
 
-    fImpl->lhsServerLabel->setText( tr( "Server: <a href=\"%1\">%1</a>" ).arg( fSettings->lhsURL() ) );
-    fImpl->rhsServerLabel->setText( tr( "Server: <a href=\"%1\">%1</a>" ).arg( fSettings->rhsURL() ) );
+    fImpl->lhsServerLabel->setText( tr( "Server: <a href=\"%1\">%1</a>" ).arg( fSettings->url( true ) ) );
+    fImpl->rhsServerLabel->setText( tr( "Server: <a href=\"%1\">%1</a>" ).arg( fSettings->url( false ) ) );
     fImpl->actionOnlyShowSyncableUsers->setChecked( fSettings->onlyShowSyncableUsers() );
     fImpl->actionOnlyShowMediaWithDifferences->setChecked( fSettings->onlyShowMediaWithDifferences() );
     fImpl->actionShowMediaWithIssues->setChecked( fSettings->showMediaWithIssues() );
 
     fSyncSystem->loadUsers();
+    emit sigSettingsLoaded();
 }
 
 void CMainWindow::slotLoadingUsersFinished()
 {
     onlyShowSyncableUsers();
     fUsersFilterModel->sort( 0, Qt::SortOrder::AscendingOrder );
+    NSABUtils::autoSize( fImpl->users, -1 );
 }
 
 void CMainWindow::slotUserMediaLoaded()
@@ -512,8 +522,8 @@ void CMainWindow::onlyShowMediaWithDifferences()
     fImpl->mediaSummaryLabel->setText(
         tr( "Media Summary: %1 Items need Syncing, %2 on %3, %4 From %5, %6 can not be compared, %7 Total" )
         .arg( mediaSummary.fNeedsSyncing )
-        .arg( mediaSummary.fLHSNeedsUpdating ).arg( fSettings->lhsURL() )
-        .arg( mediaSummary.fRHSNeedsUpdating ).arg( fSettings->rhsURL() )
+        .arg( mediaSummary.fLHSNeedsUpdating ).arg( fSettings->url( true ) )
+        .arg( mediaSummary.fRHSNeedsUpdating ).arg( fSettings->url( false ) )
         .arg( mediaSummary.fMissingData )
         .arg( mediaSummary.fTotalMedia )
     );
@@ -536,8 +546,8 @@ void CMainWindow::showMediaWithIssues()
     fImpl->mediaSummaryLabel->setText(
         tr( "Media Summary: %1 Items need Syncing, %2 on %3, %4 From %5, %6 can not be compared, %7 Total" )
         .arg( mediaSummary.fNeedsSyncing )
-        .arg( mediaSummary.fLHSNeedsUpdating ).arg( fSettings->lhsURL() )
-        .arg( mediaSummary.fRHSNeedsUpdating ).arg( fSettings->rhsURL() )
+        .arg( mediaSummary.fLHSNeedsUpdating ).arg( fSettings->url( true ) )
+        .arg( mediaSummary.fRHSNeedsUpdating ).arg( fSettings->url( false ) )
         .arg( mediaSummary.fMissingData )
         .arg( mediaSummary.fTotalMedia )
     );
