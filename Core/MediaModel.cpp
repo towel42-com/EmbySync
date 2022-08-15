@@ -215,6 +215,7 @@ QVariant CMediaModel::headerData( int section, Qt::Orientation orientation, int 
     switch ( section )
     {
         case eLHSName: return "Name";
+        case eLHSType: return "Media Type";
         case eLHSMediaID: return "ID on Server";
         case eLHSFavorite: return "Is Favorite?";
         case eLHSPlayed: return "Played?";
