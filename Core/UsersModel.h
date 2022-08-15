@@ -52,6 +52,8 @@ public:
 
     std::shared_ptr< CUserData > loadUser( const QJsonObject & user, bool isLHSServer );
     std::vector< std::shared_ptr< CUserData > > getAllUsers( bool sorted ) const;
+public Q_SLOTS:
+    void slotSettingsChanged();
 private:
     std::shared_ptr< CUserData > getUserData( const QString & name ) const;
     

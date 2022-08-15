@@ -100,6 +100,11 @@ QVariant CUsersModel::getColor( const QModelIndex & index, bool background ) con
     return {};
 }
 
+void CUsersModel::slotSettingsChanged()
+{
+    emit headerDataChanged( Qt::Horizontal, eLHSName, eRHSName );
+}
+
 QVariant CUsersModel::headerData( int section, Qt::Orientation orientation, int role /*= Qt::DisplayRole */ ) const
 {
     if ( section < 0 || section > columnCount() )
@@ -111,8 +116,8 @@ QVariant CUsersModel::headerData( int section, Qt::Orientation orientation, int 
 
     switch ( section )
     {
-        case eLHSName: return "LHS Name";
-        case eRHSName: return "RHS Name";
+        case eLHSName: return fSettings->serverName( true );
+        case eRHSName: return fSettings->serverName( false );
         case eConnectedID: return "Connected ID";
         case eOnLHSServer: return "On LHS Server?";
         case eOnRHSServer: return "On RHS Server?";
