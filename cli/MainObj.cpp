@@ -209,12 +209,7 @@ void CMainObj::slotLoadingUsersFinished()
         unsyncableMsg = "The following users matched but can not be synced\n";
     for ( auto && ii : unsyncable )
     {
-        unsyncableMsg += "\t" + ii.second->displayName() + " - Missing from '";
-        if ( !ii.second->onLHSServer() )
-            unsyncableMsg += fSettings->lhsURL();
-        else //if ( ii->onRHSServer() )
-            unsyncableMsg += fSettings->rhsURL();
-        unsyncableMsg += "'\n";
+        unsyncableMsg += "\t" + ii.second->displayName() + " - Missing from '" + fSettings->url( !ii.second->onLHSServer() ) + "\n";
     }
     if ( !unsyncableMsg.isEmpty() )
         slotAddToLog( EMsgType::eWarning, unsyncableMsg );
