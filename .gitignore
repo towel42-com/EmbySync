@@ -1,4 +1,6 @@
 *settings*.json
+*build-*
+*build.*
 
 # C++ objects and libs
 *.aps
@@ -31,7 +33,6 @@ ui_*.h
 *.qmlc
 *.jsc
 Makefile*
-*build-*
 *.qm
 *.prl
 
