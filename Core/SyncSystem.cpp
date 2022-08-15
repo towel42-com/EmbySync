@@ -583,7 +583,7 @@ bool CSyncSystem::handleError( QNetworkReply * reply, bool isLHSServer )
     {
         if ( reply->error() == QNetworkReply::OperationCanceledError )
         {
-            emit sigAddToLog( EMsgType::eWarning, QString( "Request canceled on server '%1'" ).arg( fSettings->getServerName( isLHSServer ) ) );
+            emit sigAddToLog( EMsgType::eWarning, QString( "Request canceled on server '%1'" ).arg( fSettings->serverName( isLHSServer ) ) );
             return false;
         }
 
@@ -677,14 +677,14 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
         {
             auto mediaData = fGetMediaDataForIDFunc( extraData.toString(), isLHSServer );
             if ( mediaData )
-                emit sigAddToLog( EMsgType::eInfo, QString( "Updated '%1(%2)' on Server '%3' successfully" ).arg( mediaData->name() ).arg( extraData.toString() ).arg( fSettings->getServerName( isLHSServer ) ) );
+                emit sigAddToLog( EMsgType::eInfo, QString( "Updated '%1(%2)' on Server '%3' successfully" ).arg( mediaData->name() ).arg( extraData.toString() ).arg( fSettings->serverName( isLHSServer ) ) );
         }
         break;
     }
     case ERequestType::eUpdateFavorite:
     {
         requestReloadMediaItemData( extraData.toString(), isLHSServer );
-        emit sigAddToLog( EMsgType::eInfo, QString( "Updated Favorite status for '%1' on Server '%2' successfully" ).arg( extraData.toString() ).arg( fSettings->getServerName( isLHSServer ) ) );
+        emit sigAddToLog( EMsgType::eInfo, QString( "Updated Favorite status for '%1' on Server '%2' successfully" ).arg( extraData.toString() ).arg( fSettings->serverName( isLHSServer ) ) );
         break;
     }
     }
@@ -694,7 +694,7 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
 
 void CSyncSystem::requestGetUsers( bool isLHSServer )
 {
-    emit sigAddToLog( EMsgType::eInfo, tr( "Loading users from server '%1'" ).arg( fSettings->getServerName( isLHSServer ) ) );;
+    emit sigAddToLog( EMsgType::eInfo, tr( "Loading users from server '%1'" ).arg( fSettings->serverName( isLHSServer ) ) );;
     auto && url = fSettings->getUrl( "Users", {}, isLHSServer );
     if ( !url.isValid() )
         return;
@@ -723,7 +723,7 @@ void CSyncSystem::handleGetUsersResponse( const QByteArray & data, bool isLHSSer
     auto users = doc.array();
     fProgressSystem->pushState();
 
-    emit sigAddToLog( EMsgType::eInfo, QString( "Server '%1' has %2 Users" ).arg( fSettings->getServerName( isLHSServer ) ).arg( users.count() ) );
+    emit sigAddToLog( EMsgType::eInfo, QString( "Server '%1' has %2 Users" ).arg( fSettings->serverName( isLHSServer ) ).arg( users.count() ) );
 
     for ( auto && ii : users )
     {
@@ -760,7 +760,7 @@ void CSyncSystem::requestUsersMediaList( bool isLHSServer )
     //qDebug() << url;
     auto request = QNetworkRequest( url );
 
-    emit sigAddToLog( EMsgType::eInfo, QString( "Requesting media for '%1' from server '%2'" ).arg( fCurrUserData->displayName() ).arg( fSettings->getServerName( isLHSServer ) ) );
+    emit sigAddToLog( EMsgType::eInfo, QString( "Requesting media for '%1' from server '%2'" ).arg( fCurrUserData->displayName() ).arg( fSettings->serverName( isLHSServer ) ) );
 
     auto reply = makeRequest( request );
     setIsLHS( reply, isLHSServer );
@@ -796,7 +796,7 @@ void CSyncSystem::handleGetMediaListResponse( const QByteArray & data, bool isLH
     fProgressSystem->setTitle( tr( "Loading Users Media Data" ) );
     fProgressSystem->setMaximum( mediaList.count() );
 
-    emit sigAddToLog( EMsgType::eInfo, QString( "%1 has %2 media items on server '%3'" ).arg( fCurrUserData->displayName() ).arg( mediaList.count() ).arg( fSettings->getServerName( isLHSServer ) ) );
+    emit sigAddToLog( EMsgType::eInfo, QString( "%1 has %2 media items on server '%3'" ).arg( fCurrUserData->displayName() ).arg( mediaList.count() ).arg( fSettings->serverName( isLHSServer ) ) );
     if ( fSettings->maxItems() > 0 )
         emit sigAddToLog( EMsgType::eInfo, QString( "Loading %2 media items" ).arg( fSettings->maxItems() ) );
 
