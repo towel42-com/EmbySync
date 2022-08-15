@@ -56,20 +56,16 @@ public:
     bool save( QWidget * parent, std::function<QString()> selectFileFunc, std::function<void( const QString & title, const QString & msg )> errorFunc );
     bool save( std::function<void( const QString & title, const QString & msg )> errorFunc );
 
+    QString serverName( bool lhs );
+
     QUrl getUrl( bool lhs ) const;
     QUrl getUrl( const QString & extraPath, const std::list< std::pair< QString, QString > > & queryItems, bool lhs ) const;
 
-    QString lhsURL() const { return fLHSServer.first; }
-    void setLHSURL( const QString & url );
+    QString url( bool lhs ) const  { return lhs ? fLHSServer.first : fRHSServer.first; }
+    void setURL( const QString & url, bool lhs );
 
-    QString lhsAPIKey() const { return fLHSServer.second; }
-    void setLHSAPIKey( const QString & apiKey );
-
-    QString rhsURL() const { return fRHSServer.first; }
-    void setRHSURL( const QString & url );
-
-    QString rhsAPIKey() const { return fRHSServer.second; }
-    void setRHSAPIKey( const QString & apiKey );
+    QString apiKey( bool lhs ) const { return lhs ? fLHSServer.second : fRHSServer.second; }
+    void setAPIKey( const QString & apiKey, bool lhs );
 
     bool canSync() const;
 
@@ -122,7 +118,6 @@ public:
     void setSyncBook( bool value );
 
     QString getSyncItemTypes() const;
-    QString getServerName( bool lhs );
     bool onlyShowSyncableUsers() { return fOnlyShowSyncableUsers; };
     void setOnlyShowSyncableUsers( bool value );;
 

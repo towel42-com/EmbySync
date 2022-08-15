@@ -65,11 +65,11 @@ bool CSettings::load( const QString & fileName, std::function<void( const QStrin
         return false;
     }
 
-    setLHSURL( json[ "lhs" ][ "url" ].toString() );
-    setLHSAPIKey( json[ "lhs" ][ "api_key" ].toString() );
+    setURL( json[ "lhs" ][ "url" ].toString(), true );
+    setAPIKey( json[ "lhs" ][ "api_key" ].toString(), true );
 
-    setRHSURL( json[ "rhs" ][ "url" ].toString() );
-    setRHSAPIKey( json[ "rhs" ][ "api_key" ].toString() );
+    setURL( json[ "rhs" ][ "url" ].toString(), false );
+    setAPIKey( json[ "rhs" ][ "api_key" ].toString(), false );
 
     if ( json.object().find( "OnlyShowSyncableUsers" ) == json.object().end() )
         setOnlyShowSyncableUsers( true );
@@ -221,15 +221,15 @@ bool CSettings::save( std::function<void( const QString & title, const QString &
     root[ "SyncUserList" ] = userList;
     auto lhs = json.object();
 
-    lhs[ "url" ] = lhsURL();
-    lhs[ "api_key" ] = lhsAPIKey();
+    lhs[ "url" ] = url( true );
+    lhs[ "api_key" ] = apiKey( true );
 
     root[ "lhs" ] = lhs;
 
     auto rhs = json.object();
 
-    rhs[ "url" ] = rhsURL();
-    rhs[ "api_key" ] = rhsAPIKey();
+    rhs[ "url" ] = url( false );
+    rhs[ "api_key" ] = apiKey( false );
 
     root[ "rhs" ] = rhs;
 
@@ -250,10 +250,19 @@ bool CSettings::save( std::function<void( const QString & title, const QString &
     return true;
 }
 
-//QUrl CSettings::getServerURL( bool lhs )
-//{
-//    return lhs ? lhsURL() : rhsURL();
-//}
+
+QString CSettings::serverName( bool lhs )
+{
+    if ( lhs && fLHSServer.first.isEmpty() )
+        return QObject::tr( "LHS Name" );
+    if ( !lhs && fRHSServer.first.isEmpty() )
+        return QObject::tr( "RHS Name" );
+
+    auto retVal = getUrl( lhs );
+    if ( retVal.host() == getUrl( !lhs ).host() )
+        return QString( "%1:%2" ).arg( retVal.host() ).arg( retVal.port() );
+    return retVal.host();
+}
 
 QUrl CSettings::getUrl( bool lhs ) const
 {
@@ -262,7 +271,7 @@ QUrl CSettings::getUrl( bool lhs ) const
 
 QUrl CSettings::getUrl( const QString & extraPath, const std::list< std::pair< QString, QString > > & queryItems, bool lhs ) const
 {
-    auto path = lhs ? lhsURL() : rhsURL();
+    auto path = url( lhs );
     if ( path.isEmpty() )
         return {};
 
@@ -276,7 +285,7 @@ QUrl CSettings::getUrl( const QString & extraPath, const std::list< std::pair< Q
     QUrl retVal( path );
 
     QUrlQuery query;
-    query.addQueryItem( "api_key", lhs ? lhsAPIKey() : rhsAPIKey() );
+    query.addQueryItem( "api_key", apiKey( lhs ) );
     for ( auto && ii : queryItems )
     {
         query.addQueryItem( ii.first, ii.second );
@@ -288,32 +297,28 @@ QUrl CSettings::getUrl( const QString & extraPath, const std::list< std::pair< Q
     return retVal;
 }
 
-void CSettings::setLHSURL( const QString & url )
+void CSettings::setURL( const QString & url, bool lhs )
 {
-    updateValue( fLHSServer.first, url );
+    if ( lhs )
+        updateValue( fLHSServer.first, url );
+    else
+        updateValue( fRHSServer.first, url );
 }
 
-void CSettings::setLHSAPIKey( const QString & apiKey )
+void CSettings::setAPIKey( const QString & apiKey, bool lhs )
 {
-    updateValue( fLHSServer.second, apiKey );
-}
-
-void CSettings::setRHSURL( const QString & url )
-{
-    updateValue( fRHSServer.first, url );
-}
-
-void CSettings::setRHSAPIKey( const QString & apiKey )
-{
-    updateValue( fRHSServer.second, apiKey );
+    if ( lhs )
+        updateValue( fLHSServer.second, apiKey );
+    else
+        updateValue( fRHSServer.second, apiKey );
 }
 
 bool CSettings::canSync() const
 {
     return getUrl( true ).isValid()
-        && !lhsAPIKey().isEmpty()
+        && !apiKey( true ).isEmpty()
         && getUrl( false ).isValid()
-        && !rhsAPIKey().isEmpty()
+        && !apiKey( false ).isEmpty()
         ;
 }
 
@@ -358,11 +363,6 @@ QString CSettings::getSyncItemTypes() const
     if ( syncBook() )
         values << "Book";
     return values.join( "," );
-}
-
-QString CSettings::getServerName( bool lhs )
-{
-    return lhs ? fLHSServer.first : fRHSServer.first;
 }
 
 void CSettings::setMediaSourceColor( const QColor & color )
