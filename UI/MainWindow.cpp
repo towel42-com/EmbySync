@@ -33,6 +33,7 @@
 #include "SABUtils/QtUtils.h"
 
 #include "ui_MainWindow.h"
+#include "SABUtils/WidgetChanged.h"
 
 #include <QTimer>
 #include <QScrollBar>
@@ -42,6 +43,7 @@
 #include <QSortFilterProxyModel>
 #include <QRegularExpression>
 #include <QDateTime>
+#include <QMetaMethod>
 
 CMainWindow::CMainWindow( QWidget * parent )
     : QMainWindow( parent ),
@@ -59,6 +61,11 @@ CMainWindow::CMainWindow( QWidget * parent )
     connect( this, &CMainWindow::sigSettingsLoaded, fUsersModel, &CUsersModel::slotSettingsChanged );
     fUsersFilterModel = new CUsersFilterModel( this );
     fUsersFilterModel->setSourceModel( fUsersModel );
+
+    NSABUtils::setupModelChanged( fUsersModel, this, QMetaMethod::fromSignal( &CMainWindow::sigDataChanged ) );
+    NSABUtils::setupModelChanged( fMediaModel, this, QMetaMethod::fromSignal( &CMainWindow::sigDataChanged ) );
+
+    connect( this, &CMainWindow::sigDataChanged, this, &CMainWindow::slotDataChanged );
 
     fImpl->lhsMedia->setModel( fMediaFilterModel );
     fImpl->rhsMedia->setModel( fMediaFilterModel );
@@ -202,6 +209,7 @@ CMainWindow::CMainWindow( QWidget * parent )
     fImpl->rhsMedia->horizontalScrollBar()->installEventFilter( this );
 
     auto recentProjects = fSettings->recentProjectList();
+    bool found = false;
     if ( !recentProjects.isEmpty() )
     {
         for ( int ii = 0; ii < recentProjects.size(); ++ii )
@@ -213,9 +221,14 @@ CMainWindow::CMainWindow( QWidget * parent )
                                     {
                                         loadFile( project );
                                     } );
+                found = true;
                 break;
             }
         }
+    }
+    if ( !found )
+    {
+        QTimer::singleShot( 0, this, &CMainWindow::slotSettings );
     }
     slotSetCurrentMediaItem( QModelIndex(), QModelIndex() );
 }
@@ -387,6 +400,20 @@ void CMainWindow::loadSettings()
 
     fSyncSystem->loadUsers();
     emit sigSettingsLoaded();
+}
+
+void CMainWindow::slotDataChanged()
+{
+    bool hasCurrentUser = fImpl->users->selectionModel()->currentIndex().isValid();
+    bool canSync = fSettings->canSync();
+    bool hasDataToProcess = canSync && fMediaModel->hasMediaToProcess();
+
+    fImpl->actionReloadServers->setEnabled( canSync );
+    fImpl->actionReloadCurrentUser->setEnabled( canSync && hasCurrentUser );
+
+    fImpl->actionProcess->setEnabled( hasDataToProcess );
+    fImpl->actionProcessToRight->setEnabled( hasDataToProcess );
+    fImpl->actionProcessToLeft->setEnabled( hasDataToProcess );
 }
 
 void CMainWindow::slotLoadingUsersFinished()

@@ -62,10 +62,13 @@ public:
     virtual bool eventFilter( QObject * obj, QEvent * event ) override;
 Q_SIGNALS:
     void sigSettingsLoaded();
+    void sigDataChanged();
 public Q_SLOTS:
     void slotSettings();
 
     void loadSettings();
+
+    void slotDataChanged();
 
     void slotLoadSettings();
     void slotSave();
