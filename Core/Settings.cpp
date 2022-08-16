@@ -282,6 +282,9 @@ QUrl CSettings::getUrl( const QString & extraPath, const std::list< std::pair< Q
         path += extraPath;
     }
 
+    if ( path.indexOf( "://" ) == -1 )
+        path = "http://" + path;
+
     QUrl retVal( path );
 
     QUrlQuery query;
