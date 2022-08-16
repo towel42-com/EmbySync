@@ -300,6 +300,9 @@ bool CSyncSystem::processMedia( std::shared_ptr< CMediaData > mediaData, bool fo
 void CSyncSystem::updateUserDataForMedia( std::shared_ptr<CMediaData> mediaData, std::shared_ptr<SMediaUserData> newData, bool lhsNeedsUpdating )
 {
     requestUpdateUserDataForMedia( mediaData, newData, lhsNeedsUpdating );
+
+    // TODO: Emby currently doesnt support updating favorite status from the "Users/<>/Items/<>/UserData" API
+    //       When it does, remove the requestSetFavorite 
     requestSetFavorite( mediaData, newData, lhsNeedsUpdating );
 }
 

@@ -331,13 +331,6 @@ bool CMediaData::bothFavorites() const
     return isFavorite( true ) && isFavorite( false );
 }
 
-bool CMediaData::lastPlayedTheSame() const
-{
-    if ( fLHSUserMediaData->fLastPlayedDate.isNull() || fRHSUserMediaData->fLastPlayedDate.isNull() )
-        return true;
-    return fLHSUserMediaData->fLastPlayedDate == fRHSUserMediaData->fLastPlayedDate;
-}
-
 QUrlQuery CMediaData::getSearchForMediaQuery() const
 {
     QUrlQuery query;
@@ -398,6 +391,8 @@ bool CMediaData::beenLoaded( bool isLHS ) const
 
 bool CMediaData::rhsNeedsUpdating() const
 {
+    // TODO: When Emby supports last modified use that
+
     //qDebug() << fLHSServer->fLastPlayedDate;
     //qDebug() << fRHSServer->fLastPlayedDate;
     return fLHSUserMediaData->fLastPlayedDate > fRHSUserMediaData->fLastPlayedDate;
@@ -405,6 +400,8 @@ bool CMediaData::rhsNeedsUpdating() const
 
 bool CMediaData::lhsNeedsUpdating() const
 {
+    // TODO: When Emby supports last modified use that
+
     //qDebug() << fLHSServer->fLastPlayedDate;
     //qDebug() << fRHSServer->fLastPlayedDate;
     return fRHSUserMediaData->fLastPlayedDate > fLHSUserMediaData->fLastPlayedDate;

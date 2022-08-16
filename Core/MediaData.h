@@ -104,7 +104,6 @@ public:
     bool hasProviderIDs() const;
     void addProvider( const QString & providerName, const QString & providerID );
 
-    bool lastPlayedTheSame() const;
     bool rhsNeedsUpdating() const;
     bool lhsNeedsUpdating() const;
 
