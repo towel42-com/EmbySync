@@ -31,6 +31,18 @@ int CMediaModel::columnCount( const QModelIndex & parent /* = QModelIndex() */ )
     return retVal;
 }
 
+bool CMediaModel::hasMediaToProcess() const
+{
+    for ( auto && ii : fData )
+    {
+        if ( ii->isMissingOnEitherServer() )
+            continue;
+        if ( !ii->userDataEqual() )
+            return true;
+    }
+    return false;
+}
+
 QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayRole */ ) const
 {
     if ( !index.isValid() || index.parent().isValid() || ( index.row() >= rowCount() ) )

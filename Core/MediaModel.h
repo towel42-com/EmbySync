@@ -66,7 +66,7 @@ public:
 
     void clear();
 
-    void addMedia( std::shared_ptr< CMediaData > mediaData ); 
+    bool hasMediaToProcess() const;
 
     bool isLHSColumn( int column ) const;
     bool isRHSColumn( int column ) const;
