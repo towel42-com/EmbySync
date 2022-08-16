@@ -117,6 +117,14 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>isFavorite</tabstop>
+  <tabstop>hasBeenPlayed</tabstop>
+  <tabstop>lastPlayedDate</tabstop>
+  <tabstop>setTimeToNowBtn</tabstop>
+  <tabstop>playbackPosition</tabstop>
+  <tabstop>playCount</tabstop>
+ </tabstops>
  <resources>
   <include location="EmbySync.qrc"/>
  </resources>

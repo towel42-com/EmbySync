@@ -40,85 +40,18 @@ public:
     virtual ~CMediaWindow() override;
 
     void setMedia( std::shared_ptr< CMediaData > media );
+
+    bool okToClose();
 Q_SIGNALS:
-    //void sigSettingsLoaded();
-    //void sigDataChanged();
+    void sigChanged();
 public Q_SLOTS:
-    //void slotSettings();
-
-    //void loadSettings();
-
-    //void slotDataChanged();
-
-    //void slotLoadSettings();
-    //void slotSave();
-    //void slotRecentMenuAboutToShow();
-    //void slotUserMediaCompletelyLoaded();
-    //void slotPendingMediaUpdate();
 private Q_SLOTS:
-    //void slotCurrentUserChanged( const QModelIndex & index );
-
-    //void slotReloadServers();
-    //void slotReloadCurrentUser();
-    //
-    //void slotToggleOnlyShowSyncableUsers();
-    //void slotToggleOnlyShowMediaWithDifferences();
-    //void slotToggleShowMediaWithIssues();
-
-    //void slotAddToLog( int msgType, const QString & msg );
-
-    //void slotLoadingUsersFinished();
-    //void slotUserMediaLoaded();
-
-    //void slotSetCurrentMediaItem( const QModelIndex & current, const QModelIndex & previous );
-
     void slotApplyToLeft();
     void slotApplyToRight();
     void slotUploadUserMediaData();
 private:
-    //void hideColumns( QTreeView * treeView, EWhichTree whichTree );
-
-    //std::shared_ptr< CMediaData > getMediaData( QModelIndex idx ) const;
-    //    
-    //void progressSetup( const QString & title );
-
-    //void progressSetMaximum( int count );
-    //int progressValue() const;
-    //void progressSetValue( int value );
-    //void progressIncValue();
-    //void progressReset();
-
-    //void onlyShowSyncableUsers();
-    //void onlyShowMediaWithDifferences();
-    //void showMediaWithIssues();
-    //std::shared_ptr< CUserData > getCurrUserData() const;
-    //std::shared_ptr< CUserData > getUserData( const QModelIndex & idx ) const;
-
-    //void loadFile( const QString & fileName );
-
-    //void reset();
-
-    //void resetServers();
-
-    //void loadAllMedia();
-    //void loadAllMedia( bool isLHS );
-
-
+    bool fChanged{ false };
     std::unique_ptr< Ui::CMediaWindow > fImpl;
-    //std::shared_ptr< CSettings > fSettings;
-    //std::shared_ptr< CSyncSystem > fSyncSystem;
-
-    //QProgressDialog * fProgressDlg{ nullptr };
-
-    //CMediaModel * fMediaModel{ nullptr };
-    //CMediaFilterModel * fMediaFilterModel{ nullptr };
-
-    //CUsersModel * fUsersModel{ nullptr };
-    //CUsersFilterModel * fUsersFilterModel{ nullptr };
-
-    //QTimer * fPendingMediaUpdateTimer{ nullptr };
-    //QTimer * fMediaLoadedTimer{ nullptr };
-
     std::shared_ptr< CSyncSystem > fSyncSystem;
     std::shared_ptr< CMediaData > fMediaInfo;
 };

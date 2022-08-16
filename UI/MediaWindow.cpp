@@ -24,6 +24,10 @@
 #include "ui_MediaWindow.h"
 #include "Core/SyncSystem.h"
 #include "Core/MediaData.h"
+#include "SABUtils/WidgetChanged.h"
+
+#include <QMetaMethod>
+#include <QMessageBox>
 
 CMediaWindow::CMediaWindow( std::shared_ptr< CSyncSystem > syncSystem, QWidget * parent )
     : QWidget( parent ),
@@ -35,6 +39,16 @@ CMediaWindow::CMediaWindow( std::shared_ptr< CSyncSystem > syncSystem, QWidget *
     connect( fImpl->applyToLeft, &QToolButton::clicked, this, &CMediaWindow::slotApplyToLeft );
     connect( fImpl->applyToRight, &QToolButton::clicked, this, &CMediaWindow::slotApplyToRight );
     connect( fImpl->process, &QToolButton::clicked, this, &CMediaWindow::slotUploadUserMediaData );
+
+    NSABUtils::setupWidgetChanged( this, QMetaMethod::fromSignal( &CMediaWindow::sigChanged ) );
+    connect( this, &CMediaWindow::sigChanged,
+             [this]()
+             {
+                 fChanged = true;
+                 fImpl->process->setEnabled( true );
+             } );
+
+    fImpl->process->setEnabled( false );
 }
 
 CMediaWindow::~CMediaWindow()
@@ -54,6 +68,25 @@ void CMediaWindow::setMedia( std::shared_ptr< CMediaData > mediaInfo )
     fImpl->rhsUserMediaData->setMediaUserData( mediaInfo ? mediaInfo->userMediaData( false ) : std::shared_ptr< SMediaUserData >() );
 }
 
+bool CMediaWindow::okToClose() 
+{
+    if ( fChanged )
+    {
+        QMessageBox msgBox;
+        msgBox.setText( tr( "The media information has changed" ) );
+        msgBox.setInformativeText( tr( "Would you like to upload the changes to the server?" ) );
+        msgBox.setStandardButtons( QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel );
+        msgBox.setDefaultButton( QMessageBox::Save );
+        int status = msgBox.exec();
+
+        if ( status == QMessageBox::StandardButton::Save )
+            slotUploadUserMediaData();
+        if ( status == QMessageBox::StandardButton::Cancel )
+            return false;
+    }
+    return true;
+}
+
 void CMediaWindow::slotApplyToLeft()
 {
     fImpl->lhsUserMediaData->applyMediaUserData( fImpl->rhsUserMediaData->createMediaUserData() );
@@ -71,5 +104,6 @@ void CMediaWindow::slotUploadUserMediaData()
 
     fSyncSystem->updateUserDataForMedia( fMediaInfo, fImpl->lhsUserMediaData->createMediaUserData(), true );
     fSyncSystem->updateUserDataForMedia( fMediaInfo, fImpl->rhsUserMediaData->createMediaUserData(), false );
+    fChanged = false;
 }
 

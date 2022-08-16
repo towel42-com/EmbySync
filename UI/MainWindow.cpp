@@ -293,12 +293,17 @@ void CMainWindow::showEvent( QShowEvent * /*event*/ )
 
 void CMainWindow::closeEvent( QCloseEvent * event )
 {
-    if ( !fSettings->maybeSave( this ) )
+    bool okToClose = fSettings->maybeSave( this );
+    if ( okToClose && fMediaWindow )
+        okToClose = fMediaWindow->okToClose();
+    if ( !okToClose )
         event->ignore();
     else
     {
         event->accept();
-        delete fMediaWindow.data();
+        if ( fMediaWindow )
+            fMediaWindow->close();
+        fMediaWindow.data();
     }
 }
 
