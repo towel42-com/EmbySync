@@ -42,7 +42,7 @@ class CMediaFilterModel;
 class CUsersModel;
 class CUsersFilterModel;
 class QTreeView;
-
+class CMediaWindow;
 
 class CMainWindow : public QMainWindow
 {
@@ -92,9 +92,8 @@ private Q_SLOTS:
 
     void slotSetCurrentMediaItem( const QModelIndex & current, const QModelIndex & previous );
 
-    void slotApplyToLeft();
-    void slotApplyToRight();
-    void slotUploadUserMediaData();
+    void slotViewMediaInfo();
+
 private:
     void hideColumns( QTreeView * treeView, EWhichTree whichTree );
 
@@ -138,6 +137,8 @@ private:
 
     QTimer * fPendingMediaUpdateTimer{ nullptr };
     QTimer * fMediaLoadedTimer{ nullptr };
+
+    QPointer< CMediaWindow > fMediaWindow;
 
 };
 #endif 

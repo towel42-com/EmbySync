@@ -22,6 +22,7 @@
 
 #include "MainWindow.h"
 #include "SettingsDlg.h"
+#include "MediaWindow.h"
 
 #include "Core/SyncSystem.h"
 #include "Core/UserData.h"
@@ -66,6 +67,8 @@ CMainWindow::CMainWindow( QWidget * parent )
     NSABUtils::setupModelChanged( fMediaModel, this, QMetaMethod::fromSignal( &CMainWindow::sigDataChanged ) );
 
     connect( this, &CMainWindow::sigDataChanged, this, &CMainWindow::slotDataChanged );
+
+    connect( fImpl->actionViewMediaInformation, &QAction::triggered, this, &CMainWindow::slotViewMediaInfo );
 
     fImpl->lhsMedia->setModel( fMediaFilterModel );
     fImpl->rhsMedia->setModel( fMediaFilterModel );
@@ -197,10 +200,6 @@ CMainWindow::CMainWindow( QWidget * parent )
     connect( fImpl->rhsMedia->horizontalScrollBar(), &QScrollBar::sliderMoved, fImpl->lhsMedia->horizontalScrollBar(), &QScrollBar::setValue );
     connect( fImpl->rhsMedia->horizontalScrollBar(), &QScrollBar::valueChanged, fImpl->lhsMedia->horizontalScrollBar(), &QScrollBar::setValue );
 
-    connect( fImpl->applyToLeft, &QToolButton::clicked, this, &CMainWindow::slotApplyToLeft );
-    connect( fImpl->applyToRight, &QToolButton::clicked, this, &CMainWindow::slotApplyToRight );
-    connect( fImpl->uploadUserMediaData, &QToolButton::clicked, this, &CMainWindow::slotUploadUserMediaData );
-
     connect( fImpl->actionProcess, &QAction::triggered, fSyncSystem.get(), &CSyncSystem::slotProcess );
     connect( fImpl->actionProcessToLeft, &QAction::triggered, fSyncSystem.get(), &CSyncSystem::slotProcessToLeft );
     connect( fImpl->actionProcessToRight, &QAction::triggered, fSyncSystem.get(), &CSyncSystem::slotProcessToRight );
@@ -251,6 +250,8 @@ void CMainWindow::hideColumns( QTreeView * treeView, EWhichTree whichTree )
 
 CMainWindow::~CMainWindow()
 {
+    if ( fMediaWindow )
+        delete fMediaWindow.data();
 }
 
 void CMainWindow::slotSetCurrentMediaItem( const QModelIndex & current, const QModelIndex & /*previous*/ )
@@ -260,15 +261,31 @@ void CMainWindow::slotSetCurrentMediaItem( const QModelIndex & current, const QM
 
     auto mediaInfo = getMediaData( current );
 
-    fImpl->currMediaBox->setEnabled( mediaInfo.get() != nullptr );
-    fImpl->currMediaName->setText( mediaInfo ? mediaInfo->name() : QString() );
-    fImpl->currMediaType->setText( mediaInfo ? mediaInfo->mediaType() : QString() );
-    fImpl->externalUrls->setText( mediaInfo ? mediaInfo->externalUrlsText() : tr( "External Urls:" ) );
-    fImpl->externalUrls->setTextFormat( Qt::RichText );
-    fImpl->lhsUserMediaData->setMediaUserData( mediaInfo ? mediaInfo->userMediaData( true ) : std::shared_ptr< SMediaUserData >() );
-    fImpl->rhsUserMediaData->setMediaUserData( mediaInfo ? mediaInfo->userMediaData( false ) : std::shared_ptr< SMediaUserData >() );
+    if ( fMediaWindow )
+        fMediaWindow->setMedia( mediaInfo );
+
+    fImpl->actionViewMediaInformation->setEnabled( mediaInfo.get() != nullptr );
+
+    slotDataChanged();
 }
 
+void CMainWindow::slotViewMediaInfo()
+{
+    if ( !fMediaWindow )
+        fMediaWindow = new CMediaWindow( fSyncSystem, nullptr );
+
+    auto currIdx = fImpl->lhsMedia->selectionModel()->currentIndex();
+    if ( !currIdx.isValid() )
+        currIdx = fImpl->rhsMedia->selectionModel()->currentIndex();
+
+    if ( currIdx.isValid() )
+    {
+        auto mediaInfo = getMediaData( currIdx );
+
+        fMediaWindow->setMedia( mediaInfo );
+    }
+    fMediaWindow->show();
+}
 
 void CMainWindow::showEvent( QShowEvent * /*event*/ )
 {
@@ -279,7 +296,10 @@ void CMainWindow::closeEvent( QCloseEvent * event )
     if ( !fSettings->maybeSave( this ) )
         event->ignore();
     else
+    {
         event->accept();
+        delete fMediaWindow.data();
+    }
 }
 
 bool CMainWindow::eventFilter( QObject * obj, QEvent * event )
@@ -669,24 +689,4 @@ void CMainWindow::slotPendingMediaUpdate()
     fPendingMediaUpdateTimer->start();
 }
 
-void CMainWindow::slotApplyToLeft()
-{
-    fImpl->lhsUserMediaData->applyMediaUserData( fImpl->rhsUserMediaData->createMediaUserData() );
-}
-
-void CMainWindow::slotApplyToRight()
-{
-    fImpl->rhsUserMediaData->applyMediaUserData( fImpl->lhsUserMediaData->createMediaUserData() );
-}
-
-void CMainWindow::slotUploadUserMediaData()
-{
-    auto currIdx = fImpl->lhsMedia->selectionModel()->currentIndex();
-    auto mediaInfo = getMediaData( currIdx );
-    if ( !mediaInfo )
-        return;
-
-    fSyncSystem->updateUserDataForMedia( mediaInfo, fImpl->lhsUserMediaData->createMediaUserData(), true );
-    fSyncSystem->updateUserDataForMedia( mediaInfo, fImpl->rhsUserMediaData->createMediaUserData(), false );
-}
 
