@@ -494,7 +494,6 @@ void CMainWindow::slotCurrentUserChanged( const QModelIndex & index )
     if ( fSyncSystem->currUser() == userData )
         return;
 
-    fSyncSystem->resetMedia();
     fMediaModel->clear();
 
     fSyncSystem->loadUsersMedia( userData );
