@@ -114,7 +114,6 @@ public:
     void loadUsers();
 
     void reset();
-    void resetMedia();
 
     void loadUsersMedia( std::shared_ptr< CUserData > user );
     void clearCurrUser();
@@ -155,7 +154,7 @@ private:
 
 private Q_SLOTS:
     void slotRequestFinished( QNetworkReply * reply );
-    void postHandlRequest( ERequestType requestType, QNetworkReply * reply );
+    void postHandleRequest( ERequestType requestType, QNetworkReply * reply );
     void decRequestCount( ERequestType requestType, QNetworkReply * reply );
 
     void slotMergeMedia();

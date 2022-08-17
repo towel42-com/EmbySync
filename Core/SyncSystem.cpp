@@ -145,11 +145,6 @@ void CSyncSystem::setGetAllMediaFunc( std::function< std::unordered_set< std::sh
 void CSyncSystem::reset()
 {
     fAttributes.clear();
-    resetMedia();
-}
-
-void CSyncSystem::resetMedia()
-{
 }
 
 void CSyncSystem::loadUsers()
@@ -181,17 +176,14 @@ void CSyncSystem::loadUsersMedia( std::shared_ptr< CUserData > userData )
         return;
 
     fProgressSystem->setTitle( tr( "Loading Users Media" ) );
-    if ( fCurrUserData->onLHSServer() )
-        requestUsersMediaList( true );
-    if ( fCurrUserData->onRHSServer() )
-        requestUsersMediaList( false );
+    requestUsersMediaList( true );
+    requestUsersMediaList( false );
 }
 
 void CSyncSystem::clearCurrUser()
 {
     if ( fCurrUserData )
         fCurrUserData.reset();
-    resetMedia();
 }
 
 void CSyncSystem::slotProcess()
@@ -207,21 +199,6 @@ void CSyncSystem::slotProcessToLeft()
 void CSyncSystem::slotProcessToRight()
 {
     process( false, true );
-}
-
-void CSyncSystem::slotCanceled()
-{
-    auto tmp = fAttributes;
-    for ( auto && ii : tmp )
-    {
-        ii.first->abort();
-    }
-    fCurrUserData.reset();
-}
-
-std::shared_ptr< CUserData > CSyncSystem::currUser() const
-{
-    return fCurrUserData;
 }
 
 void CSyncSystem::process( bool forceLeft, bool forceRight )
@@ -450,7 +427,7 @@ void CSyncSystem::decRequestCount( ERequestType requestType, QNetworkReply * rep
         fRequests.erase( pos );
 }
 
-void CSyncSystem::postHandlRequest( ERequestType requestType, QNetworkReply * reply )
+void CSyncSystem::postHandleRequest( ERequestType requestType, QNetworkReply * reply )
 {
     decRequestCount( requestType, reply );
     if ( !isRunning() )
@@ -633,7 +610,7 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
             break;
         }
 
-        postHandlRequest( requestType, reply );
+        postHandleRequest( requestType, reply );
         return;
     }
 
@@ -692,7 +669,7 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
     }
     }
 
-    postHandlRequest( requestType, reply );
+    postHandleRequest( requestType, reply );
 }
 
 void CSyncSystem::requestGetUsers( bool isLHSServer )
@@ -786,13 +763,13 @@ void CSyncSystem::handleGetMediaListResponse( const QByteArray & data, bool isLH
         return;
 
     //qDebug() << doc.toJson();
-    auto mediaList = doc[ "Items" ].toArray();
-    if ( mediaList.size() == 0 )
+    if ( !doc[ "Items" ].isArray() )
     {
         loadMedia( doc.object(), isLHSServer );
         return;
     }
 
+    auto mediaList = doc[ "Items" ].toArray();
     fProgressSystem->pushState();
 
     fProgressSystem->resetProgress();
@@ -875,3 +852,18 @@ void CSyncSystem::handleReloadMediaResponse( const QByteArray & data, bool isLHS
     fReloadMediaFunc( media, itemID, isLHSServer );
 }
 
+
+void CSyncSystem::slotCanceled()
+{
+    auto tmp = fAttributes;
+    for ( auto && ii : tmp )
+    {
+        ii.first->abort();
+    }
+    fCurrUserData.reset();
+}
+
+std::shared_ptr< CUserData > CSyncSystem::currUser() const
+{
+    return fCurrUserData;
+}
