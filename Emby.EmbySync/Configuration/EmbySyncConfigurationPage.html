@@ -1,0 +1,122 @@
+<div data-role="page" style="align-items: center; margin: auto;" class="type-interior pluginConfigurationPage withTabs libraryFileOrganizerLogPage" data-require="emby-button,emby-input,emby-select,emby-toggle,emby-collapse" data-controller="__plugin/EmbySyncConfigurationPageJS">
+    <div class="content-primary">
+        <div class="verticalSection verticalSection">
+            <div class="sectionTitleContainer sectionTitleContainer-cards align-items-center">
+                <br />
+                <h2>EmbySync - Sync User Data for media items across servers</h2>
+
+                <!--<h4>URL Link if required</h4>
+                <a is="emby-linkbutton" class="button-link" href="https://mediaarea.net/en/MediaInfo/Download" target="_blank"></a>-->
+            </div>
+
+            <h3 style="color: var(--theme-accent-text-color); font-weight: bolder">Use Accent Color Info Statement</h3>
+
+            <div style="margin-top: 2em;">
+                <h3 class="checkboxListLabel">Enable EmbySync</h3>
+                <label class="checkboxContainer">
+                    <input is="emby-toggle" type="checkbox" class="chkEnableEmbySync" />
+                    <span class="toggleButtonLabel mdl-switch__label">Global Option to Enable Plugin</span>
+                </label>
+                <div class="fieldDescription">This saves removing the plugin if you wish to disable it</div>
+            </div>
+            <br />
+
+            <div class="paperList checkboxList checkboxList-paperList">
+                <h3 class="checkboxListLabel">Add New Server</h3>
+                <button type="button" is="emby-button" id="btnAddNewServer" title="AddNewServer" aria-label="AddNewServer" class="raised button-submit block" style="width: 50%; justify-self: center;">Add New Server</button>
+                <br />
+
+                <div id="AddServerOptions" style="display: flex; flex-direction: column;">
+                    <div style="flex-grow: 1; flex-direction: row;" class="selectContainer">
+                        <div style="display: flex; align-items: center;">
+                            <div style="flex-grow:1;">
+                                <input is="emby-input" id="txtServerName" label="SERVER NAME" autocomplete="off" />
+                            </div>
+                        </div>
+                        <div class="fieldDescription">Give the server a friendly Name</div>
+                        <br />
+                        <div style="display: flex; align-items: center;">
+                            <div style="flex-grow: 1;">
+                                <input is="emby-input" id="txtServerAddress" label="SERVER ADDRESS" autocomplete="off" />
+                            </div>
+                        </div>
+                        <div class="fieldDescription">Input Server Full Address including http:// or Url and port number</div>
+                        <div class="fieldDescription">Example: http://192.168.0.123:8096</div>
+                    </div>
+                    <button type="button" is="emby-button" id="btnSaveServer" title="SaveServer" aria-label="SaveServer" class="raised button-submit block" style="width: 50%; justify-self: center;">Save Server</button>
+                    <!--<button type="button" is="paper-icon-button-light" id="btnAddServerToList" title="Add Server Button" aria-label="Add Server Button" class="emby-input-iconbutton paper-icon-button-light icon-button-conditionalfocuscolor" style="top: -45px"><i class="md-icon">add</i></button> -->
+                </div>
+
+
+            </div>
+
+            <ul class="serverListContainer" id="serverListContainer" style="display: grid; flex-grow:1; background-color: rgb(44, 41, 41); border-radius: 5px; border-width: 2px; border-color: aliceblue; padding:20px">
+            </ul>
+
+            <hr />
+
+            <div class="paperList checkboxList checkboxList-paperList">
+
+                <div class="paperList checkboxList checkboxList-paperList">
+                    <h2 class="checkboxListLabel">Item Types to Sync</h2>
+
+                    <label>
+                        <input is="emby-toggle" type="checkbox" class="chkSyncAudio" />
+                        <span class="toggleButtonLabel mdl-switch__label">Audio</span>
+                    </label>
+                    <div class="fieldDescription">This will enable syncing of User Data for Audio items</div>
+
+                    <label>
+                        <input is="emby-toggle" type="checkbox" class="chkSyncVideo" />
+                        <span class="toggleButtonLabel mdl-switch__label">Video</span>
+                    </label>
+                    <div class="fieldDescription">This will enable syncing of User Data for Video items</div>
+
+                    <label>
+                        <input is="emby-toggle" type="checkbox" class="chkSyncEpisode" />
+                        <span class="toggleButtonLabel mdl-switch__label">Episode</span>
+                    </label>
+                    <div class="fieldDescription">This will enable syncing of User Data for Episode items</div>
+
+                    <label>
+                        <input is="emby-toggle" type="checkbox" class="chkSyncMovie" />
+                        <span class="toggleButtonLabel mdl-switch__label">Movie</span>
+                    </label>
+                    <div class="fieldDescription">This will enable syncing of User Data for Movie items</div>
+
+                    <label>
+                        <input is="emby-toggle" type="checkbox" class="chkSyncTrailer" />
+                        <span class="toggleButtonLabel mdl-switch__label">Trailer</span>
+                    </label>
+                    <div class="fieldDescription">This will enable syncing of User Data for Trailer items</div>
+
+                    <label>
+                        <input is="emby-toggle" type="checkbox" class="chkSyncAdultVideo" />
+                        <span class="toggleButtonLabel mdl-switch__label">Adult Video</span>
+                    </label>
+                    <div class="fieldDescription">This will enable syncing of User Data for Adult Video items</div>
+
+                    <label>
+                        <input is="emby-toggle" type="checkbox" class="chkSyncMusicVideo" />
+                        <span class="toggleButtonLabel mdl-switch__label">Music Video</span>
+                    </label>
+                    <div class="fieldDescription">This will enable syncing of User Data for Music Video items</div>
+
+                    <label>
+                        <input is="emby-toggle" type="checkbox" class="chkSyncGame" />
+                        <span class="toggleButtonLabel mdl-switch__label">Game</span>
+                    </label>
+                    <div class="fieldDescription">This will enable syncing of User Data for Game items</div>
+
+                    <label>
+                        <input is="emby-toggle" type="checkbox" class="chkSyncBook" />
+                        <span class="toggleButtonLabel mdl-switch__label">Book</span>
+                    </label>
+                    <div class="fieldDescription">This will enable syncing of User Data for Book items</div>
+                </div>
+                <br />
+            </div>
+        </div>
+    </div>
+</div>
+

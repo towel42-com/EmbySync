@@ -9,17 +9,9 @@ define([
         function getTabs() {
             return [
                 {
-                    href: Dashboard.getConfigurationPageUrl('ServerSyncConfigurationPage'),
-                    name: 'Server-Sync'
-                }/*,
-                {
-                    href: Dashboard.getConfigurationPageUrl('PluginTab2ConfigurationPage'),
-                    name: 'PluginTab 2'
-                },
-                {
-                    href: Dashboard.getConfigurationPageUrl('PluginTab3ConfigurationPage'),
-                    name: 'PluginTab 3'
-                }*/
+                    href: Dashboard.getConfigurationPageUrl('EmbySyncConfigurationPage'),
+                    name: 'EmbySync'
+                }
             ];
         }
 
@@ -61,10 +53,16 @@ define([
 
             ApiClient.getPluginConfiguration(pluginId).then(function (config) {
 
-                view.querySelector(".chkEnableServerSync").checked = config.EnableServerSync;
-                view.querySelector(".chkSyncMovies").checked = config.SyncMovies;
-                view.querySelector(".chkSyncShows").checked = config.SyncShows;
-                view.querySelector(".chkSyncMusic").checked = config.SyncMusic;
+                view.querySelector(".chkEnableEmbySync").checked = config.EnableEmbySync;
+                view.querySelector(".chkSyncAudio").checked = config.SyncAudio;
+                view.querySelector(".chkSyncVideo").checked = config.SyncVideo;
+                view.querySelector(".chkSyncEpisode").checked = config.SyncEpisode;
+                view.querySelector(".chkSyncMovie").checked = config.SyncMovie;
+                view.querySelector(".chkSyncTrailer").checked = config.SyncTrailer;
+                view.querySelector(".chkSyncAdultVideo").checked = config.SyncAdultVideo;
+                view.querySelector(".chkSyncMusicVideo").checked = config.SyncMusicVideo;
+                view.querySelector(".chkSyncGame").checked = config.SyncGame;
+                view.querySelector(".chkSyncBook").checked = config.SyncBook;
                 var storedServers = config.Servers;
 
                 console.log("storedItems: ", storedServers);
@@ -88,7 +86,7 @@ define([
 
                 loading.hide();
                 
-                document.querySelector('.pageTitle').innerHTML = "Server Sync" + '<a is="emby-linkbutton" class="raised raised-mini emby-button" target="_blank" href=""><i class="md-icon button-icon button-icon-left secondaryText headerHelpButtonIcon">help</i><span class="headerHelpButtonText">Help</span></a>';
+                document.querySelector('.pageTitle').innerHTML = "EmbySync" + '<a is="emby-linkbutton" class="raised raised-mini emby-button" target="_blank" href=""><i class="md-icon button-icon button-icon-left secondaryText headerHelpButtonIcon">help</i><span class="headerHelpButtonText">Help</span></a>';
 
                 var addServerOptions = view.querySelector("#AddServerOptions");
                 var addServerBtn = view.querySelector("#btnAddNewServer");
@@ -119,53 +117,114 @@ define([
                     addServerOptions.style.display = "none";
                 });
 
-                var enableServerSync = view.querySelector(".chkEnableServerSync");
-                enableServerSync.addEventListener('change',
+                var enableEmbySync = view.querySelector(".chkEnableEmbySync");
+                enableEmbySync.addEventListener('change',
                     (e) => {
                         e.preventDefault();
                         ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                            config.EnableServerSync = enableServerSync.checked;
+                            config.EnableEmbySync = enableEmbySync.checked;
                             ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
                                 Dashboard.processPluginConfigurationUpdateResult(r);
                             });
                         });
                     });
 
-                var syncMovies = view.querySelector(".chkSyncMovies");
-                syncMovies.addEventListener('change',
+                var syncAudio = view.querySelector(".chkSyncAudio");
+                syncAudio.addEventListener('change',
                     (e) => {
                         e.preventDefault();
                         ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                            config.SyncMovies = syncMovies.checked;
+                            config.SyncAudio = syncAudio.checked;
                             ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
                                 Dashboard.processPluginConfigurationUpdateResult(r);
                             });
                         });
                     });
 
-                var syncShows = view.querySelector(".chkSyncShows");
-                syncShows.addEventListener('change',
+                var syncVideo = view.querySelector(".chkSyncVideo");
+                syncVideo.addEventListener('change',
                     (e) => {
                         e.preventDefault();
                         ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                            config.SyncShows = syncShows.checked;
+                            config.SyncVideo = syncVideo.checked;
                             ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
                                 Dashboard.processPluginConfigurationUpdateResult(r);
                             });
                         });
                     });
 
-                var syncMusic = view.querySelector(".chkSyncMusic");
-                syncMusic.addEventListener('change',
+                var syncEpisode = view.querySelector(".chkSyncEpisode");
+                syncEpisode.addEventListener('change',
                     (e) => {
                         e.preventDefault();
                         ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                            config.SyncMusic = syncMusic.checked;
+                            config.SyncEpisode = syncEpisode.checked;
                             ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
                                 Dashboard.processPluginConfigurationUpdateResult(r);
                             });
                         });
                     });
+
+                var syncMovie = view.querySelector(".chkSyncMovie");
+                syncMovie.addEventListener('change',
+                    (e) => {
+                        e.preventDefault();
+                        ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                            config.SyncMovie = syncMovie.checked;
+                            ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
+                                Dashboard.processPluginConfigurationUpdateResult(r);
+                            });
+                        });
+                    });
+
+                var syncTrailer = view.querySelector(".chkSyncTrailer");
+                syncTrailer.addEventListener('change',
+                    (e) => {
+                        e.preventDefault();
+                        ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                            config.SyncTrailer = syncTrailer.checked;
+                            ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
+                                Dashboard.processPluginConfigurationUpdateResult(r);
+                            });
+                        });
+                    });
+                var syncAdultVideo = view.querySelector(".chkSyncAdultVideo");
+                syncAdultVideo.addEventListener('change',
+                    (e) => {
+                        e.preventDefault();
+                        ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                            config.SyncAdultVideo = syncAdultVideo.checked;
+                            ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
+                                Dashboard.processPluginConfigurationUpdateResult(r);
+                            });
+                        });
+                    });
+
+                var syncMusicVideo = view.querySelector(".chkSyncMusicVideo");
+                syncMusicVideo.addEventListener('change',
+                    (e) => {
+                        e.preventDefault();
+                        ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                            config.SyncMusicVideo = syncMusicVideo.checked;
+                            ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
+                                Dashboard.processPluginConfigurationUpdateResult(r);
+                            });
+                        });
+                    });
+
+                var syncBook = view.querySelector(".chkSyncBook");
+                syncBook.addEventListener('change',
+                    (e) => {
+                        e.preventDefault();
+                        ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                            config.SyncBook = syncBook.checked;
+                            ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
+                                Dashboard.processPluginConfigurationUpdateResult(r);
+                            });
+                        });
+                    });
+
+
             });
         }
     });
