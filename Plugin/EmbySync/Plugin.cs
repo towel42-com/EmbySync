@@ -1,14 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Emby.EmbySync.Configuration;
+using EmbySync.Configuration;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
 using MediaBrowser.Model.Drawing;
 using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
 
-namespace Emby.EmbySync
+namespace EmbySync
 {
 	public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IHasThumbImage
 	{

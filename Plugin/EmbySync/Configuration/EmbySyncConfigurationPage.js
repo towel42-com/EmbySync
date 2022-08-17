@@ -212,6 +212,18 @@ define([
                         });
                     });
 
+                var syncGame = view.querySelector(".chkSyncGame");
+                syncGame.addEventListener('change',
+                    (e) => {
+                        e.preventDefault();
+                        ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                            config.SyncGame = syncGame.checked;
+                            ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
+                                Dashboard.processPluginConfigurationUpdateResult(r);
+                            });
+                        });
+                    });
+
                 var syncBook = view.querySelector(".chkSyncBook");
                 syncBook.addEventListener('change',
                     (e) => {

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Net;
 using MediaBrowser.Model.Plugins;
 
-namespace Emby.EmbySync.Configuration
+namespace EmbySync.Configuration
 {
     public class PluginConfiguration : BasePluginConfiguration
     {

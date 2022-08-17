@@ -10,7 +10,7 @@ using MediaBrowser.Model.ApiClient;
 using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.System;
 
-namespace Emby.EmbySync.APIQueries
+namespace EmbySync.APIQueries
 {
     public class ApiQueries
     {

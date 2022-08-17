@@ -7,8 +7,8 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Emby.EmbySync.Configuration;
-using Emby.EmbySync.Models;
+using EmbySync.Configuration;
+using EmbySync.Models;
 using MediaBrowser.Common.Net;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Entities;
@@ -17,7 +17,7 @@ using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.System;
 using MediaBrowser.Model.Tasks;
 
-namespace Emby.EmbySync.ScheduledTasks
+namespace EmbySync.ScheduledTasks
 {
 	//Use this section if you need to have Scheduled tasks run
     public class PluginScheduledTask : IScheduledTask, IConfigurableScheduledTask

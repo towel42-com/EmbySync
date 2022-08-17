@@ -2,7 +2,7 @@ using MediaBrowser.Controller.Configuration;
 using MediaBrowser.Controller.Plugins;
 using MediaBrowser.Model.Tasks;
 
-namespace Emby.EmbySync.ServerEntryPoint
+namespace EmbySync.ServerEntryPoint
 {
 	public class PluginEntryPoint : IServerEntryPoint
 	{
