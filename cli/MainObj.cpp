@@ -235,12 +235,7 @@ void CMainObj::slotProcessNextUser()
     fUsersToSync.pop_front();
     slotAddToLog( EMsgType::eInfo, "Processing user: " + currUser->displayName() );
 
-    fSyncSystem->resetMedia();
-    //fLHSMedia.clear();
-    //fRHSMedia.clear();
     fSyncSystem->loadUsersMedia( currUser );
-
-    //QTimer::singleShot( 0, this, &CMain::slotProcessNextUser );
 }
 
 void CMainObj::slotUserMediaCompletelyLoaded()
