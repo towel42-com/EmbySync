@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Configuration\EmbySyncConfigurationPage.html" />
+    <EmbeddedResource Include="Configuration\EmbySyncConfigurationPage.js" />
+    <EmbeddedResource Include="thumb.jpg" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MediaBrowser.Common" Version="4.7.6" />
+    <PackageReference Include="MediaBrowser.Server.Core" Version="4.7.6" />
+    <PackageReference Include="System.Memory" Version="4.5.5" />
+    <PackageReference Include="System.Text.Json" Version="6.0.5" />
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="echo &quot;Copying $(TargetPath) to $(APPDATA)\Emby-Server\programdata\plugins\&quot;&#xD;&#xA;xcopy &quot;$(TargetPath)&quot; &quot;$(APPDATA)\Emby-Server\programdata\plugins\&quot; /Y" />
+  </Target>
+
+</Project>

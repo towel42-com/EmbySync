@@ -1,6 +1,6 @@
 ﻿
 
-namespace Emby.ServerSync.Models
+namespace Emby.EmbySync.Models
 {
     internal class DatagramServerModel
     {

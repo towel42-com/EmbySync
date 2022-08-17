@@ -7,8 +7,8 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Emby.ServerSync.Configuration;
-using Emby.ServerSync.Models;
+using Emby.EmbySync.Configuration;
+using Emby.EmbySync.Models;
 using MediaBrowser.Common.Net;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Entities;
@@ -17,7 +17,7 @@ using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.System;
 using MediaBrowser.Model.Tasks;
 
-namespace Emby.ServerSync.ScheduledTasks
+namespace Emby.EmbySync.ScheduledTasks
 {
 	//Use this section if you need to have Scheduled tasks run
     public class PluginScheduledTask : IScheduledTask, IConfigurableScheduledTask
@@ -26,17 +26,17 @@ namespace Emby.ServerSync.ScheduledTasks
 
         private readonly ILogger _log;
         private readonly IServerApplicationHost _serverApplicationHost;
-        private readonly IUserDataManager _userDataManager;
+        // private readonly IUserDataManager _userDataManager;
         private IHttpClient _httpClient;
 
 
-        public string Name => "Server Sync";
+        public string Name => "EmbySync";
 
-        public string Key => "ServerSync";
+        public string Key => "EmbySync";
 
-        public string Description => "Run this task to sync playback information across multiple servers";
+        public string Description => "Run this task to sync User Data across servers";
 
-        public string Category => "Server Sync";
+        public string Category => "EmbySync";
 
         public bool IsHidden => false;
 
@@ -55,8 +55,8 @@ namespace Emby.ServerSync.ScheduledTasks
         }
 
         //progressBar fields
-        private double _totalProgress;
-        private int _totalItems;
+        //private double _totalProgress;
+        //private int _totalItems;
 
         //Get Library Item fields
         private BaseItem[] _itemsInLibraries;
@@ -89,24 +89,22 @@ namespace Emby.ServerSync.ScheduledTasks
 
                 var config = Plugin.Instance.Configuration;
                 List<string> mediaTypeList = new List<string>();
-                if (config.SyncMovies == true)
-                {
-                    string s = "Movie";
-                    mediaTypeList.Add(s);
-                    
-                }
-                if (config.SyncShows == true)
-                {
-                    string s = "Episode";
-                    mediaTypeList.Add(s);
-
-                }
-                if (config.SyncMusic == true)
-                {
-                    string s = "Music";
-                    mediaTypeList.Add(s);
-
-                }
+                if (config.SyncAudio )
+                    mediaTypeList.Add("Audio");
+                if (config.SyncVideo )
+                    mediaTypeList.Add("Video");
+                if (config.SyncMovie)
+                    mediaTypeList.Add("Movie");
+                if (config.SyncTrailer)
+                    mediaTypeList.Add("Trailer");
+                if (config.SyncAdultVideo)
+                    mediaTypeList.Add("AdultVideo");
+                if (config.SyncMusicVideo)
+                    mediaTypeList.Add("MusicVideo");
+                if (config.SyncGame)
+                    mediaTypeList.Add("Game");
+                if (config.SyncBook)
+                    mediaTypeList.Add("Book");
                 string[] mediaTypeArray = mediaTypeList.ToArray();
                 InternalItemsQuery queryList = new InternalItemsQuery
                 {
