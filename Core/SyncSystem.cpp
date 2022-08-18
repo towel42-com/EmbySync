@@ -726,7 +726,7 @@ void CSyncSystem::requestUsersMediaList( bool isLHSServer )
     std::list< std::pair< QString, QString > > queryItems =
     {
         std::make_pair( "IncludeItemTypes", fSettings->getSyncItemTypes() ),
-        std::make_pair( "SortBy", "SortName" ),
+        std::make_pair( "SortBy", "Type,SortName" ),
         std::make_pair( "SortOrder", "Ascending" ),
         std::make_pair( "Recursive", "True" ),
         std::make_pair( "IsMissing", "False" ),
