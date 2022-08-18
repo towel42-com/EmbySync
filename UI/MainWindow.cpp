@@ -82,7 +82,7 @@ CMainWindow::CMainWindow( QWidget * parent )
     connect( fSyncSystem.get(), &CSyncSystem::sigAddToLog, this, &CMainWindow::slotAddToLog );
     connect( fSyncSystem.get(), &CSyncSystem::sigLoadingUsersFinished, this, &CMainWindow::slotLoadingUsersFinished );
     connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaLoaded, this, &CMainWindow::slotUserMediaLoaded );
-    connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaCompletelyLoaded, this, &CMainWindow::slotUserMediaCompletelyLoaded );
+    connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaLoaded, this, &CMainWindow::slotUserMediaCompletelyLoaded );
 
     fSyncSystem->setLoadUserFunc(
         [ this ]( const QJsonObject & userData, const QString & serverName )
@@ -427,10 +427,11 @@ void CMainWindow::slotToggleShowMediaWithIssues()
 
 void CMainWindow::onlyShowMediaWithDifferences()
 {
-    auto mediaSummary = fMediaModel->settingsChanged();
+    fMediaModel->settingsChanged();
 
     progressReset();
 
+    auto mediaSummary = SMediaSummary( fMediaModel );
     fImpl->mediaSummaryLabel->setText( mediaSummary.getSummaryText() );
 
     auto column = fMediaFilterModel->sortColumn();
@@ -445,9 +446,10 @@ void CMainWindow::onlyShowMediaWithDifferences()
 
 void CMainWindow::showMediaWithIssues()
 {
-    auto mediaSummary = fMediaModel->settingsChanged();
-
+    fMediaModel->settingsChanged();
     progressReset();
+
+    auto mediaSummary = SMediaSummary( fMediaModel );
     fImpl->mediaSummaryLabel->setText( mediaSummary.getSummaryText() );
 }
 
@@ -556,7 +558,7 @@ void CMainWindow::loadServers()
 
     for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
     {
-        auto mediaTree = new CMediaTree( fSettings->getServerInfo( ii ), fImpl->upperSplitter );
+        auto mediaTree = new CMediaTree( fSettings->serverInfo( ii ), fImpl->upperSplitter );
         fImpl->upperSplitter->addWidget( mediaTree );
         mediaTree->setModel( fMediaFilterModel );
         connect( mediaTree, &CMediaTree::sigCurrChanged, this, &CMainWindow::slotSetCurrentMediaItem );
@@ -655,7 +657,7 @@ void CMainWindow::slotSelectiveProcess()
     std::map< QString, QString > servers;
     for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
     {
-        auto serverInfo = fSettings->getServerInfo( ii );
+        auto serverInfo = fSettings->serverInfo( ii );
 
         auto name = serverInfo->friendlyName();
         auto key = serverInfo->keyName();

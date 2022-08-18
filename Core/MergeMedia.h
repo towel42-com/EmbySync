@@ -25,7 +25,7 @@ public:
     std::pair< std::unordered_set< std::shared_ptr< CMediaData > >, std::map< QString, TMediaIDToMediaData > > getMergedData( std::shared_ptr< CProgressSystem > progressSystem ) const;
 private:
     void merge( std::pair< const QString, TMediaIDToMediaData > & lhs, std::pair< const QString, TMediaIDToMediaData > & rhs, std::shared_ptr< CProgressSystem > progressSystem );
-    void merge( std::pair< const QString, TMediaIDToMediaData > & mapData, const QStringList & otherServers, std::shared_ptr< CProgressSystem > progressSystem );
+    void merge( std::pair< const QString, TMediaIDToMediaData > & mapData, std::shared_ptr< CProgressSystem > progressSystem );
 
     QStringList getOtherServers( const QString & serverName ) const;
 

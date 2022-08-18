@@ -21,6 +21,7 @@ using TMediaIDToMediaData = std::map< QString, std::shared_ptr< CMediaData > >;
 
 class CMediaModel : public QAbstractTableModel
 {
+    friend struct SMediaSummary;
     Q_OBJECT;
 public:
     enum ECustomRoles
@@ -62,18 +63,7 @@ public:
 
     bool hasMediaToProcess() const;
 
-    struct SMediaSummary
-    {
-        int fTotalMedia{ 0 };
-        int fNeedsSyncing{ 0 };
-        int fMissingData{ 0 };
-
-        QString getSummaryText() const;
-        std::map< QString, int > fNeedsUpdating;
-    };
-
-    SMediaSummary settingsChanged();
-    SMediaSummary getMediaSummary() const;
+    void settingsChanged();
 
     std::shared_ptr< CMediaData > getMediaData( const QModelIndex & idx ) const;
     void updateMediaData( std::shared_ptr< CMediaData > mediaData );
@@ -111,6 +101,17 @@ private:
     std::unordered_set< QString > fProviderNames;
     std::unordered_map< int, std::pair< QString, QString > > fProviderColumnsByColumn;
     EDirSort fDirSort{ eNoSort };
+};
+
+struct SMediaSummary
+{
+    SMediaSummary( CMediaModel * model );
+
+    int fTotalMedia{ 0 };
+
+    QString getSummaryText() const;
+    std::map< QString, int > fNeedsUpdating;
+    std::map< QString, int > fMissingData;
 };
 
 class CMediaFilterModel : public QSortFilterProxyModel

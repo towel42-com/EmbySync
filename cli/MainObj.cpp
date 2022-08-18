@@ -83,7 +83,7 @@ CMainObj::CMainObj( const QString & settingsFile, QObject * parent /*= nullptr*/
     connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaLoaded, this, &CMainObj::slotProcess );
 
     connect( fSyncSystem.get(), &CSyncSystem::sigProcessingFinished, this, &CMainObj::slotProcessingFinished );
-    connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaCompletelyLoaded, this, &CMainObj::slotUserMediaCompletelyLoaded );
+    connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaLoaded, this, &CMainObj::slotUserMediaCompletelyLoaded );
     
     fUsersModel = new CUsersModel( fSettings, this );
     fMediaModel = new CMediaModel( fSettings, this );

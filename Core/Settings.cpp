@@ -357,7 +357,7 @@ bool CSettings::save( std::function<void( const QString & title, const QString &
 
     for ( int ii = 0; ii < serverCnt(); ++ii )
     {
-        auto serverInfo = getServerInfo( ii );
+        auto serverInfo = this->serverInfo( ii );
 
         auto curr = json.object();
 
@@ -629,14 +629,14 @@ bool CSettings::loadServer( const QJsonObject & obj, QString & errorMsg )
         errorMsg = QString( "Missing api_key" );
         return false;
     }
-    auto serverInfo = getServerInfo( serverName, false );
+    auto serverInfo = this->serverInfo( serverName, false );
     if ( serverInfo )
     {
         errorMsg = QString( "Server '%1' already exists" ).arg( serverName );
         return false;
     }
 
-    serverInfo = getServerInfo( serverName, true );
+    serverInfo = this->serverInfo( serverName, true );
     serverInfo->fName.second = generated;
 
     setURL( obj[ "url" ].toString(), serverName );
@@ -645,7 +645,7 @@ bool CSettings::loadServer( const QJsonObject & obj, QString & errorMsg )
     return true;
 }
 
-std::shared_ptr< const SServerInfo > CSettings::getServerInfo( int serverNum ) const
+std::shared_ptr< const SServerInfo > CSettings::serverInfo( int serverNum ) const
 {
     if ( serverNum < 0 )
         return {};
@@ -665,7 +665,7 @@ int CSettings::getServerPos( const QString & serverName ) const
 }
 
 
-std::shared_ptr< const SServerInfo > CSettings::getServerInfo( const QString & serverName ) const
+std::shared_ptr< const SServerInfo > CSettings::serverInfo( const QString & serverName ) const
 {
     auto pos = fServerMap.find( serverName );
     if ( pos != fServerMap.end() )
@@ -673,9 +673,9 @@ std::shared_ptr< const SServerInfo > CSettings::getServerInfo( const QString & s
     return {};
 }
 
-std::shared_ptr< SServerInfo > CSettings::getServerInfo( const QString & serverName, bool addIfMissing )
+std::shared_ptr< SServerInfo > CSettings::serverInfo( const QString & serverName, bool addIfMissing )
 {
-    auto retVal = getServerInfo( serverName );
+    auto retVal = serverInfo( serverName );
     if ( retVal || !addIfMissing )
         return std::const_pointer_cast<SServerInfo>( retVal );
 
@@ -693,7 +693,7 @@ int CSettings::serverCnt() const
 
 QString CSettings::apiKey( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = this->serverInfo( serverName );
     if ( !serverInfo )
         return {};
     return serverInfo->fAPIKey;
@@ -701,7 +701,7 @@ QString CSettings::apiKey( const QString & serverName ) const
 
 QString CSettings::apiKey( int serverNum ) const
 {
-    auto serverInfo = getServerInfo( serverNum );
+    auto serverInfo = this->serverInfo( serverNum );
     if ( !serverInfo )
         return {};
     return serverInfo->fAPIKey;
@@ -709,13 +709,13 @@ QString CSettings::apiKey( int serverNum ) const
 
 void CSettings::setAPIKey( const QString & apiKey, const QString & serverName )
 {
-    auto serverInfo = getServerInfo( serverName, true );
+    auto serverInfo = this->serverInfo( serverName, true );
     updateValue( serverInfo->fAPIKey, apiKey );
 }
 
 QString CSettings::friendlyServerName( int serverNum ) const
 {
-    auto serverInfo = getServerInfo( serverNum );
+    auto serverInfo = this->serverInfo( serverNum );
     if ( !serverInfo )
         return {};
     return serverInfo->friendlyName();
@@ -723,7 +723,7 @@ QString CSettings::friendlyServerName( int serverNum ) const
 
 QString CSettings::serverKeyName( int serverNum ) const
 {
-    auto serverInfo = getServerInfo( serverNum );
+    auto serverInfo = this->serverInfo( serverNum );
     if ( !serverInfo )
         return {};
 
@@ -732,7 +732,7 @@ QString CSettings::serverKeyName( int serverNum ) const
 
 void CSettings::setServerFriendlyName( const QString & newServerName, const QString & oldServerName )
 {
-    auto serverInfo = getServerInfo( oldServerName, false );
+    auto serverInfo = this->serverInfo( oldServerName, false );
     if ( serverInfo )
     {
         auto tmp = serverInfo->friendlyName();
@@ -745,14 +745,14 @@ void CSettings::setServerFriendlyName( const QString & newServerName, const QStr
     }
     else
     {
-        getServerInfo( newServerName, true );
+        this->serverInfo( newServerName, true );
     }
 }
 
 
 QString CSettings::url( int serverNum ) const
 {
-    auto serverInfo = getServerInfo( serverNum );
+    auto serverInfo = this->serverInfo( serverNum );
     if ( !serverInfo )
         return {};
     return serverInfo->url();
@@ -760,7 +760,7 @@ QString CSettings::url( int serverNum ) const
 
 void CSettings::setURL( const QString & url, const QString & serverName )
 {
-    auto serverInfo = getServerInfo( serverName, true );
+    auto serverInfo = this->serverInfo( serverName, true );
     updateValue( serverInfo->fURL, url );
 }
 
@@ -771,7 +771,7 @@ QUrl CSettings::getUrl( const QString & serverName ) const
 
 QUrl CSettings::getUrl( int serverNum ) const
 {
-    auto serverInfo = getServerInfo( serverNum );
+    auto serverInfo = this->serverInfo( serverNum );
     if ( !serverInfo )
         return {};
     return serverInfo->getUrl();
@@ -779,7 +779,7 @@ QUrl CSettings::getUrl( int serverNum ) const
 
 QUrl CSettings::getUrl( const QString & extraPath, const std::list< std::pair< QString, QString > > & queryItems, const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = this->serverInfo( serverName );
     if ( !serverInfo )
         return {};
 

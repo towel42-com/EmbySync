@@ -238,38 +238,10 @@ void CMediaModel::updateProviderColumns( std::shared_ptr< CMediaData > mediaData
     }
 }
 
-CMediaModel::SMediaSummary CMediaModel::settingsChanged()
+void CMediaModel::settingsChanged()
 {
     beginResetModel();
     endResetModel();
-    return getMediaSummary();
-}
-
-
-CMediaModel::SMediaSummary CMediaModel::getMediaSummary() const
-{
-    SMediaSummary retVal;
-
-    for ( auto && ii : fData )
-    {
-        retVal.fTotalMedia++;
-        if ( ii->isValidForAllServers() )
-        {
-            retVal.fMissingData++;
-            continue;
-        }
-
-        for ( int jj = 0; jj < fSettings->serverCnt(); ++jj )
-        {
-            auto serverName = fSettings->serverKeyName( jj );
-            if ( ii->needsUpdating( serverName ) )
-            {
-                retVal.fNeedsUpdating[ serverName ]++;
-                retVal.fNeedsSyncing++;
-            }
-        }
-    }
-    return retVal;
 }
 
 
@@ -459,17 +431,55 @@ QVariant CMediaModel::getColor( const QModelIndex & index, bool background ) con
     return {};
 }
 
-QString CMediaModel::SMediaSummary::getSummaryText() const
+SMediaSummary::SMediaSummary( CMediaModel * model )
 {
-    QStringList mediaUpdateString;
+    for ( auto && ii : model->fData )
+    {
+        fTotalMedia++;
+        for ( int jj = 0; jj < model->fSettings->serverCnt(); ++jj )
+        {
+            auto serverInfo = model->fSettings->serverInfo( jj );
+
+            if ( !ii->isValidForServer( serverInfo->keyName() ) )
+            {
+                fMissingData[ serverInfo->friendlyName() ]++;
+                continue;
+            }
+
+            if ( ii->needsUpdating( serverInfo->keyName() ) )
+            {
+                fNeedsUpdating[ serverInfo->friendlyName() ]++;
+            }
+        }
+    }
+}
+
+
+QString SMediaSummary::getSummaryText() const
+{
+    QStringList allMsgs = { QObject::tr( "%1 Total Items" ).arg( fTotalMedia ) };
+
+    QStringList missingStringList;
+    for ( auto && ii : fMissingData )
+    {
+        missingStringList << QObject::tr( "%1 from %2" ).arg( ii.second ).arg( ii.first );
+    }
+    auto missingString = missingStringList.join( ", " );
+    if ( !missingString.isEmpty() )
+    {
+        allMsgs << QObject::tr( "Missing Media: %1" ).arg( missingString );
+    }
+
+    QStringList mediaUpdateStringList;
     for ( auto && ii : fNeedsUpdating )
     {
-        mediaUpdateString << tr( "%1 from %2" ).arg( ii.second ).arg( ii.first );
+        mediaUpdateStringList << QObject::tr( "%1 from %2" ).arg( ii.second ).arg( ii.first );
     }
-    return tr( "Media Summary: %1 Items need Syncing, %2, %3 can not be compared, %4 Total" )
-        .arg( fNeedsSyncing )
-        .arg( mediaUpdateString.join( "," ) )
-        .arg( fMissingData )
-        .arg( fTotalMedia )
-        ;
+    auto mediaUpdateString = mediaUpdateStringList.join( ", " );
+    if ( !mediaUpdateString.isEmpty() )
+        allMsgs << QObject::tr( "Media Needing Update: %1" ).arg( mediaUpdateString );
+
+    auto retVal = QObject::tr( "Media Summary: %1" ).arg( allMsgs.join( ", " ) );
+
+    return retVal;
 }

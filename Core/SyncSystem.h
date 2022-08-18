@@ -134,7 +134,6 @@ Q_SIGNALS:
     void sigAddToLog( int msgType, const QString & msg );
     void sigLoadingUsersFinished();
     void sigUserMediaLoaded();
-    void sigUserMediaCompletelyLoaded();
     void sigProcessingFinished( const QString & name );
     void sigTestServerResults( const QString & serverName, bool results, const QString & msg );
 public Q_SLOTS:

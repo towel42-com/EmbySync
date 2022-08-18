@@ -90,8 +90,8 @@ public:
 
     int serverCnt() const;
     int getServerPos( const QString & serverName ) const;
-    std::shared_ptr< const SServerInfo > getServerInfo( int serverNum ) const;
-    std::shared_ptr< const SServerInfo > getServerInfo( const QString & serverName ) const;
+    std::shared_ptr< const SServerInfo > serverInfo( int serverNum ) const;
+    std::shared_ptr< const SServerInfo > serverInfo( const QString & serverName ) const;
     bool canSync() const;
 
     bool save( QWidget * parent );
@@ -190,7 +190,7 @@ private:
     bool loadServer( const QJsonObject & obj, QString & errorMsg );
     void updateServerMap();
 
-    std::shared_ptr< SServerInfo > getServerInfo( const QString & serverName, bool addIfMissing );
+    std::shared_ptr< SServerInfo > serverInfo( const QString & serverName, bool addIfMissing );
     void updateFriendlyServerNames();
     QColor getColor( const QColor & clr, bool forBackground /*= true */ ) const;
     bool maybeSave( QWidget * parent, std::function<QString()> selectFileFunc, std::function<void( const QString & title, const QString & msg )> errorFunc );

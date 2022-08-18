@@ -467,7 +467,7 @@ void CSyncSystem::slotCheckPendingRequests()
 
 void CSyncSystem::testServer( const QString & serverName )
 {
-    auto serverInfo = fSettings->getServerInfo( serverName );
+    auto serverInfo = fSettings->serverInfo( serverName );
     if ( !serverInfo )
         return;
     testServer( serverInfo );

@@ -62,15 +62,15 @@ bool CMergeMedia::merge( std::shared_ptr< CProgressSystem > progressSystem )
 
 void CMergeMedia::merge( std::pair< const QString, TMediaIDToMediaData > & lhs, std::pair< const QString, TMediaIDToMediaData > & rhs, std::shared_ptr< CProgressSystem > progressSystem )
 {
-    qDebug() << lhs.first << rhs.first;
+    //qDebug() << lhs.first << rhs.first;
 
-    merge( lhs, getOtherServers( lhs.first), progressSystem );
-    merge( rhs, getOtherServers( rhs.first ), progressSystem );
+    merge( lhs, progressSystem );
+    merge( rhs, progressSystem );
 }
 
-void CMergeMedia::merge( std::pair< const QString, TMediaIDToMediaData > & mapData, const QStringList & otherServers, std::shared_ptr< CProgressSystem > progressSystem )
+void CMergeMedia::merge( std::pair< const QString, TMediaIDToMediaData > & mapData, std::shared_ptr< CProgressSystem > progressSystem )
 {
-    qDebug() << mapData.first << otherServers;
+    //qDebug() << mapData.first;
     std::unordered_map< std::shared_ptr< CMediaData >, std::shared_ptr< CMediaData > > replacementMap;
     for ( auto && ii : mapData.second )
     {
