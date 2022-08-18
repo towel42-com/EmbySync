@@ -32,6 +32,107 @@
 #include <QUrlQuery>
 #include <QColor>
 
+#include <map>
+
+
+SServerInfo::SServerInfo( const QString & name, const QString & url, const QString & apiKey ) :
+    fName( { name, false } ),
+    fURL( url ),
+    fAPIKey( apiKey )
+{
+
+}
+
+SServerInfo::SServerInfo( const QString & name ) :
+    fName( { name, false } )
+{
+
+}
+
+bool SServerInfo::operator==( const SServerInfo & rhs ) const
+{
+    return fName == rhs.fName
+        && fURL == rhs.fURL
+        && fAPIKey == rhs.fAPIKey
+        ;
+}
+
+QString SServerInfo::url() const
+{
+    return fURL;
+}
+
+QUrl SServerInfo::getUrl() const
+{
+    return getUrl( QString(), std::list< std::pair< QString, QString > >() );
+}
+
+
+QUrl SServerInfo::getUrl( const QString & extraPath, const std::list< std::pair< QString, QString > > & queryItems ) const
+{
+    auto path = fURL;
+    if ( path.isEmpty() )
+        return {};
+
+    if ( !extraPath.isEmpty() )
+    {
+        if ( !path.endsWith( "/" ) )
+            path += "/";
+        path += extraPath;
+    }
+
+    if ( path.indexOf( "://" ) == -1 )
+        path = "http://" + path;
+
+    QUrl retVal( path );
+
+    QUrlQuery query;
+    query.addQueryItem( "api_key", fAPIKey );
+    for ( auto && ii : queryItems )
+    {
+        query.addQueryItem( ii.first, ii.second );
+    }
+    retVal.setQuery( query );
+
+    //qDebug() << url;
+
+    return retVal;
+}
+
+QString SServerInfo::friendlyName() const
+{
+    if ( !fName.first.isEmpty() )
+        return fName.first;
+    else
+        return keyName();
+}
+
+QString SServerInfo::keyName() const
+{
+    if ( fKeyName.isEmpty() )
+        fKeyName = getUrl().toString( QUrl::RemoveUserInfo | QUrl::RemoveQuery );
+    return fKeyName;
+}
+
+void SServerInfo::autoSetFriendlyName( bool usePort )
+{
+    auto url = getUrl();
+    QString retVal = url.host();
+    if ( usePort )
+        retVal += QString::number( url.port() );
+    setFriendlyName( retVal, true );
+}
+
+void SServerInfo::setFriendlyName( const QString & name, bool generated )
+{
+    fName = { name, generated };
+}
+
+bool SServerInfo::canSync() const
+{
+    return getUrl().isValid() && !fAPIKey.isEmpty();
+}
+
 CSettings::CSettings()
 {
     fSyncUserList = QStringList() << ".*";
@@ -65,12 +166,44 @@ bool CSettings::load( const QString & fileName, std::function<void( const QStrin
         return false;
     }
 
-    setURL( json[ "lhs" ][ "url" ].toString(), true );
-    setAPIKey( json[ "lhs" ][ "api_key" ].toString(), true );
+    if ( json.object().contains( "lhs" ) )
+    {
+        QString errorMsg;
+        if ( !loadServer( json[ "lhs" ].toObject(), errorMsg ) )
+        {
+            if ( errorFunc )
+                errorFunc( QObject::tr( "Could not read" ), QObject::tr( "Could not read file '%1' - '%2' for lhs server" ).arg( fFileName ).arg( errorMsg ) );
+            fFileName.clear();
+            return false;
+        }
+    }
 
-    setURL( json[ "rhs" ][ "url" ].toString(), false );
-    setAPIKey( json[ "rhs" ][ "api_key" ].toString(), false );
+    if ( json.object().contains( "rhs" ) )
+    {
+        QString errorMsg;
+        if ( !loadServer( json[ "rhs" ].toObject(), errorMsg ) )
+        {
+            if ( errorFunc )
+                errorFunc( QObject::tr( "Could not read" ), QObject::tr( "Could not read file '%1' - '%2' for rhs server" ).arg( fFileName ).arg( errorMsg ) );
 
+            fFileName.clear();
+            return false;
+        }
+    }
+
+    auto servers = json[ "servers" ].toArray();
+    for ( int ii = 0; ii < servers.count(); ++ii )
+    {
+        QString errorMsg;
+        if ( !loadServer( servers[ ii ].toObject(), errorMsg ) )
+        {
+            if ( errorFunc )
+                errorFunc( QObject::tr( "Could not read" ), QObject::tr( "Could not read file '%1' - '%2' for server[%3]" ).arg( fFileName ).arg( errorMsg ).arg( ii ) );
+                fFileName.clear();
+                return false;
+        }
+    }
+    
     if ( json.object().find( "OnlyShowSyncableUsers" ) == json.object().end() )
         setOnlyShowSyncableUsers( true );
     else
@@ -219,19 +352,24 @@ bool CSettings::save( std::function<void( const QString & title, const QString &
     for ( auto && ii : fSyncUserList )
         userList.push_back( ii );
     root[ "SyncUserList" ] = userList;
-    auto lhs = json.object();
+    
+    auto servers = json.array();
 
-    lhs[ "url" ] = url( true );
-    lhs[ "api_key" ] = apiKey( true );
+    for ( int ii = 0; ii < serverCnt(); ++ii )
+    {
+        auto serverInfo = getServerInfo( ii );
 
-    root[ "lhs" ] = lhs;
+        auto curr = json.object();
 
-    auto rhs = json.object();
+        curr[ "url" ] = serverInfo->url();
+        curr[ "api_key" ] = serverInfo->fAPIKey;
+        if ( !serverInfo->fName.second )
+            curr[ "name" ] = serverInfo->friendlyName();
 
-    rhs[ "url" ] = url( false );
-    rhs[ "api_key" ] = apiKey( false );
+        servers.push_back( curr );
+    }
 
-    root[ "rhs" ] = rhs;
+    root[ "servers" ] = servers;
 
     json = QJsonDocument( root );
 
@@ -250,79 +388,14 @@ bool CSettings::save( std::function<void( const QString & title, const QString &
     return true;
 }
 
-
-QString CSettings::serverName( bool lhs )
-{
-    if ( lhs && fLHSServer.first.isEmpty() )
-        return QObject::tr( "LHS Name" );
-    if ( !lhs && fRHSServer.first.isEmpty() )
-        return QObject::tr( "RHS Name" );
-
-    auto retVal = getUrl( lhs );
-    if ( retVal.host() == getUrl( !lhs ).host() )
-        return QString( "%1:%2" ).arg( retVal.host() ).arg( retVal.port() );
-    return retVal.host();
-}
-
-QUrl CSettings::getUrl( bool lhs ) const
-{
-    return getUrl( QString(), std::list< std::pair< QString, QString > >(), lhs );
-}
-
-QUrl CSettings::getUrl( const QString & extraPath, const std::list< std::pair< QString, QString > > & queryItems, bool lhs ) const
-{
-    auto path = url( lhs );
-    if ( path.isEmpty() )
-        return {};
-
-    if ( !extraPath.isEmpty() )
-    {
-        if ( !path.endsWith( "/" ) )
-            path += "/";
-        path += extraPath;
-    }
-
-    if ( path.indexOf( "://" ) == -1 )
-        path = "http://" + path;
-
-    QUrl retVal( path );
-
-    QUrlQuery query;
-    query.addQueryItem( "api_key", apiKey( lhs ) );
-    for ( auto && ii : queryItems )
-    {
-        query.addQueryItem( ii.first, ii.second );
-    }
-    retVal.setQuery( query );
-
-    //qDebug() << url;
-
-    return retVal;
-}
-
-void CSettings::setURL( const QString & url, bool lhs )
-{
-    if ( lhs )
-        updateValue( fLHSServer.first, url );
-    else
-        updateValue( fRHSServer.first, url );
-}
-
-void CSettings::setAPIKey( const QString & apiKey, bool lhs )
-{
-    if ( lhs )
-        updateValue( fLHSServer.second, apiKey );
-    else
-        updateValue( fRHSServer.second, apiKey );
-}
-
 bool CSettings::canSync() const
 {
-    return getUrl( true ).isValid()
-        && !apiKey( true ).isEmpty()
-        && getUrl( false ).isValid()
-        && !apiKey( false ).isEmpty()
-        ;
+    for ( auto && ii : fServers )
+    {
+        if ( !ii->canSync() )
+            return false;
+    }
+    return true;
 }
 
 QColor CSettings::getColor( const QColor & clr, bool forBackground /*= true */ ) const
@@ -336,6 +409,14 @@ QColor CSettings::getColor( const QColor & clr, bool forBackground /*= true */ )
     if ( !forBackground )
         return QString();
     return clr;
+}
+
+void CSettings::reset()
+{
+    fServers.clear();
+    fServerMap.clear();
+    fChanged = false;
+    fFileName.clear();
 }
 
 QColor CSettings::mediaSourceColor( bool forBackground /*= true */ ) const
@@ -464,3 +545,261 @@ void CSettings::setSyncUserList( const QStringList & value )
 }
 
 
+void CSettings::setServers( const std::vector < std::shared_ptr< SServerInfo > > & servers )
+{
+    fChanged = fChanged || serversChanged( servers, fServers );
+    fChanged = fChanged || serversChanged( fServers, servers );
+
+    if ( !fChanged )
+        return;
+
+    fServers = servers;
+    fServerMap.clear();
+    updateServerMap();
+    updateFriendlyServerNames();
+}
+
+
+bool CSettings::serversChanged( const std::vector< std::shared_ptr< SServerInfo > > & lhs, const std::vector< std::shared_ptr< SServerInfo > > & rhs ) const
+{
+    if ( lhs.size() != rhs.size() )
+        return false;
+
+    bool retVal = false;
+    for ( auto && ii : lhs )
+    {
+        std::shared_ptr< SServerInfo > found;
+        for ( auto && jj : rhs )
+        {
+            if ( ii->keyName() == jj->keyName() )
+            {
+                found = jj;
+                break;
+            }
+        }
+        if ( found )
+        {
+            if ( *ii != *found )
+            {
+                retVal = true;
+                break;
+            }
+        }
+        else
+        {
+            retVal = true;
+            break;
+        }
+    }        
+    return retVal;
+}
+
+void CSettings::updateServerMap()
+{
+    for ( size_t ii = 0; ii < fServers.size(); ++ii )
+    {
+        auto server = fServers[ ii ];
+        fServerMap[ server->keyName() ] = { server, ii };
+    }
+}
+
+bool CSettings::loadServer( const QJsonObject & obj, QString & errorMsg )
+{
+    bool generated = !obj.contains( "name" ) || obj["name"].toString().isEmpty();
+    QString serverName;
+    if ( generated )
+        serverName = obj[ "url" ].toString();
+    else
+        serverName = obj[ "name" ].toString();
+
+    if ( serverName.isEmpty() )
+    {
+        errorMsg = QString( "Missing name and url" );
+        return false;
+    }
+
+    if ( !obj.contains(  "url"  ) )
+    {
+        errorMsg = QString( "Missing url" );
+        return false;
+    }
+
+    if ( !obj.contains( "api_key" ) )
+    {
+        errorMsg = QString( "Missing api_key" );
+        return false;
+    }
+    auto serverInfo = getServerInfo( serverName, false );
+    if ( serverInfo )
+    {
+        errorMsg = QString( "Server '%1' already exists" ).arg( serverName );
+        return false;
+    }
+
+    serverInfo = getServerInfo( serverName, true );
+    serverInfo->fName.second = generated;
+
+    setURL( obj[ "url" ].toString(), serverName );
+    setAPIKey( obj[ "api_key" ].toString(), serverName );
+    updateFriendlyServerNames();
+    return true;
+}
+
+std::shared_ptr< const SServerInfo > CSettings::getServerInfo( int serverNum ) const
+{
+    if ( serverNum < 0 )
+        return {};
+    if ( serverNum >= serverCnt() )
+        return {};
+
+    return fServers[ serverNum ];
+}
+
+
+int CSettings::getServerPos( const QString & serverName ) const
+{
+    auto pos = fServerMap.find( serverName );
+    if ( pos != fServerMap.end() )
+        return static_cast<int>( ( *pos ).second.second );
+    return -1;
+}
+
+
+std::shared_ptr< const SServerInfo > CSettings::getServerInfo( const QString & serverName ) const
+{
+    auto pos = fServerMap.find( serverName );
+    if ( pos != fServerMap.end() )
+        return ( *pos ).second.first;
+    return {};
+}
+
+std::shared_ptr< SServerInfo > CSettings::getServerInfo( const QString & serverName, bool addIfMissing )
+{
+    auto retVal = getServerInfo( serverName );
+    if ( retVal || !addIfMissing )
+        return std::const_pointer_cast<SServerInfo>( retVal );
+
+    auto realRetVal = std::make_shared< SServerInfo >( serverName );
+    fServers.push_back( realRetVal );
+    fServerMap[ serverName ] = { realRetVal, fServers.size() - 1 };
+    return realRetVal;
+}
+
+
+int CSettings::serverCnt() const
+{
+    return static_cast<int>( fServers.size() );
+}
+
+QString CSettings::apiKey( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->fAPIKey;
+}
+
+QString CSettings::apiKey( int serverNum ) const
+{
+    auto serverInfo = getServerInfo( serverNum );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->fAPIKey;
+}
+
+void CSettings::setAPIKey( const QString & apiKey, const QString & serverName )
+{
+    auto serverInfo = getServerInfo( serverName, true );
+    updateValue( serverInfo->fAPIKey, apiKey );
+}
+
+QString CSettings::friendlyServerName( int serverNum ) const
+{
+    auto serverInfo = getServerInfo( serverNum );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->friendlyName();
+}
+
+QString CSettings::serverKeyName( int serverNum ) const
+{
+    auto serverInfo = getServerInfo( serverNum );
+    if ( !serverInfo )
+        return {};
+
+    return serverInfo->keyName();
+}
+
+void CSettings::setServerFriendlyName( const QString & newServerName, const QString & oldServerName )
+{
+    auto serverInfo = getServerInfo( oldServerName, false );
+    if ( serverInfo )
+    {
+        auto tmp = serverInfo->friendlyName();
+        updateValue( tmp, newServerName );
+        serverInfo->setFriendlyName( newServerName, false );
+
+        auto pos = fServerMap.find( oldServerName );
+        if ( pos != fServerMap.end() )
+            fServerMap.erase( pos );
+    }
+    else
+    {
+        getServerInfo( newServerName, true );
+    }
+}
+
+
+QString CSettings::url( int serverNum ) const
+{
+    auto serverInfo = getServerInfo( serverNum );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->url();
+}
+
+void CSettings::setURL( const QString & url, const QString & serverName )
+{
+    auto serverInfo = getServerInfo( serverName, true );
+    updateValue( serverInfo->fURL, url );
+}
+
+QUrl CSettings::getUrl( const QString & serverName ) const
+{
+    return getUrl( QString(), std::list< std::pair< QString, QString > >(), serverName );
+}
+
+QUrl CSettings::getUrl( int serverNum ) const
+{
+    auto serverInfo = getServerInfo( serverNum );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->getUrl();
+}
+
+QUrl CSettings::getUrl( const QString & extraPath, const std::list< std::pair< QString, QString > > & queryItems, const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return {};
+
+    return serverInfo->getUrl( extraPath, queryItems );
+}
+
+void CSettings::updateFriendlyServerNames()
+{
+    std::multimap< QString, std::shared_ptr< SServerInfo > > servers;
+    for ( int ii = 0; ii < serverCnt(); ++ii )
+    {
+        auto serverInfo = fServers[ ii ];
+        if ( serverInfo->fName.second ) // generatedName
+            servers.insert( { serverInfo->friendlyName(), serverInfo } );
+    }
+
+    for ( auto && ii : servers )
+    {
+        auto cnt = servers.count( ii.first );
+        ii.second->autoSetFriendlyName( cnt > 1 );
+    }
+    updateServerMap();
+}

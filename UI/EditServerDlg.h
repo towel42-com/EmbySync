@@ -20,53 +20,36 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef _SETTINGSDLG_H
-#define _SETTINGSDLG_H
+#ifndef __EDITSERVERDLG_H
+#define __EDITSERVERDLG_H
 
 #include <QDialog>
-#include <QColor>
 #include <memory>
-#include <vector>
-
-class QTreeWidgetItem;
 
 namespace Ui
 {
-    class CSettingsDlg;
+    class CEditServerDlg;
 }
 
-class QListWidgetItem;
-class QTreeWidgetItem;
-class QLabel;
-class CSettings;
-class CUserData;
-class CSettingsDlg : public QDialog
+class CSyncSystem;
+class CEditServerDlg : public QDialog
 {
     Q_OBJECT
 public:
-    CSettingsDlg( std::shared_ptr< CSettings > settings, const std::vector< std::shared_ptr< CUserData > > & knownUsers, QWidget * parent = nullptr );
-    virtual ~CSettingsDlg() override;
+    CEditServerDlg( const QString & name, const QString & url, const QString & apiKey, QWidget * parent = nullptr );
+    virtual ~CEditServerDlg() override;
 
-    void load();
+    QString name() const;
+    QString url() const;
+    QString apiKey() const;
 
-    virtual void accept() override;
-
-    void save();
-
+Q_SIGNALS:
 public Q_SLOTS:
+    void slotChanged();
 private:
-    void editServer( QTreeWidgetItem * item );
-    void editUser( QListWidgetItem * item );
-    void updateColors();
-    void updateColor( QLabel * label, const QColor & color );
-    void updateKnownUsers();
-    QStringList syncUserStrings() const;
+    void updateButtons();
+    bool okToTest();
 
-    std::unique_ptr< Ui::CSettingsDlg > fImpl;
-    std::shared_ptr< CSettings > fSettings;
-    QColor fMediaSourceColor;
-    QColor fMediaDestColor;
-    QColor fDataMissingColor;
-    std::vector< std::pair< std::shared_ptr< CUserData >, QTreeWidgetItem * > > fKnownUsers;
+    std::unique_ptr< Ui::CEditServerDlg > fImpl;
 };
 #endif 

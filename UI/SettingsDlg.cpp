@@ -21,8 +21,10 @@
 // SOFTWARE.
 
 #include "SettingsDlg.h"
+#include "EditServerDlg.h"
 #include "Core/Settings.h"
 #include "Core/UserData.h"
+#include "Core/SyncSystem.h"
 #include "SABUtils/ButtonEnabler.h"
 
 #include <QFileDialog>
@@ -30,20 +32,40 @@
 #include <QColorDialog>
 #include <QInputDialog>
 #include <QDebug>
+#include <QPushButton>
 
 #include "ui_SettingsDlg.h"
 
-CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, const std::vector< std::shared_ptr< CUserData > > & knownUsers, QWidget * parentWidget )
+CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, const std::vector< std::shared_ptr< CUserData > > & knownUsers, QWidget * parentWidget )
     : QDialog( parentWidget ),
     fImpl( new Ui::CSettingsDlg ),
-    fSettings( settings )
+    fSettings( settings ),
+    fSyncSystem( syncSystem )
 {
     fImpl->setupUi( this );
     new NSABUtils::CButtonEnabler( fImpl->usersList, fImpl->delUser );
+    new NSABUtils::CButtonEnabler( fImpl->usersList, fImpl->editUser );
+    new NSABUtils::CButtonEnabler( fImpl->servers, fImpl->delServer );
+    new NSABUtils::CButtonEnabler( fImpl->servers, fImpl->editServer );
+
+    auto headerLabels = QStringList() << tr( "Connected ID" );
+    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+        headerLabels << fSettings->friendlyServerName( ii );
+    fImpl->knownUsers->setColumnCount( headerLabels.count() );
+    fImpl->knownUsers->setHeaderLabels( headerLabels );
+
+    fTestButton = fImpl->testButtonBox->addButton( tr( "Test" ), QDialogButtonBox::ButtonRole::ActionRole );
+    fTestButton->setObjectName( "Test Button" );
+    connect( fTestButton, &QPushButton::clicked, this, &CSettingsDlg::slotTestServers );
+    connect( fSyncSystem.get(), &CSyncSystem::sigTestServerResults, this, &CSettingsDlg::slotTestServerResults );
 
     for ( auto && ii : knownUsers )
     {
-        fKnownUsers.push_back( std::make_pair( ii, new QTreeWidgetItem( fImpl->knownUsers, QStringList() << ii->name( true ) << ii->name( false ) << ii->connectedID() ) ) );
+        auto data = QStringList() << ii->connectedID();
+        for ( int jj = 0; jj < fSettings->serverCnt(); ++jj )
+            data << ii->name( fSettings->serverKeyName( jj ) );
+
+        fKnownUsers.push_back( std::make_pair( ii, new QTreeWidgetItem( fImpl->knownUsers, data ) ) );
     }
     load();
 
@@ -80,11 +102,7 @@ CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, const std::ve
     connect( fImpl->addUser, &QToolButton::clicked,
         [ this ]()
         {
-            auto newUserName = QInputDialog::getText( this, tr( "Regular Expression" ), tr( "Regular Expression matching User names to sync:" ) );
-            if ( newUserName.isEmpty() )
-                return;
-            new QListWidgetItem( newUserName, fImpl->usersList );
-            updateKnownUsers();
+            editUser( nullptr );
         } );
     connect( fImpl->delUser, &QToolButton::clicked,
         [ this ]()
@@ -95,19 +113,75 @@ CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, const std::ve
             delete curr;
             updateKnownUsers();
         } );
-    connect( fImpl->usersList, &QListWidget::itemDoubleClicked, 
+    connect( fImpl->editUser, &QToolButton::clicked,
+             [this]()
+             {
+                 auto curr = fImpl->usersList->currentItem();
+                 editUser( curr );
+             } );
+
+    connect( fImpl->usersList, &QListWidget::itemDoubleClicked,
         [ this ]( QListWidgetItem *item )
         {
-            if ( !item )
-                return;
-
-            auto newUserName = QInputDialog::getText( this, tr( "Regular Expression" ), tr( "Regular Expression matching User names to sync:" ), QLineEdit::EchoMode::Normal, item->text() );
-            if ( newUserName.isEmpty() || ( newUserName == item->text() ) )
-                return;
-            item->setText( newUserName );
-            updateKnownUsers();
+            return editUser( item );
         } );
+
+    connect( fImpl->addServer, &QToolButton::clicked,
+             [this]()
+             {
+                 editServer( nullptr );
+             } );
+    connect( fImpl->delServer, &QToolButton::clicked,
+             [this]()
+             {
+                 auto curr = fImpl->servers->currentItem();
+                 if ( !curr )
+                     return;
+                 delete curr;
+             } );
+    connect( fImpl->editServer, &QToolButton::clicked,
+             [this]()
+             {
+                 auto curr = fImpl->servers->currentItem();
+                 editServer( curr );
+             } );
+
+    connect( fImpl->servers, &QTreeWidget::itemDoubleClicked,
+             [this]( QTreeWidgetItem * item )
+             {
+                 return editServer( item );
+             } );
+
     fImpl->tabWidget->setCurrentIndex( 0 );
+}
+
+void CSettingsDlg::editUser( QListWidgetItem * item )
+{
+    auto curr = item ? item->text() : QString();
+
+    auto newUserName = QInputDialog::getText( this, tr( "Regular Expression" ), tr( "Regular Expression matching User names to sync:" ), QLineEdit::EchoMode::Normal, curr );
+    if ( newUserName.isEmpty() || ( newUserName == item->text() ) )
+        return;
+    item->setText( newUserName );
+    updateKnownUsers();
+}
+
+void CSettingsDlg::editServer( QTreeWidgetItem * item )
+{
+    auto friendlyName = item ? item->text( 0 ) : QString();
+    auto url = item ? item->text( 1 ) : QString();
+    auto apiKey = item ? item->text( 2 ) : QString();
+
+    CEditServerDlg dlg( friendlyName, url, apiKey, this );
+    if ( dlg.exec() == QDialog::Accepted )
+    {
+        if ( !item )
+            item = new QTreeWidgetItem( fImpl->servers );
+        item->setText( 0, dlg.name() );
+        item->setText( 1, dlg.url() );
+        item->setText( 2, dlg.apiKey() );
+        item->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/unknownStatus.png" ) ) );
+    }
 }
 
 CSettingsDlg::~CSettingsDlg()
@@ -123,10 +197,16 @@ void CSettingsDlg::accept()
 
 void CSettingsDlg::load()
 {
-    fImpl->embyURL1->setText( fSettings->url( true ) );
-    fImpl->embyAPI1->setText( fSettings->apiKey( true ) );
-    fImpl->embyURL2->setText( fSettings->url( false ) );
-    fImpl->embyAPI2->setText( fSettings->apiKey( false ) );
+    fImpl->servers->setColumnCount( 3 );
+    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    {
+        auto name = fSettings->friendlyServerName( ii );
+        auto url = fSettings->url( ii );
+        auto apiKey = fSettings->apiKey( ii );
+
+        auto item = new QTreeWidgetItem( fImpl->servers, QStringList() << name << url << apiKey );
+        item->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/unknownStatus.png" ) ) );
+    }
 
     fMediaSourceColor = fSettings->mediaSourceColor();
     fMediaDestColor = fSettings->mediaDestColor();
@@ -160,10 +240,8 @@ void CSettingsDlg::load()
 
 void CSettingsDlg::save()
 {
-    fSettings->setURL( fImpl->embyURL1->text(), true );
-    fSettings->setAPIKey( fImpl->embyAPI1->text(), true );
-    fSettings->setURL( fImpl->embyURL2->text(), false );
-    fSettings->setAPIKey( fImpl->embyAPI2->text(), false );
+    auto servers = getServerInfos();
+    fSettings->setServers( servers );
 
     fSettings->setMediaSourceColor( fMediaSourceColor );
     fSettings->setMediaDestColor( fMediaDestColor );
@@ -180,6 +258,26 @@ void CSettingsDlg::save()
     fSettings->setSyncGame( fImpl->syncGame->isChecked() );
     fSettings->setSyncBook( fImpl->syncBook->isChecked() );
     fSettings->setSyncUserList( syncUserStrings() );
+}
+
+std::vector< std::shared_ptr< SServerInfo > > CSettingsDlg::getServerInfos() const
+{
+    std::vector< std::shared_ptr< SServerInfo > > servers;
+    for ( int ii = 0; ii < fImpl->servers->topLevelItemCount(); ++ii )
+    {
+        auto curr = getServerInfo( ii );
+        servers.push_back( curr );
+    }
+    return std::move( servers );
+}
+
+std::shared_ptr< SServerInfo > CSettingsDlg::getServerInfo( int ii ) const
+{
+    auto name = fImpl->servers->topLevelItem( ii )->text( 0 );
+    auto url = fImpl->servers->topLevelItem( ii )->text( 1 );
+    auto apiKey = fImpl->servers->topLevelItem( ii )->text( 2 );
+
+    return std::make_shared< SServerInfo >( name, url, apiKey );
 }
 
 QStringList CSettingsDlg::syncUserStrings() const
@@ -334,4 +432,34 @@ bool CSettings::maybeSave( QWidget * parentWidget, std::function<QString()> sele
     if ( fFileName.isEmpty() )
         return false;
     return save( parentWidget, selectFileFunc, errorFunc );
+}
+
+void CSettingsDlg::slotTestServers()
+{
+    auto tmp = getServerInfos();
+    std::vector< std::shared_ptr< const SServerInfo > > servers;
+    for ( auto && ii : tmp )
+        servers.push_back( std::const_pointer_cast<const SServerInfo>( ii ) );
+
+    fSyncSystem->testServers( servers );
+}
+
+void CSettingsDlg::slotTestServerResults( const QString & serverName, bool results, const QString & msg )
+{
+    for ( int ii = 0; ii < fImpl->servers->topLevelItemCount(); ++ii )
+    {
+        auto serverInfo = getServerInfo( ii );
+        if ( serverInfo->keyName() == serverName )
+        {
+            auto item = fImpl->servers->topLevelItem( ii );
+            if ( results )
+                item->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/ok.png" ) ) );
+            else
+                item->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/error.png" ) ) );
+        }
+    }
+    if ( !results )
+    {
+        QMessageBox::critical( this, tr( "Error" ), tr( "Error in Testing: '%1' - %1" ).arg( serverName ).arg( msg ), QMessageBox::StandardButton::Ok );
+    }
 }

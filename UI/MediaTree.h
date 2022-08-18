@@ -40,7 +40,7 @@ class CMediaTree : public QWidget
 {
     Q_OBJECT
 public:
-    CMediaTree( const std::shared_ptr< SServerInfo > & serverInfo, QWidget * parent = nullptr );
+    CMediaTree( const std::shared_ptr< const SServerInfo > & serverInfo, QWidget * parent = nullptr );
     virtual ~CMediaTree() override;
 
     void setModel( QAbstractItemModel * model );
@@ -62,10 +62,12 @@ private Q_SLOTS:
     void slotSetCurrentMediaItem( const QModelIndex & idx );
     void slotSetVSlider( int position );
     void slotSetHSlider( int position );
+    void slotHActionTriggered( int action );
+    void slotVActionTriggered( int action );
 private:
     std::unique_ptr< Ui::CMediaTree > fImpl;
     std::vector< CMediaTree * > fPeers;
 
-    const std::shared_ptr< SServerInfo > fServerInfo;
+    const std::shared_ptr< const SServerInfo > fServerInfo;
 };
 #endif 

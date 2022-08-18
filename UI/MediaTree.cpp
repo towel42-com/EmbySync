@@ -28,7 +28,7 @@
 
 #include <QScrollBar>
 
-CMediaTree::CMediaTree( const std::shared_ptr< SServerInfo > & serverInfo, QWidget * parentWidget )
+CMediaTree::CMediaTree( const std::shared_ptr< const SServerInfo > & serverInfo, QWidget * parentWidget )
     : QWidget( parentWidget ),
     fImpl( new Ui::CMediaTree ),
     fServerInfo( serverInfo )
@@ -48,7 +48,9 @@ void CMediaTree::setModel( QAbstractItemModel * model )
     fImpl->media->setModel( model );
 
     connect( fImpl->media->verticalScrollBar(), &QScrollBar::sliderMoved, this, &CMediaTree::sigVSliderMoved );
+    connect( fImpl->media->verticalScrollBar(), &QScrollBar::actionTriggered, this, &CMediaTree::slotVActionTriggered );
     connect( fImpl->media->horizontalScrollBar(), &QScrollBar::sliderMoved, this, &CMediaTree::sigHSliderMoved );
+    connect( fImpl->media->horizontalScrollBar(), &QScrollBar::actionTriggered, this, &CMediaTree::slotHActionTriggered );
     connect( fImpl->media->selectionModel(), &QItemSelectionModel::currentChanged, this, &CMediaTree::sigCurrChanged );
     connect( fImpl->media, &QTreeView::doubleClicked, this, &CMediaTree::sigViewMedia );
 }
@@ -88,6 +90,22 @@ void CMediaTree::slotSetVSlider( int position )
 void CMediaTree::slotSetHSlider( int position )
 {
     fImpl->media->horizontalScrollBar()->setValue( position );
+}
+
+void CMediaTree::slotHActionTriggered( int action )
+{
+    if ( action == QAbstractSlider::SliderMove )
+    {
+        emit sigHSliderMoved( fImpl->media->horizontalScrollBar()->value() );
+    }
+}
+
+void CMediaTree::slotVActionTriggered( int action )
+{
+    if ( action == QAbstractSlider::SliderMove )
+    {
+        emit sigVSliderMoved( fImpl->media->verticalScrollBar()->value() );
+    }
 }
 
 void CMediaTree::hideColumns()

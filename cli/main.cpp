@@ -44,11 +44,8 @@ int main( int argc, char ** argv )
     auto settingsFileOption = QCommandLineOption( QStringList() << "settings" << "s", "The settings json file", "Settings file" );
     parser.addOption( settingsFileOption );
 
-    auto forceLeftOption = QCommandLineOption( QStringList() << "force_left" << "l", "Force process from lhs server to rhs" );
-    parser.addOption( forceLeftOption );
-
-    auto forceRightOption = QCommandLineOption( QStringList() << "force_right" << "r", "Force process from rhs server to lhs" );
-    parser.addOption( forceRightOption );
+    auto selectedServerOption = QCommandLineOption( QStringList() << "selected_server", "The server name you wish to use as the primary server to set all other servers settings to", "Selected Server" );
+    parser.addOption( selectedServerOption );
 
     parser.process( appl );
     
@@ -88,8 +85,8 @@ int main( int argc, char ** argv )
     }
     QObject::connect( mainObj.get(), &CMainObj::sigExit, &appl, &QCoreApplication::exit );
 
-    if ( parser.isSet( forceLeftOption ) || parser.isSet( forceRightOption ) )
-        mainObj->setForceProcessing( parser.isSet( forceLeftOption ), parser.isSet( forceRightOption ) );
+    if ( parser.isSet( selectedServerOption )  )
+        mainObj->setSelectiveProcesssServer( parser.value( selectedServerOption ) );
 
     mainObj->run();
 

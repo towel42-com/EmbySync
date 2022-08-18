@@ -26,6 +26,8 @@
 #include <QWidget>
 class CMediaData;
 class CSyncSystem;
+class CSettings;
+class CMediaUserDataWidget;
 namespace Ui
 {
     class CMediaWindow;
@@ -36,23 +38,26 @@ class CMediaWindow : public QWidget
 {
     Q_OBJECT
 public:
-    CMediaWindow( std::shared_ptr< CSyncSystem > syncSystem, QWidget * parent = nullptr );
+    CMediaWindow( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, QWidget * parent = nullptr );
     virtual ~CMediaWindow() override;
 
     void setMedia( std::shared_ptr< CMediaData > media );
 
     bool okToClose();
+    virtual void closeEvent( QCloseEvent * event ) override;
 Q_SIGNALS:
     void sigChanged();
 public Q_SLOTS:
 private Q_SLOTS:
-    void slotApplyToLeft();
-    void slotApplyToRight();
     void slotUploadUserMediaData();
+    void slotApplyFromServer( CMediaUserDataWidget * which );
 private:
     bool fChanged{ false };
     std::unique_ptr< Ui::CMediaWindow > fImpl;
     std::shared_ptr< CSyncSystem > fSyncSystem;
+    std::shared_ptr< CSettings > fSettings;
+
+    std::map< QString, CMediaUserDataWidget * > fUserDataWidgets;
     std::shared_ptr< CMediaData > fMediaInfo;
 };
 #endif 

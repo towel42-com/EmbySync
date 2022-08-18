@@ -40,7 +40,7 @@ public:
     CMediaUserDataWidget( QWidget * parentWidget = nullptr );
     CMediaUserDataWidget( const QString & title, QWidget * parentWidget = nullptr );
     CMediaUserDataWidget( std::shared_ptr< SMediaUserData > mediaData, QWidget * parentWidget = nullptr );
-    
+
     virtual ~CMediaUserDataWidget() override;
 
     void setMediaUserData( std::shared_ptr< SMediaUserData > mediaData );
@@ -53,6 +53,10 @@ public:
 
 public Q_SLOTS:
     void slotChanged();
+    void slotApplyFromServer();
+Q_SIGNALS:
+    void sigApplyFromServer( CMediaUserDataWidget * which );
+
 private:
     void load( std::shared_ptr< SMediaUserData > mediaData );
 

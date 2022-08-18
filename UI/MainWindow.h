@@ -43,6 +43,7 @@ class CUsersModel;
 class CUsersFilterModel;
 class QTreeView;
 class CMediaWindow;
+class CMediaTree;
 
 class CMainWindow : public QMainWindow
 {
@@ -59,7 +60,6 @@ public:
 
     virtual void closeEvent( QCloseEvent * closeEvent ) override;
     virtual void showEvent( QShowEvent * event ) override;
-    virtual bool eventFilter( QObject * obj, QEvent * event ) override;
 Q_SIGNALS:
     void sigSettingsLoaded();
     void sigDataChanged();
@@ -75,6 +75,7 @@ public Q_SLOTS:
     void slotRecentMenuAboutToShow();
     void slotUserMediaCompletelyLoaded();
     void slotPendingMediaUpdate();
+    void slotSelectiveProcess();
 private Q_SLOTS:
     void slotCurrentUserChanged( const QModelIndex & index );
 
@@ -90,12 +91,12 @@ private Q_SLOTS:
     void slotLoadingUsersFinished();
     void slotUserMediaLoaded();
 
-    void slotSetCurrentMediaItem( const QModelIndex & current, const QModelIndex & previous );
+    void slotSetCurrentMediaItem( const QModelIndex & current );
+    void slotViewMedia( const QModelIndex & current );
 
     void slotViewMediaInfo();
 
 private:
-    void hideColumns( QTreeView * treeView, EWhichTree whichTree );
 
     std::shared_ptr< CMediaData > getMediaData( QModelIndex idx ) const;
         
@@ -111,17 +112,14 @@ private:
     void onlyShowMediaWithDifferences();
     void showMediaWithIssues();
     std::shared_ptr< CUserData > getCurrUserData() const;
-    std::shared_ptr< CUserData > getUserData( const QModelIndex & idx ) const;
+    std::shared_ptr< CUserData > getUserData( QModelIndex idx ) const;
 
     void loadFile( const QString & fileName );
 
     void reset();
 
+    void loadServers();
     void resetServers();
-
-    void loadAllMedia();
-    void loadAllMedia( bool isLHS );
-
 
     std::unique_ptr< Ui::CMainWindow > fImpl;
     std::shared_ptr< CSettings > fSettings;
@@ -139,6 +137,8 @@ private:
     QTimer * fMediaLoadedTimer{ nullptr };
 
     QPointer< CMediaWindow > fMediaWindow;
+
+    std::vector< CMediaTree * > fMediaTrees;
 
 };
 #endif 

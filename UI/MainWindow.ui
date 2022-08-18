@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1149</width>
-    <height>809</height>
+    <width>1157</width>
+    <height>826</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -41,78 +41,6 @@
            <property name="sortingEnabled">
             <bool>true</bool>
            </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="layoutWidget_2">
-        <layout class="QVBoxLayout" name="verticalLayout_4">
-         <item>
-          <widget class="QLabel" name="lhsServerLabel">
-           <property name="text">
-            <string>LHS Server Media:</string>
-           </property>
-           <property name="openExternalLinks">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QTreeView" name="lhsMedia">
-           <property name="alternatingRowColors">
-            <bool>true</bool>
-           </property>
-           <property name="indentation">
-            <number>0</number>
-           </property>
-           <property name="rootIsDecorated">
-            <bool>false</bool>
-           </property>
-           <property name="itemsExpandable">
-            <bool>false</bool>
-           </property>
-           <property name="sortingEnabled">
-            <bool>true</bool>
-           </property>
-           <attribute name="headerHighlightSections">
-            <bool>true</bool>
-           </attribute>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="layoutWidget_4">
-        <layout class="QVBoxLayout" name="verticalLayout_3">
-         <item>
-          <widget class="QLabel" name="rhsServerLabel">
-           <property name="text">
-            <string>RHS Server Media:</string>
-           </property>
-           <property name="openExternalLinks">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QTreeView" name="rhsMedia">
-           <property name="alternatingRowColors">
-            <bool>true</bool>
-           </property>
-           <property name="indentation">
-            <number>0</number>
-           </property>
-           <property name="rootIsDecorated">
-            <bool>false</bool>
-           </property>
-           <property name="itemsExpandable">
-            <bool>false</bool>
-           </property>
-           <property name="sortingEnabled">
-            <bool>true</bool>
-           </property>
-           <attribute name="headerHighlightSections">
-            <bool>true</bool>
-           </attribute>
           </widget>
          </item>
         </layout>
@@ -154,7 +82,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1149</width>
+     <width>1157</width>
      <height>22</height>
     </rect>
    </property>
@@ -188,9 +116,7 @@
      <string>Process</string>
     </property>
     <addaction name="actionProcess"/>
-    <addaction name="separator"/>
-    <addaction name="actionProcessToRight"/>
-    <addaction name="actionProcessToLeft"/>
+    <addaction name="actionSelectiveProcess"/>
    </widget>
    <widget class="QMenu" name="menuReload">
     <property name="title">
@@ -232,8 +158,7 @@
    <addaction name="actionReloadCurrentUser"/>
    <addaction name="separator"/>
    <addaction name="actionProcess"/>
-   <addaction name="actionProcessToLeft"/>
-   <addaction name="actionProcessToRight"/>
+   <addaction name="actionSelectiveProcess"/>
   </widget>
   <action name="actionSettings">
    <property name="icon">
@@ -282,7 +207,10 @@
      <normaloff>:/resources/process.png</normaloff>:/resources/process.png</iconset>
    </property>
    <property name="text">
-    <string>Process User</string>
+    <string>Process Media</string>
+   </property>
+   <property name="toolTip">
+    <string>Process Media</string>
    </property>
   </action>
   <action name="actionReloadServers">
@@ -344,22 +272,16 @@
     <string>Reload Current User</string>
    </property>
   </action>
-  <action name="actionProcessToRight">
+  <action name="actionSelectiveProcess">
    <property name="icon">
     <iconset resource="EmbySync.qrc">
      <normaloff>:/resources/processRight.png</normaloff>:/resources/processRight.png</iconset>
    </property>
    <property name="text">
-    <string>Force Process User to RHS Server</string>
+    <string>Select a Server and Update other servers to it..</string>
    </property>
-  </action>
-  <action name="actionProcessToLeft">
-   <property name="icon">
-    <iconset resource="EmbySync.qrc">
-     <normaloff>:/resources/processLeft.png</normaloff>:/resources/processLeft.png</iconset>
-   </property>
-   <property name="text">
-    <string>Force Process User to LHS Server</string>
+   <property name="toolTip">
+    <string>Select a Server and Update other servers to it</string>
    </property>
   </action>
   <action name="actionShowMediaWithIssues">
@@ -385,8 +307,6 @@
  </widget>
  <tabstops>
   <tabstop>users</tabstop>
-  <tabstop>lhsMedia</tabstop>
-  <tabstop>rhsMedia</tabstop>
  </tabstops>
  <resources>
   <include location="EmbySync.qrc"/>

@@ -1,5 +1,6 @@
 #include "MediaModel.h"
 #include "MediaData.h"
+#include "MergeMedia.h"
 
 #include "Settings.h"
 #include "ProgressSystem.h"
@@ -7,9 +8,11 @@
 #include <QJsonObject>
 #include <QColor>
 
+#include <optional>
 CMediaModel::CMediaModel( std::shared_ptr< CSettings > settings, QObject * parent ) :
     QAbstractTableModel( parent ),
-    fSettings( settings )
+    fSettings( settings ),
+    fMergeSystem( new CMergeMedia )
 {
 
 }
@@ -22,20 +25,54 @@ int CMediaModel::rowCount( const QModelIndex & parent /* = QModelIndex() */ ) co
     return static_cast<int>( fData.size() );
 }
 
+int CMediaModel::columnsPerServer( bool includeProviders ) const
+{
+    auto retVal = static_cast<int>( ePlaybackPosition ) + 1;
+    if ( includeProviders )
+        retVal += static_cast<int>( fProviderNames.size() );
+    return retVal;
+}
+
+bool CMediaModel::isFirstColumnOfServer( int columnNum ) const
+{
+    if ( getProviderInfoForColumn( columnNum ) )
+        return false;
+
+    return ( columnNum % columnsPerServer( false ) ) == 0;
+}
+
 int CMediaModel::columnCount( const QModelIndex & parent /* = QModelIndex() */ ) const
 {
     if ( parent.isValid() )
         return 0;
-    auto retVal = static_cast<int>( eRHSPlaybackPosition ) + 1;
-    retVal += static_cast<int>( 2 * fProviderColumnsByName.size() );
+    auto retVal = fSettings->serverCnt() * columnsPerServer();
     return retVal;
+}
+
+QString CMediaModel::serverNameForColumn( int column ) const
+{
+    auto providerInfo = getProviderInfoForColumn( column );
+    if ( providerInfo )
+        return providerInfo.value().first;
+
+    auto serverNum = column / columnsPerServer( false );
+    return fSettings->serverKeyName( serverNum );
+}
+
+std::optional< std::pair< QString, QString > > CMediaModel::getProviderInfoForColumn( int column ) const
+{
+    auto pos = fProviderColumnsByColumn.find( column );
+    if ( pos != fProviderColumnsByColumn.end() )
+        return ( *pos ).second;
+
+    return {};
 }
 
 bool CMediaModel::hasMediaToProcess() const
 {
     for ( auto && ii : fData )
     {
-        if ( ii->isMissingOnEitherServer() )
+        if ( ii->canBeSynced() )
             continue;
         if ( !ii->userDataEqual() )
             return true;
@@ -60,7 +97,7 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
         if ( !mediaData )
             return false;
 
-        if ( mediaData->isMissingOnEitherServer() )
+        if ( !mediaData->canBeSynced() )
             return fSettings->showMediaWithIssues();
 
         if ( !fSettings->onlyShowMediaWithDifferences() )
@@ -68,16 +105,6 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
 
         return !mediaData->userDataEqual();
     }
-
-    if ( role == ECustomRoles::eDirValueRole )
-    {
-        return mediaData->getDirectionValue();
-    }
-
-    bool isLHS = index.column() <= eLHSPlaybackPosition;
-    int column = index.column();
-    if ( !isLHS )
-        column -= eRHSName;
 
     // reverse for black background
     if ( role == Qt::ForegroundRole )
@@ -96,36 +123,42 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
         return color;
     }
 
-    if ( ( role == Qt::DecorationRole ) && ( ( index.column() == eLHSName ) || ( index.column() == eRHSName ) ) )
+    int column = index.column();
+    if ( ( role == Qt::DecorationRole ) )
+        int xyz = 0;
+    if ( ( role == Qt::DecorationRole ) && isFirstColumnOfServer( index.column() ) )
     {
         return mediaData->getDirectionIcon();
+    }
+
+    auto serverName = this->serverNameForColumn( index.column() );
+    if ( role == ECustomRoles::eServerNameForColumnRole )
+    {
+        return serverName;
     }
 
     if ( role != Qt::DisplayRole )
         return {};
 
-    auto pos = fProviderColumnsByColumn.find( index.column() );
-    if ( pos != fProviderColumnsByColumn.end() )
-    {
-        if ( ( *pos ).second.first ) // lhs
-            return mediaData->getProviderID( ( *pos ).second.second );
-        else
-            return mediaData->getProviderID( ( *pos ).second.second );
-    }
-
-    if ( mediaData->isMissingOnServer( isLHS ) )
+    if ( !mediaData->isValidForServer( serverName ) )
         return {};
 
-    switch ( column )
+    auto providerInfo = getProviderInfoForColumn( index.column() );
+    if ( providerInfo )
     {
-        case eLHSName: return mediaData->name();
-        case eLHSType: return mediaData->mediaType();
-        case eLHSMediaID: return mediaData->getMediaID( isLHS );
-        case eLHSFavorite: return mediaData->isFavorite( isLHS ) ? "Yes" : "No";
-        case eLHSPlayed: return mediaData->isPlayed( isLHS ) ? "Yes" : "No";
-        case eLHSLastPlayed: return mediaData->lastPlayed( isLHS ).toString();
-        case eLHSPlayCount: return QString::number( mediaData->playCount( isLHS ) );
-        case eLHSPlaybackPosition: return mediaData->playbackPosition( isLHS );
+        return mediaData->getProviderID( providerInfo.value().second );
+    }
+
+    switch ( column % columnsPerServer( false ) )
+    {
+        case eName: return mediaData->name() + "-" + QString::number( index.column() ) + "-" + QString::number( column );
+        case eType: return mediaData->mediaType();
+        case eMediaID: return mediaData->getMediaID( serverName );
+        case eFavorite: return mediaData->isFavorite( serverName ) ? "Yes" : "No";
+        case ePlayed: return mediaData->isPlayed( serverName ) ? "Yes" : "No";
+        case eLastPlayed: return mediaData->lastPlayed( serverName ).toString();
+        case ePlayCount: return QString::number( mediaData->playCount( serverName ) );
+        case ePlaybackPosition: return mediaData->playbackPosition( serverName );
         default:
             return {};
     }
@@ -133,81 +166,13 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
     return {};
 }
 
-void CMediaModel::addMediaInfo( std::shared_ptr<CMediaData> mediaData, const QJsonObject & mediaInfo, bool isLHSServer )
+void CMediaModel::addMediaInfo( std::shared_ptr<CMediaData> mediaData, const QJsonObject & mediaInfo, const QString & serverName )
 {
-    mediaData->loadUserDataFromJSON( mediaInfo, isLHSServer );
-    if ( isLHSServer )
-        fLHSMedia[ mediaData->getMediaID( isLHSServer ) ] = mediaData;
-    else
-        fRHSMedia[ mediaData->getMediaID( isLHSServer ) ] = mediaData;
+    mediaData->loadUserDataFromJSON( mediaInfo, serverName );
 
-    auto && providers = mediaData->getProviders( true );
-    for ( auto && ii : providers )
-    {
-        if ( isLHSServer )
-            fLHSProviderSearchMap[ ii.first ][ ii.second ] = mediaData;
-        else
-            fRHSProviderSearchMap[ ii.first ][ ii.second ] = mediaData;
-    }
-}
+    fMediaMap[ serverName ][ mediaData->getMediaID( serverName ) ] = mediaData;
 
-QVariant CMediaModel::getColor( const QModelIndex & index, bool background ) const
-{
-    auto mediaData = fData[ index.row() ];
-
-    if ( mediaData->isMissingOnEitherServer() )
-        return fSettings->dataMissingColor( background );
-
-    if ( !mediaData->userDataEqual() )
-    {
-        bool rhsOlder = mediaData->rhsNeedsUpdating();
-        auto older = fSettings->mediaDestColor( background );
-        auto newer = fSettings->mediaSourceColor( background );
-
-        bool dataSame = false;
-
-        switch ( index.column() )
-        {
-            case eLHSName:
-            case eRHSName:
-                dataSame = false;
-                break;
-            case eLHSFavorite:
-            case eRHSFavorite:
-                dataSame = mediaData->isFavorite( true ) == mediaData->isFavorite( false );
-                break;
-            case eLHSPlayed:
-            case eRHSPlayed:
-                dataSame = mediaData->isPlayed( true ) == mediaData->isPlayed( false );
-                break;
-            case eLHSLastPlayed:
-            case eRHSLastPlayed:
-                dataSame = mediaData->lastPlayed( true ) == mediaData->lastPlayed( false );
-                break;
-            case eRHSPlayCount:
-            case eLHSPlayCount:
-                dataSame = mediaData->playCount( true ) == mediaData->playCount( false );
-                break;
-            case eLHSPlaybackPosition:
-            case eRHSPlaybackPosition:
-                dataSame = mediaData->playbackPositionTicks( true ) == mediaData->playbackPositionTicks( false );
-                break;
-
-            case eLHSMediaID:
-            case eRHSMediaID:
-            default:
-                return {};
-        }
-
-        if ( dataSame )
-            return {};
-
-        if ( isLHSColumn( index.column() ) )
-            return rhsOlder ? newer : older;
-        else if ( isRHSColumn( index.column() ) )
-            return rhsOlder ? older : newer;
-    }
-    return {};
+    fMergeSystem->addMediaInfo( mediaData, serverName );
 }
 
 QVariant CMediaModel::headerData( int section, Qt::Orientation orientation, int role /*= Qt::DisplayRole */ ) const
@@ -220,20 +185,22 @@ QVariant CMediaModel::headerData( int section, Qt::Orientation orientation, int 
     if ( role != Qt::DisplayRole )
         return QAbstractTableModel::headerData( section, orientation, role );
 
-    auto pos = fProviderColumnsByColumn.find( section );
-    if ( pos != fProviderColumnsByColumn.end() )
-        return ( *pos ).second.second;
-    section = ( section >= eRHSName ) ? section - eRHSName : section;
-    switch ( section )
+    auto providerInfo = getProviderInfoForColumn( section );
+    if ( providerInfo )
+        return providerInfo.value().second;
+
+    auto columnNum = section % columnsPerServer( false );
+
+    switch ( columnNum )
     {
-        case eLHSName: return "Name";
-        case eLHSType: return "Media Type";
-        case eLHSMediaID: return "ID on Server";
-        case eLHSFavorite: return "Is Favorite?";
-        case eLHSPlayed: return "Played?";
-        case eLHSLastPlayed: return "Last Played";
-        case eLHSPlayCount: return "Play Count";
-        case eLHSPlaybackPosition: return "Play Position";
+        case eName: return "Name";
+        case eType: return "Media Type";
+        case eMediaID: return "ID on Server";
+        case eFavorite: return "Is Favorite?";
+        case ePlayed: return "Played?";
+        case eLastPlayed: return "Last Played";
+        case ePlayCount: return "Play Count";
+        case ePlaybackPosition: return "Play Position";
     };
 
     return {};
@@ -245,12 +212,9 @@ void CMediaModel::clear()
     fData.clear();
     fMediaToPos.clear();
     fProviderColumnsByColumn.clear();
-    fProviderColumnsByName.clear();
+    fProviderNames.clear();
 
-    fLHSMedia.clear();
-    fRHSMedia.clear();
-    fLHSProviderSearchMap.clear();
-    fRHSProviderSearchMap.clear();
+    fMergeSystem->clear();
     fAllMedia.clear();
     endResetModel();
 }
@@ -260,35 +224,18 @@ void CMediaModel::updateProviderColumns( std::shared_ptr< CMediaData > mediaData
     for ( auto && ii : mediaData->getProviders() )
     {
         int colCount = this->columnCount();
-        auto pos = fProviderColumnsByName.find( ii.first );
-        if ( pos == fProviderColumnsByName.end() )
+        auto pos = fProviderNames.find( ii.first );
+        if ( pos == fProviderNames.end() )
         {
-            beginInsertColumns( QModelIndex(), colCount, colCount + 1 );
-            fProviderColumnsByName.insert( ii.first );
-            fProviderColumnsByColumn[ colCount ] = { true, ii.first }; // gets duplicated lhs vs rhs
-            fProviderColumnsByColumn[ colCount + 1 ] = { false, ii.first };
+            beginInsertColumns( QModelIndex(), colCount, colCount + fSettings->serverCnt() - 1 );
+            fProviderNames.insert( ii.first );
+            for ( int jj = 0; jj < fSettings->serverCnt(); ++jj )
+            {
+                fProviderColumnsByColumn[ colCount + jj ] = { fSettings->serverKeyName( jj ), ii.first }; // gets duplicated lhs vs rhs
+            }
             endInsertColumns();
         }
-        colCount = this->columnCount();
     }
-}
-
-bool CMediaModel::isLHSColumn( int column ) const
-{
-    if ( column < CMediaModel::eRHSName )
-        return true;
-    if ( column <= CMediaModel::eRHSPlaybackPosition )
-        return false;
-
-    auto pos = fProviderColumnsByColumn.find( column );
-    if ( pos == fProviderColumnsByColumn.end() )
-        return false;
-    return ( *pos ).second.first;
-}
-
-bool CMediaModel::isRHSColumn( int column ) const
-{
-    return !isLHSColumn( column );
 }
 
 CMediaModel::SMediaSummary CMediaModel::settingsChanged()
@@ -306,22 +253,20 @@ CMediaModel::SMediaSummary CMediaModel::getMediaSummary() const
     for ( auto && ii : fData )
     {
         retVal.fTotalMedia++;
-        if ( ii->isMissingOnEitherServer() )
+        if ( ii->isValidForAllServers() )
         {
             retVal.fMissingData++;
             continue;
         }
 
-        if ( ii->lhsNeedsUpdating() )
+        for ( int jj = 0; jj < fSettings->serverCnt(); ++jj )
         {
-            retVal.fNeedsSyncing++;
-            retVal.fLHSNeedsUpdating++;
-        }
-
-        if ( ii->rhsNeedsUpdating() )
-        {
-            retVal.fNeedsSyncing++;
-            retVal.fRHSNeedsUpdating++;
+            auto serverName = fSettings->serverKeyName( jj );
+            if ( ii->needsUpdating( serverName ) )
+            {
+                retVal.fNeedsUpdating[ serverName ]++;
+                retVal.fNeedsSyncing++;
+            }
         }
     }
     return retVal;
@@ -348,13 +293,15 @@ void CMediaModel::updateMediaData( std::shared_ptr< CMediaData > mediaData )
     emit dataChanged( index( row, 0 ), index( row, columnCount() - 1 ) );
 }
 
-std::shared_ptr< CMediaData > CMediaModel::getMediaDataForID( const QString & mediaID, bool isLHSServer ) const
+std::shared_ptr< CMediaData > CMediaModel::getMediaDataForID( const QString & mediaID, const QString & serverName ) const
 {
-    QString name;
-    auto && map = isLHSServer ? fLHSMedia : fRHSMedia;
-    auto pos = map.find( mediaID );
-    if ( pos != map.end() )
-        return ( *pos ).second;
+    auto pos = fMediaMap.find( serverName );
+    if ( pos == fMediaMap.end() )
+        return {};
+
+    auto pos2 = ( *pos ).second.find( mediaID );
+    if ( pos2 != ( *pos ).second.end() )
+        return ( *pos2 ).second;
     return {};
 }
 
@@ -382,43 +329,23 @@ bool CMediaFilterModel::lessThan( const QModelIndex & source_left, const QModelI
     return QSortFilterProxyModel::lessThan( source_left, source_right );
 }
 
-bool CMediaFilterModel::dirLessThan( const QModelIndex & source_left, const QModelIndex & source_right ) const
-{
-    auto dirSort = static_cast<CMediaModel::EDirSort>( source_left.data( CMediaModel::ECustomRoles::eDirSortRole ).toInt() );
-
-    auto leftValue = static_cast<CMediaModel::EDirSort>( source_left.data( CMediaModel::ECustomRoles::eDirValueRole ).toInt() );
-    auto rightValue = static_cast<CMediaModel::EDirSort>( source_right.data( CMediaModel::ECustomRoles::eDirValueRole ).toInt() );
-
-    if ( leftValue == dirSort )
-    {
-        if ( rightValue != dirSort )
-            return true;
-    }
-
-    if ( rightValue == dirSort )
-    {
-        if ( leftValue != dirSort )
-            return false;
-    }
-
-    if ( leftValue != rightValue )
-        return leftValue < rightValue;
-
-    return source_left.row() < source_right.row();
-}
-
-std::shared_ptr< CMediaData > CMediaModel::loadMedia( const QJsonObject & media, bool isLHSServer )
+std::shared_ptr< CMediaData > CMediaModel::loadMedia( const QJsonObject & media, const QString & serverName )
 {
     auto id = media[ "Id" ].toString();
     std::shared_ptr< CMediaData > mediaData;
-    auto pos = ( isLHSServer ? fLHSMedia.find( id ) : fRHSMedia.find( id ) );
-    if ( pos == ( isLHSServer ? fLHSMedia.end() : fRHSMedia.end() ) )
+
+    auto pos = fMediaMap.find( serverName );
+    if ( pos == fMediaMap.end() )
+        pos = fMediaMap.insert( std::make_pair( serverName, TMediaIDToMediaData() ) ).first;
+
+    auto pos2 = ( *pos ).second.find( id );
+    if ( pos2 == (*pos).second.end() )
         mediaData = std::make_shared< CMediaData >( CMediaData::computeName( media ), media[ "Type" ].toString() );
     else
-        mediaData = ( *pos ).second;
+        mediaData = ( *pos2 ).second;
     //qDebug() << isLHSServer << mediaData->name();
 
-    mediaData->setMediaID( id, isLHSServer );
+    mediaData->setMediaID( id, serverName );
 
     /*
     "UserData": {
@@ -430,13 +357,13 @@ std::shared_ptr< CMediaData > CMediaModel::loadMedia( const QJsonObject & media,
     }
     */
 
-    addMediaInfo( mediaData, media, isLHSServer );
+    addMediaInfo( mediaData, media, serverName );
     return mediaData;
 }
 
-std::shared_ptr< CMediaData > CMediaModel::reloadMedia( const QJsonObject & media, const QString & mediaID, bool isLHSServer )
+std::shared_ptr< CMediaData > CMediaModel::reloadMedia( const QJsonObject & media, const QString & mediaID, const QString & serverName )
 {
-    auto mediaData = getMediaDataForID( mediaID, isLHSServer );
+    auto mediaData = getMediaDataForID( mediaID, serverName );
     if ( !mediaData )
         return {};
 
@@ -444,60 +371,32 @@ std::shared_ptr< CMediaData > CMediaModel::reloadMedia( const QJsonObject & medi
         return {};
 
 
-    addMediaInfo( mediaData, media, isLHSServer );
+    addMediaInfo( mediaData, media, serverName );
     updateMediaData( mediaData );
     emit sigPendingMediaUpdate();
     return mediaData;
 }
 
-void CMediaModel::mergeMediaData( TMediaIDToMediaData & lhs, TMediaIDToMediaData & rhs, bool lhsIsLHS, std::shared_ptr< CProgressSystem > progressSystem )
-{
-    mergeMediaData( lhs, lhsIsLHS, progressSystem );
-    mergeMediaData( rhs, !lhsIsLHS, progressSystem );
-}
-
 bool CMediaModel::mergeMedia( std::shared_ptr< CProgressSystem > progressSystem )
 {
-    progressSystem->resetProgress();
-    progressSystem->setTitle( tr( "Merging media data" ) );
-    progressSystem->setMaximum( static_cast<int>( fLHSMedia.size() * 3 + fRHSMedia.size() * 3 ) );
-
-
-    mergeMediaData( fLHSMedia, fRHSMedia, true, progressSystem );
-    mergeMediaData( fRHSMedia, fLHSMedia, false, progressSystem );
-
-    if ( !progressSystem->wasCanceled() )
+    if ( fMergeSystem->merge( progressSystem ) )
     {
-        loadMergedData( progressSystem );
+        std::tie( fAllMedia, fMediaMap ) = fMergeSystem->getMergedData( progressSystem );
+
+        loadMergedMedia( progressSystem );
     }
     else
     {
         clear();
     }
-    fLHSProviderSearchMap.clear();
-    fRHSProviderSearchMap.clear();
-
-
     return !progressSystem->wasCanceled();
 }
 
-void CMediaModel::loadMergedData( std::shared_ptr< CProgressSystem > progressSystem )
+void CMediaModel::loadMergedMedia( std::shared_ptr<CProgressSystem> progressSystem )
 {
-    for ( auto && ii : fLHSMedia )
-    {
-        fAllMedia.insert( ii.second );
-        progressSystem->incProgress();
-    }
-
-    for ( auto && ii : fRHSMedia )
-    {
-        fAllMedia.insert( ii.second );
-        progressSystem->incProgress();
-    }
-
     progressSystem->pushState();
     progressSystem->setTitle( tr( "Loading merged media data" ) );
-    progressSystem->setMaximum( static_cast< int >( fAllMedia.size() ) );
+    progressSystem->setMaximum( static_cast<int>( fAllMedia.size() ) );
     progressSystem->setValue( 0 );
     beginResetModel();
     fData.reserve( fAllMedia.size() );
@@ -511,62 +410,66 @@ void CMediaModel::loadMergedData( std::shared_ptr< CProgressSystem > progressSys
     progressSystem->popState();
 }
 
-std::shared_ptr< CMediaData > CMediaModel::findMediaForProvider( const QString & provider, const QString & id, bool lhs ) const
+QVariant CMediaModel::getColor( const QModelIndex & index, bool background ) const
 {
-    auto && map = lhs ? fLHSProviderSearchMap : fRHSProviderSearchMap;
-    auto pos = map.find( provider );
-    if ( pos == map.end() )
-        return {};
+    auto mediaData = fData[ index.row() ];
 
-    auto pos2 = ( *pos ).second.find( id );
-    if ( pos2 == ( *pos ).second.end() )
-        return {};
-    return ( *pos2 ).second;
-}
+    if ( !mediaData->isValidForAllServers() )
+        return fSettings->dataMissingColor( background );
 
-
-void CMediaModel::setMediaForProvider( const QString & providerName, const QString & providerID, std::shared_ptr< CMediaData > mediaData, bool isLHS )
-{
-    ( isLHS ? fLHSProviderSearchMap : fRHSProviderSearchMap )[ providerName ][ providerID ] = mediaData;
-}
-
-void CMediaModel::mergeMediaData( TMediaIDToMediaData & lhs, bool lhsIsLHS, std::shared_ptr< CProgressSystem > progressSystem )
-{
-    std::unordered_map< std::shared_ptr< CMediaData >, std::shared_ptr< CMediaData > > replacementMap;
-    for ( auto && ii : lhs )
+    if ( !mediaData->userDataEqual() )
     {
-        if ( progressSystem->wasCanceled() )
-            break;
+        bool dataSame = false;
 
-        progressSystem->incProgress();
-        auto mediaData = ii.second;
-        if ( !mediaData )
-            continue;
-        QStringList dupeProviderForMedia;
-        for ( auto && jj : mediaData->getProviders( true ) )
+        switch ( index.column() % columnsPerServer() )
         {
-            auto providerName = jj.first;
-            auto providerID = jj.second;
-
-            auto myMappedMedia = findMediaForProvider( providerName, providerID, lhsIsLHS );
-            if ( myMappedMedia != mediaData )
-            {
-                replacementMap[ mediaData ] = myMappedMedia;
-                continue;
-            }
-
-            auto otherData = findMediaForProvider( providerName, providerID, !lhsIsLHS );
-            if ( otherData != mediaData )
-                setMediaForProvider( providerName, providerID, mediaData, !lhsIsLHS );
+            case eName:
+                dataSame = false;
+                break;
+            case eFavorite:
+                dataSame = mediaData->allFavoriteEqual();
+                break;
+            case ePlayed:
+                dataSame = mediaData->allPlayedEqual();
+                break;
+            case eLastPlayed:
+                dataSame = mediaData->allLastPlayedEqual();
+                break;
+            case ePlayCount:
+                dataSame = mediaData->allPlayCountEqual();
+                break;
+            case ePlaybackPosition:
+                dataSame = mediaData->allPlaybackPositionTicksEqual();
+                break;
+            case eMediaID:
+            default:
+                return {};
         }
-    }
-    for ( auto && ii : replacementMap )
-    {
-        auto currMediaID = ii.first->getMediaID( lhsIsLHS );
-        auto pos = lhs.find( currMediaID );
-        lhs.erase( pos );
-        ii.second->updateFromOther( ii.first, lhsIsLHS );
 
-        lhs[ currMediaID ] = ii.second;
+        if ( dataSame )
+            return {};
+
+        auto older = fSettings->mediaDestColor( background );
+        auto newer = fSettings->mediaSourceColor( background );
+        auto serverName = this->serverNameForColumn( index.column() );
+
+        auto isOlder = mediaData->needsUpdating( serverName );
+        return isOlder ? older : newer;
     }
+    return {};
+}
+
+QString CMediaModel::SMediaSummary::getSummaryText() const
+{
+    QStringList mediaUpdateString;
+    for ( auto && ii : fNeedsUpdating )
+    {
+        mediaUpdateString << tr( "%1 from %2" ).arg( ii.second ).arg( ii.first );
+    }
+    return tr( "Media Summary: %1 Items need Syncing, %2, %3 can not be compared, %4 Total" )
+        .arg( fNeedsSyncing )
+        .arg( mediaUpdateString.join( "," ) )
+        .arg( fMissingData )
+        .arg( fTotalMedia )
+        ;
 }
