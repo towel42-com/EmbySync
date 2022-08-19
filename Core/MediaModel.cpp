@@ -34,14 +34,6 @@ int CMediaModel::columnsPerServer( bool includeProviders ) const
     return retVal;
 }
 
-bool CMediaModel::isFirstColumnOfServer( int columnNum ) const
-{
-    if ( getProviderInfoForColumn( columnNum ) )
-        return false;
-
-    return ( columnNum % columnsPerServer( false ) ) == 0;
-}
-
 int CMediaModel::columnCount( const QModelIndex & parent /* = QModelIndex() */ ) const
 {
     if ( parent.isValid() )
@@ -73,7 +65,7 @@ bool CMediaModel::hasMediaToProcess() const
 {
     for ( auto && ii : fData )
     {
-        if ( ii->canBeSynced() )
+        if ( !ii->canBeSynced() )
             continue;
         if ( !ii->userDataEqual() )
             return true;
@@ -107,10 +99,13 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
         return !mediaData->userDataEqual();
     }
 
+    int column = index.column();
+    auto serverName = this->serverNameForColumn( column );
+
     // reverse for black background
     if ( role == Qt::ForegroundRole )
     {
-        auto color = getColor( index, false );
+        auto color = getColor( index, serverName, false );
         if ( !color.isValid() )
             return {};
         return color;
@@ -118,16 +113,13 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
 
     if ( role == Qt::BackgroundRole )
     {
-        auto color = getColor( index, true );
+        auto color = getColor( index, serverName, true );
         if ( !color.isValid() )
             return {};
         return color;
     }
 
-    int column = index.column();
-    auto serverName = this->serverNameForColumn( column );
-
-    if ( ( role == Qt::DecorationRole ) && isFirstColumnOfServer( column ) )
+    if ( ( role == Qt::DecorationRole ) && ( perServerColumn( column ) == eName ) )
     {
         return mediaData->getDirectionIcon( serverName );
     }
@@ -140,30 +132,37 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
     if ( role != Qt::DisplayRole )
         return {};
 
-    if ( !mediaData->isValidForServer( serverName ) )
-        return {};
-
     auto providerInfo = getProviderInfoForColumn( column );
     if ( providerInfo )
     {
         return mediaData->getProviderID( providerInfo.value().second );
     }
 
-    switch ( column % columnsPerServer( false ) )
+    bool isValid = mediaData->isValidForServer( serverName );
+
+    switch ( perServerColumn( column ) )
     {
-        case eName: return mediaData->name();
+        case eName: return isValid ? mediaData->name() : tr( "%1 - <Missing from Server>" ).arg( mediaData->name() );
         case eType: return mediaData->mediaType();
-        case eMediaID: return mediaData->getMediaID( serverName );
-        case eFavorite: return mediaData->isFavorite( serverName ) ? "Yes" : "No";
-        case ePlayed: return mediaData->isPlayed( serverName ) ? "Yes" : "No";
-        case eLastPlayed: return mediaData->lastPlayed( serverName ).toString();
-        case ePlayCount: return QString::number( mediaData->playCount( serverName ) );
-        case ePlaybackPosition: return mediaData->playbackPosition( serverName );
+        case eMediaID: return isValid ? mediaData->getMediaID( serverName ) : QString();
+        case eFavorite: return isValid ? ( mediaData->isFavorite( serverName ) ? "Yes" : "No" )  : QString();
+        case ePlayed: return isValid ? ( mediaData->isPlayed( serverName ) ? "Yes" : "No" )  : QString();
+        case eLastPlayed: return isValid ? ( mediaData->lastPlayed( serverName ).toString() )  : QString();
+        case ePlayCount: return isValid ? QString::number( mediaData->playCount( serverName ) ) : QString();
+        case ePlaybackPosition: return isValid ? mediaData->playbackPosition( serverName ) : QString();
         default:
             return {};
     }
 
     return {};
+}
+
+int CMediaModel::perServerColumn( int column ) const
+{
+    if ( getProviderInfoForColumn( column ) )
+        return -1;
+
+    return column % columnsPerServer( false );
 }
 
 void CMediaModel::addMediaInfo( const QString & serverName, std::shared_ptr<CMediaData> mediaData, const QJsonObject & mediaInfo )
@@ -189,7 +188,7 @@ QVariant CMediaModel::headerData( int section, Qt::Orientation orientation, int 
     if ( providerInfo )
         return providerInfo.value().second;
 
-    auto columnNum = section % columnsPerServer( false );
+    auto columnNum = perServerColumn( section );
 
     switch ( columnNum )
     {
@@ -318,7 +317,7 @@ std::shared_ptr< CMediaData > CMediaModel::loadMedia( const QString & serverName
         mediaData = ( *pos2 ).second;
     //qDebug() << isLHSServer << mediaData->name();
 
-    mediaData->setMediaID( id, serverName );
+    mediaData->setMediaID( serverName, id );
 
     /*
     "UserData": {
@@ -336,7 +335,7 @@ std::shared_ptr< CMediaData > CMediaModel::loadMedia( const QString & serverName
 
 std::shared_ptr< CMediaData > CMediaModel::reloadMedia( const QString & serverName, const QJsonObject & media, const QString & mediaID )
 {
-    auto mediaData = getMediaDataForID( mediaID, serverName );
+    auto mediaData = getMediaDataForID( serverName, mediaID );
     if ( !mediaData )
         return {};
 
@@ -383,23 +382,40 @@ void CMediaModel::loadMergedMedia( std::shared_ptr<CProgressSystem> progressSyst
     progressSystem->popState();
 }
 
-QVariant CMediaModel::getColor( const QModelIndex & index, bool background ) const
+QVariant CMediaModel::getColor( const QModelIndex & index, const QString & serverName, bool background ) const
 {
     if ( index.column() > fSettings->serverCnt() * columnsPerServer( false ) )
         return {};
     auto mediaData = fData[ index.row() ];
 
-    if ( !mediaData->isValidForAllServers() )
-        return fSettings->dataMissingColor( background );
+    if ( !mediaData->isValidForServer( serverName ) )
+    {
+        switch ( perServerColumn( index.column() ) )
+        {
+        case eName:
+        case eType:
+            return {};
+        case eMediaID:
+        case eFavorite:
+        case ePlayed:
+        case eLastPlayed:
+        case ePlayCount:
+        case ePlaybackPosition:
+            return fSettings->dataMissingColor( background );
+            break;
+        default:
+            return {};
+        }
+    }
 
     if ( !mediaData->userDataEqual() )
     {
         bool dataSame = false;
 
-        switch ( index.column() % columnsPerServer( false ) )
+        switch ( perServerColumn( index.column() ) )
         {
             case eName:
-                dataSame = false;
+                dataSame = !mediaData->canBeSynced();
                 break;
             case eFavorite:
                 dataSame = mediaData->allFavoriteEqual();
@@ -446,13 +462,13 @@ SMediaSummary::SMediaSummary( CMediaModel * model )
 
             if ( !ii->isValidForServer( serverInfo->keyName() ) )
             {
-                fMissingData[ serverInfo->friendlyName() ]++;
+                fMissingData[ serverInfo->displayName() ]++;
                 continue;
             }
 
             if ( ii->needsUpdating( serverInfo->keyName() ) )
             {
-                fNeedsUpdating[ serverInfo->friendlyName() ]++;
+                fNeedsUpdating[ serverInfo->displayName() ]++;
             }
         }
     }

@@ -49,25 +49,13 @@ CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, std::shared_p
     new NSABUtils::CButtonEnabler( fImpl->servers, fImpl->delServer );
     new NSABUtils::CButtonEnabler( fImpl->servers, fImpl->editServer );
 
-    auto headerLabels = QStringList() << tr( "Connected ID" );
-    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
-        headerLabels << fSettings->serverInfo( ii )->friendlyName();
-    fImpl->knownUsers->setColumnCount( headerLabels.count() );
-    fImpl->knownUsers->setHeaderLabels( headerLabels );
+    loadKnownUsers( knownUsers );
 
     fTestButton = fImpl->testButtonBox->addButton( tr( "Test" ), QDialogButtonBox::ButtonRole::ActionRole );
     fTestButton->setObjectName( "Test Button" );
     connect( fTestButton, &QPushButton::clicked, this, &CSettingsDlg::slotTestServers );
     connect( fSyncSystem.get(), &CSyncSystem::sigTestServerResults, this, &CSettingsDlg::slotTestServerResults );
 
-    for ( auto && ii : knownUsers )
-    {
-        auto data = QStringList() << ii->connectedID();
-        for ( int jj = 0; jj < fSettings->serverCnt(); ++jj )
-            data << ii->name( fSettings->serverInfo( jj )->keyName() );
-
-        fKnownUsers.push_back( std::make_pair( ii, new QTreeWidgetItem( fImpl->knownUsers, data ) ) );
-    }
     load();
 
     connect( fImpl->dataMissingColor, &QToolButton::clicked,
@@ -156,6 +144,24 @@ CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, std::shared_p
     fImpl->tabWidget->setCurrentIndex( 0 );
 }
 
+void CSettingsDlg::loadKnownUsers( const std::vector< std::shared_ptr< CUserData > > & knownUsers )
+{
+    auto headerLabels = QStringList() << tr( "Connected ID" );
+    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+        headerLabels << fSettings->serverInfo( ii )->displayName();
+    fImpl->knownUsers->setColumnCount( headerLabels.count() );
+    fImpl->knownUsers->setHeaderLabels( headerLabels );
+
+    for ( auto && ii : knownUsers )
+    {
+        auto data = QStringList() << ii->connectedID();
+        for ( int jj = 0; jj < fSettings->serverCnt(); ++jj )
+            data << ii->name( fSettings->serverInfo( jj )->keyName() );
+
+        fKnownUsers.push_back( std::make_pair( ii, new QTreeWidgetItem( fImpl->knownUsers, data ) ) );
+    }
+}
+
 void CSettingsDlg::editUser( QListWidgetItem * item )
 {
     auto curr = item ? item->text() : QString();
@@ -169,19 +175,21 @@ void CSettingsDlg::editUser( QListWidgetItem * item )
 
 void CSettingsDlg::editServer( QTreeWidgetItem * item )
 {
-    auto friendlyName = item ? item->text( 0 ) : QString();
+    auto displayName = item ? item->text( 0 ) : QString();
     auto url = item ? item->text( 1 ) : QString();
     auto apiKey = item ? item->text( 2 ) : QString();
+    bool enabled = item ? ( item->checkState( 0 ) == Qt::CheckState::Checked ) : true;
 
-    CEditServerDlg dlg( friendlyName, url, apiKey, this );
+    CEditServerDlg dlg( displayName, url, apiKey, enabled, this );
     if ( dlg.exec() == QDialog::Accepted )
     {
         if ( !item )
             item = new QTreeWidgetItem( fImpl->servers );
         item->setText( 0, dlg.name() );
+        item->setCheckState( 0, dlg.enabled() ? Qt::CheckState::Checked : Qt::CheckState::Unchecked );
+        item->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/unknownStatus.png" ) ) );
         item->setText( 1, dlg.url() );
         item->setText( 2, dlg.apiKey() );
-        item->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/unknownStatus.png" ) ) );
     }
 }
 
@@ -202,11 +210,12 @@ void CSettingsDlg::load()
     for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
     {
         auto serverInfo = fSettings->serverInfo( ii );
-        auto name = serverInfo->friendlyName();
+        auto name = serverInfo->displayName();
         auto url = serverInfo->url();
         auto apiKey = serverInfo->apiKey();
 
         auto item = new QTreeWidgetItem( fImpl->servers, QStringList() << name << url << apiKey );
+        item->setCheckState( 0, serverInfo->isEnabled() ? Qt::CheckState::Checked : Qt::CheckState::Unchecked );
         item->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/unknownStatus.png" ) ) );
     }
 
@@ -242,7 +251,7 @@ void CSettingsDlg::load()
 
 void CSettingsDlg::save()
 {
-    auto servers = getServerInfos();
+    auto servers = getServerInfos( false );
     fSettings->setServers( servers );
 
     fSettings->setMediaSourceColor( fMediaSourceColor );
@@ -262,24 +271,28 @@ void CSettingsDlg::save()
     fSettings->setSyncUserList( syncUserStrings() );
 }
 
-std::vector< std::shared_ptr< SServerInfo > > CSettingsDlg::getServerInfos() const
+std::vector< std::shared_ptr< CServerInfo > > CSettingsDlg::getServerInfos( bool enabledOnly ) const
 {
-    std::vector< std::shared_ptr< SServerInfo > > servers;
+    std::vector< std::shared_ptr< CServerInfo > > servers;
     for ( int ii = 0; ii < fImpl->servers->topLevelItemCount(); ++ii )
     {
         auto curr = getServerInfo( ii );
-        servers.push_back( curr );
+        if ( !enabledOnly || curr->isEnabled() )
+            servers.push_back( curr );
     }
     return std::move( servers );
 }
 
-std::shared_ptr< SServerInfo > CSettingsDlg::getServerInfo( int ii ) const
+std::shared_ptr< CServerInfo > CSettingsDlg::getServerInfo( int ii ) const
 {
-    auto name = fImpl->servers->topLevelItem( ii )->text( 0 );
-    auto url = fImpl->servers->topLevelItem( ii )->text( 1 );
-    auto apiKey = fImpl->servers->topLevelItem( ii )->text( 2 );
+    auto item = fImpl->servers->topLevelItem( ii );
+    
+    auto name = item->text( 0 );
+    auto url = item->text( 1 );
+    auto apiKey = item->text( 2 );
+    auto enabled = item->checkState( 0 ) == Qt::CheckState::Checked;
 
-    return std::make_shared< SServerInfo >( name, url, apiKey );
+    return std::make_shared< CServerInfo >( name, url, apiKey, enabled );
 }
 
 QStringList CSettingsDlg::syncUserStrings() const
@@ -390,6 +403,15 @@ bool CSettings::save( QWidget * parentWidget )
                  } );
 }
   
+bool CSettings::saveAs( QWidget * parentWidget )
+{
+    auto fileName = QFileDialog::getSaveFileName( parentWidget, QObject::tr( "Select File" ), QString(), QObject::tr( "Settings File (*.json);;All Files (* *.*)" ) );
+    if ( fileName.isEmpty() )
+        return false;
+    fFileName = fileName;
+    return save( parentWidget );
+}
+
 bool CSettings::maybeSave( QWidget * parentWidget )
 {
     return maybeSave( parentWidget,
@@ -438,10 +460,15 @@ bool CSettings::maybeSave( QWidget * parentWidget, std::function<QString()> sele
 
 void CSettingsDlg::slotTestServers()
 {
-    auto tmp = getServerInfos();
-    std::vector< std::shared_ptr< const SServerInfo > > servers;
+    for ( int ii = 0; ii < fImpl->servers->topLevelItemCount(); ++ii )
+    {
+        fImpl->servers->topLevelItem( ii )->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/unknownStatus.png" ) ) );
+    }
+
+    auto tmp = getServerInfos( true );
+    std::vector< std::shared_ptr< const CServerInfo > > servers;
     for ( auto && ii : tmp )
-        servers.push_back( std::const_pointer_cast<const SServerInfo>( ii ) );
+        servers.push_back( std::const_pointer_cast<const CServerInfo>( ii ) );
 
     fSyncSystem->testServers( servers );
 }

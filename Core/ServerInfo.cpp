@@ -22,42 +22,53 @@
 
 #include "ServerInfo.h"
 #include <QUrlQuery>
+#include <QJsonObject>
 
 
-SServerInfo::SServerInfo( const QString & name, const QString & url, const QString & apiKey ) :
+CServerInfo::CServerInfo( const QString & name, const QString & url, const QString & apiKey, bool enabled ) :
     fName( { name, false } ),
     fURL( url ),
-    fAPIKey( apiKey )
+    fAPIKey( apiKey ),
+    fIsEnabled( enabled )
 {
 
 }
 
-SServerInfo::SServerInfo( const QString & name ) :
+CServerInfo::CServerInfo( const QString & name ) :
     fName( { name, false } )
 {
 
 }
 
-bool SServerInfo::operator==( const SServerInfo & rhs ) const
+bool CServerInfo::operator==( const CServerInfo & rhs ) const
 {
     return fName == rhs.fName
         && fURL == rhs.fURL
         && fAPIKey == rhs.fAPIKey
+        && fIsEnabled == rhs.fIsEnabled
         ;
 }
 
-QString SServerInfo::url() const
+bool CServerInfo::setUrl( const QString & url )
+{
+    if ( url == fURL )
+        return false;
+    fURL = url;
+    return true;
+}
+
+QString CServerInfo::url() const
 {
     return fURL;
 }
 
-QUrl SServerInfo::getUrl() const
+QUrl CServerInfo::getUrl() const
 {
     return getUrl( QString(), std::list< std::pair< QString, QString > >() );
 }
 
 
-QUrl SServerInfo::getUrl( const QString & extraPath, const std::list< std::pair< QString, QString > > & queryItems ) const
+QUrl CServerInfo::getUrl( const QString & extraPath, const std::list< std::pair< QString, QString > > & queryItems ) const
 {
     auto path = fURL;
     if ( path.isEmpty() )
@@ -88,7 +99,7 @@ QUrl SServerInfo::getUrl( const QString & extraPath, const std::list< std::pair<
     return retVal;
 }
 
-QString SServerInfo::friendlyName() const
+QString CServerInfo::displayName() const
 {
     if ( !fName.first.isEmpty() )
         return fName.first;
@@ -96,29 +107,96 @@ QString SServerInfo::friendlyName() const
         return keyName();
 }
 
-QString SServerInfo::keyName() const
+QString CServerInfo::keyName() const
 {
     if ( fKeyName.isEmpty() )
         fKeyName = getUrl().toString( QUrl::RemoveUserInfo | QUrl::RemoveQuery );
     return fKeyName;
 }
 
-void SServerInfo::autoSetFriendlyName( bool usePort )
+void CServerInfo::autoSetDisplayName( bool usePort )
 {
     auto url = getUrl();
     QString retVal = url.host();
     if ( usePort )
         retVal += QString::number( url.port() );
-    setFriendlyName( retVal, true );
+    setDisplayName( retVal, true );
 }
 
-void SServerInfo::setFriendlyName( const QString & name, bool generated )
+bool CServerInfo::setDisplayName( const QString & name, bool generated )
 {
+    if ( ( name == fName.first ) && ( generated == fName.second ) )
+        return false;
     fName = { name, generated };
+    return true;
 }
 
-bool SServerInfo::canSync() const
+bool CServerInfo::canSync() const
 {
     return getUrl().isValid() && !fAPIKey.isEmpty();
+}
+
+bool CServerInfo::setAPIKey( const QString & key )
+{
+    if ( key != fAPIKey )
+        return false;
+    fAPIKey = key;
+    return true;
+}
+
+QJsonObject CServerInfo::toJson() const
+{
+    QJsonObject retVal;
+
+    retVal[ "url" ] = fURL;
+    retVal[ "api_key" ] = fAPIKey;
+    if ( !fName.second )
+        retVal[ "name" ] = fName.first;
+    retVal[ "enabled" ] = fIsEnabled;
+    return retVal;
+}
+
+std::shared_ptr< CServerInfo > CServerInfo::fromJson( const QJsonObject & obj, QString & errorMsg )
+{
+    bool generated = !obj.contains( "name" ) || obj[ "name" ].toString().isEmpty();
+    QString serverName;
+    if ( generated )
+        serverName = obj[ "url" ].toString();
+    else
+        serverName = obj[ "name" ].toString();
+
+    if ( serverName.isEmpty() )
+    {
+        errorMsg = QString( "Missing name and url" );
+        return false;
+    }
+
+    if ( !obj.contains( "url" ) )
+    {
+        errorMsg = QString( "Missing url" );
+        return false;
+    }
+
+    if ( !obj.contains( "api_key" ) )
+    {
+        errorMsg = QString( "Missing api_key" );
+        return false;
+    }
+    bool enabled = true;
+    if ( obj.contains( "enabled" ) )
+        enabled = obj[ "enabled" ].toBool();
+
+    auto retVal = std::make_shared< CServerInfo >( serverName, obj[ "url" ].toString(), obj[ "api_key" ].toString(), enabled );
+    retVal->fName.second = generated;
+
+    return retVal;
+}
+
+bool CServerInfo::setIsEnabled( bool isEnabled )
+{
+    if ( fIsEnabled == isEnabled )
+        return false;
+    fIsEnabled = isEnabled;
+    return true;
 }
 

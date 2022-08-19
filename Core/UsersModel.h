@@ -4,9 +4,14 @@
 #include <QAbstractTableModel>
 #include <QSortFilterProxyModel>
 #include <memory>
+#include "SABUtils/HashUtils.h"
+
+#include <unordered_set>
+#include <vector>
 
 class CSettings;
 class CUserData;
+class CServerInfo;
 
 class CUsersModel : public QAbstractTableModel
 {
@@ -14,9 +19,9 @@ class CUsersModel : public QAbstractTableModel
 public:
     enum EColumns
     {
-        eConnectedID,
-        eDisplayName,
-        eFirstServerColumn=eDisplayName
+        eName,
+        eAllNames,
+        eFirstServerColumn=eAllNames
     };
 
     enum ECustomRoles
@@ -52,14 +57,18 @@ public:
 public Q_SLOTS:
     void slotSettingsChanged();
 private:
-    std::shared_ptr< CUserData > getUserData( const QString & name ) const;
+    void setupColumns();
     int serverNum( int columnNum ) const;
+    std::shared_ptr< CUserData > getUserData( const QString & name ) const;
 
     QVariant getColor( const QModelIndex & index, bool background ) const;
         
     std::map< QString, std::shared_ptr< CUserData > > fUserMap;
     std::vector< std::shared_ptr< CUserData > > fUsers;
     std::shared_ptr< CSettings > fSettings;
+
+    std::unordered_map< int, std::pair< int, std::shared_ptr< const CServerInfo > > > fColumnToServerInfo;
+    std::map< int, int > fServerNumToColumn;
 };
 
 class CUsersFilterModel : public QSortFilterProxyModel

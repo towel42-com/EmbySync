@@ -100,6 +100,7 @@
     <addaction name="menuLoadRecent"/>
     <addaction name="separator"/>
     <addaction name="actionSave"/>
+    <addaction name="actionSaveAs"/>
     <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
@@ -187,7 +188,7 @@
      <normaloff>:/resources/save.png</normaloff>:/resources/save.png</iconset>
    </property>
    <property name="text">
-    <string>Save...</string>
+    <string>Save</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+S</string>
@@ -302,6 +303,14 @@
   <action name="actionViewMediaInformation">
    <property name="text">
     <string>Media Information...</string>
+   </property>
+  </action>
+  <action name="actionSaveAs">
+   <property name="text">
+    <string>Save As...</string>
+   </property>
+   <property name="toolTip">
+    <string>Save As..</string>
    </property>
   </action>
  </widget>

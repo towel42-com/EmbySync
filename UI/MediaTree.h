@@ -35,12 +35,12 @@ class QLabel;
 class CSettings;
 class CUserData;
 class QAbstractItemModel;
-struct SServerInfo;
+class CServerInfo;
 class CMediaTree : public QWidget
 {
     Q_OBJECT
 public:
-    CMediaTree( const std::shared_ptr< const SServerInfo > & serverInfo, QWidget * parent = nullptr );
+    CMediaTree( const std::shared_ptr< const CServerInfo > & serverInfo, QWidget * parent = nullptr );
     virtual ~CMediaTree() override;
 
     void setModel( QAbstractItemModel * model );
@@ -57,17 +57,19 @@ Q_SIGNALS:
     void sigViewMedia( const QModelIndex & idx );
     void sigVSliderMoved( int position );
     void sigHSliderMoved( int position );
+    void sigHScrollTo( int value, int max );
 
 private Q_SLOTS:
     void slotSetCurrentMediaItem( const QModelIndex & idx );
     void slotSetVSlider( int position );
     void slotSetHSlider( int position );
-    void slotHActionTriggered( int action );
+    void slotHScrollTo( int value, int max );
+    void slotUpdateHorizontalScroll( int );
     void slotVActionTriggered( int action );
 private:
     std::unique_ptr< Ui::CMediaTree > fImpl;
     std::vector< CMediaTree * > fPeers;
 
-    const std::shared_ptr< const SServerInfo > fServerInfo;
+    const std::shared_ptr< const CServerInfo > fServerInfo;
 };
 #endif 

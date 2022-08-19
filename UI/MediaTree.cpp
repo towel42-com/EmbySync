@@ -29,14 +29,14 @@
 
 #include <QScrollBar>
 
-CMediaTree::CMediaTree( const std::shared_ptr< const SServerInfo > & serverInfo, QWidget * parentWidget )
+CMediaTree::CMediaTree( const std::shared_ptr< const CServerInfo > & serverInfo, QWidget * parentWidget )
     : QWidget( parentWidget ),
     fImpl( new Ui::CMediaTree ),
     fServerInfo( serverInfo )
 {
     fImpl->setupUi( this );
     fImpl->media->setExpandsOnDoubleClick( false );
-    fImpl->serverLabel->setText( tr( "Server: <a href=\"%1\">%2 - %1</a>" ).arg( serverInfo->getUrl().toString( QUrl::RemoveUserInfo | QUrl::RemoveQuery ) ).arg( serverInfo->friendlyName() ) );
+    fImpl->serverLabel->setText( tr( "Server: <a href=\"%1\">%2 - %1</a>" ).arg( serverInfo->getUrl().toString( QUrl::RemoveUserInfo | QUrl::RemoveQuery ) ).arg( serverInfo->displayName() ) );
     installEventFilter( this );
 }
 
@@ -50,8 +50,8 @@ void CMediaTree::setModel( QAbstractItemModel * model )
 
     connect( fImpl->media->verticalScrollBar(), &QScrollBar::sliderMoved, this, &CMediaTree::sigVSliderMoved );
     connect( fImpl->media->verticalScrollBar(), &QScrollBar::actionTriggered, this, &CMediaTree::slotVActionTriggered );
-    connect( fImpl->media->horizontalScrollBar(), &QScrollBar::sliderMoved, this, &CMediaTree::sigHSliderMoved );
-    connect( fImpl->media->horizontalScrollBar(), &QScrollBar::actionTriggered, this, &CMediaTree::slotHActionTriggered );
+    connect( fImpl->media->horizontalScrollBar(), &QScrollBar::sliderMoved, this, &CMediaTree::slotUpdateHorizontalScroll );
+    connect( fImpl->media->horizontalScrollBar(), &QScrollBar::actionTriggered, this, &CMediaTree::slotUpdateHorizontalScroll );
     connect( fImpl->media->selectionModel(), &QItemSelectionModel::currentChanged, this, &CMediaTree::sigCurrChanged );
     connect( fImpl->media, &QTreeView::doubleClicked, this, &CMediaTree::sigViewMedia );
 }
@@ -64,6 +64,8 @@ void CMediaTree::addPeerMediaTree( CMediaTree * peer )
     connect( this, &CMediaTree::sigVSliderMoved, peer, &CMediaTree::slotSetVSlider );
     connect( peer, &CMediaTree::sigVSliderMoved, this, &CMediaTree::slotSetVSlider );
 
+    
+    connect( this, &CMediaTree::sigHScrollTo, peer, &CMediaTree::slotHScrollTo );
     connect( this, &CMediaTree::sigHSliderMoved, peer, &CMediaTree::slotSetHSlider );
     connect( peer, &CMediaTree::sigHSliderMoved, this, &CMediaTree::slotSetHSlider );
 }
@@ -93,12 +95,17 @@ void CMediaTree::slotSetHSlider( int position )
     fImpl->media->horizontalScrollBar()->setValue( position );
 }
 
-void CMediaTree::slotHActionTriggered( int action )
+void CMediaTree::slotHScrollTo( int value, int max )
 {
-    if ( action == QAbstractSlider::SliderMove )
-    {
-        emit sigHSliderMoved( fImpl->media->horizontalScrollBar()->value() );
-    }
+    auto newPos = fImpl->media->horizontalScrollBar()->maximum() * value / max;
+    fImpl->media->horizontalScrollBar()->setValue( newPos );
+}
+
+void CMediaTree::slotUpdateHorizontalScroll( int /*action*/ )
+{
+    auto value = fImpl->media->horizontalScrollBar()->value();
+    auto max = fImpl->media->horizontalScrollBar()->maximum();
+    emit sigHScrollTo( value, max );
 }
 
 void CMediaTree::slotVActionTriggered( int action )

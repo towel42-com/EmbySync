@@ -49,7 +49,9 @@ public:
     bool isValid() const;
     QString name( const QString & serverName ) const;
     void setName( const QString & serverName, const QString & name );
-    QString displayName() const;
+    
+    QString userName( const QString & serverName ) const;
+    QString allNames() const;
     QString sortName( std::shared_ptr< CSettings > settings ) const;
 
     QStringList missingServers() const;
@@ -68,11 +70,14 @@ public:
     bool canBeSynced() const;
     bool onServer( const QString & serverName ) const;
 private:
+    void updateCanBeSynced();
+
     std::shared_ptr< SUserServerData > getServerInfo( const QString & serverName, bool addIfMissing );
     std::shared_ptr< SUserServerData > getServerInfo( const QString & serverName ) const;
     bool isMatch( const QRegularExpression & regEx, const QString & value ) const;
 
     QString fConnectedID;
+    bool fCanBeSynced{ false };
 
     std::map< QString, std::shared_ptr< SUserServerData > > fInfoForServer; // serverName to Info
     QTreeWidgetItem * fItem{ nullptr };

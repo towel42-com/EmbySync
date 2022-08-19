@@ -259,16 +259,7 @@ bool CSettings::save( std::function<void( const QString & title, const QString &
 
     for ( int ii = 0; ii < serverCnt(); ++ii )
     {
-        auto serverInfo = this->serverInfo( ii );
-
-        auto curr = json.object();
-
-        curr[ "url" ] = serverInfo->url();
-        curr[ "api_key" ] = serverInfo->fAPIKey;
-        if ( !serverInfo->fName.second )
-            curr[ "name" ] = serverInfo->friendlyName();
-
-        servers.push_back( curr );
+        servers.push_back( serverInfo( ii )->toJson() );
     }
 
     root[ "servers" ] = servers;
@@ -287,6 +278,8 @@ bool CSettings::save( std::function<void( const QString & title, const QString &
 
     file.write( jsonData );
     fChanged = false;
+
+    addRecentProject( fFileName );
     return true;
 }
 
@@ -446,8 +439,7 @@ void CSettings::setSyncUserList( const QStringList & value )
     updateValue( fSyncUserList, value );
 }
 
-
-void CSettings::setServers( const std::vector < std::shared_ptr< SServerInfo > > & servers )
+void CSettings::setServers( const std::vector < std::shared_ptr< CServerInfo > > & servers )
 {
     fChanged = fChanged || serversChanged( servers, fServers );
     fChanged = fChanged || serversChanged( fServers, servers );
@@ -462,15 +454,15 @@ void CSettings::setServers( const std::vector < std::shared_ptr< SServerInfo > >
 }
 
 
-bool CSettings::serversChanged( const std::vector< std::shared_ptr< SServerInfo > > & lhs, const std::vector< std::shared_ptr< SServerInfo > > & rhs ) const
+bool CSettings::serversChanged( const std::vector< std::shared_ptr< CServerInfo > > & lhs, const std::vector< std::shared_ptr< CServerInfo > > & rhs ) const
 {
     if ( lhs.size() != rhs.size() )
-        return false;
+        return true;
 
     bool retVal = false;
     for ( auto && ii : lhs )
     {
-        std::shared_ptr< SServerInfo > found;
+        std::shared_ptr< CServerInfo > found;
         for ( auto && jj : rhs )
         {
             if ( ii->keyName() == jj->keyName() )
@@ -507,56 +499,22 @@ void CSettings::updateServerMap()
 
 bool CSettings::loadServer( const QJsonObject & obj, QString & errorMsg )
 {
-    bool generated = !obj.contains( "name" ) || obj["name"].toString().isEmpty();
-    QString serverName;
-    if ( generated )
-        serverName = obj[ "url" ].toString();
-    else
-        serverName = obj[ "name" ].toString();
+    auto serverInfo = CServerInfo::fromJson( obj, errorMsg );
+    if ( !serverInfo )
+        return false;
 
-    if ( serverName.isEmpty() )
+    if ( this->serverInfo( serverInfo->keyName() ) )
     {
-        errorMsg = QString( "Missing name and url" );
+        errorMsg = QString( "Server %1(%2)' already exists" ).arg( serverInfo->displayName() ).arg( serverInfo->keyName() );
         return false;
     }
 
-    if ( !obj.contains(  "url"  ) )
-    {
-        errorMsg = QString( "Missing url" );
-        return false;
-    }
+    fServers.push_back( serverInfo );
+    fServerMap[ serverInfo->keyName() ] = { serverInfo, fServers.size() - 1 };
 
-    if ( !obj.contains( "api_key" ) )
-    {
-        errorMsg = QString( "Missing api_key" );
-        return false;
-    }
-    auto serverInfo = this->serverInfo( serverName, false );
-    if ( serverInfo )
-    {
-        errorMsg = QString( "Server '%1' already exists" ).arg( serverName );
-        return false;
-    }
-
-    serverInfo = this->serverInfo( serverName, true );
-    serverInfo->fName.second = generated;
-
-    setURL( serverName, obj[ "url" ].toString() );
-    setAPIKey( serverName, obj[ "api_key" ].toString() );
     updateFriendlyServerNames();
     return true;
 }
-
-std::shared_ptr< const SServerInfo > CSettings::serverInfo( int serverNum ) const
-{
-    if ( serverNum < 0 )
-        return {};
-    if ( serverNum >= serverCnt() )
-        return {};
-
-    return fServers[ serverNum ];
-}
-
 
 int CSettings::getServerPos( const QString & serverName ) const
 {
@@ -566,8 +524,17 @@ int CSettings::getServerPos( const QString & serverName ) const
     return -1;
 }
 
+std::shared_ptr< const CServerInfo > CSettings::serverInfo( int serverNum ) const
+{
+    if ( serverNum < 0 )
+        return {};
+    if ( serverNum >= serverCnt() )
+        return {};
 
-std::shared_ptr< const SServerInfo > CSettings::serverInfo( const QString & serverName ) const
+    return fServers[ serverNum ];
+}
+
+std::shared_ptr< const CServerInfo > CSettings::serverInfo( const QString & serverName ) const
 {
     auto pos = fServerMap.find( serverName );
     if ( pos != fServerMap.end() )
@@ -575,18 +542,21 @@ std::shared_ptr< const SServerInfo > CSettings::serverInfo( const QString & serv
     return {};
 }
 
-std::shared_ptr< SServerInfo > CSettings::serverInfo( const QString & serverName, bool addIfMissing )
+std::shared_ptr< const CServerInfo > CSettings::serverInfo( const QString & serverName )
 {
-    auto retVal = serverInfo( serverName );
-    if ( retVal || !addIfMissing )
-        return std::const_pointer_cast<SServerInfo>( retVal );
-
-    auto realRetVal = std::make_shared< SServerInfo >( serverName );
-    fServers.push_back( realRetVal );
-    fServerMap[ serverName ] = { realRetVal, fServers.size() - 1 };
-    return realRetVal;
+    auto pos = fServerMap.find( serverName );
+    if ( pos != fServerMap.end() )
+        return ( *pos ).second.first;
+    return {};
 }
 
+std::shared_ptr< CServerInfo > CSettings::serverInfoInternal( const QString & serverName )
+{
+    auto pos = fServerMap.find( serverName );
+    if ( pos != fServerMap.end() )
+        return ( *pos ).second.first;
+    return {};
+}
 
 int CSettings::serverCnt() const
 {
@@ -595,49 +565,46 @@ int CSettings::serverCnt() const
 
 void CSettings::setAPIKey( const QString & serverName, const QString & apiKey )
 {
-    auto serverInfo = this->serverInfo( serverName, true );
-    updateValue( serverInfo->fAPIKey, apiKey );
+    auto serverInfo = this->serverInfoInternal( serverName );
+    if ( serverInfo->setAPIKey( apiKey ) )
+        fChanged = true;
 }
 
-void CSettings::changeServerFriendlyName( const QString & newServerName, const QString & oldServerName )
+void CSettings::changeServerDisplayName( const QString & newServerName, const QString & oldServerName )
 {
-    auto serverInfo = this->serverInfo( oldServerName, false );
+    auto serverInfo = this->serverInfoInternal( oldServerName );
     if ( serverInfo )
     {
-        auto tmp = serverInfo->friendlyName();
-        updateValue( tmp, newServerName );
-        serverInfo->setFriendlyName( newServerName, false );
+        if ( serverInfo->setDisplayName( newServerName, false ) )
+            fChanged = true;
 
         auto pos = fServerMap.find( oldServerName );
         if ( pos != fServerMap.end() )
             fServerMap.erase( pos );
     }
-    else
-    {
-        this->serverInfo( newServerName, true );
-    }
 }
 
 void CSettings::setURL( const QString & serverName, const QString & url )
 {
-    auto serverInfo = this->serverInfo( serverName, true );
-    updateValue( serverInfo->fURL, url );
+    auto serverInfo = this->serverInfoInternal( serverName );
+    if ( serverInfo->setUrl( url ) )
+        fChanged = true;
 }
 
 void CSettings::updateFriendlyServerNames()
 {
-    std::multimap< QString, std::shared_ptr< SServerInfo > > servers;
+    std::multimap< QString, std::shared_ptr< CServerInfo > > servers;
     for ( int ii = 0; ii < serverCnt(); ++ii )
     {
         auto serverInfo = fServers[ ii ];
-        if ( serverInfo->fName.second ) // generatedName
-            servers.insert( { serverInfo->friendlyName(), serverInfo } );
+        if ( serverInfo->displayNameGenerated() ) // generatedName
+            servers.insert( { serverInfo->displayName(), serverInfo } );
     }
 
     for ( auto && ii : servers )
     {
         auto cnt = servers.count( ii.first );
-        ii.second->autoSetFriendlyName( cnt > 1 );
+        ii.second->autoSetDisplayName( cnt > 1 );
     }
     updateServerMap();
 }

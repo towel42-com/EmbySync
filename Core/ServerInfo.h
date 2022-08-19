@@ -27,36 +27,51 @@
 #include <QUrl>
 #include <utility>
 
-struct SServerInfo
-{
-    SServerInfo() = default;
-    SServerInfo( const QString & name, const QString & url, const QString & apiKey );
-    SServerInfo( const QString & name );
+class QJsonObject;
 
-    bool operator==( const SServerInfo & rhs ) const;
-    bool operator!=( const SServerInfo & rhs ) const
+class CServerInfo
+{
+public:
+    CServerInfo() = default;
+    CServerInfo( const QString & name, const QString & url, const QString & apiKey, bool enabled );
+    CServerInfo( const QString & name );
+
+    bool operator==( const CServerInfo & rhs ) const;
+    bool operator!=( const CServerInfo & rhs ) const
     {
         return !operator==( rhs );
     }
 
+    bool setUrl( const QString & url );
     QString url() const;
     QUrl getUrl() const;
     QUrl getUrl( const QString & extraPath, const std::list< std::pair< QString, QString > > & queryItems ) const;
 
-    QString friendlyName() const; // returns the name, if empty returns the fqdn, if the same fqdn is used more than once, it use fqdn:port
+
+    QString displayName() const; // returns the name, if empty returns the fqdn, if the same fqdn is used more than once, it use fqdn:port
+    bool setDisplayName( const QString & name, bool generated );
+    void autoSetDisplayName( bool usePort );
+
+    bool displayNameGenerated() const { return fName.second; }
+
     QString keyName() const;// getUrl().toString()
 
-    void autoSetFriendlyName( bool usePort );
-
-    void setFriendlyName( const QString & name, bool generated );
     bool canSync() const;
 
     QString apiKey() const { return fAPIKey; }
+    bool setAPIKey( const QString & key );
 
+    QJsonObject toJson() const;
+    static std::shared_ptr< CServerInfo > fromJson( const QJsonObject & obj, QString & errorMsg );
+
+    bool isEnabled() const { return fIsEnabled; }
+    bool setIsEnabled( bool isEnabled );
+private:
     std::pair< QString, bool > fName; // may be automatically generated or not
     mutable QString fKeyName;
     QString fURL;
     QString fAPIKey;
+    bool fIsEnabled{ true };
 };
 
 #endif 

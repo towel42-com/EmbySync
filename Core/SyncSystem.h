@@ -52,7 +52,7 @@ struct SMediaUserData;
 class CSettings;
 class CProgressSystem;
 class QTimer;
-struct SServerInfo;
+class CServerInfo;
 
 enum class ERequestType
 {
@@ -112,8 +112,8 @@ public:
     void setMergeMediaFunc( std::function< bool( std::shared_ptr< CProgressSystem > progressSystem ) > mergeMediaFunc );
     void setGetAllMediaFunc( std::function< std::unordered_set< std::shared_ptr< CMediaData > >() > getAllMediaFunc );
 
-    void testServers( const std::vector< std::shared_ptr< const SServerInfo > > & serverInfo );
-    void testServer( std::shared_ptr< const SServerInfo > serverInfo );
+    void testServers( const std::vector< std::shared_ptr< const CServerInfo > > & serverInfo );
+    void testServer( std::shared_ptr< const CServerInfo > serverInfo );
     void testServer( const QString & serverName );
 
     bool isRunning() const;
@@ -155,8 +155,8 @@ private:
 
 private Q_SLOTS:
     void slotRequestFinished( QNetworkReply * reply );
-    void postHandleRequest( ERequestType requestType, QNetworkReply * reply );
-    void decRequestCount( ERequestType requestType, QNetworkReply * reply );
+    void postHandleRequest( QNetworkReply * reply, const QString & serverName, ERequestType requestType );
+    void decRequestCount( QNetworkReply * reply, ERequestType requestType );
 
     void slotMergeMedia();
 
@@ -189,7 +189,7 @@ private:
     void requestUpdateUserDataForMedia( const QString & serverName, std::shared_ptr< CMediaData > mediaData, std::shared_ptr< SMediaUserData > newData );
     void handleReloadMediaResponse( const QString & serverName, const QByteArray & data, const QString & id );
 
-    void requestTestServer( std::shared_ptr< const SServerInfo > serverInfo );
+    void requestTestServer( std::shared_ptr< const CServerInfo > serverInfo );
     void handleTestServer( const QByteArray & data );
 
     std::shared_ptr< CSettings > fSettings;
@@ -215,6 +215,6 @@ private:
     using TOptionalBoolPair = std::pair< std::optional< bool >, std::optional< bool > >;
     std::unordered_map< QString, TOptionalBoolPair > fLeftAndRightFinished;
     std::shared_ptr< CUserData > fCurrUserData;
-    std::unordered_map< QString, std::shared_ptr< const SServerInfo > > fTestServers;
+    std::unordered_map< QString, std::shared_ptr< const CServerInfo > > fTestServers;
 };
 #endif

@@ -26,6 +26,7 @@
 #include "Settings.h"
 #include "ServerInfo.h"
 #include "MediaData.h"
+#include "MediaUserData.h"
 
 #include <unordered_set>
 
@@ -159,10 +160,21 @@ void CSyncSystem::loadUsers()
     }
 
     fProgressSystem->setTitle( tr( "Loading Users" ) );
-    fProgressSystem->setMaximum( fSettings->serverCnt() );
+    int enabledServers = 0;
+    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    {
+        auto serverInfo = fSettings->serverInfo( ii );
+        if ( !serverInfo->isEnabled() )
+            continue;
+        enabledServers++;
+    }
+    fProgressSystem->setMaximum( enabledServers );
 
     for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
     {
+        auto serverInfo = fSettings->serverInfo( ii );
+        if ( !serverInfo->isEnabled() )
+            continue;
         requestGetUsers( fSettings->serverInfo( ii )->keyName() );
     }
 }
@@ -174,15 +186,18 @@ void CSyncSystem::loadUsersMedia( std::shared_ptr< CUserData > userData )
 
     fCurrUserData = userData;
 
-    emit sigAddToLog( EMsgType::eInfo, QString( "Loading media for '%1'" ).arg( fCurrUserData->displayName() ) );
-
     if ( !fCurrUserData->canBeSynced() )
         return;
 
     fProgressSystem->setTitle( tr( "Loading Users Media" ) );
     for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
     {
-        requestGetMediaList( fSettings->serverInfo( ii )->keyName() );
+        auto serverInfo = fSettings->serverInfo( ii );
+        if ( !serverInfo->isEnabled() )
+            continue;
+
+        emit sigAddToLog( EMsgType::eInfo, QString( "Loading media for '%1' on server '%2'" ).arg( fCurrUserData->userName( serverInfo->keyName() ) ).arg( serverInfo->displayName() ) );
+        requestGetMediaList( serverInfo->keyName() );
     }
 }
 
@@ -199,7 +214,7 @@ void CSyncSystem::slotProcess()
 
 void CSyncSystem::selectiveProcess( const QString & selectedServer )
 {
-    auto title = QString( "Processing media for user '%1'" ).arg( fCurrUserData->displayName() );
+    auto title = QString( "Processing media for user '%1'" ).arg( fCurrUserData->userName( selectedServer ) );
     if ( !selectedServer.isEmpty() )
         title += QString( " From '%1'" ).arg( selectedServer );
     
@@ -227,7 +242,7 @@ void CSyncSystem::selectiveProcess( const QString & selectedServer )
     if ( cnt == 0 )
     {
         fProgressSystem->resetProgress();
-        emit sigProcessingFinished( fCurrUserData->displayName() );
+        emit sigProcessingFinished( fCurrUserData->userName( selectedServer ) );
         return;
     }
 
@@ -410,7 +425,7 @@ QVariant CSyncSystem::extraData( QNetworkReply * reply )
     return fAttributes[ reply ][ kExtraData ];
 }
 
-void CSyncSystem::decRequestCount( ERequestType requestType, QNetworkReply * reply )
+void CSyncSystem::decRequestCount( QNetworkReply * reply, ERequestType requestType )
 {
     auto pos = fRequests.find( requestType );
     if ( pos == fRequests.end() )
@@ -432,14 +447,14 @@ void CSyncSystem::decRequestCount( ERequestType requestType, QNetworkReply * rep
         fRequests.erase( pos );
 }
 
-void CSyncSystem::postHandleRequest( ERequestType requestType, QNetworkReply * reply )
+void CSyncSystem::postHandleRequest( QNetworkReply * reply, const QString & serverName, ERequestType requestType )
 {
-    decRequestCount( requestType, reply );
+    decRequestCount( reply, requestType );
     if ( !isRunning() )
     {
         fProgressSystem->resetProgress();
         if ( ( requestType == ERequestType::eReloadMediaData ) || ( requestType == ERequestType::eUpdateData ) )
-            emit sigProcessingFinished( fCurrUserData->displayName() );
+            emit sigProcessingFinished( fCurrUserData->userName( serverName ) );
     }
 }
 
@@ -477,7 +492,7 @@ void CSyncSystem::testServer( const QString & serverName )
     testServer( serverInfo );
 }
 
-void CSyncSystem::testServer( std::shared_ptr< const SServerInfo > serverInfo )
+void CSyncSystem::testServer( std::shared_ptr< const CServerInfo > serverInfo )
 {
     if ( !serverInfo )
         return;
@@ -485,7 +500,7 @@ void CSyncSystem::testServer( std::shared_ptr< const SServerInfo > serverInfo )
     requestTestServer( serverInfo );
 }
 
-void CSyncSystem::testServers( const std::vector< std::shared_ptr< const SServerInfo > > & servers )
+void CSyncSystem::testServers( const std::vector< std::shared_ptr< const CServerInfo > > & servers )
 {
     for( auto && ii : servers )
         requestTestServer( ii );
@@ -641,7 +656,7 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
             break;
         }
 
-        postHandleRequest( requestType, reply );
+        postHandleRequest( reply, serverName, requestType );
         return;
     }
 
@@ -683,10 +698,10 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
     }
     case ERequestType::eUpdateData:
     {
-        requestReloadMediaItemData( extraData.toString(), serverName );
+        requestReloadMediaItemData( serverName, extraData.toString() );
         if ( fGetMediaDataForIDFunc )
         {
-            auto mediaData = fGetMediaDataForIDFunc( extraData.toString(), serverName );
+            auto mediaData = fGetMediaDataForIDFunc( serverName, extraData.toString() );
             if ( mediaData )
                 emit sigAddToLog( EMsgType::eInfo, tr( "Updated '%1(%2)' on Server '%3' successfully" ).arg( mediaData->name() ).arg( extraData.toString() ).arg( serverName ) );
         }
@@ -694,7 +709,7 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
     }
     case ERequestType::eUpdateFavorite:
     {
-        requestReloadMediaItemData( extraData.toString(), serverName );
+        requestReloadMediaItemData( serverName, extraData.toString() );
         emit sigAddToLog( EMsgType::eInfo, tr( "Updated Favorite status for '%1' on Server '%2' successfully" ).arg( extraData.toString() ).arg( serverName ) );
         break;
     }
@@ -707,7 +722,7 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
             auto testServer = ( *pos ).second;
             fTestServers.erase( pos );
 
-            emit sigAddToLog( EMsgType::eInfo, tr( "Finished Testing server '%1' successfully" ).arg( testServer->friendlyName() ) );
+            emit sigAddToLog( EMsgType::eInfo, tr( "Finished Testing server '%1' successfully" ).arg( testServer->displayName() ) );
             emit sigTestServerResults( serverName, true, QString() );
         }
         else
@@ -717,15 +732,15 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
     }
     }
 
-    postHandleRequest( requestType, reply );
+    postHandleRequest( reply, serverName, requestType );
 }
 
-void CSyncSystem::requestTestServer( std::shared_ptr< const SServerInfo > serverInfo )
+void CSyncSystem::requestTestServer( std::shared_ptr< const CServerInfo > serverInfo )
 {
     fTestServers[ serverInfo->keyName() ] = serverInfo;
 
     auto && url = serverInfo->getUrl( "Users", {} );
-    emit sigAddToLog( EMsgType::eInfo, tr( "Testing Server '%1' - %2" ).arg( serverInfo->friendlyName() ).arg( url.toString() ) );
+    emit sigAddToLog( EMsgType::eInfo, tr( "Testing Server '%1' - %2" ).arg( serverInfo->displayName() ).arg( url.toString() ) );
 
     if ( !url.isValid() )
     {
@@ -808,12 +823,11 @@ void CSyncSystem::requestGetMediaList( const QString & serverName )
     //qDebug() << url;
     auto request = QNetworkRequest( url );
 
-    emit sigAddToLog( EMsgType::eInfo, QString( "Requesting media for '%1' from server '%2'" ).arg( fCurrUserData->displayName() ).arg( serverName ) );
+    emit sigAddToLog( EMsgType::eInfo, QString( "Requesting media for '%1' from server '%2'" ).arg( fCurrUserData->userName( serverName ) ).arg( serverName ) );
 
     auto reply = makeRequest( request );
     setServerName( reply, serverName );
     setRequestType( reply, ERequestType::eGetMediaList );
-    setExtraData( reply, fCurrUserData->displayName() );
 }
 
 void CSyncSystem::handleGetMediaListResponse( const QString & serverName, const QByteArray & data )
@@ -844,7 +858,7 @@ void CSyncSystem::handleGetMediaListResponse( const QString & serverName, const 
     fProgressSystem->setTitle( tr( "Loading Users Media Data" ) );
     fProgressSystem->setMaximum( mediaList.count() );
 
-    emit sigAddToLog( EMsgType::eInfo, QString( "%1 has %2 media items on server '%3'" ).arg( fCurrUserData->displayName() ).arg( mediaList.count() ).arg( serverName ) );
+    emit sigAddToLog( EMsgType::eInfo, QString( "%1 has %2 media items on server '%3'" ).arg( fCurrUserData->userName( serverName ) ).arg( mediaList.count() ).arg( serverName ) );
     if ( fSettings->maxItems() > 0 )
         emit sigAddToLog( EMsgType::eInfo, QString( "Loading %2 media items" ).arg( fSettings->maxItems() ) );
 
@@ -876,7 +890,7 @@ void CSyncSystem::requestReloadMediaItemData( const QString & serverName, const 
     if ( !fGetMediaDataForIDFunc )
         return;
 
-    auto mediaData = fGetMediaDataForIDFunc( mediaID, serverName );
+    auto mediaData = fGetMediaDataForIDFunc( serverName, mediaID );
     if ( !mediaData )
         return;
 

@@ -30,7 +30,7 @@
 #include <QMetaMethod>
 #include <QMessageBox>
 
-CEditServerDlg::CEditServerDlg( const QString & name, const QString & url, const QString & apiKey, QWidget * parent )
+CEditServerDlg::CEditServerDlg( const QString & name, const QString & url, const QString & apiKey, bool enabled, QWidget * parent )
     : QDialog( parent ),
     fImpl( new Ui::CEditServerDlg )
 {
@@ -38,6 +38,7 @@ CEditServerDlg::CEditServerDlg( const QString & name, const QString & url, const
     fImpl->name->setText( name );
     fImpl->url->setText( url );
     fImpl->apiKey->setText( apiKey );
+    fImpl->enabled->setChecked( enabled );
 
     QObject::connect( fImpl->name, &QLineEdit::textChanged, this, &CEditServerDlg::slotChanged );
     QObject::connect( fImpl->apiKey, &QLineEdit::textChanged, this, &CEditServerDlg::slotChanged );
@@ -47,6 +48,11 @@ CEditServerDlg::CEditServerDlg( const QString & name, const QString & url, const
 
 CEditServerDlg::~CEditServerDlg()
 {
+}
+
+bool CEditServerDlg::enabled() const
+{
+    return fImpl->enabled->isChecked();
 }
 
 QString CEditServerDlg::name() const

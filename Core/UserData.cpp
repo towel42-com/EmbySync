@@ -77,9 +77,22 @@ void CUserData::setName( const QString & serverName, const QString & name )
 {
     auto serverInfo = getServerInfo( serverName, true );
     serverInfo->fName = name;
+    updateCanBeSynced();
 }
 
-QString CUserData::displayName() const
+QString CUserData::userName( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return connectedID();
+
+    auto retVal = serverInfo->fName;
+    if ( !connectedID().isEmpty() )
+        retVal += "(" + connectedID() + ")";
+    return retVal;
+}
+
+QString CUserData::allNames() const
 {
     QString retVal = connectedID();
 
@@ -159,7 +172,7 @@ bool CUserData::isUser( const QString & name ) const
             return true;
     }
 
-    return displayName() == name;
+    return allNames() == name;
 }
 
 bool CUserData::isMatch( const QRegularExpression & regEx, const QString & value ) const
@@ -180,6 +193,7 @@ void CUserData::setUserID( const QString & serverName, const QString & id )
 {
     auto serverInfo = getServerInfo( serverName, true );
     serverInfo->fUserID = id;
+    updateCanBeSynced();
 }
 
 bool CUserData::onServer( const QString & serverName ) const
@@ -190,13 +204,18 @@ bool CUserData::onServer( const QString & serverName ) const
 
 bool CUserData::canBeSynced() const
 {
+    return fCanBeSynced;
+}
+
+void CUserData::updateCanBeSynced()
+{
     int serverCnt = 0;
     for ( auto && ii : fInfoForServer )
     {
         if ( ii.second->isValid() )
             serverCnt++;
     }
-    return serverCnt > 1;
+    fCanBeSynced = serverCnt > 1;
 }
 
 bool SUserServerData::isValid() const

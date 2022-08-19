@@ -21,7 +21,7 @@
 // SOFTWARE.
 
 #include "MediaUserDataWidget.h"
-#include "Core/MediaData.h"
+#include "Core/MediaUserData.h"
 
 #include "ui_MediaUserDataWidget.h"
 

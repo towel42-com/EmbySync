@@ -72,6 +72,7 @@ public Q_SLOTS:
 
     void slotLoadSettings();
     void slotSave();
+    void slotSaveAs();
     void slotRecentMenuAboutToShow();
     void slotUserMediaCompletelyLoaded();
     void slotPendingMediaUpdate();

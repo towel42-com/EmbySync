@@ -36,12 +36,13 @@ class CEditServerDlg : public QDialog
 {
     Q_OBJECT
 public:
-    CEditServerDlg( const QString & name, const QString & url, const QString & apiKey, QWidget * parent = nullptr );
+    CEditServerDlg( const QString & name, const QString & url, const QString & apiKey, bool enabled, QWidget * parent = nullptr );
     virtual ~CEditServerDlg() override;
 
     QString name() const;
     QString url() const;
     QString apiKey() const;
+    bool enabled() const;
 
 Q_SIGNALS:
 public Q_SLOTS:

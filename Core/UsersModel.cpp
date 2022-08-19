@@ -11,7 +11,32 @@ CUsersModel::CUsersModel( std::shared_ptr< CSettings > settings, QObject * paren
     QAbstractTableModel( parent ),
     fSettings( settings )
 {
+    setupColumns();
+}
 
+void CUsersModel::setupColumns()
+{
+    // caller responsible for reset model
+    fColumnToServerInfo.clear();
+    fServerNumToColumn.clear();
+    int columnNum = static_cast<int>( eFirstServerColumn ) + 1;
+    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    {
+        auto serverInfo = fSettings->serverInfo( ii );
+        if ( !serverInfo->isEnabled() )
+            continue;
+        fServerNumToColumn[ ii ] = columnNum;
+        fColumnToServerInfo[ columnNum ] = std::make_pair( ii, serverInfo );
+        columnNum++;
+    }
+}
+
+int CUsersModel::serverNum( int columnNum ) const
+{
+    auto pos = fColumnToServerInfo.find( columnNum );
+    if ( pos == fColumnToServerInfo.end() )
+        return -1;
+    return ( *pos ).second.first;
 }
 
 int CUsersModel::rowCount( const QModelIndex & parent /* = QModelIndex() */ ) const
@@ -26,7 +51,7 @@ int CUsersModel::columnCount( const QModelIndex & parent /* = QModelIndex() */ )
 {
     if ( parent.isValid() )
         return 0;
-    return static_cast<int>( eFirstServerColumn ) + fSettings->serverCnt() + 1;
+    return static_cast<int>( eFirstServerColumn ) + static_cast< int >( fServerNumToColumn.size() ) + 1;
 }
 
 QVariant CUsersModel::data( const QModelIndex & index, int role /*= Qt::DisplayRole */ ) const
@@ -66,18 +91,15 @@ QVariant CUsersModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
     if ( role != Qt::DisplayRole )
         return {};
 
-    if ( index.column() == eDisplayName )
-        return userData->displayName();
-    else if ( index.column() == eConnectedID )
+    if ( index.column() == eAllNames )
+        return userData->allNames();
+    else if ( index.column() == eName )
         return userData->connectedID();
-    return userData->name( fSettings->serverInfo( serverNum( index.column() ) )->keyName() );
-}
 
-int CUsersModel::serverNum( int columnNum ) const
-{
-    if ( columnNum < eFirstServerColumn )
-        return -1;
-    return columnNum - ( eFirstServerColumn + 1 );
+    auto pos = fColumnToServerInfo.find( index.column() );
+    if ( pos == fColumnToServerInfo.end() )
+        return {};
+    return userData->name( ( *pos ).second.second->keyName() );
 }
 
 QVariant CUsersModel::headerData( int section, Qt::Orientation orientation, int role /*= Qt::DisplayRole */ ) const
@@ -89,11 +111,15 @@ QVariant CUsersModel::headerData( int section, Qt::Orientation orientation, int 
     if ( orientation != Qt::Horizontal )
         return QAbstractTableModel::headerData( section, orientation, role );
 
-    if ( section == eConnectedID )
+    if ( section == eName )
         return tr( "Connected ID" );
-    else if ( section == eDisplayName )
+    else if ( section == eAllNames )
         return tr( "All Names" );
-    return fSettings->serverInfo( serverNum( section ) )->friendlyName();
+   
+    auto pos = fColumnToServerInfo.find( section );
+    if ( pos == fColumnToServerInfo.end() )
+        return {};
+    return ( *pos ).second.second->displayName();
 }
 
 QVariant CUsersModel::getColor( const QModelIndex & index, bool background ) const
@@ -102,7 +128,11 @@ QVariant CUsersModel::getColor( const QModelIndex & index, bool background ) con
         return {};
 
     auto userData = fUsers[ index.row() ];
-    if ( !userData->onServer( fSettings->serverInfo( serverNum( index.column() ) )->keyName() ) )
+    auto pos = fColumnToServerInfo.find( index.column() );
+    if ( pos == fColumnToServerInfo.end() )
+        return {};
+
+    if ( !userData->onServer( (*pos).second.second->keyName() ) )
     {
         return fSettings->dataMissingColor( background );
     }
@@ -156,11 +186,13 @@ std::shared_ptr< CUserData > CUsersModel::userData( const QModelIndex & idx )
         return {};
     return fUsers[ idx.row() ];
 }
+
 void CUsersModel::clear()
 {
     beginResetModel();
     fUsers.clear();
     fUserMap.clear();
+    setupColumns();
     endResetModel();
 }
 
@@ -212,7 +244,7 @@ std::shared_ptr< CUserData > CUsersModel::loadUser( const QString & serverName, 
 
     if ( !userData )
     {
-        userData = std::make_shared< CUserData >( currName, connectedID, userID, serverName );
+        userData = std::make_shared< CUserData >( serverName, currName, connectedID, userID );
         beginInsertRows( QModelIndex(), static_cast<int>( fUsers.size() ), static_cast<int>( fUsers.size() ) );
         fUsers.push_back( userData );
         fUserMap[ userData->sortName( fSettings ) ] = userData;

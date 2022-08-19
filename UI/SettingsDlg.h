@@ -41,26 +41,29 @@ class QLabel;
 class CSettings;
 class CUserData;
 class CSyncSystem;
-struct SServerInfo;
+class CServerInfo;
+
 class CSettingsDlg : public QDialog
 {
     Q_OBJECT
 public:
     CSettingsDlg( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, const std::vector< std::shared_ptr< CUserData > > & knownUsers, QWidget * parent = nullptr );
+
     virtual ~CSettingsDlg() override;
 
-    void load();
-
     virtual void accept() override;
-
-    void save();
 
 public Q_SLOTS:
     void slotTestServers();
     void slotTestServerResults( const QString & serverName, bool results, const QString & msg );
 private:
-    std::vector< std::shared_ptr< SServerInfo > > getServerInfos() const;
-    std::shared_ptr< SServerInfo > getServerInfo( int ii ) const;
+    void loadKnownUsers( const std::vector< std::shared_ptr< CUserData > > & knownUsers );
+
+    void load();
+    void save();
+
+    std::vector< std::shared_ptr< CServerInfo > > getServerInfos( bool enabledOnly ) const;
+    std::shared_ptr< CServerInfo > getServerInfo( int ii ) const;
 
     void editServer( QTreeWidgetItem * item );
     void editUser( QListWidgetItem * item );

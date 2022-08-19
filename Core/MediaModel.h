@@ -79,15 +79,15 @@ public:
 Q_SIGNALS:
     void sigPendingMediaUpdate();
 private:
+    int perServerColumn( int column ) const;
     int columnsPerServer( bool includeProviders = true ) const;
-    bool isFirstColumnOfServer( int columnNum ) const;
     QString serverNameForColumn( int columnNum ) const;
 
     std::optional< std::pair< QString, QString > > getProviderInfoForColumn( int column ) const;
 
     void addMediaInfo( const QString & serverName, std::shared_ptr<CMediaData> mediaData, const QJsonObject & mediaInfo );
 
-    QVariant getColor( const QModelIndex & index, bool background ) const;
+    QVariant getColor( const QModelIndex & index, const QString & serverName, bool background ) const;
     void updateProviderColumns( std::shared_ptr< CMediaData > ii );
 
     std::unique_ptr< CMergeMedia > fMergeSystem;

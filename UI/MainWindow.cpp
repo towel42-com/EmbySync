@@ -75,6 +75,10 @@ CMainWindow::CMainWindow( QWidget * parent )
     connect( fImpl->actionViewMediaInformation, &QAction::triggered, this, &CMainWindow::slotViewMediaInfo );
 
     fImpl->users->setModel( fUsersFilterModel );
+#ifdef NDEBUG
+    fImpl->users->setColumnHidden( CUsersModel::eAllNames, true );
+#endif
+
 
     fMediaFilterModel->sort( -1, Qt::SortOrder::AscendingOrder );
     fUsersFilterModel->sort( -1, Qt::SortOrder::AscendingOrder );
@@ -103,7 +107,7 @@ CMainWindow::CMainWindow( QWidget * parent )
     fSyncSystem->setGetMediaDataForIDFunc(
         [ this ]( const QString & serverName, const QString & mediaID )
         {
-            return fMediaModel->getMediaDataForID( mediaID, serverName );
+            return fMediaModel->getMediaDataForID( serverName, mediaID );
         } );
     fSyncSystem->setMergeMediaFunc(
         [ this ]( std::shared_ptr< CProgressSystem > progressSystem )
@@ -179,6 +183,7 @@ CMainWindow::CMainWindow( QWidget * parent )
     connect( fImpl->actionShowMediaWithIssues, &QAction::triggered, this, &CMainWindow::slotToggleShowMediaWithIssues );
 
     connect( fImpl->actionSave, &QAction::triggered, this, &CMainWindow::slotSave );
+    connect( fImpl->actionSaveAs, &QAction::triggered, this, &CMainWindow::slotSaveAs );
     connect( fImpl->actionSettings, &QAction::triggered, this, &CMainWindow::slotSettings );
 
     connect( fImpl->users, &QTreeView::clicked, this, &CMainWindow::slotCurrentUserChanged );
@@ -243,7 +248,10 @@ void CMainWindow::slotSettings()
     CSettingsDlg settings( fSettings, fSyncSystem, fUsersModel->getAllUsers( true ), this );
     settings.exec();
     if ( fSettings->changed() )
+    {
+        slotSave();
         loadSettings();
+    }
 }
 
 void CMainWindow::reset()
@@ -293,7 +301,10 @@ void CMainWindow::loadFile( const QString & fileName )
 
     reset();
     if ( fSettings->load( fileName, true, this ) )
+    {
+        resetServers();
         loadSettings();
+    }
 }
 
 void CMainWindow::slotLoadSettings()
@@ -309,6 +320,11 @@ void CMainWindow::slotSave()
     fSettings->save( this );
 }
 
+void CMainWindow::slotSaveAs()
+{
+    fSettings->saveAs( this );
+}
+
 void CMainWindow::loadSettings()
 {
     slotAddToLog( EMsgType::eInfo, "Loading Settings" );
@@ -318,6 +334,7 @@ void CMainWindow::loadSettings()
     fImpl->actionOnlyShowMediaWithDifferences->setChecked( fSettings->onlyShowMediaWithDifferences() );
     fImpl->actionShowMediaWithIssues->setChecked( fSettings->showMediaWithIssues() );
 
+    fUsersModel->clear();
     fSyncSystem->loadUsers();
     emit sigSettingsLoaded();
 }
@@ -443,6 +460,9 @@ void CMainWindow::onlyShowMediaWithDifferences()
         order = Qt::AscendingOrder;
     }
     fMediaFilterModel->sort( column, order );
+
+    for ( auto && ii : fMediaTrees )
+        ii->autoSize();
 }
 
 void CMainWindow::showMediaWithIssues()
@@ -559,6 +579,10 @@ void CMainWindow::loadServers()
 
     for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
     {
+        auto serverInfo = fSettings->serverInfo( ii );
+        if ( !serverInfo->isEnabled() )
+            continue;
+
         auto mediaTree = new CMediaTree( fSettings->serverInfo( ii ), fImpl->upperSplitter );
         fImpl->upperSplitter->addWidget( mediaTree );
         mediaTree->setModel( fMediaFilterModel );
@@ -640,8 +664,6 @@ void CMainWindow::slotUserMediaCompletelyLoaded()
         connect( fMediaLoadedTimer, &QTimer::timeout,
                  [this]()
                  {
-                     for ( auto && ii : fMediaTrees )
-                         ii->autoSize();
                      onlyShowMediaWithDifferences();
 
                      delete fMediaLoadedTimer;
@@ -659,13 +681,18 @@ void CMainWindow::slotSelectiveProcess()
     for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
     {
         auto serverInfo = fSettings->serverInfo( ii );
+        if ( !serverInfo->isEnabled() )
+            continue;
 
-        auto name = serverInfo->friendlyName();
+        auto name = serverInfo->displayName();
         auto key = serverInfo->keyName();
 
         servers[ name ] = key;
         serverNames << name;
     }
+
+    if ( serverNames.isEmpty() )
+        return;
 
     auto whichServer = QInputDialog::getItem( this, tr( "Select Source Server" ), tr( "Source Server:" ), serverNames, 0, false );
     if ( whichServer.isEmpty() )
