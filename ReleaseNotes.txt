@@ -1,3 +1,4 @@
+1.3 - Support for multiple servers
 1.2 - More Configurable sync options
 	Enable the user to set what Media Types to sync
 	Use the connected name, dont assume users on two servers have the same displayname
