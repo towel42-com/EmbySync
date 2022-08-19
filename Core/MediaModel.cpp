@@ -97,7 +97,7 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
         if ( !mediaData )
             return false;
 
-        if ( !mediaData->canBeSynced() )
+        if ( !mediaData->isValidForAllServers() )
             return fSettings->showMediaWithIssues();
 
         if ( !fSettings->onlyShowMediaWithDifferences() )
@@ -124,14 +124,13 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
     }
 
     int column = index.column();
-    if ( ( role == Qt::DecorationRole ) )
-        int xyz = 0;
-    if ( ( role == Qt::DecorationRole ) && isFirstColumnOfServer( index.column() ) )
+    auto serverName = this->serverNameForColumn( column );
+
+    if ( ( role == Qt::DecorationRole ) && isFirstColumnOfServer( column ) )
     {
-        return mediaData->getDirectionIcon();
+        return mediaData->getDirectionIcon( serverName );
     }
 
-    auto serverName = this->serverNameForColumn( index.column() );
     if ( role == ECustomRoles::eServerNameForColumnRole )
     {
         return serverName;
@@ -143,7 +142,7 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
     if ( !mediaData->isValidForServer( serverName ) )
         return {};
 
-    auto providerInfo = getProviderInfoForColumn( index.column() );
+    auto providerInfo = getProviderInfoForColumn( column );
     if ( providerInfo )
     {
         return mediaData->getProviderID( providerInfo.value().second );
@@ -151,7 +150,7 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
 
     switch ( column % columnsPerServer( false ) )
     {
-        case eName: return mediaData->name() + "-" + QString::number( index.column() ) + "-" + QString::number( column );
+        case eName: return mediaData->name();
         case eType: return mediaData->mediaType();
         case eMediaID: return mediaData->getMediaID( serverName );
         case eFavorite: return mediaData->isFavorite( serverName ) ? "Yes" : "No";
@@ -216,6 +215,7 @@ void CMediaModel::clear()
 
     fMergeSystem->clear();
     fAllMedia.clear();
+    fMediaMap.clear();
     endResetModel();
 }
 
@@ -312,7 +312,7 @@ std::shared_ptr< CMediaData > CMediaModel::loadMedia( const QJsonObject & media,
 
     auto pos2 = ( *pos ).second.find( id );
     if ( pos2 == (*pos).second.end() )
-        mediaData = std::make_shared< CMediaData >( CMediaData::computeName( media ), media[ "Type" ].toString() );
+        mediaData = std::make_shared< CMediaData >( media, fSettings );
     else
         mediaData = ( *pos2 ).second;
     //qDebug() << isLHSServer << mediaData->name();
@@ -384,6 +384,8 @@ void CMediaModel::loadMergedMedia( std::shared_ptr<CProgressSystem> progressSyst
 
 QVariant CMediaModel::getColor( const QModelIndex & index, bool background ) const
 {
+    if ( index.column() > fSettings->serverCnt() * columnsPerServer( false ) )
+        return {};
     auto mediaData = fData[ index.row() ];
 
     if ( !mediaData->isValidForAllServers() )
@@ -393,7 +395,7 @@ QVariant CMediaModel::getColor( const QModelIndex & index, bool background ) con
     {
         bool dataSame = false;
 
-        switch ( index.column() % columnsPerServer() )
+        switch ( index.column() % columnsPerServer( false ) )
         {
             case eName:
                 dataSame = false;
@@ -417,6 +419,7 @@ QVariant CMediaModel::getColor( const QModelIndex & index, bool background ) con
             default:
                 return {};
         }
+
 
         if ( dataSame )
             return {};
