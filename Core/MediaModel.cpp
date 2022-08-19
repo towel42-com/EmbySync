@@ -3,6 +3,7 @@
 #include "MergeMedia.h"
 
 #include "Settings.h"
+#include "ServerInfo.h"
 #include "ProgressSystem.h"
 
 #include <QJsonObject>
@@ -56,7 +57,7 @@ QString CMediaModel::serverNameForColumn( int column ) const
         return providerInfo.value().first;
 
     auto serverNum = column / columnsPerServer( false );
-    return fSettings->serverKeyName( serverNum );
+    return fSettings->serverInfo( serverNum )->keyName();
 }
 
 std::optional< std::pair< QString, QString > > CMediaModel::getProviderInfoForColumn( int column ) const
@@ -231,7 +232,7 @@ void CMediaModel::updateProviderColumns( std::shared_ptr< CMediaData > mediaData
             fProviderNames.insert( ii.first );
             for ( int jj = 0; jj < fSettings->serverCnt(); ++jj )
             {
-                fProviderColumnsByColumn[ colCount + jj ] = { fSettings->serverKeyName( jj ), ii.first }; // gets duplicated lhs vs rhs
+                fProviderColumnsByColumn[ colCount + jj ] = { fSettings->serverInfo( jj )->keyName(), ii.first }; // gets duplicated lhs vs rhs
             }
             endInsertColumns();
         }

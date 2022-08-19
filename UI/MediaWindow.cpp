@@ -26,6 +26,7 @@
 #include "Core/SyncSystem.h"
 #include "Core/MediaData.h"
 #include "Core/Settings.h"
+#include "Core/ServerInfo.h"
 #include "SABUtils/WidgetChanged.h"
 
 #include <QHBoxLayout>
@@ -49,7 +50,7 @@ CMediaWindow::CMediaWindow( std::shared_ptr< CSettings> settings, std::shared_pt
     {
         auto userDataWidget = new CMediaUserDataWidget( this );
         horizontalLayout->addWidget( userDataWidget );
-        fUserDataWidgets[ settings->serverKeyName( ii ) ] = userDataWidget;
+        fUserDataWidgets[ settings->serverInfo( ii )->keyName() ] = userDataWidget;
         connect( userDataWidget, &CMediaUserDataWidget::sigApplyFromServer, this, &CMediaWindow::slotApplyFromServer );
     }
 

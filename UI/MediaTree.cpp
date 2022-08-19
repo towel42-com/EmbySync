@@ -25,6 +25,7 @@
 #include "SABUtils/QtUtils.h"
 #include "Core/MediaModel.h"
 #include "Core/Settings.h"
+#include "Core/ServerInfo.h"
 
 #include <QScrollBar>
 

@@ -31,6 +31,7 @@
 #include "Core/MediaModel.h"
 #include "Core/UsersModel.h"
 #include "Core/Settings.h"
+#include "Core/ServerInfo.h"
 #include "Core/ProgressSystem.h"
 #include "SABUtils/QtUtils.h"
 

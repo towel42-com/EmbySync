@@ -21,6 +21,7 @@
 // SOFTWARE.
 
 #include "Settings.h"
+#include "ServerInfo.h"
 #include <QJsonDocument>
 #include <QFile>
 #include <QJsonParseError>
@@ -33,105 +34,6 @@
 #include <QColor>
 
 #include <map>
-
-
-SServerInfo::SServerInfo( const QString & name, const QString & url, const QString & apiKey ) :
-    fName( { name, false } ),
-    fURL( url ),
-    fAPIKey( apiKey )
-{
-
-}
-
-SServerInfo::SServerInfo( const QString & name ) :
-    fName( { name, false } )
-{
-
-}
-
-bool SServerInfo::operator==( const SServerInfo & rhs ) const
-{
-    return fName == rhs.fName
-        && fURL == rhs.fURL
-        && fAPIKey == rhs.fAPIKey
-        ;
-}
-
-QString SServerInfo::url() const
-{
-    return fURL;
-}
-
-QUrl SServerInfo::getUrl() const
-{
-    return getUrl( QString(), std::list< std::pair< QString, QString > >() );
-}
-
-
-QUrl SServerInfo::getUrl( const QString & extraPath, const std::list< std::pair< QString, QString > > & queryItems ) const
-{
-    auto path = fURL;
-    if ( path.isEmpty() )
-        return {};
-
-    if ( !extraPath.isEmpty() )
-    {
-        if ( !path.endsWith( "/" ) )
-            path += "/";
-        path += extraPath;
-    }
-
-    if ( path.indexOf( "://" ) == -1 )
-        path = "http://" + path;
-
-    QUrl retVal( path );
-
-    QUrlQuery query;
-    query.addQueryItem( "api_key", fAPIKey );
-    for ( auto && ii : queryItems )
-    {
-        query.addQueryItem( ii.first, ii.second );
-    }
-    retVal.setQuery( query );
-
-    //qDebug() << url;
-
-    return retVal;
-}
-
-QString SServerInfo::friendlyName() const
-{
-    if ( !fName.first.isEmpty() )
-        return fName.first;
-    else
-        return keyName();
-}
-
-QString SServerInfo::keyName() const
-{
-    if ( fKeyName.isEmpty() )
-        fKeyName = getUrl().toString( QUrl::RemoveUserInfo | QUrl::RemoveQuery );
-    return fKeyName;
-}
-
-void SServerInfo::autoSetFriendlyName( bool usePort )
-{
-    auto url = getUrl();
-    QString retVal = url.host();
-    if ( usePort )
-        retVal += QString::number( url.port() );
-    setFriendlyName( retVal, true );
-}
-
-void SServerInfo::setFriendlyName( const QString & name, bool generated )
-{
-    fName = { name, generated };
-}
-
-bool SServerInfo::canSync() const
-{
-    return getUrl().isValid() && !fAPIKey.isEmpty();
-}
 
 CSettings::CSettings()
 {
@@ -691,46 +593,13 @@ int CSettings::serverCnt() const
     return static_cast<int>( fServers.size() );
 }
 
-QString CSettings::apiKey( const QString & serverName ) const
-{
-    auto serverInfo = this->serverInfo( serverName );
-    if ( !serverInfo )
-        return {};
-    return serverInfo->fAPIKey;
-}
-
-QString CSettings::apiKey( int serverNum ) const
-{
-    auto serverInfo = this->serverInfo( serverNum );
-    if ( !serverInfo )
-        return {};
-    return serverInfo->fAPIKey;
-}
-
 void CSettings::setAPIKey( const QString & serverName, const QString & apiKey )
 {
     auto serverInfo = this->serverInfo( serverName, true );
     updateValue( serverInfo->fAPIKey, apiKey );
 }
 
-QString CSettings::friendlyServerName( int serverNum ) const
-{
-    auto serverInfo = this->serverInfo( serverNum );
-    if ( !serverInfo )
-        return {};
-    return serverInfo->friendlyName();
-}
-
-QString CSettings::serverKeyName( int serverNum ) const
-{
-    auto serverInfo = this->serverInfo( serverNum );
-    if ( !serverInfo )
-        return {};
-
-    return serverInfo->keyName();
-}
-
-void CSettings::setServerFriendlyName( const QString & newServerName, const QString & oldServerName )
+void CSettings::changeServerFriendlyName( const QString & newServerName, const QString & oldServerName )
 {
     auto serverInfo = this->serverInfo( oldServerName, false );
     if ( serverInfo )
@@ -749,41 +618,10 @@ void CSettings::setServerFriendlyName( const QString & newServerName, const QStr
     }
 }
 
-
-QString CSettings::url( int serverNum ) const
-{
-    auto serverInfo = this->serverInfo( serverNum );
-    if ( !serverInfo )
-        return {};
-    return serverInfo->url();
-}
-
 void CSettings::setURL( const QString & serverName, const QString & url )
 {
     auto serverInfo = this->serverInfo( serverName, true );
     updateValue( serverInfo->fURL, url );
-}
-
-QUrl CSettings::getUrl( const QString & serverName ) const
-{
-    return getUrl( serverName, QString(), std::list< std::pair< QString, QString > >() );
-}
-
-QUrl CSettings::getUrl( int serverNum ) const
-{
-    auto serverInfo = this->serverInfo( serverNum );
-    if ( !serverInfo )
-        return {};
-    return serverInfo->getUrl();
-}
-
-QUrl CSettings::getUrl( const QString & serverName, const QString & extraPath, const std::list< std::pair< QString, QString > > & queryItems ) const
-{
-    auto serverInfo = this->serverInfo( serverName );
-    if ( !serverInfo )
-        return {};
-
-    return serverInfo->getUrl( extraPath, queryItems );
 }
 
 void CSettings::updateFriendlyServerNames()

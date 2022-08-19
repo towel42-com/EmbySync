@@ -41,36 +41,7 @@ namespace Ui
     class CSettings;
 }
 
-
-struct SServerInfo
-{
-    SServerInfo() = default;
-    SServerInfo( const QString & name, const QString & url, const QString & apiKey );
-    SServerInfo( const QString & name );
-
-    bool operator==( const SServerInfo & rhs ) const;
-    bool operator!=( const SServerInfo & rhs ) const
-    {
-        return !operator==( rhs );
-    }
-
-    QString url() const;
-    QUrl getUrl() const;
-    QUrl getUrl( const QString & extraPath, const std::list< std::pair< QString, QString > > & queryItems ) const;
-
-    QString friendlyName() const; // returns the name, if empty returns the fqdn, if the same fqdn is used more than once, it use fqdn:port
-    QString keyName() const;// getUrl().toString()
-
-    void autoSetFriendlyName( bool usePort );
-
-    void setFriendlyName( const QString & name, bool generated );
-    bool canSync() const;
-
-    std::pair< QString, bool > fName; // may be automatically generated or not
-    mutable QString fKeyName;
-    QString fURL;
-    QString fAPIKey;
-};
+struct SServerInfo;
 
 class CSettings
 {
@@ -102,33 +73,10 @@ public:
     bool changed() const { return fChanged; }
     void reset();
 
-    // Various server calls
-    QUrl getUrl( int serverNum ) const;
-    QUrl getUrl( const QString & serverName ) const;
-    QUrl getUrl( const QString & serverName, const QString & extraPath, const std::list< std::pair< QString, QString > > & queryItems ) const;
-    template <class T>
-    QUrl getUrl( T ) const = delete;
-
-    QString url( int serverNum ) const;
-    QString url( const QString & serverName ) const;
-    template <class T>
-    QString url( T ) const = delete;
+    // Setting up of servers
     void setURL( const QString & serverName, const QString & url );
-
-    QString apiKey( int serverNum ) const;
-    QString apiKey( const QString & serverName ) const;
-    template <class T>
-    QString apiKey( T ) const = delete;
     void setAPIKey( const QString & serverName, const QString & apiKey );
-
-    QString serverKeyName( int serverNum ) const;
-    template <class T>
-    QString serverKeyName( T ) const = delete;
-
-    QString friendlyServerName( int serverNum ) const;  // returns name of the server, if its blank returns the serverKeyName
-    template <class T>
-    QString friendlyServerName( T ) const = delete;
-    void setServerFriendlyName( const QString & serverName, const QString & oldServerName );
+    void changeServerFriendlyName( const QString & serverName, const QString & oldServerName );
 
     // other settings
     QColor mediaSourceColor( bool forBackground = true ) const;

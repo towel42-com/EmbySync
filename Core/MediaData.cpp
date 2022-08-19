@@ -22,6 +22,7 @@
 
 #include "MediaData.h"
 #include "Settings.h"
+#include "ServerInfo.h"
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
@@ -150,7 +151,7 @@ CMediaData::CMediaData( const QJsonObject & mediaObj, std::shared_ptr< CSettings
 
     for ( int ii = 0; ii < settings->serverCnt(); ++ii )
     {
-        userMediaData( settings->serverKeyName( ii ), true );
+        userMediaData( settings->serverInfo( ii )->keyName(), true );
     }
 }
 

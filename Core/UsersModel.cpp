@@ -1,6 +1,7 @@
 #include "UsersModel.h"
 #include "UserData.h"
 #include "Settings.h"
+#include "ServerInfo.h"
 
 #include <QColor>
 #include <set>
@@ -69,7 +70,7 @@ QVariant CUsersModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
         return userData->displayName();
     else if ( index.column() == eConnectedID )
         return userData->connectedID();
-    return userData->name( fSettings->serverKeyName( serverNum( index.column() ) ) );
+    return userData->name( fSettings->serverInfo( serverNum( index.column() ) )->keyName() );
 }
 
 int CUsersModel::serverNum( int columnNum ) const
@@ -92,7 +93,7 @@ QVariant CUsersModel::headerData( int section, Qt::Orientation orientation, int 
         return tr( "Connected ID" );
     else if ( section == eDisplayName )
         return tr( "All Names" );
-    return fSettings->friendlyServerName( serverNum( section ) );
+    return fSettings->serverInfo( serverNum( section ) )->friendlyName();
 }
 
 QVariant CUsersModel::getColor( const QModelIndex & index, bool background ) const
@@ -101,7 +102,7 @@ QVariant CUsersModel::getColor( const QModelIndex & index, bool background ) con
         return {};
 
     auto userData = fUsers[ index.row() ];
-    if ( !userData->onServer( fSettings->serverKeyName( serverNum( index.column() ) ) ) )
+    if ( !userData->onServer( fSettings->serverInfo( serverNum( index.column() ) )->keyName() ) )
     {
         return fSettings->dataMissingColor( background );
     }

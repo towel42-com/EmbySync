@@ -23,6 +23,7 @@
 #include "SettingsDlg.h"
 #include "EditServerDlg.h"
 #include "Core/Settings.h"
+#include "Core/ServerInfo.h"
 #include "Core/UserData.h"
 #include "Core/SyncSystem.h"
 #include "SABUtils/ButtonEnabler.h"
@@ -50,7 +51,7 @@ CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, std::shared_p
 
     auto headerLabels = QStringList() << tr( "Connected ID" );
     for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
-        headerLabels << fSettings->friendlyServerName( ii );
+        headerLabels << fSettings->serverInfo( ii )->friendlyName();
     fImpl->knownUsers->setColumnCount( headerLabels.count() );
     fImpl->knownUsers->setHeaderLabels( headerLabels );
 
@@ -63,7 +64,7 @@ CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, std::shared_p
     {
         auto data = QStringList() << ii->connectedID();
         for ( int jj = 0; jj < fSettings->serverCnt(); ++jj )
-            data << ii->name( fSettings->serverKeyName( jj ) );
+            data << ii->name( fSettings->serverInfo( jj )->keyName() );
 
         fKnownUsers.push_back( std::make_pair( ii, new QTreeWidgetItem( fImpl->knownUsers, data ) ) );
     }
@@ -200,9 +201,10 @@ void CSettingsDlg::load()
     fImpl->servers->setColumnCount( 3 );
     for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
     {
-        auto name = fSettings->friendlyServerName( ii );
-        auto url = fSettings->url( ii );
-        auto apiKey = fSettings->apiKey( ii );
+        auto serverInfo = fSettings->serverInfo( ii );
+        auto name = serverInfo->friendlyName();
+        auto url = serverInfo->url();
+        auto apiKey = serverInfo->apiKey();
 
         auto item = new QTreeWidgetItem( fImpl->servers, QStringList() << name << url << apiKey );
         item->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/unknownStatus.png" ) ) );

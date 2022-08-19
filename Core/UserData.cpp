@@ -21,8 +21,11 @@
 // SOFTWARE.
 
 #include "UserData.h"
-#include <QRegularExpression>
 #include "Settings.h"
+#include "ServerInfo.h"
+
+#include <QRegularExpression>
+
 
 CUserData::CUserData( const QString & serverName, const QString & name, const QString & connectedID, const QString & userID ) :
     fConnectedID( connectedID )
@@ -104,7 +107,7 @@ QString CUserData::sortName( std::shared_ptr< CSettings > settings ) const
         return connectedID();
     for ( int ii = 0; ii < settings->serverCnt(); ++ii )
     {
-        auto info = getServerInfo( settings->serverKeyName( ii ) );
+        auto info = getServerInfo( settings->serverInfo( ii )->keyName() );
         if ( !info )
             continue;
         if ( info->fName.isEmpty() )

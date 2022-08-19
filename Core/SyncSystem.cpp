@@ -24,6 +24,7 @@
 #include "ProgressSystem.h"
 #include "UserData.h"
 #include "Settings.h"
+#include "ServerInfo.h"
 #include "MediaData.h"
 
 #include <unordered_set>
@@ -162,7 +163,7 @@ void CSyncSystem::loadUsers()
 
     for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
     {
-        requestGetUsers( fSettings->serverKeyName( ii ) );
+        requestGetUsers( fSettings->serverInfo( ii )->keyName() );
     }
 }
 
@@ -181,7 +182,7 @@ void CSyncSystem::loadUsersMedia( std::shared_ptr< CUserData > userData )
     fProgressSystem->setTitle( tr( "Loading Users Media" ) );
     for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
     {
-        requestGetMediaList( fSettings->serverKeyName( ii ) );
+        requestGetMediaList( fSettings->serverInfo( ii )->keyName() );
     }
 }
 
@@ -266,7 +267,7 @@ bool CSyncSystem::processMedia( std::shared_ptr< CMediaData > mediaData, const Q
     //qDebug() << "processing " << mediaData->name();
     for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
     {
-        auto serverName = fSettings->serverKeyName( ii );
+        auto serverName = fSettings->serverInfo( ii )->keyName();
         bool needsUpdating = mediaData->needsUpdating( serverName );
         if ( !selectedServer.isEmpty() )
         {
@@ -303,7 +304,7 @@ void CSyncSystem::requestUpdateUserDataForMedia( const QString & serverName, std
     if ( userID.isEmpty() || mediaID.isEmpty() )
         return;
 
-    auto && url = fSettings->getUrl( serverName, QString( "Users/%1/Items/%2/UserData" ).arg( userID ).arg( mediaID ), {} );
+    auto && url = fSettings->serverInfo( serverName )->getUrl( QString( "Users/%1/Items/%2/UserData" ).arg( userID ).arg( mediaID ), {} );
     if ( !url.isValid() )
         return;
 
@@ -336,7 +337,7 @@ void CSyncSystem::requestSetFavorite( const QString & serverName, std::shared_pt
     if ( userID.isEmpty() || mediaID.isEmpty() )
         return;
 
-    auto && url = fSettings->getUrl( serverName, QString( "Users/%1/FavoriteItems/%3" ).arg( userID ).arg( mediaID ), {} );
+    auto && url = fSettings->serverInfo( serverName )->getUrl( QString( "Users/%1/FavoriteItems/%3" ).arg( userID ).arg( mediaID ), {} );
     if ( !url.isValid() )
         return;
 
@@ -742,7 +743,7 @@ void CSyncSystem::requestTestServer( std::shared_ptr< const SServerInfo > server
 void CSyncSystem::requestGetUsers( const QString & serverName )
 {
     emit sigAddToLog( EMsgType::eInfo, tr( "Loading users from server '%1'" ).arg( serverName ) );;
-    auto && url = fSettings->getUrl( serverName, "Users", {} );
+    auto && url = fSettings->serverInfo( serverName )->getUrl( "Users", {} );
     if ( !url.isValid() )
         return;
 
@@ -800,7 +801,7 @@ void CSyncSystem::requestGetMediaList( const QString & serverName )
         std::make_pair( "Fields", "ProviderIds,ExternalUrls,Missing" )
     };
 
-    auto && url = fSettings->getUrl( serverName, QString( "Users/%1/Items" ).arg( fCurrUserData->getUserID( serverName ) ), queryItems );
+    auto && url = fSettings->serverInfo( serverName )->getUrl( QString( "Users/%1/Items" ).arg( fCurrUserData->getUserID( serverName ) ), queryItems );
     if ( !url.isValid() )
         return;
 
@@ -884,7 +885,7 @@ void CSyncSystem::requestReloadMediaItemData( const QString & serverName, const 
 
 void CSyncSystem::requestReloadMediaItemData( const QString & serverName, std::shared_ptr< CMediaData > mediaData )
 {
-    auto && url = fSettings->getUrl( serverName, QString( "Users/%1/Items/%2" ).arg( fCurrUserData->getUserID( serverName ) ).arg( mediaData->getMediaID( serverName ) ), {} );
+    auto && url = fSettings->serverInfo( serverName )->getUrl( QString( "Users/%1/Items/%2" ).arg( fCurrUserData->getUserID( serverName ) ).arg( mediaData->getMediaID( serverName ) ), {} );
     if ( !url.isValid() )
         return;
 
