@@ -202,6 +202,8 @@ void CSyncSystem::selectiveProcess( const QString & selectedServer )
     if ( !selectedServer.isEmpty() )
         title += QString( " From '%1'" ).arg( selectedServer );
     
+    emit sigAddToLog( EMsgType::eInfo, title );
+
     fProgressSystem->setTitle( title );
 
     Q_ASSERT( fGetAllMediaFunc );
@@ -213,8 +215,11 @@ void CSyncSystem::selectiveProcess( const QString & selectedServer )
     int cnt = 0;
     for ( auto && ii : allMedia )
     {
-        if ( !ii || ii->userDataEqual() || !ii->isValidForAllServers() )
+        if ( !ii || !ii->isValidForAllServers() )
             continue;
+        if ( ii->userDataEqual() )
+            continue;
+
         cnt++;
     }
 
@@ -229,7 +234,9 @@ void CSyncSystem::selectiveProcess( const QString & selectedServer )
 
     for ( auto && ii : allMedia )
     {
-        if ( !ii || ii->userDataEqual() || !ii->isValidForAllServers() )
+        if ( !ii || !ii->isValidForAllServers() )
+            continue;
+        if ( ii->userDataEqual() )
             continue;
 
         fProgressSystem->incProgress();
@@ -263,15 +270,12 @@ bool CSyncSystem::processMedia( std::shared_ptr< CMediaData > mediaData, const Q
         bool needsUpdating = mediaData->needsUpdating( serverName );
         if ( !selectedServer.isEmpty() )
         {
-            if ( serverName != selectedServer )
-                needsUpdating = true;
-            else
-                needsUpdating = false;
+            needsUpdating = ( serverName != selectedServer );
         }
         if ( !needsUpdating )
             continue;
 
-        auto newData = mediaData->userMediaData( serverName );
+        auto newData = selectedServer.isEmpty() ? mediaData->newestMediaData() : mediaData->userMediaData( selectedServer );
         updateUserDataForMedia( mediaData, newData, serverName );
     }
     return true;
