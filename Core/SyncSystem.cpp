@@ -326,7 +326,6 @@ void CSyncSystem::requestUpdateUserDataForMedia( std::shared_ptr< CMediaData > m
     setRequestType( reply, ERequestType::eUpdateData );
 }
 
-//void CSyncSystem::setMediaData( std::shared_ptr< CMediaData > mediaData, bool deleteUpdate, const QString & updateType = "" )
 void CSyncSystem::requestSetFavorite( std::shared_ptr< CMediaData > mediaData, std::shared_ptr< SMediaUserData > newData, const QString & serverName )
 {
     if ( mediaData->isFavorite( serverName ) == newData->fIsFavorite )
