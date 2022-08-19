@@ -1,6 +1,7 @@
 #ifndef __MERGEMEDIA_H
 #define __MERGEMEDIA_H
 
+#include "SABUtils/HashUtils.h"
 #include <QString>
 #include <memory>
 #include <map>
@@ -17,7 +18,7 @@ public:
     CMergeMedia() {};
     ~CMergeMedia() {};
 
-    void addMediaInfo( std::shared_ptr<CMediaData> mediaData, const QString & serverName );
+    void addMediaInfo( const QString & serverName, std::shared_ptr<CMediaData> mediaData );
 
     bool merge( std::shared_ptr< CProgressSystem > progressSystem );
     void clear();
@@ -29,9 +30,9 @@ private:
 
     QStringList getOtherServers( const QString & serverName ) const;
 
-    std::shared_ptr< CMediaData > findMediaForProviders( const std::map< QString, QString > & providerIDs, const QString & serverName ) const;
+    std::shared_ptr< CMediaData > findMediaForProviders( const QString & serverName, const std::map< QString, QString > & providerIDs ) const;
     std::shared_ptr<CMediaData>   findMediaForProvider( const std::unordered_map< QString, std::unordered_map< QString, std::shared_ptr< CMediaData > > > & map, const QString & provider, const QString & id ) const;
-    void setMediaForProviders( const std::map< QString, QString > & providerIDs, std::shared_ptr< CMediaData > mediaData, const QString & serverName );
+    void setMediaForProviders( const QString & serverName, const std::map< QString, QString > & providerIDs, std::shared_ptr< CMediaData > mediaData );
 
     std::map< QString, TMediaIDToMediaData > fMediaMap; // serverName -> mediaID -> mediaData
 

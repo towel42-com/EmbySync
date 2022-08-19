@@ -24,11 +24,11 @@
 #include <QRegularExpression>
 #include "Settings.h"
 
-CUserData::CUserData( const QString & name, const QString & connectedID, const QString & userID, const QString & serverName ) :
+CUserData::CUserData( const QString & serverName, const QString & name, const QString & connectedID, const QString & userID ) :
     fConnectedID( connectedID )
 {
-    setName( name, serverName );
-    setUserID( userID, serverName );
+    setName( serverName, name );
+    setUserID( serverName, userID );
 }
 
 std::shared_ptr< SUserServerData > CUserData::getServerInfo( const QString & serverName ) const
@@ -70,7 +70,7 @@ QString CUserData::name( const QString & serverName ) const
     return serverInfo->fName;
 }
 
-void CUserData::setName( const QString & name, const QString & serverName )
+void CUserData::setName( const QString & serverName, const QString & name )
 {
     auto serverInfo = getServerInfo( serverName, true );
     serverInfo->fName = name;
@@ -173,7 +173,7 @@ QString CUserData::getUserID( const QString & serverName ) const
     return serverInfo->fUserID;
 }
 
-void CUserData::setUserID( const QString & id, const QString & serverName )
+void CUserData::setUserID( const QString & serverName, const QString & id )
 {
     auto serverInfo = getServerInfo( serverName, true );
     serverInfo->fUserID = id;

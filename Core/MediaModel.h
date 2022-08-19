@@ -67,9 +67,9 @@ public:
 
     std::shared_ptr< CMediaData > getMediaData( const QModelIndex & idx ) const;
     void updateMediaData( std::shared_ptr< CMediaData > mediaData );
-    std::shared_ptr< CMediaData > getMediaDataForID( const QString & mediaID, const QString & serverName ) const;
-    std::shared_ptr< CMediaData > loadMedia( const QJsonObject & media, const QString & serverName );
-    std::shared_ptr< CMediaData > reloadMedia( const QJsonObject & media, const QString & mediaID, const QString & serverName );
+    std::shared_ptr< CMediaData > getMediaDataForID( const QString & serverName, const QString & mediaID ) const;
+    std::shared_ptr< CMediaData > loadMedia( const QString & serverName, const QJsonObject & media );
+    std::shared_ptr< CMediaData > reloadMedia( const QString & serverName, const QJsonObject & media, const QString & mediaID );
 
     bool mergeMedia( std::shared_ptr< CProgressSystem > progressSystem );
 
@@ -85,7 +85,7 @@ private:
 
     std::optional< std::pair< QString, QString > > getProviderInfoForColumn( int column ) const;
 
-    void addMediaInfo( std::shared_ptr<CMediaData> mediaData, const QJsonObject & mediaInfo, const QString & serverName );
+    void addMediaInfo( const QString & serverName, std::shared_ptr<CMediaData> mediaData, const QJsonObject & mediaInfo );
 
     QVariant getColor( const QModelIndex & index, bool background ) const;
     void updateProviderColumns( std::shared_ptr< CMediaData > ii );

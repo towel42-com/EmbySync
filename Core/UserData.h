@@ -42,13 +42,13 @@ struct SUserServerData
 class CUserData
 {
 public:
-    CUserData( const QString & name, const QString & connectedID, const QString & userID, const QString & serverName );
+    CUserData( const QString & serverName, const QString & name, const QString & connectedID, const QString & userID );
 
     QString connectedID() const { return fConnectedID; }
 
     bool isValid() const;
     QString name( const QString & serverName ) const;
-    void setName( const QString & name, const QString & serverName );
+    void setName( const QString & serverName, const QString & name );
     QString displayName() const;
     QString sortName( std::shared_ptr< CSettings > settings ) const;
 
@@ -63,7 +63,7 @@ public:
     void setItem( QTreeWidgetItem * item ) { fItem = item; }
 
     QString getUserID( const QString & serverName ) const;
-    void setUserID( const QString & id, const QString & serverName );
+    void setUserID( const QString & serverName, const QString & id );
 
     bool canBeSynced() const;
     bool onServer( const QString & serverName ) const;

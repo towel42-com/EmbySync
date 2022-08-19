@@ -11,7 +11,7 @@
 
 using TMediaIDToMediaData = std::map< QString, std::shared_ptr< CMediaData > >;
 
-void CMergeMedia::addMediaInfo( std::shared_ptr<CMediaData> mediaData, const QString & serverName )
+void CMergeMedia::addMediaInfo( const QString & serverName, std::shared_ptr<CMediaData> mediaData )
 {
     fMediaMap[ serverName ][ mediaData->getMediaID( serverName ) ] = mediaData;
 
@@ -83,7 +83,7 @@ void CMergeMedia::merge( std::pair< const QString, TMediaIDToMediaData > & mapDa
             continue;
 
         auto mediaProviders = mediaData->getProviders( true );
-        auto myMappedMedia = findMediaForProviders( mediaProviders, mapData.first );
+        auto myMappedMedia = findMediaForProviders( mapData.first, mediaProviders );
         if ( myMappedMedia && ( myMappedMedia != mediaData ) )
         {
             replacementMap[ mediaData ] = myMappedMedia;
@@ -95,9 +95,9 @@ void CMergeMedia::merge( std::pair< const QString, TMediaIDToMediaData > & mapDa
             if ( ii.first == mapData.first )
                 continue;
 
-            auto otherData = findMediaForProviders( mediaProviders, ii.first );
+            auto otherData = findMediaForProviders( ii.first, mediaProviders );
             if ( otherData != mediaData )
-                setMediaForProviders( mediaProviders, mediaData, ii.first );
+                setMediaForProviders( ii.first, mediaProviders, mediaData );
         }
     }
     for ( auto && ii : replacementMap )
@@ -106,7 +106,7 @@ void CMergeMedia::merge( std::pair< const QString, TMediaIDToMediaData > & mapDa
         auto pos = mapData.second.find( currMediaID );
         mapData.second.erase( pos );
 
-        ii.second->updateFromOther( ii.first, mapData.first );
+        ii.second->updateFromOther( mapData.first, ii.first );
         mapData.second[ currMediaID ] = ii.second;
     }
 }
@@ -144,7 +144,7 @@ std::pair< std::unordered_set< std::shared_ptr< CMediaData > >, std::map< QStrin
     return { allMedia, fMediaMap };
 }
 
-std::shared_ptr< CMediaData > CMergeMedia::findMediaForProviders( const std::map< QString, QString > & providerIDs, const QString & serverName ) const
+std::shared_ptr< CMediaData > CMergeMedia::findMediaForProviders( const QString & serverName, const std::map< QString, QString > & providerIDs ) const
 {
     auto pos = fProviderSearchMap.find( serverName );
     if ( pos == fProviderSearchMap.end() )
@@ -181,7 +181,7 @@ std::shared_ptr<CMediaData> CMergeMedia::findMediaForProvider( const std::unorde
     return ( *pos2 ).second;
 }
 
-void CMergeMedia::setMediaForProviders( const std::map< QString, QString > & providerIDs, std::shared_ptr< CMediaData > mediaData, const QString & serverName )
+void CMergeMedia::setMediaForProviders( const QString & serverName, const std::map< QString, QString > & providerIDs, std::shared_ptr< CMediaData > mediaData )
 {
     auto pos = fProviderSearchMap.find( serverName );
     if ( pos == fProviderSearchMap.end() )

@@ -47,7 +47,7 @@ public:
     std::shared_ptr< CUserData > userData( const QModelIndex & idx );
     void clear();
 
-    std::shared_ptr< CUserData > loadUser( const QJsonObject & user, const QString & serverName );
+    std::shared_ptr< CUserData > loadUser( const QString & serverName, const QJsonObject & user );
     std::vector< std::shared_ptr< CUserData > > getAllUsers( bool sorted ) const;
 public Q_SLOTS:
     void slotSettingsChanged();

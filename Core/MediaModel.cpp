@@ -165,13 +165,13 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
     return {};
 }
 
-void CMediaModel::addMediaInfo( std::shared_ptr<CMediaData> mediaData, const QJsonObject & mediaInfo, const QString & serverName )
+void CMediaModel::addMediaInfo( const QString & serverName, std::shared_ptr<CMediaData> mediaData, const QJsonObject & mediaInfo )
 {
-    mediaData->loadUserDataFromJSON( mediaInfo, serverName );
+    mediaData->loadUserDataFromJSON( serverName, mediaInfo );
 
     fMediaMap[ serverName ][ mediaData->getMediaID( serverName ) ] = mediaData;
 
-    fMergeSystem->addMediaInfo( mediaData, serverName );
+    fMergeSystem->addMediaInfo( serverName, mediaData );
 }
 
 QVariant CMediaModel::headerData( int section, Qt::Orientation orientation, int role /*= Qt::DisplayRole */ ) const
@@ -265,7 +265,7 @@ void CMediaModel::updateMediaData( std::shared_ptr< CMediaData > mediaData )
     emit dataChanged( index( row, 0 ), index( row, columnCount() - 1 ) );
 }
 
-std::shared_ptr< CMediaData > CMediaModel::getMediaDataForID( const QString & mediaID, const QString & serverName ) const
+std::shared_ptr< CMediaData > CMediaModel::getMediaDataForID( const QString & serverName, const QString & mediaID ) const
 {
     auto pos = fMediaMap.find( serverName );
     if ( pos == fMediaMap.end() )
@@ -301,7 +301,7 @@ bool CMediaFilterModel::lessThan( const QModelIndex & source_left, const QModelI
     return QSortFilterProxyModel::lessThan( source_left, source_right );
 }
 
-std::shared_ptr< CMediaData > CMediaModel::loadMedia( const QJsonObject & media, const QString & serverName )
+std::shared_ptr< CMediaData > CMediaModel::loadMedia( const QString & serverName, const QJsonObject & media )
 {
     auto id = media[ "Id" ].toString();
     std::shared_ptr< CMediaData > mediaData;
@@ -329,11 +329,11 @@ std::shared_ptr< CMediaData > CMediaModel::loadMedia( const QJsonObject & media,
     }
     */
 
-    addMediaInfo( mediaData, media, serverName );
+    addMediaInfo( serverName, mediaData, media );
     return mediaData;
 }
 
-std::shared_ptr< CMediaData > CMediaModel::reloadMedia( const QJsonObject & media, const QString & mediaID, const QString & serverName )
+std::shared_ptr< CMediaData > CMediaModel::reloadMedia( const QString & serverName, const QJsonObject & media, const QString & mediaID )
 {
     auto mediaData = getMediaDataForID( mediaID, serverName );
     if ( !mediaData )
@@ -343,7 +343,7 @@ std::shared_ptr< CMediaData > CMediaModel::reloadMedia( const QJsonObject & medi
         return {};
 
 
-    addMediaInfo( mediaData, media, serverName );
+    addMediaInfo( serverName, mediaData, media );
     updateMediaData( mediaData );
     emit sigPendingMediaUpdate();
     return mediaData;

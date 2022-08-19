@@ -105,7 +105,7 @@ public:
     // Various server calls
     QUrl getUrl( int serverNum ) const;
     QUrl getUrl( const QString & serverName ) const;
-    QUrl getUrl( const QString & extraPath, const std::list< std::pair< QString, QString > > & queryItems, const QString & serverName ) const;
+    QUrl getUrl( const QString & serverName, const QString & extraPath, const std::list< std::pair< QString, QString > > & queryItems ) const;
     template <class T>
     QUrl getUrl( T ) const = delete;
 
@@ -113,13 +113,13 @@ public:
     QString url( const QString & serverName ) const;
     template <class T>
     QString url( T ) const = delete;
-    void setURL( const QString & url, const QString & serverName );
+    void setURL( const QString & serverName, const QString & url );
 
     QString apiKey( int serverNum ) const;
     QString apiKey( const QString & serverName ) const;
     template <class T>
     QString apiKey( T ) const = delete;
-    void setAPIKey( const QString & apiKey, const QString & serverName );
+    void setAPIKey( const QString & serverName, const QString & apiKey );
 
     QString serverKeyName( int serverNum ) const;
     template <class T>

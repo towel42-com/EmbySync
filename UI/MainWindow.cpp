@@ -85,22 +85,22 @@ CMainWindow::CMainWindow( QWidget * parent )
     connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaLoaded, this, &CMainWindow::slotUserMediaCompletelyLoaded );
 
     fSyncSystem->setLoadUserFunc(
-        [ this ]( const QJsonObject & userData, const QString & serverName )
+        [ this ]( const QString & serverName, const QJsonObject & userData )
         {
-            return fUsersModel->loadUser( userData, serverName );
+            return fUsersModel->loadUser( serverName, userData );
         } );
     fSyncSystem->setLoadMediaFunc(
-        [ this ]( const QJsonObject & mediaData, const QString & serverName )
+        [ this ]( const QString & serverName, const QJsonObject & mediaData )
         {
-            return fMediaModel->loadMedia( mediaData, serverName );
+            return fMediaModel->loadMedia( serverName, mediaData );
         } );
     fSyncSystem->setReloadMediaFunc(
-        [ this ]( const QJsonObject & mediaData, const QString & mediaID, const QString & serverName )
+        [ this ]( const QString & serverName, const QJsonObject & mediaData, const QString & mediaID )
         {
-            return fMediaModel->reloadMedia( mediaData, mediaID, serverName );
+            return fMediaModel->reloadMedia( serverName, mediaData, mediaID );
         } );
     fSyncSystem->setGetMediaDataForIDFunc(
-        [ this ]( const QString & mediaID, const QString & serverName )
+        [ this ]( const QString & serverName, const QString & mediaID )
         {
             return fMediaModel->getMediaDataForID( mediaID, serverName );
         } );

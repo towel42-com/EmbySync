@@ -105,10 +105,10 @@ public:
     void setProcessNewMediaFunc( std::function< void( std::shared_ptr< CMediaData > userData ) > processMediaFunc );
     void setUserMsgFunc( std::function< void( const QString & title, const QString & msg, bool isCritical ) > userMsgFunc );
     void setProgressSystem( std::shared_ptr< CProgressSystem > funcs );
-    void setLoadUserFunc( std::function< std::shared_ptr< CUserData >( const QJsonObject & user, const QString & serverName ) > loadUserFunc );
-    void setLoadMediaFunc( std::function< std::shared_ptr< CMediaData >( const QJsonObject & media, const QString & serverName ) > loadMediaFunc );
-    void setReloadMediaFunc( std::function< std::shared_ptr< CMediaData >( const QJsonObject & media, const QString & itemID, const QString & serverName ) > reloadMediaFunc );
-    void setGetMediaDataForIDFunc( std::function< std::shared_ptr< CMediaData >( const QString & mediaID, const QString & serverName ) > getMediaDataForIDFunc );
+    void setLoadUserFunc( std::function< std::shared_ptr< CUserData >( const QString & serverName, const QJsonObject & user ) > loadUserFunc );
+    void setLoadMediaFunc( std::function< std::shared_ptr< CMediaData >( const QString & serverName, const QJsonObject & media ) > loadMediaFunc );
+    void setReloadMediaFunc( std::function< std::shared_ptr< CMediaData >( const QString & serverName, const QJsonObject & media, const QString & itemID ) > reloadMediaFunc );
+    void setGetMediaDataForIDFunc( std::function< std::shared_ptr< CMediaData >( const QString & serverName, const QString & mediaID ) > getMediaDataForIDFunc );
     void setMergeMediaFunc( std::function< bool( std::shared_ptr< CProgressSystem > progressSystem ) > mergeMediaFunc );
     void setGetAllMediaFunc( std::function< std::unordered_set< std::shared_ptr< CMediaData > >() > getAllMediaFunc );
 
@@ -127,7 +127,7 @@ public:
 
     std::shared_ptr< CUserData > currUser() const;
 
-    void updateUserDataForMedia( std::shared_ptr<CMediaData> mediaData, std::shared_ptr<SMediaUserData> newData, const QString & serverName );
+    void updateUserDataForMedia( const QString & serverName, std::shared_ptr<CMediaData> mediaData, std::shared_ptr<SMediaUserData> newData );
 
     void selectiveProcess( const QString & selectedServer );
 Q_SIGNALS:
@@ -170,24 +170,24 @@ private Q_SLOTS:
 private:
     QNetworkReply * makeRequest( const QNetworkRequest & request );
 
-    std::shared_ptr<CUserData> loadUser( const QJsonObject & user, const QString & serverNameServer );
-    std::shared_ptr< CMediaData> loadMedia( const QJsonObject & media, const QString & serverNameServer );
+    std::shared_ptr<CUserData> loadUser( const QString & serverName, const QJsonObject & user );
+    std::shared_ptr< CMediaData> loadMedia( const QString & serverName, const QJsonObject & media );
 
     bool isLastRequestOfType( ERequestType type ) const;
 
     bool handleError( QNetworkReply * reply, const QString & serverName, QString & errorMsg, bool reportMsg );
 
     void requestGetUsers( const QString & serverName );
-    void handleGetUsersResponse( const QByteArray & data, const QString & serverName );
+    void handleGetUsersResponse( const QString & serverName, const QByteArray & data );
 
     void requestGetMediaList( const QString & serverNameServer );
-    void handleGetMediaListResponse( const QByteArray & data, const QString & serverName );
+    void handleGetMediaListResponse( const QString & serverName, const QByteArray & data );
 
-    void requestReloadMediaItemData( const QString & mediaID, const QString & serverName );
-    void requestReloadMediaItemData( std::shared_ptr< CMediaData > mediaData, const QString & serverName );
-    void requestSetFavorite( std::shared_ptr< CMediaData > mediaData, std::shared_ptr< SMediaUserData > newData, const QString & serverName );
-    void requestUpdateUserDataForMedia( std::shared_ptr< CMediaData > mediaData, std::shared_ptr< SMediaUserData > newData, const QString & serverName );
-    void handleReloadMediaResponse( const QByteArray & data, const QString & serverName, const QString & id );
+    void requestReloadMediaItemData( const QString & serverName, const QString & mediaID );
+    void requestReloadMediaItemData( const QString & serverName, std::shared_ptr< CMediaData > mediaData );
+    void requestSetFavorite( const QString & serverName, std::shared_ptr< CMediaData > mediaData, std::shared_ptr< SMediaUserData > newData );
+    void requestUpdateUserDataForMedia( const QString & serverName, std::shared_ptr< CMediaData > mediaData, std::shared_ptr< SMediaUserData > newData );
+    void handleReloadMediaResponse( const QString & serverName, const QByteArray & data, const QString & id );
 
     void requestTestServer( std::shared_ptr< const SServerInfo > serverInfo );
     void handleTestServer( const QByteArray & data );
@@ -201,10 +201,10 @@ private:
     std::unordered_map< ERequestType, std::unordered_map< QString, int > > fRequests; // request type -> host -> count
     std::unordered_map< QNetworkReply *, std::unordered_map< int, QVariant > > fAttributes;
 
-    std::function< std::shared_ptr< CUserData >( const QJsonObject & user, const QString & serverName ) > fLoadUserFunc;
-    std::function< std::shared_ptr< CMediaData >( const QJsonObject & media, const QString & serverName ) > fLoadMediaFunc;
-    std::function< std::shared_ptr< CMediaData >( const QJsonObject & media, const QString & itemID, const QString & serverName ) > fReloadMediaFunc;
-    std::function< std::shared_ptr< CMediaData >( const QString & mediaID, const QString & serverName ) > fGetMediaDataForIDFunc;
+    std::function< std::shared_ptr< CUserData >( const QString & serverName, const QJsonObject & user ) > fLoadUserFunc;
+    std::function< std::shared_ptr< CMediaData >( const QString & serverName, const QJsonObject & media ) > fLoadMediaFunc;
+    std::function< std::shared_ptr< CMediaData >( const QString & serverName, const QJsonObject & media, const QString & itemID ) > fReloadMediaFunc;
+    std::function< std::shared_ptr< CMediaData >( const QString & serverName, const QString & mediaID ) > fGetMediaDataForIDFunc;
     std::function< bool( std::shared_ptr< CProgressSystem > progessSystem ) > fMergeMediaFunc;
     std::function< std::unordered_set< std::shared_ptr< CMediaData > >() > fGetAllMediaFunc;
 

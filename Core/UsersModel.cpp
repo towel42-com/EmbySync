@@ -193,7 +193,7 @@ std::vector< std::shared_ptr< CUserData > > CUsersModel::getAllUsers( bool sorte
     }
 }
 
-std::shared_ptr< CUserData > CUsersModel::loadUser( const QJsonObject & user, const QString & serverName )
+std::shared_ptr< CUserData > CUsersModel::loadUser( const QString & serverName, const QJsonObject & user )
 {
     auto currName = user[ "Name" ].toString();
     auto userID = user[ "Id" ].toString();
@@ -219,8 +219,8 @@ std::shared_ptr< CUserData > CUsersModel::loadUser( const QJsonObject & user, co
     }
     else
     {
-        userData->setName( currName, serverName );
-        userData->setUserID( userID, serverName );
+        userData->setName( serverName, currName );
+        userData->setUserID( serverName, userID );
 
         int ii = 0;
         for ( ; ii < static_cast<int>( fUsers.size() ); ++ii )

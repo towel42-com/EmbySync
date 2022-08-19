@@ -87,8 +87,8 @@ public:
     QString mediaType() const;
     bool beenLoaded( const QString & serverName ) const;
 
-    void loadUserDataFromJSON( const QJsonObject & object, const QString & serverName );
-    void updateFromOther( std::shared_ptr< CMediaData > other, const QString & otherServerName );
+    void loadUserDataFromJSON( const QString & serverName, const QJsonObject & object );
+    void updateFromOther( const QString & otherServerName, std::shared_ptr< CMediaData > other );
 
     QUrlQuery getSearchForMediaQuery() const;
 
@@ -101,7 +101,7 @@ public:
     bool userDataEqual() const;
 
     QString getMediaID( const QString & serverName ) const;
-    void setMediaID( const QString & id, const QString & serverName );
+    void setMediaID( const QString & serverName, const QString & id );
 
     bool isValidForServer( const QString & serverName ) const;
     bool isValidForAllServers() const;

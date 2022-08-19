@@ -123,7 +123,7 @@ void CMediaWindow::slotUploadUserMediaData()
 
     for ( auto && ii : fUserDataWidgets )
     {
-        fSyncSystem->updateUserDataForMedia( fMediaInfo, ii.second->createMediaUserData(), ii.first );
+        fSyncSystem->updateUserDataForMedia( ii.first, fMediaInfo, ii.second->createMediaUserData() );
     }
     fChanged = false;
 }

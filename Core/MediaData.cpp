@@ -243,7 +243,7 @@ bool CMediaData::canBeSynced() const
     return serverCnt > 1;
 }
 
-void CMediaData::loadUserDataFromJSON( const QJsonObject & media, const QString & serverName )
+void CMediaData::loadUserDataFromJSON( const QString & serverName, const QJsonObject & media )
 {
     //auto tmp = QJsonDocument( media );
     //qDebug() << tmp.toJson();
@@ -506,7 +506,7 @@ QIcon CMediaData::getDirectionIcon( const QString & serverName ) const
     return retVal;
 }
 
-void CMediaData::updateFromOther( std::shared_ptr< CMediaData > other, const QString & otherServerName )
+void CMediaData::updateFromOther( const QString & otherServerName, std::shared_ptr< CMediaData > other )
 {
     auto otherMediaData = other->userMediaData( otherServerName );
     if ( !otherMediaData )

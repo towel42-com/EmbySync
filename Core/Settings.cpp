@@ -639,8 +639,8 @@ bool CSettings::loadServer( const QJsonObject & obj, QString & errorMsg )
     serverInfo = this->serverInfo( serverName, true );
     serverInfo->fName.second = generated;
 
-    setURL( obj[ "url" ].toString(), serverName );
-    setAPIKey( obj[ "api_key" ].toString(), serverName );
+    setURL( serverName, obj[ "url" ].toString() );
+    setAPIKey( serverName, obj[ "api_key" ].toString() );
     updateFriendlyServerNames();
     return true;
 }
@@ -707,7 +707,7 @@ QString CSettings::apiKey( int serverNum ) const
     return serverInfo->fAPIKey;
 }
 
-void CSettings::setAPIKey( const QString & apiKey, const QString & serverName )
+void CSettings::setAPIKey( const QString & serverName, const QString & apiKey )
 {
     auto serverInfo = this->serverInfo( serverName, true );
     updateValue( serverInfo->fAPIKey, apiKey );
@@ -758,7 +758,7 @@ QString CSettings::url( int serverNum ) const
     return serverInfo->url();
 }
 
-void CSettings::setURL( const QString & url, const QString & serverName )
+void CSettings::setURL( const QString & serverName, const QString & url )
 {
     auto serverInfo = this->serverInfo( serverName, true );
     updateValue( serverInfo->fURL, url );
@@ -766,7 +766,7 @@ void CSettings::setURL( const QString & url, const QString & serverName )
 
 QUrl CSettings::getUrl( const QString & serverName ) const
 {
-    return getUrl( QString(), std::list< std::pair< QString, QString > >(), serverName );
+    return getUrl( serverName, QString(), std::list< std::pair< QString, QString > >() );
 }
 
 QUrl CSettings::getUrl( int serverNum ) const
@@ -777,7 +777,7 @@ QUrl CSettings::getUrl( int serverNum ) const
     return serverInfo->getUrl();
 }
 
-QUrl CSettings::getUrl( const QString & extraPath, const std::list< std::pair< QString, QString > > & queryItems, const QString & serverName ) const
+QUrl CSettings::getUrl( const QString & serverName, const QString & extraPath, const std::list< std::pair< QString, QString > > & queryItems ) const
 {
     auto serverInfo = this->serverInfo( serverName );
     if ( !serverInfo )
