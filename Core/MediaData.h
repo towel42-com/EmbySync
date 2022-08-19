@@ -38,38 +38,7 @@ class QTreeWidget;
 class QListWidget;
 class QColor;
 class CSettings;
-
-struct SMediaUserData
-{
-    QString fMediaID;
-    bool fIsFavorite{ false };
-    bool fPlayed{ false };
-    QDateTime fLastPlayedDate;
-    uint64_t fPlayCount;
-    uint64_t fPlaybackPositionTicks; // 1 tick = 10000 ms
-
-    uint64_t playbackPositionMSecs() const;
-    void setPlaybackPositionMSecs( uint64_t msecs );
-
-    QTime playbackPositionTime() const;
-    void setPlaybackPosition( const QTime & time );
-
-    QString playbackPosition() const;
-
-    bool userDataEqual( const SMediaUserData & rhs ) const;
-
-    QJsonObject userDataJSON() const;
-    void loadUserDataFromJSON( const QJsonObject & userDataObj );
-
-    bool isValid() const;
-    bool fBeenLoaded{ false };
-};
-
-bool operator==( const SMediaUserData & lhs, const SMediaUserData & rhs );
-inline bool operator!=( const SMediaUserData & lhs, const SMediaUserData & rhs )
-{
-    return !operator==( lhs, rhs );
-}
+struct SMediaUserData;
 
 class CMediaData
 {
@@ -103,6 +72,8 @@ public:
     QString getMediaID( const QString & serverName ) const;
     void setMediaID( const QString & serverName, const QString & id );
 
+    void updateCanBeSynced();
+
     bool isValidForServer( const QString & serverName ) const;
     bool isValidForAllServers() const;
     bool canBeSynced() const;
@@ -135,13 +106,15 @@ public:
 
     QIcon getDirectionIcon( const QString & serverName ) const;
 private:
-    std::shared_ptr< SMediaUserData > userMediaData( const QString & serverName, bool addIfMissing );
     template< typename T >
     bool allEqual( std::function< T( std::shared_ptr< SMediaUserData > ) > func ) const
     {
         std::optional< T > prevValue;
         for ( auto && ii : fInfoForServer )
         {
+            if ( !ii.second->isValid() )
+                continue;
+
             if ( !prevValue.has_value() )
                 prevValue = func( ii.second );
             else if ( prevValue.value() != func( ii.second ) )
@@ -156,8 +129,10 @@ private:
     std::map< QString, QString > fProviders;
     std::map< QString, QString > fExternalUrls;
 
+    bool fCanBeSynced{ false };
     std::map< QString, std::shared_ptr< SMediaUserData > > fInfoForServer;
 
     static std::function< QString( uint64_t ) > sMSecsToStringFunc;
+
 };
 #endif 

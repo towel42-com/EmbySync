@@ -21,8 +21,10 @@
 // SOFTWARE.
 
 #include "MediaData.h"
+#include "MediaUserData.h"
 #include "Settings.h"
 #include "ServerInfo.h"
+
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
@@ -32,93 +34,6 @@
 
 #include <chrono>
 #include <optional>
-
-QJsonObject SMediaUserData::userDataJSON() const
-{
-    QJsonObject obj;
-    obj[ "IsFavorite" ] = fIsFavorite;
-    obj[ "Played" ] = fPlayed;
-    obj[ "PlayCount" ] = static_cast<qlonglong>( fPlayCount );
-    if ( fLastPlayedDate.isNull() )
-        obj[ "LastPlayedDate" ] = QJsonValue::Null;
-    else
-        obj[ "LastPlayedDate" ] = fLastPlayedDate.toUTC().toString( Qt::ISODateWithMs );
-
-    auto ticks = static_cast<int64_t>( fPlaybackPositionTicks );
-    if ( fPlaybackPositionTicks >= static_cast<uint64_t>( std::numeric_limits< qlonglong >::max() ) )
-        ticks = std::numeric_limits< qlonglong >::max() - 1;
-
-    obj[ "PlaybackPositionTicks" ] = static_cast<qlonglong>( ticks );
-
-    return obj;
-}
-
-void SMediaUserData::loadUserDataFromJSON( const QJsonObject & userDataObj )
-{
-    //qDebug() << QJsonDocument( userDataObj ).toJson();
-
-    fIsFavorite = userDataObj[ "IsFavorite" ].toBool();
-    fLastPlayedDate = userDataObj[ "LastPlayedDate" ].toVariant().toDateTime();
-    //qDebug() << fLastPlayedDate.toString();
-    //qDebug() << fLastPlayedDate;
-    fPlayCount = userDataObj[ "PlayCount" ].toVariant().toLongLong();
-    fPlaybackPositionTicks = userDataObj[ "PlaybackPositionTicks" ].toVariant().toLongLong();
-    fPlayed = userDataObj[ "Played" ].toVariant().toBool();
-}
-
-bool SMediaUserData::isValid() const
-{
-    return !fMediaID.isEmpty();
-}
-
-bool operator==( const SMediaUserData & lhs, const SMediaUserData & rhs )
-{
-    return lhs.userDataEqual( rhs );
-}
-
-uint64_t SMediaUserData::playbackPositionMSecs() const
-{
-    return fPlaybackPositionTicks / 10000;
-}
-
-QString SMediaUserData::playbackPosition() const
-{
-    auto playbackMS = playbackPositionMSecs();
-    if ( playbackMS == 0 )
-        return {};
-
-    if ( CMediaData::mecsToStringFunc() )
-        return CMediaData::mecsToStringFunc()( playbackMS );
-    return QString::number( playbackMS );
-}
-
-QTime SMediaUserData::playbackPositionTime() const
-{
-    auto playbackMS = playbackPositionMSecs();
-    return QTime::fromMSecsSinceStartOfDay( playbackMS );
-}
-
-void SMediaUserData::setPlaybackPosition( const QTime & time )
-{
-    setPlaybackPositionMSecs( 10000ULL * time.msecsSinceStartOfDay() );
-}
-
-void SMediaUserData::setPlaybackPositionMSecs( uint64_t msecs )
-{
-    fPlaybackPositionTicks = ( 10000ULL * msecs );
-}
-
-bool SMediaUserData::userDataEqual( const SMediaUserData & rhs ) const
-{
-    auto equal = true;
-    equal = equal && fIsFavorite == rhs.fIsFavorite;
-    equal = equal && fPlayed == rhs.fPlayed;
-    if ( !fLastPlayedDate.isNull() && !rhs.fLastPlayedDate.isNull() )
-        equal = equal && fLastPlayedDate == rhs.fLastPlayedDate;
-    equal = equal && fPlayCount == rhs.fPlayCount;
-    equal = equal && fPlaybackPositionTicks == rhs.fPlaybackPositionTicks;
-    return equal;
-}
 
 QStringList CMediaData::getHeaderLabels()
 {
@@ -151,19 +66,11 @@ CMediaData::CMediaData( const QJsonObject & mediaObj, std::shared_ptr< CSettings
 
     for ( int ii = 0; ii < settings->serverCnt(); ++ii )
     {
-        userMediaData( settings->serverInfo( ii )->keyName(), true );
+        auto serverInfo = settings->serverInfo( ii );
+        if ( !serverInfo->isEnabled() )
+            continue;
+        fInfoForServer[ serverInfo->keyName() ] = std::make_shared< SMediaUserData >();
     }
-}
-
-std::shared_ptr< SMediaUserData > CMediaData::userMediaData( const QString & serverName, bool addIfMissing )
-{
-    auto retVal = userMediaData( serverName );
-    if ( retVal || !addIfMissing )
-        return retVal;
-
-    retVal = std::make_shared< SMediaUserData >();
-    fInfoForServer[ serverName ] = retVal;
-    return retVal;
 }
 
 std::shared_ptr<SMediaUserData> CMediaData::userMediaData( const QString & serverName ) const
@@ -235,13 +142,7 @@ bool CMediaData::isValidForAllServers() const
 
 bool CMediaData::canBeSynced() const
 {
-    int serverCnt = 0;
-    for ( auto && ii : fInfoForServer )
-    {
-        if ( ii.second->isValid() )
-            serverCnt++;
-    }
-    return serverCnt > 1;
+    return fCanBeSynced;
 }
 
 void CMediaData::loadUserDataFromJSON( const QString & serverName, const QJsonObject & media )
@@ -263,7 +164,7 @@ void CMediaData::loadUserDataFromJSON( const QString & serverName, const QJsonOb
     //auto tmp = QJsonDocument( userDataObj );
     //qDebug() << tmp.toJson();
 
-    auto mediaData = userMediaData( serverName, true );
+    auto mediaData = userMediaData( serverName );
     mediaData->loadUserDataFromJSON( userDataObj );
 
     auto providerIDsObj = media[ "ProviderIds" ].toObject();
@@ -466,10 +367,22 @@ void CMediaData::addProvider( const QString & providerName, const QString & prov
     fProviders[ providerName ] = providerID;
 }
 
-void CMediaData::setMediaID( const QString & mediaID, const QString & serverName )
+void CMediaData::setMediaID( const QString & serverName, const QString & mediaID )
 {
-    auto mediaData = userMediaData( serverName, true );
+    auto mediaData = userMediaData( serverName );
     mediaData->fMediaID = mediaID;
+    updateCanBeSynced();
+}
+
+void CMediaData::updateCanBeSynced()
+{
+    int serverCnt = 0;
+    for ( auto && ii : fInfoForServer )
+    {
+        if ( ii.second->isValid() )
+            serverCnt++;
+    }
+    fCanBeSynced = serverCnt > 1;
 }
 
 QString CMediaData::getMediaID( const QString & serverName ) const
@@ -495,13 +408,15 @@ QIcon CMediaData::getDirectionIcon( const QString & serverName ) const
     static QIcon sArrowUpIcon( ":/resources/arrowup.png" );
     static QIcon sArrowDownIcon( ":/resources/arrowdown.png" );
     QIcon retVal;
-    if ( !isValidForAllServers() )
+    if ( !isValidForServer( serverName ) )
         retVal = sErrorIcon;
+    else if ( !canBeSynced() )
+        return {};
     else if ( userDataEqual() )
         retVal = sEqualIcon;
     else if ( needsUpdating( serverName ) )
         retVal = sArrowDownIcon;
-    else
+    else 
         retVal = sArrowUpIcon;
 
     return retVal;
@@ -532,6 +447,9 @@ std::shared_ptr<SMediaUserData> CMediaData::newestMediaData() const
     std::shared_ptr<SMediaUserData> retVal;
     for ( auto && ii : fInfoForServer )
     {
+        if ( !ii.second->isValid() )
+            continue;
+
         if ( !retVal )
             retVal = ii.second;
         else
