@@ -34,6 +34,7 @@
 #include "Core/ServerInfo.h"
 #include "Core/ProgressSystem.h"
 #include "SABUtils/QtUtils.h"
+#include "../Version.h"
 
 #include "ui_MainWindow.h"
 #include "SABUtils/WidgetChanged.h"
@@ -328,6 +329,12 @@ void CMainWindow::slotSaveAs()
 void CMainWindow::loadSettings()
 {
     slotAddToLog( EMsgType::eInfo, "Loading Settings" );
+
+    auto windowTitle = QString::fromStdString( NVersion::getWindowTitle() );
+    if ( !fSettings->fileName().isEmpty() )
+        windowTitle += " - " + QFileInfo( fSettings->fileName() ).fileName();
+
+    setWindowTitle( windowTitle );
 
     loadServers();
     fImpl->actionOnlyShowSyncableUsers->setChecked( fSettings->onlyShowSyncableUsers() );
