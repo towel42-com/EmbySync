@@ -672,5 +672,5 @@ void CMainWindow::slotSelectiveProcess()
     auto pos = servers.find( whichServer );
     if ( pos == servers.end() )
         return;
-    fSyncSystem->selectiveProcess( whichServer );
+    fSyncSystem->selectiveProcess( (*pos).second );
 }
