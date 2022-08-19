@@ -2,6 +2,8 @@
     <qresource prefix="/">
         <file>resources/arrowleft.png</file>
         <file>resources/arrowright.png</file>
+        <file>resources/arrowdown.png</file>
+        <file>resources/arrowup.png</file>
         <file>resources/clock.png</file>
         <file>resources/colorwheel.png</file>
         <file>resources/embysync.ico</file>
