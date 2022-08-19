@@ -30,12 +30,47 @@
 #include <memory>
 #include <tuple>
 #include <functional>
+#include <vector>
+#include <map>
+#include <optional>
 
 class QWidget;
+class QJsonObject;
 namespace Ui
 {
     class CSettings;
 }
+
+
+struct SServerInfo
+{
+    SServerInfo() = default;
+    SServerInfo( const QString & name, const QString & url, const QString & apiKey );
+    SServerInfo( const QString & name );
+
+    bool operator==( const SServerInfo & rhs ) const;
+    bool operator!=( const SServerInfo & rhs ) const
+    {
+        return !operator==( rhs );
+    }
+
+    QString url() const;
+    QUrl getUrl() const;
+    QUrl getUrl( const QString & extraPath, const std::list< std::pair< QString, QString > > & queryItems ) const;
+
+    QString friendlyName() const; // returns the name, if empty returns the fqdn, if the same fqdn is used more than once, it use fqdn:port
+    QString keyName() const;// getUrl().toString()
+
+    void autoSetFriendlyName( bool usePort );
+
+    void setFriendlyName( const QString & name, bool generated );
+    bool canSync() const;
+
+    std::pair< QString, bool > fName; // may be automatically generated or not
+    mutable QString fKeyName;
+    QString fURL;
+    QString fAPIKey;
+};
 
 class CSettings
 {
@@ -51,33 +86,51 @@ public:
 
     bool save();
 
+    void setServers( const std::vector < std::shared_ptr< SServerInfo > > & servers );
+
+    int serverCnt() const;
+    int getServerPos( const QString & serverName ) const;
+    std::shared_ptr< const SServerInfo > serverInfo( int serverNum ) const;
+    std::shared_ptr< const SServerInfo > serverInfo( const QString & serverName ) const;
+    bool canSync() const;
+
     bool save( QWidget * parent );
     bool maybeSave( QWidget * parent );
     bool save( QWidget * parent, std::function<QString()> selectFileFunc, std::function<void( const QString & title, const QString & msg )> errorFunc );
     bool save( std::function<void( const QString & title, const QString & msg )> errorFunc );
 
-    QString serverName( bool lhs );
-
-    QUrl getUrl( bool lhs ) const;
-    QUrl getUrl( const QString & extraPath, const std::list< std::pair< QString, QString > > & queryItems, bool lhs ) const;
-
-    QString url( bool lhs ) const  { return lhs ? fLHSServer.first : fRHSServer.first; }
-    void setURL( const QString & url, bool lhs );
-
-    QString apiKey( bool lhs ) const { return lhs ? fLHSServer.second : fRHSServer.second; }
-    void setAPIKey( const QString & apiKey, bool lhs );
-
-    bool canSync() const;
-
     bool changed() const { return fChanged; }
-    void reset()
-    {
-        fLHSServer = {};
-        fRHSServer = {};
-        fChanged = false;
-        fFileName.clear();
-    }
+    void reset();
 
+    // Various server calls
+    QUrl getUrl( int serverNum ) const;
+    QUrl getUrl( const QString & serverName ) const;
+    QUrl getUrl( const QString & extraPath, const std::list< std::pair< QString, QString > > & queryItems, const QString & serverName ) const;
+    template <class T>
+    QUrl getUrl( T ) const = delete;
+
+    QString url( int serverNum ) const;
+    QString url( const QString & serverName ) const;
+    template <class T>
+    QString url( T ) const = delete;
+    void setURL( const QString & url, const QString & serverName );
+
+    QString apiKey( int serverNum ) const;
+    QString apiKey( const QString & serverName ) const;
+    template <class T>
+    QString apiKey( T ) const = delete;
+    void setAPIKey( const QString & apiKey, const QString & serverName );
+
+    QString serverKeyName( int serverNum ) const;
+    template <class T>
+    QString serverKeyName( T ) const = delete;
+
+    QString friendlyServerName( int serverNum ) const;  // returns name of the server, if its blank returns the serverKeyName
+    template <class T>
+    QString friendlyServerName( T ) const = delete;
+    void setServerFriendlyName( const QString & serverName, const QString & oldServerName );
+
+    // other settings
     QColor mediaSourceColor( bool forBackground = true ) const;
     void setMediaSourceColor( const QColor & color );
 
@@ -133,6 +186,12 @@ public:
     void addRecentProject( const QString & fileName );
     QStringList recentProjectList() const;
 private:
+    bool serversChanged( const std::vector< std::shared_ptr< SServerInfo > > & lhs, const std::vector< std::shared_ptr< SServerInfo > > & rhs ) const;
+    bool loadServer( const QJsonObject & obj, QString & errorMsg );
+    void updateServerMap();
+
+    std::shared_ptr< SServerInfo > serverInfo( const QString & serverName, bool addIfMissing );
+    void updateFriendlyServerNames();
     QColor getColor( const QColor & clr, bool forBackground /*= true */ ) const;
     bool maybeSave( QWidget * parent, std::function<QString()> selectFileFunc, std::function<void( const QString & title, const QString & msg )> errorFunc );
 
@@ -148,8 +207,8 @@ private:
 
 
     QString fFileName;
-    std::pair< QString, QString > fLHSServer;
-    std::pair< QString, QString > fRHSServer;
+    std::vector< std::shared_ptr< SServerInfo > > fServers;
+    std::map< QString, std::pair< std::shared_ptr< SServerInfo >, size_t > > fServerMap;
 
     QColor fMediaSourceColor{ "yellow" };
     QColor fMediaDestColor{ "yellow" };

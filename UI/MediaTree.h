@@ -20,48 +20,54 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef _MEDIAUSERDATAWIDGET_H
-#define _MEDIAUSERDATAWIDGET_H
+#ifndef _MEDIATREE_H
+#define _MEDIATREE_H
 
-#include <QGroupBox>
+#include <QWidget>
 #include <memory>
 
 namespace Ui
 {
-    class CMediaUserDataWidget;
+    class CMediaTree;
 }
 
+class QLabel;
+class CSettings;
 class CUserData;
-struct SMediaUserData;
-class CMediaUserDataWidget : public QGroupBox
+class QAbstractItemModel;
+struct SServerInfo;
+class CMediaTree : public QWidget
 {
     Q_OBJECT
 public:
-    CMediaUserDataWidget( QWidget * parentWidget = nullptr );
-    CMediaUserDataWidget( const QString & title, QWidget * parentWidget = nullptr );
-    CMediaUserDataWidget( std::shared_ptr< SMediaUserData > mediaData, QWidget * parentWidget = nullptr );
+    CMediaTree( const std::shared_ptr< const SServerInfo > & serverInfo, QWidget * parent = nullptr );
+    virtual ~CMediaTree() override;
 
-    virtual ~CMediaUserDataWidget() override;
+    void setModel( QAbstractItemModel * model );
+    void hideColumns();
 
-    void setMediaUserData( std::shared_ptr< SMediaUserData > mediaData );
-    void applyMediaUserData( std::shared_ptr< SMediaUserData > mediaData );  // mediaData is not owned, mediaID is NOT changed
+    void addPeerMediaTree( CMediaTree * peer );
+    QModelIndex currentIndex() const;
+    void autoSize();
 
-    void setReadOnly( bool readOnly );
-    bool readOnly() const { return fReadOnly; }
+    virtual bool eventFilter( QObject * obj, QEvent * event ) override;
 
-    std::shared_ptr< SMediaUserData > createMediaUserData() const; // creates a new user data based on current settings
-
-public Q_SLOTS:
-    void slotChanged();
-    void slotApplyFromServer();
 Q_SIGNALS:
-    void sigApplyFromServer( CMediaUserDataWidget * which );
+    void sigCurrChanged( const QModelIndex & idx );
+    void sigViewMedia( const QModelIndex & idx );
+    void sigVSliderMoved( int position );
+    void sigHSliderMoved( int position );
 
+private Q_SLOTS:
+    void slotSetCurrentMediaItem( const QModelIndex & idx );
+    void slotSetVSlider( int position );
+    void slotSetHSlider( int position );
+    void slotHActionTriggered( int action );
+    void slotVActionTriggered( int action );
 private:
-    void load( std::shared_ptr< SMediaUserData > mediaData );
+    std::unique_ptr< Ui::CMediaTree > fImpl;
+    std::vector< CMediaTree * > fPeers;
 
-    std::unique_ptr< Ui::CMediaUserDataWidget > fImpl;
-    std::shared_ptr< SMediaUserData > fMediaUserData;
-    bool fReadOnly{ false };
+    const std::shared_ptr< const SServerInfo > fServerInfo;
 };
 #endif 

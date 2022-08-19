@@ -61,6 +61,7 @@ struct SMediaUserData
     QJsonObject userDataJSON() const;
     void loadUserDataFromJSON( const QJsonObject & userDataObj );
 
+    bool isValid() const;
     bool fBeenLoaded{ false };
 };
 
@@ -78,13 +79,17 @@ public:
     static std::function< QString( uint64_t ) > mecsToStringFunc();
     static QString computeName( const QJsonObject & media );
 
-    CMediaData( const QString & name, const QString & type );
+    CMediaData( const QJsonObject & mediaObj, std::shared_ptr< CSettings > settings );
+    bool hasProviderIDs() const;
+    void addProvider( const QString & providerName, const QString & providerID );
+
     QString name() const;
     QString mediaType() const;
-    bool beenLoaded( bool isLHS ) const;
+    bool beenLoaded( const QString & serverName ) const;
 
-    void loadUserDataFromJSON( const QJsonObject & object, bool isLHSServer );
-    void updateFromOther( std::shared_ptr< CMediaData > other, bool toLHS );
+    void loadUserDataFromJSON( const QJsonObject & object, const QString & serverName );
+    void updateFromOther( std::shared_ptr< CMediaData > other, const QString & otherServerName );
+
     QUrlQuery getSearchForMediaQuery() const;
 
     QString getProviderID( const QString & provider );
@@ -95,42 +100,55 @@ public:
 
     bool userDataEqual() const;
 
-    QString getMediaID( bool isLHS ) const;
-    void setMediaID( const QString & id, bool isLHS );
+    QString getMediaID( const QString & serverName ) const;
+    void setMediaID( const QString & id, const QString & serverName );
 
-    bool isMissingOnServer( bool isLHS ) const;
-    bool isMissingOnEitherServer() const;
+    bool isValidForServer( const QString & serverName ) const;
+    bool isValidForAllServers() const;
+    bool canBeSynced() const;
 
-    bool hasProviderIDs() const;
-    void addProvider( const QString & providerName, const QString & providerID );
+    bool needsUpdating( const QString & serverName ) const;
+    template <class T>
+    void needsUpdating( T ) const = delete;
 
-    bool rhsNeedsUpdating() const;
-    bool lhsNeedsUpdating() const;
+    bool allPlayedEqual() const;
+    bool isPlayed( const QString & serverName ) const;
 
-    bool bothPlayed() const;
-    bool isPlayed( bool lhs ) const;
+    QString playbackPosition( const QString & serverName ) const;
+    uint64_t playbackPositionMSecs( const QString & serverName ) const;
+    uint64_t playbackPositionTicks( const QString & serverName ) const;
+    QTime playbackPositionTime( const QString & serverName ) const;
 
-    bool playbackPositionTheSame() const;
-    QString playbackPosition( bool lhs ) const;
-    uint64_t playbackPositionMSecs( bool lhs ) const;
-    uint64_t playbackPositionTicks( bool lhs ) const;// 10,000 ticks = 1 ms
-    QTime playbackPositionTime( bool lhs ) const;
+    bool allPlaybackPositionTicksEqual() const;
 
-    bool bothFavorites() const;
-    bool isFavorite( bool lhs ) const;
+    bool allFavoriteEqual() const;
+    bool isFavorite( const QString & serverName ) const;
 
-    QDateTime lastPlayed( bool lhs ) const;
-    uint64_t playCount( bool lhs ) const;
+    QDateTime lastPlayed( const QString & serverName ) const;
+    bool allLastPlayedEqual() const;
 
-    std::shared_ptr<SMediaUserData> userMediaData( bool lhs ) const { return lhs ? fLHSUserMediaData : fRHSUserMediaData; }
+    uint64_t playCount( const QString & serverName ) const;
+    bool allPlayCountEqual() const;
 
-    std::shared_ptr<SMediaUserData> lhsUserMediaData() const { return fLHSUserMediaData; }
-    std::shared_ptr<SMediaUserData> rhsUserMediaData() const { return fRHSUserMediaData; }
+    std::shared_ptr<SMediaUserData> userMediaData( const QString & serverName ) const;
+    std::shared_ptr<SMediaUserData> newestMediaData() const;
 
-    QString getDirectionLabel() const;
-    int getDirectionValue() const;
-    QIcon getDirectionIcon() const;
+    QIcon getDirectionIcon( const QString & serverName ) const;
 private:
+    std::shared_ptr< SMediaUserData > userMediaData( const QString & serverName, bool addIfMissing );
+    template< typename T >
+    bool allEqual( std::function< T( std::shared_ptr< SMediaUserData > ) > func ) const
+    {
+        std::optional< T > prevValue;
+        for ( auto && ii : fInfoForServer )
+        {
+            if ( !prevValue.has_value() )
+                prevValue = func( ii.second );
+            else if ( prevValue.value() != func( ii.second ) )
+                      return false;
+        }
+        return true;
+    }
     QString getProviderList() const;
 
     QString fType;
@@ -138,9 +156,7 @@ private:
     std::map< QString, QString > fProviders;
     std::map< QString, QString > fExternalUrls;
 
-
-    std::shared_ptr< SMediaUserData > fLHSUserMediaData;
-    std::shared_ptr< SMediaUserData > fRHSUserMediaData;
+    std::map< QString, std::shared_ptr< SMediaUserData > > fInfoForServer;
 
     static std::function< QString( uint64_t ) > sMSecsToStringFunc;
 };

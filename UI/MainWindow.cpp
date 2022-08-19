@@ -23,6 +23,7 @@
 #include "MainWindow.h"
 #include "SettingsDlg.h"
 #include "MediaWindow.h"
+#include "MediaTree.h"
 
 #include "Core/SyncSystem.h"
 #include "Core/UserData.h"
@@ -45,6 +46,8 @@
 #include <QRegularExpression>
 #include <QDateTime>
 #include <QMetaMethod>
+#include <QAbstractItemModelTester>
+#include <QInputDialog>
 
 CMainWindow::CMainWindow( QWidget * parent )
     : QMainWindow( parent ),
@@ -59,9 +62,9 @@ CMainWindow::CMainWindow( QWidget * parent )
     connect( fMediaModel, &CMediaModel::sigPendingMediaUpdate, this, &CMainWindow::slotPendingMediaUpdate );
 
     fUsersModel = new CUsersModel( fSettings, this );
-    connect( this, &CMainWindow::sigSettingsLoaded, fUsersModel, &CUsersModel::slotSettingsChanged );
     fUsersFilterModel = new CUsersFilterModel( this );
     fUsersFilterModel->setSourceModel( fUsersModel );
+    connect( this, &CMainWindow::sigSettingsLoaded, fUsersModel, &CUsersModel::slotSettingsChanged );
 
     NSABUtils::setupModelChanged( fUsersModel, this, QMetaMethod::fromSignal( &CMainWindow::sigDataChanged ) );
     NSABUtils::setupModelChanged( fMediaModel, this, QMetaMethod::fromSignal( &CMainWindow::sigDataChanged ) );
@@ -70,42 +73,36 @@ CMainWindow::CMainWindow( QWidget * parent )
 
     connect( fImpl->actionViewMediaInformation, &QAction::triggered, this, &CMainWindow::slotViewMediaInfo );
 
-    fImpl->lhsMedia->setModel( fMediaFilterModel );
-    fImpl->rhsMedia->setModel( fMediaFilterModel );
-
     fImpl->users->setModel( fUsersFilterModel );
 
     fMediaFilterModel->sort( -1, Qt::SortOrder::AscendingOrder );
     fUsersFilterModel->sort( -1, Qt::SortOrder::AscendingOrder );
 
-    hideColumns( fImpl->lhsMedia, EWhichTree::eLHS );
-    hideColumns( fImpl->rhsMedia, EWhichTree::eRHS );
-
     fSyncSystem = std::make_shared< CSyncSystem >( fSettings, this );
     connect( fSyncSystem.get(), &CSyncSystem::sigAddToLog, this, &CMainWindow::slotAddToLog );
     connect( fSyncSystem.get(), &CSyncSystem::sigLoadingUsersFinished, this, &CMainWindow::slotLoadingUsersFinished );
     connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaLoaded, this, &CMainWindow::slotUserMediaLoaded );
-    connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaCompletelyLoaded, this, &CMainWindow::slotUserMediaCompletelyLoaded );
+    connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaLoaded, this, &CMainWindow::slotUserMediaCompletelyLoaded );
 
     fSyncSystem->setLoadUserFunc(
-        [ this ]( const QJsonObject & userData, bool isLHSServer )
+        [ this ]( const QJsonObject & userData, const QString & serverName )
         {
-            return fUsersModel->loadUser( userData, isLHSServer );
+            return fUsersModel->loadUser( userData, serverName );
         } );
     fSyncSystem->setLoadMediaFunc(
-        [ this ]( const QJsonObject & mediaData, bool isLHSServer )
+        [ this ]( const QJsonObject & mediaData, const QString & serverName )
         {
-            return fMediaModel->loadMedia( mediaData, isLHSServer );
+            return fMediaModel->loadMedia( mediaData, serverName );
         } );
     fSyncSystem->setReloadMediaFunc(
-        [ this ]( const QJsonObject & mediaData, const QString & mediaID, bool isLHSServer )
+        [ this ]( const QJsonObject & mediaData, const QString & mediaID, const QString & serverName )
         {
-            return fMediaModel->reloadMedia( mediaData, mediaID, isLHSServer );
+            return fMediaModel->reloadMedia( mediaData, mediaID, serverName );
         } );
     fSyncSystem->setGetMediaDataForIDFunc(
-        [ this ]( const QString & mediaID, bool isLHSServer )
+        [ this ]( const QString & mediaID, const QString & serverName )
         {
-            return fMediaModel->getMediaDataForID( mediaID, isLHSServer );
+            return fMediaModel->getMediaDataForID( mediaID, serverName );
         } );
     fSyncSystem->setMergeMediaFunc(
         [ this ]( std::shared_ptr< CProgressSystem > progressSystem )
@@ -185,27 +182,8 @@ CMainWindow::CMainWindow( QWidget * parent )
 
     connect( fImpl->users, &QTreeView::clicked, this, &CMainWindow::slotCurrentUserChanged );
 
-    connect( fImpl->lhsMedia->selectionModel(), &QItemSelectionModel::currentChanged, this, &CMainWindow::slotSetCurrentMediaItem );
-    connect( fImpl->rhsMedia->selectionModel(), &QItemSelectionModel::currentChanged, this, &CMainWindow::slotSetCurrentMediaItem );
-
-    connect( fImpl->lhsMedia->verticalScrollBar(), &QScrollBar::sliderMoved, fImpl->rhsMedia->verticalScrollBar(), &QScrollBar::setValue );
-    connect( fImpl->lhsMedia->verticalScrollBar(), &QScrollBar::valueChanged, fImpl->rhsMedia->verticalScrollBar(), &QScrollBar::setValue );
-
-    connect( fImpl->rhsMedia->verticalScrollBar(), &QScrollBar::sliderMoved, fImpl->lhsMedia->verticalScrollBar(), &QScrollBar::setValue );
-    connect( fImpl->rhsMedia->verticalScrollBar(), &QScrollBar::valueChanged, fImpl->lhsMedia->verticalScrollBar(), &QScrollBar::setValue );
-
-    connect( fImpl->lhsMedia->horizontalScrollBar(), &QScrollBar::sliderMoved, fImpl->rhsMedia->horizontalScrollBar(), &QScrollBar::setValue );
-    connect( fImpl->lhsMedia->horizontalScrollBar(), &QScrollBar::valueChanged, fImpl->rhsMedia->horizontalScrollBar(), &QScrollBar::setValue );
-
-    connect( fImpl->rhsMedia->horizontalScrollBar(), &QScrollBar::sliderMoved, fImpl->lhsMedia->horizontalScrollBar(), &QScrollBar::setValue );
-    connect( fImpl->rhsMedia->horizontalScrollBar(), &QScrollBar::valueChanged, fImpl->lhsMedia->horizontalScrollBar(), &QScrollBar::setValue );
-
     connect( fImpl->actionProcess, &QAction::triggered, fSyncSystem.get(), &CSyncSystem::slotProcess );
-    connect( fImpl->actionProcessToLeft, &QAction::triggered, fSyncSystem.get(), &CSyncSystem::slotProcessToLeft );
-    connect( fImpl->actionProcessToRight, &QAction::triggered, fSyncSystem.get(), &CSyncSystem::slotProcessToRight );
-
-    fImpl->lhsMedia->horizontalScrollBar()->installEventFilter( this );
-    fImpl->rhsMedia->horizontalScrollBar()->installEventFilter( this );
+    connect( fImpl->actionSelectiveProcess, &QAction::triggered, this, &CMainWindow::slotSelectiveProcess );
 
     auto recentProjects = fSettings->recentProjectList();
     bool found = false;
@@ -229,62 +207,13 @@ CMainWindow::CMainWindow( QWidget * parent )
     {
         QTimer::singleShot( 0, this, &CMainWindow::slotSettings );
     }
-    slotSetCurrentMediaItem( QModelIndex(), QModelIndex() );
-}
-
-void CMainWindow::hideColumns( QTreeView * treeView, EWhichTree whichTree )
-{
-    for ( int ii = 0; ii <= fMediaModel->columnCount(); ++ii )
-    {
-        switch ( whichTree )
-        {
-        case EWhichTree::eLHS:
-            treeView->setColumnHidden( ii, !fMediaModel->isLHSColumn( ii ) );
-            break;
-        case EWhichTree::eRHS:
-            treeView->setColumnHidden( ii, !fMediaModel->isRHSColumn( ii ) );
-            break;
-        }
-    }
+    slotSetCurrentMediaItem( QModelIndex() );
 }
 
 CMainWindow::~CMainWindow()
 {
     if ( fMediaWindow )
         delete fMediaWindow.data();
-}
-
-void CMainWindow::slotSetCurrentMediaItem( const QModelIndex & current, const QModelIndex & /*previous*/ )
-{
-    fImpl->lhsMedia->setCurrentIndex( current );
-    fImpl->rhsMedia->setCurrentIndex( current );
-
-    auto mediaInfo = getMediaData( current );
-
-    if ( fMediaWindow )
-        fMediaWindow->setMedia( mediaInfo );
-
-    fImpl->actionViewMediaInformation->setEnabled( mediaInfo.get() != nullptr );
-
-    slotDataChanged();
-}
-
-void CMainWindow::slotViewMediaInfo()
-{
-    if ( !fMediaWindow )
-        fMediaWindow = new CMediaWindow( fSyncSystem, nullptr );
-
-    auto currIdx = fImpl->lhsMedia->selectionModel()->currentIndex();
-    if ( !currIdx.isValid() )
-        currIdx = fImpl->rhsMedia->selectionModel()->currentIndex();
-
-    if ( currIdx.isValid() )
-    {
-        auto mediaInfo = getMediaData( currIdx );
-
-        fMediaWindow->setMedia( mediaInfo );
-    }
-    fMediaWindow->show();
 }
 
 void CMainWindow::showEvent( QShowEvent * /*event*/ )
@@ -307,37 +236,10 @@ void CMainWindow::closeEvent( QCloseEvent * event )
     }
 }
 
-bool CMainWindow::eventFilter( QObject * obj, QEvent * event )
-{
-    if ( obj == fImpl->lhsMedia->horizontalScrollBar() )
-    {
-        if ( event->type() == QEvent::Show )
-        {
-            fImpl->rhsMedia->horizontalScrollBar()->setVisible( true );
-        }
-        else if ( event->type() == QEvent::Hide )
-        {
-            fImpl->rhsMedia->horizontalScrollBar()->setHidden( true );
-        }
-    }
-    else if ( obj == fImpl->rhsMedia->horizontalScrollBar() )
-    {
-        if ( event->type() == QEvent::Show )
-        {
-            fImpl->lhsMedia->horizontalScrollBar()->setVisible( true );
-        }
-        else if ( event->type() == QEvent::Hide )
-        {
-            fImpl->lhsMedia->horizontalScrollBar()->setHidden( true );
-        }
-    }
-
-    return QMainWindow::eventFilter( obj, event );
-}
 
 void CMainWindow::slotSettings()
 {
-    CSettingsDlg settings( fSettings, fUsersModel->getAllUsers( true ), this );
+    CSettingsDlg settings( fSettings, fSyncSystem, fUsersModel->getAllUsers( true ), this );
     settings.exec();
     if ( fSettings->changed() )
         loadSettings();
@@ -349,13 +251,6 @@ void CMainWindow::reset()
 
     fSettings->reset();
     fImpl->log->clear();
-}
-
-void CMainWindow::resetServers()
-{
-    fUsersModel->clear();
-    fMediaModel->clear();
-    fSyncSystem->reset();
 }
 
 void CMainWindow::slotRecentMenuAboutToShow()
@@ -417,8 +312,7 @@ void CMainWindow::loadSettings()
 {
     slotAddToLog( EMsgType::eInfo, "Loading Settings" );
 
-    fImpl->lhsServerLabel->setText( tr( "Server: <a href=\"%1\">%1</a>" ).arg( fSettings->url( true ) ) );
-    fImpl->rhsServerLabel->setText( tr( "Server: <a href=\"%1\">%1</a>" ).arg( fSettings->url( false ) ) );
+    loadServers();
     fImpl->actionOnlyShowSyncableUsers->setChecked( fSettings->onlyShowSyncableUsers() );
     fImpl->actionOnlyShowMediaWithDifferences->setChecked( fSettings->onlyShowMediaWithDifferences() );
     fImpl->actionShowMediaWithIssues->setChecked( fSettings->showMediaWithIssues() );
@@ -437,8 +331,7 @@ void CMainWindow::slotDataChanged()
     fImpl->actionReloadCurrentUser->setEnabled( canSync && hasCurrentUser );
 
     fImpl->actionProcess->setEnabled( hasDataToProcess );
-    fImpl->actionProcessToRight->setEnabled( hasDataToProcess );
-    fImpl->actionProcessToLeft->setEnabled( hasDataToProcess );
+    fImpl->actionSelectiveProcess->setEnabled( hasDataToProcess );
 }
 
 void CMainWindow::slotLoadingUsersFinished()
@@ -446,16 +339,6 @@ void CMainWindow::slotLoadingUsersFinished()
     onlyShowSyncableUsers();
     fUsersFilterModel->sort( 0, Qt::SortOrder::AscendingOrder );
     NSABUtils::autoSize( fImpl->users, -1 );
-}
-
-void CMainWindow::slotUserMediaLoaded()
-{
-    auto currUser = getCurrUserData();
-    if ( !currUser )
-        return;
-
-    hideColumns( fImpl->lhsMedia, EWhichTree::eLHS );
-    hideColumns( fImpl->rhsMedia, EWhichTree::eRHS );
 }
 
 void CMainWindow::slotReloadServers()
@@ -499,27 +382,6 @@ void CMainWindow::slotCurrentUserChanged( const QModelIndex & index )
     fSyncSystem->loadUsersMedia( userData );
 }
 
-void CMainWindow::slotUserMediaCompletelyLoaded()
-{
-    if ( !fMediaLoadedTimer )
-    {
-        fMediaLoadedTimer = new QTimer( this );
-        fMediaLoadedTimer->setSingleShot( true );
-        fMediaLoadedTimer->setInterval( 500 );
-        connect( fMediaLoadedTimer, &QTimer::timeout,
-            [ this ]()
-            {
-                NSABUtils::autoSize( fImpl->lhsMedia );
-                NSABUtils::autoSize( fImpl->rhsMedia );
-                onlyShowMediaWithDifferences();
-
-                delete fMediaLoadedTimer;
-                fMediaLoadedTimer = nullptr;
-            } );
-    }
-    fMediaLoadedTimer->stop();
-    fMediaLoadedTimer->start();
-}
 
 std::shared_ptr< CUserData > CMainWindow::getCurrUserData() const
 {
@@ -530,14 +392,12 @@ std::shared_ptr< CUserData > CMainWindow::getCurrUserData() const
     return getUserData( idx );
 }
 
-std::shared_ptr< CUserData > CMainWindow::getUserData( const QModelIndex & idx ) const
+std::shared_ptr< CUserData > CMainWindow::getUserData( QModelIndex idx ) const
 {
-    auto retVal = fUsersModel->userDataForName( idx.data( CUsersModel::eConnectedIDRole ).toString() );
-    if ( !retVal )
-        retVal = fUsersModel->userDataForName( idx.data( CUsersModel::eLHSNameRole ).toString() );
-    if ( !retVal )
-        retVal = fUsersModel->userDataForName( idx.data( CUsersModel::eRHSNameRole ).toString() );
+    if ( idx.model() != fUsersModel )
+        idx = fUsersFilterModel->mapToSource( idx );
 
+    auto retVal = fUsersModel->userData( idx );
     return retVal;
 }
 
@@ -567,17 +427,12 @@ void CMainWindow::slotToggleShowMediaWithIssues()
 
 void CMainWindow::onlyShowMediaWithDifferences()
 {
-    auto mediaSummary = fMediaModel->settingsChanged();
+    fMediaModel->settingsChanged();
 
     progressReset();
-    fImpl->mediaSummaryLabel->setText(
-        tr( "Media Summary: %1 Items need Syncing, %2 on %3, %4 From %5, %6 can not be compared, %7 Total" )
-        .arg( mediaSummary.fNeedsSyncing )
-        .arg( mediaSummary.fLHSNeedsUpdating ).arg( fSettings->url( true ) )
-        .arg( mediaSummary.fRHSNeedsUpdating ).arg( fSettings->url( false ) )
-        .arg( mediaSummary.fMissingData )
-        .arg( mediaSummary.fTotalMedia )
-    );
+
+    auto mediaSummary = SMediaSummary( fMediaModel );
+    fImpl->mediaSummaryLabel->setText( mediaSummary.getSummaryText() );
 
     auto column = fMediaFilterModel->sortColumn();
     auto order = fMediaFilterModel->sortOrder();
@@ -591,17 +446,11 @@ void CMainWindow::onlyShowMediaWithDifferences()
 
 void CMainWindow::showMediaWithIssues()
 {
-    auto mediaSummary = fMediaModel->settingsChanged();
-
+    fMediaModel->settingsChanged();
     progressReset();
-    fImpl->mediaSummaryLabel->setText(
-        tr( "Media Summary: %1 Items need Syncing, %2 on %3, %4 From %5, %6 can not be compared, %7 Total" )
-        .arg( mediaSummary.fNeedsSyncing )
-        .arg( mediaSummary.fLHSNeedsUpdating ).arg( fSettings->url( true ) )
-        .arg( mediaSummary.fRHSNeedsUpdating ).arg( fSettings->url( false ) )
-        .arg( mediaSummary.fMissingData )
-        .arg( mediaSummary.fTotalMedia )
-    );
+
+    auto mediaSummary = SMediaSummary( fMediaModel );
+    fImpl->mediaSummaryLabel->setText( mediaSummary.getSummaryText() );
 }
 
 void CMainWindow::slotAddToLog( int msgType, const QString & msg )
@@ -694,3 +543,134 @@ void CMainWindow::slotPendingMediaUpdate()
 }
 
 
+void CMainWindow::resetServers()
+{
+    fUsersModel->clear();
+    fMediaModel->clear();
+    fSyncSystem->reset();
+}
+
+void CMainWindow::loadServers()
+{
+    for ( auto && ii : fMediaTrees )
+        delete ii;
+    fMediaTrees.clear();
+
+    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    {
+        auto mediaTree = new CMediaTree( fSettings->serverInfo( ii ), fImpl->upperSplitter );
+        fImpl->upperSplitter->addWidget( mediaTree );
+        mediaTree->setModel( fMediaFilterModel );
+        connect( mediaTree, &CMediaTree::sigCurrChanged, this, &CMainWindow::slotSetCurrentMediaItem );
+        connect( mediaTree, &CMediaTree::sigViewMedia, this, &CMainWindow::slotViewMedia );
+        fMediaTrees.push_back( mediaTree );
+    }
+
+    for ( size_t ii = 0; ii < fMediaTrees.size(); ++ii )
+    {
+        for ( size_t jj = 0; jj < fMediaTrees.size(); ++jj )
+        {
+            if ( ii == jj )
+                continue;
+            fMediaTrees[ ii ]->addPeerMediaTree( fMediaTrees[ jj ] );
+        }
+    }
+}
+
+void CMainWindow::slotViewMedia( const QModelIndex & current )
+{
+    slotViewMediaInfo();
+    slotSetCurrentMediaItem( current );
+}
+
+void CMainWindow::slotSetCurrentMediaItem( const QModelIndex & current )
+{
+    auto mediaInfo = getMediaData( current );
+
+    if ( fMediaWindow )
+        fMediaWindow->setMedia( mediaInfo );
+
+    fImpl->actionViewMediaInformation->setEnabled( mediaInfo.get() != nullptr );
+
+    slotDataChanged();
+}
+
+void CMainWindow::slotViewMediaInfo()
+{
+    if ( !fMediaWindow )
+        fMediaWindow = new CMediaWindow( fSettings, fSyncSystem, nullptr );
+
+    for ( auto && ii : fMediaTrees )
+    {
+        auto currIdx = ii->currentIndex();
+        if ( currIdx.isValid() )
+        {
+            auto mediaInfo = getMediaData( currIdx );
+            if ( mediaInfo )
+            {
+                fMediaWindow->setMedia( mediaInfo );
+                break;
+            }
+        }
+    }
+    fMediaWindow->show();
+    fMediaWindow->activateWindow();
+    fMediaWindow->raise();
+}
+
+void CMainWindow::slotUserMediaLoaded()
+{
+    auto currUser = getCurrUserData();
+    if ( !currUser )
+        return;
+
+    for ( auto && ii : fMediaTrees )
+        ii->hideColumns();
+}
+
+
+void CMainWindow::slotUserMediaCompletelyLoaded()
+{
+    if ( !fMediaLoadedTimer )
+    {
+        fMediaLoadedTimer = new QTimer( this );
+        fMediaLoadedTimer->setSingleShot( true );
+        fMediaLoadedTimer->setInterval( 500 );
+        connect( fMediaLoadedTimer, &QTimer::timeout,
+                 [this]()
+                 {
+                     for ( auto && ii : fMediaTrees )
+                         ii->autoSize();
+                     onlyShowMediaWithDifferences();
+
+                     delete fMediaLoadedTimer;
+                     fMediaLoadedTimer = nullptr;
+                 } );
+    }
+    fMediaLoadedTimer->stop();
+    fMediaLoadedTimer->start();
+}
+
+void CMainWindow::slotSelectiveProcess()
+{
+    QStringList serverNames;
+    std::map< QString, QString > servers;
+    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    {
+        auto serverInfo = fSettings->serverInfo( ii );
+
+        auto name = serverInfo->friendlyName();
+        auto key = serverInfo->keyName();
+
+        servers[ name ] = key;
+        serverNames << name;
+    }
+
+    auto whichServer = QInputDialog::getItem( this, tr( "Select Source Server" ), tr( "Source Server:" ), serverNames, 0, false );
+    if ( whichServer.isEmpty() )
+        return;
+    auto pos = servers.find( whichServer );
+    if ( pos == servers.end() )
+        return;
+    fSyncSystem->selectiveProcess( (*pos).second );
+}

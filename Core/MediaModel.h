@@ -10,15 +10,18 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <memory>
+#include <optional>
 
 class CSettings;
 class CMediaData;
 class CProgressSystem;
+class CMergeMedia;
 
 using TMediaIDToMediaData = std::map< QString, std::shared_ptr< CMediaData > >;
 
 class CMediaModel : public QAbstractTableModel
 {
+    friend struct SMediaSummary;
     Q_OBJECT;
 public:
     enum ECustomRoles
@@ -26,27 +29,19 @@ public:
         eShowItemRole = Qt::UserRole + 1,
         eMediaNameRole,
         eDirSortRole,
-        eDirValueRole
+        eServerNameForColumnRole
     };
 
     enum EColumns
     {
-        eLHSName,
-        eLHSType,
-        eLHSMediaID,
-        eLHSFavorite,
-        eLHSPlayed,
-        eLHSLastPlayed,
-        eLHSPlayCount,
-        eLHSPlaybackPosition,
-        eRHSName,
-        eRHSType,
-        eRHSMediaID,
-        eRHSFavorite,
-        eRHSPlayed,
-        eRHSLastPlayed,
-        eRHSPlayCount,
-        eRHSPlaybackPosition
+        eName,
+        eType,
+        eMediaID,
+        eFavorite,
+        ePlayed,
+        eLastPlayed,
+        ePlayCount,
+        ePlaybackPosition
     };
 
     enum EDirSort
@@ -68,57 +63,55 @@ public:
 
     bool hasMediaToProcess() const;
 
-    bool isLHSColumn( int column ) const;
-    bool isRHSColumn( int column ) const;
-
-    struct SMediaSummary
-    {
-        int fTotalMedia{ 0 };
-        int fNeedsSyncing{ 0 };
-        int fMissingData{ 0 };
-        int fRHSNeedsUpdating{ 0 };
-        int fLHSNeedsUpdating{ 0 };
-    };
-
-    SMediaSummary settingsChanged();
-    SMediaSummary getMediaSummary() const;
+    void settingsChanged();
 
     std::shared_ptr< CMediaData > getMediaData( const QModelIndex & idx ) const;
     void updateMediaData( std::shared_ptr< CMediaData > mediaData );
-    std::shared_ptr< CMediaData > getMediaDataForID( const QString & mediaID, bool isLHS ) const;
-    std::shared_ptr< CMediaData > loadMedia( const QJsonObject & media, bool isLHSServer );
-    std::shared_ptr< CMediaData > reloadMedia( const QJsonObject & media, const QString & mediaID, bool isLHSServer );
+    std::shared_ptr< CMediaData > getMediaDataForID( const QString & mediaID, const QString & serverName ) const;
+    std::shared_ptr< CMediaData > loadMedia( const QJsonObject & media, const QString & serverName );
+    std::shared_ptr< CMediaData > reloadMedia( const QJsonObject & media, const QString & mediaID, const QString & serverName );
 
     bool mergeMedia( std::shared_ptr< CProgressSystem > progressSystem );
+
+    void loadMergedMedia( std::shared_ptr<CProgressSystem> progressSystem );
+
     std::unordered_set< std::shared_ptr< CMediaData > > getAllMedia() const { return fAllMedia; }
 Q_SIGNALS:
     void sigPendingMediaUpdate();
 private:
-    void addMediaInfo( std::shared_ptr<CMediaData> mediaData, const QJsonObject & mediaInfo, bool isLHSServer );
-    std::shared_ptr< CMediaData > findMediaForProvider( const QString & providerName, const QString & providerID, bool fromLHS ) const;
-    void setMediaForProvider( const QString & providerName, const QString & providerID, std::shared_ptr< CMediaData > mediaData, bool isLHS );
-    void mergeMediaData( TMediaIDToMediaData & lhs, TMediaIDToMediaData & rhs, bool lhsIsLHS, std::shared_ptr< CProgressSystem > progressSystem );
-    void mergeMediaData( TMediaIDToMediaData & lhs, bool lhsIsLHS, std::shared_ptr< CProgressSystem > progressSystem );
-    void loadMergedData( std::shared_ptr< CProgressSystem > progressSystem );
+    int columnsPerServer( bool includeProviders = true ) const;
+    bool isFirstColumnOfServer( int columnNum ) const;
+    QString serverNameForColumn( int columnNum ) const;
+
+    std::optional< std::pair< QString, QString > > getProviderInfoForColumn( int column ) const;
+
+    void addMediaInfo( std::shared_ptr<CMediaData> mediaData, const QJsonObject & mediaInfo, const QString & serverName );
 
     QVariant getColor( const QModelIndex & index, bool background ) const;
     void updateProviderColumns( std::shared_ptr< CMediaData > ii );
 
-    TMediaIDToMediaData fLHSMedia; //server media ID -> media Data
-    TMediaIDToMediaData fRHSMedia;
+    std::unique_ptr< CMergeMedia > fMergeSystem;
 
     std::unordered_set< std::shared_ptr< CMediaData > > fAllMedia;
-
-    // provider name -> provider ID -> mediaData
-    std::unordered_map< QString, std::unordered_map< QString, std::shared_ptr< CMediaData > > > fLHSProviderSearchMap; // provider name, to map of id to mediadata
-    std::unordered_map< QString, std::unordered_map< QString, std::shared_ptr< CMediaData > > > fRHSProviderSearchMap;
+    std::map< QString, TMediaIDToMediaData > fMediaMap; // serverName -> mediaID -> mediaData
 
     std::vector< std::shared_ptr< CMediaData > > fData;
     std::shared_ptr< CSettings > fSettings;
     std::unordered_map< std::shared_ptr< CMediaData >, size_t > fMediaToPos;
-    std::unordered_set< QString > fProviderColumnsByName;
-    std::unordered_map< int, std::pair< bool, QString > > fProviderColumnsByColumn;
+    std::unordered_set< QString > fProviderNames;
+    std::unordered_map< int, std::pair< QString, QString > > fProviderColumnsByColumn;
     EDirSort fDirSort{ eNoSort };
+};
+
+struct SMediaSummary
+{
+    SMediaSummary( CMediaModel * model );
+
+    int fTotalMedia{ 0 };
+
+    QString getSummaryText() const;
+    std::map< QString, int > fNeedsUpdating;
+    std::map< QString, int > fMissingData;
 };
 
 class CMediaFilterModel : public QSortFilterProxyModel
@@ -130,8 +123,6 @@ public:
     virtual bool filterAcceptsRow( int source_row, const QModelIndex & source_parent ) const override;
     virtual void sort( int column, Qt::SortOrder order = Qt::AscendingOrder ) override;
     virtual bool lessThan( const QModelIndex & source_left, const QModelIndex & source_right ) const override;
-
-    bool dirLessThan( const QModelIndex & source_left, const QModelIndex & source_right ) const;
 
 };
 #endif

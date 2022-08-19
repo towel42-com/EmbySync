@@ -52,6 +52,12 @@ CMediaUserDataWidget::CMediaUserDataWidget( QWidget * parentWidget /*= nullptr *
     connect( fImpl->lastPlayedDate, &QDateTimeEdit::dateTimeChanged, this, &CMediaUserDataWidget::slotChanged );
     connect( fImpl->playbackPosition, &QTimeEdit::timeChanged, this, &CMediaUserDataWidget::slotChanged );
     connect( fImpl->playCount, qOverload< int >( &QSpinBox::valueChanged ), this, &CMediaUserDataWidget::slotChanged );
+    connect( fImpl->apply, &QPushButton::clicked, this, &CMediaUserDataWidget::slotApplyFromServer );
+}
+
+void CMediaUserDataWidget::slotApplyFromServer()
+{
+    emit sigApplyFromServer( this );
 }
 
 CMediaUserDataWidget::CMediaUserDataWidget( const QString & title, QWidget * parentWidget /*= nullptr */ ) :

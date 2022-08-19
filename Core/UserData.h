@@ -26,37 +26,55 @@
 #include <QString>
 #include <list>
 #include <memory>
+#include <map>
 
 class CMediaData;
 class QTreeWidgetItem;
+class CSettings;
+
+struct SUserServerData
+{
+    bool isValid() const;
+    QString fName;
+    QString fUserID;
+};
 
 class CUserData
 {
 public:
-    CUserData( const QString & name, const QString & connectedID, bool isLHSName );
+    CUserData( const QString & name, const QString & connectedID, const QString & userID, const QString & serverName );
 
-    QString name( bool forLHS ) const;
-    void setName( const QString & name, bool isLHS );
-    QString displayName() const;
     QString connectedID() const { return fConnectedID; }
+
+    bool isValid() const;
+    QString name( const QString & serverName ) const;
+    void setName( const QString & name, const QString & serverName );
+    QString displayName() const;
+    QString sortName( std::shared_ptr< CSettings > settings ) const;
+
+    QStringList missingServers() const;
+
     
+    bool isUser( const QString & name ) const;
     bool isUser( const QRegularExpression & regEx ) const;
 
-    QTreeWidgetItem * getItem() const { return fItem; }
+ 
+   QTreeWidgetItem * getItem() const { return fItem; }
     void setItem( QTreeWidgetItem * item ) { fItem = item; }
 
-    QString getUserID( bool isLHS ) const;
-    void setUserID( const QString & id, bool isLHS );
+    QString getUserID( const QString & serverName ) const;
+    void setUserID( const QString & id, const QString & serverName );
 
-    bool onLHSServer() const;
-    bool onRHSServer() const;
     bool canBeSynced() const;
+    bool onServer( const QString & serverName ) const;
 private:
+    std::shared_ptr< SUserServerData > getServerInfo( const QString & serverName, bool addIfMissing );
+    std::shared_ptr< SUserServerData > getServerInfo( const QString & serverName ) const;
     bool isMatch( const QRegularExpression & regEx, const QString & value ) const;
 
-    std::pair< QString, QString > fName;
     QString fConnectedID;
-    std::pair< QString, QString > fUserID;
+
+    std::map< QString, std::shared_ptr< SUserServerData > > fInfoForServer; // serverName to Info
     QTreeWidgetItem * fItem{ nullptr };
 };
 #endif 

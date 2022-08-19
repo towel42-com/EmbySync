@@ -55,6 +55,7 @@ QString toString( ERequestType request )
         case ERequestType::eReloadMediaData: return "ReloadMediaData";
         case ERequestType::eUpdateData: return "UpdateData";
         case ERequestType::eUpdateFavorite: return "UpdateFavorite";
+        case ERequestType::eTestServer: return "TestServer";
     }
     return {};
 }
@@ -112,22 +113,22 @@ void CSyncSystem::setProgressSystem( std::shared_ptr< CProgressSystem > funcs )
     fProgressSystem = funcs;
 }
 
-void CSyncSystem::setLoadUserFunc( std::function< std::shared_ptr< CUserData >( const QJsonObject & user, bool isLHS ) > loadUserFunc )
+void CSyncSystem::setLoadUserFunc( std::function< std::shared_ptr< CUserData >( const QJsonObject & user, const QString & serverName ) > loadUserFunc )
 {
     fLoadUserFunc = loadUserFunc;
 }
 
-void CSyncSystem::setLoadMediaFunc( std::function< std::shared_ptr< CMediaData >( const QJsonObject & media, bool isLHS ) > loadMediaFunc )
+void CSyncSystem::setLoadMediaFunc( std::function< std::shared_ptr< CMediaData >( const QJsonObject & media, const QString & serverName ) > loadMediaFunc )
 {
     fLoadMediaFunc = loadMediaFunc;
 }
 
-void CSyncSystem::setReloadMediaFunc( std::function< std::shared_ptr< CMediaData >( const QJsonObject & media, const QString & itemID, bool isLHS ) > reloadMediaFunc )
+void CSyncSystem::setReloadMediaFunc( std::function< std::shared_ptr< CMediaData >( const QJsonObject & media, const QString & itemID, const QString & serverName ) > reloadMediaFunc )
 {
     fReloadMediaFunc = reloadMediaFunc;
 }
 
-void CSyncSystem::setGetMediaDataForIDFunc( std::function< std::shared_ptr< CMediaData >( const QString & mediaID, bool isLHS ) > getMediaDataForIDFunc )
+void CSyncSystem::setGetMediaDataForIDFunc( std::function< std::shared_ptr< CMediaData >( const QString & mediaID, const QString & serverName ) > getMediaDataForIDFunc )
 {
     fGetMediaDataForIDFunc = getMediaDataForIDFunc;
 }
@@ -157,10 +158,12 @@ void CSyncSystem::loadUsers()
     }
 
     fProgressSystem->setTitle( tr( "Loading Users" ) );
-    fProgressSystem->setMaximum( 2 );
+    fProgressSystem->setMaximum( fSettings->serverCnt() );
 
-    requestGetUsers( true );
-    requestGetUsers( false );
+    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    {
+        requestGetUsers( fSettings->serverKeyName( ii ) );
+    }
 }
 
 void CSyncSystem::loadUsersMedia( std::shared_ptr< CUserData > userData )
@@ -172,12 +175,14 @@ void CSyncSystem::loadUsersMedia( std::shared_ptr< CUserData > userData )
 
     emit sigAddToLog( EMsgType::eInfo, QString( "Loading media for '%1'" ).arg( fCurrUserData->displayName() ) );
 
-    if ( !fCurrUserData->onLHSServer() && !fCurrUserData->onRHSServer() )
+    if ( !fCurrUserData->canBeSynced() )
         return;
 
     fProgressSystem->setTitle( tr( "Loading Users Media" ) );
-    requestUsersMediaList( true );
-    requestUsersMediaList( false );
+    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    {
+        requestGetMediaList( fSettings->serverKeyName( ii ) );
+    }
 }
 
 void CSyncSystem::clearCurrUser()
@@ -188,26 +193,16 @@ void CSyncSystem::clearCurrUser()
 
 void CSyncSystem::slotProcess()
 {
-    process( false, false );
+    selectiveProcess( {} );
 }
 
-void CSyncSystem::slotProcessToLeft()
-{
-    process( true, false );
-}
-
-void CSyncSystem::slotProcessToRight()
-{
-    process( false, true );
-}
-
-void CSyncSystem::process( bool forceLeft, bool forceRight )
+void CSyncSystem::selectiveProcess( const QString & selectedServer )
 {
     auto title = QString( "Processing media for user '%1'" ).arg( fCurrUserData->displayName() );
-    if ( forceLeft )
-        title += " To the Left";
-    else if ( forceLeft )
-        title += " To the Right";
+    if ( !selectedServer.isEmpty() )
+        title += QString( " From '%1'" ).arg( selectedServer );
+    
+    emit sigAddToLog( EMsgType::eInfo, title );
 
     fProgressSystem->setTitle( title );
 
@@ -220,8 +215,11 @@ void CSyncSystem::process( bool forceLeft, bool forceRight )
     int cnt = 0;
     for ( auto && ii : allMedia )
     {
-        if ( !ii || ii->userDataEqual() || ii->isMissingOnEitherServer() )
+        if ( !ii || !ii->isValidForAllServers() )
             continue;
+        if ( ii->userDataEqual() )
+            continue;
+
         cnt++;
     }
 
@@ -236,16 +234,18 @@ void CSyncSystem::process( bool forceLeft, bool forceRight )
 
     for ( auto && ii : allMedia )
     {
-        if ( !ii || ii->userDataEqual() || ii->isMissingOnEitherServer() )
+        if ( !ii || !ii->isValidForAllServers() )
+            continue;
+        if ( ii->userDataEqual() )
             continue;
 
         fProgressSystem->incProgress();
-        bool dataProcessed = processMedia( ii, forceLeft, forceRight );
+        bool dataProcessed = processMedia( ii, selectedServer );
         (void)dataProcessed;
     }
 }
 
-bool CSyncSystem::processMedia( std::shared_ptr< CMediaData > mediaData, bool forceLeft, bool forceRight )
+bool CSyncSystem::processMedia( std::shared_ptr< CMediaData > mediaData, const QString & selectedServer )
 {
     if ( !mediaData || mediaData->userDataEqual() )
         return false;
@@ -264,41 +264,46 @@ bool CSyncSystem::processMedia( std::shared_ptr< CMediaData > mediaData, bool fo
     */
 
     //qDebug() << "processing " << mediaData->name();
-    bool lhsNeedsUpdating = mediaData->lhsNeedsUpdating();
-    if ( forceLeft )
-        lhsNeedsUpdating = true;
-    else if ( forceRight )
-        lhsNeedsUpdating = false;
-    auto newData = lhsNeedsUpdating ? mediaData->rhsUserMediaData() : mediaData->lhsUserMediaData();
-    updateUserDataForMedia( mediaData, newData, lhsNeedsUpdating );
+    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    {
+        auto serverName = fSettings->serverKeyName( ii );
+        bool needsUpdating = mediaData->needsUpdating( serverName );
+        if ( !selectedServer.isEmpty() )
+        {
+            needsUpdating = ( serverName != selectedServer );
+        }
+        if ( !needsUpdating )
+            continue;
+
+        auto newData = selectedServer.isEmpty() ? mediaData->newestMediaData() : mediaData->userMediaData( selectedServer );
+        updateUserDataForMedia( mediaData, newData, serverName );
+    }
     return true;
 }
 
-void CSyncSystem::updateUserDataForMedia( std::shared_ptr<CMediaData> mediaData, std::shared_ptr<SMediaUserData> newData, bool lhsNeedsUpdating )
+void CSyncSystem::updateUserDataForMedia( std::shared_ptr<CMediaData> mediaData, std::shared_ptr<SMediaUserData> newData, const QString & serverName )
 {
-    requestUpdateUserDataForMedia( mediaData, newData, lhsNeedsUpdating );
+    requestUpdateUserDataForMedia( mediaData, newData, serverName );
 
     // TODO: Emby currently doesnt support updating favorite status from the "Users/<>/Items/<>/UserData" API
     //       When it does, remove the requestSetFavorite 
-    requestSetFavorite( mediaData, newData, lhsNeedsUpdating );
+    requestSetFavorite( mediaData, newData, serverName );
 }
 
-void CSyncSystem::requestUpdateUserDataForMedia( std::shared_ptr< CMediaData > mediaData, std::shared_ptr< SMediaUserData > newData, bool lhsNeedsUpdating )
+void CSyncSystem::requestUpdateUserDataForMedia( std::shared_ptr< CMediaData > mediaData, std::shared_ptr< SMediaUserData > newData, const QString & serverName )
 {
     if ( !mediaData || !newData )
         return;
 
-    if ( ( lhsNeedsUpdating && ( *mediaData->lhsUserMediaData() == *newData ) )
-      || ( !lhsNeedsUpdating && ( *mediaData->rhsUserMediaData() == *newData ) ) )
+    if ( *mediaData->userMediaData( serverName ) == *newData )
         return;
 
-
-    auto && mediaID = mediaData->getMediaID( lhsNeedsUpdating );
-    auto && userID = fCurrUserData->getUserID( lhsNeedsUpdating );
+    auto && mediaID = mediaData->getMediaID( serverName );
+    auto && userID = fCurrUserData->getUserID( serverName );
     if ( userID.isEmpty() || mediaID.isEmpty() )
         return;
 
-    auto && url = fSettings->getUrl( QString( "Users/%1/Items/%2/UserData" ).arg( userID ).arg( mediaID ), {}, lhsNeedsUpdating );
+    auto && url = fSettings->getUrl( QString( "Users/%1/Items/%2/UserData" ).arg( userID ).arg( mediaID ), {}, serverName );
     if ( !url.isValid() )
         return;
 
@@ -316,23 +321,22 @@ void CSyncSystem::requestUpdateUserDataForMedia( std::shared_ptr< CMediaData > m
     QNetworkReply * reply = nullptr;
     reply = fManager->post( request, data );
 
-    setIsLHS( reply, lhsNeedsUpdating );
+    setServerName( reply, serverName );
     setExtraData( reply, mediaID );
     setRequestType( reply, ERequestType::eUpdateData );
 }
 
-//void CSyncSystem::setMediaData( std::shared_ptr< CMediaData > mediaData, bool deleteUpdate, const QString & updateType = "" )
-void CSyncSystem::requestSetFavorite( std::shared_ptr< CMediaData > mediaData, std::shared_ptr< SMediaUserData > newData, bool lhsNeedsUpdating )
+void CSyncSystem::requestSetFavorite( std::shared_ptr< CMediaData > mediaData, std::shared_ptr< SMediaUserData > newData, const QString & serverName )
 {
-    if ( mediaData->isFavorite( lhsNeedsUpdating ) == newData->fIsFavorite )
+    if ( mediaData->isFavorite( serverName ) == newData->fIsFavorite )
         return;
 
-    auto && mediaID = mediaData->getMediaID( lhsNeedsUpdating );
-    auto && userID = fCurrUserData->getUserID( lhsNeedsUpdating );
+    auto && mediaID = mediaData->getMediaID( serverName );
+    auto && userID = fCurrUserData->getUserID( serverName );
     if ( userID.isEmpty() || mediaID.isEmpty() )
         return;
 
-    auto && url = fSettings->getUrl( QString( "Users/%1/FavoriteItems/%3" ).arg( userID ).arg( mediaID ), {}, lhsNeedsUpdating );
+    auto && url = fSettings->getUrl( QString( "Users/%1/FavoriteItems/%3" ).arg( userID ).arg( mediaID ), {}, serverName );
     if ( !url.isValid() )
         return;
 
@@ -349,23 +353,23 @@ void CSyncSystem::requestSetFavorite( std::shared_ptr< CMediaData > mediaData, s
     else
         reply = fManager->deleteResource( request );
 
-    setIsLHS( reply, lhsNeedsUpdating );
+    setServerName( reply, serverName );
     setExtraData( reply, mediaID );
     setRequestType( reply, ERequestType::eUpdateFavorite );
 }
 
-void CSyncSystem::setIsLHS( QNetworkReply * reply, bool isLHSServer )
+void CSyncSystem::setServerName( QNetworkReply * reply, const QString & serverName )
 {
     if ( !reply )
         return;
-    fAttributes[ reply ][ kLHSServer ] = isLHSServer;
+    fAttributes[ reply ][ kServerName ] = serverName;
 }
 
-bool CSyncSystem::isLHSServer( QNetworkReply * reply )
+QString CSyncSystem::serverName( QNetworkReply * reply )
 {
     if ( !reply )
         return false;
-    return fAttributes[ reply ][ kLHSServer ].toBool();
+    return fAttributes[ reply ][ kServerName ].toString();
 }
 
 void CSyncSystem::setRequestType( QNetworkReply * reply, ERequestType requestType )
@@ -464,6 +468,28 @@ void CSyncSystem::slotCheckPendingRequests()
         emit sigAddToLog( EMsgType::eInfo, ii );
 }
 
+void CSyncSystem::testServer( const QString & serverName )
+{
+    auto serverInfo = fSettings->serverInfo( serverName );
+    if ( !serverInfo )
+        return;
+    testServer( serverInfo );
+}
+
+void CSyncSystem::testServer( std::shared_ptr< const SServerInfo > serverInfo )
+{
+    if ( !serverInfo )
+        return;
+
+    requestTestServer( serverInfo );
+}
+
+void CSyncSystem::testServers( const std::vector< std::shared_ptr< const SServerInfo > > & servers )
+{
+    for( auto && ii : servers )
+        requestTestServer( ii );
+}
+
 bool CSyncSystem::isRunning() const
 {
     return !fAttributes.empty() && !fRequests.empty();
@@ -525,20 +551,20 @@ QNetworkReply * CSyncSystem::makeRequest( const QNetworkRequest & request )
     return fManager->get( request );
 }
 
-std::shared_ptr< CMediaData > CSyncSystem::loadMedia( const QJsonObject & media, bool isLHSServer )
+std::shared_ptr< CMediaData > CSyncSystem::loadMedia( const QJsonObject & media, const QString & serverName )
 {
     Q_ASSERT( fLoadMediaFunc );
     if ( !fLoadMediaFunc )
         return{};
-    return fLoadMediaFunc( media, isLHSServer );
+    return fLoadMediaFunc( media, serverName );
 }
 
-std::shared_ptr<CUserData> CSyncSystem::loadUser( const QJsonObject & user, bool isLHSServer )
+std::shared_ptr<CUserData> CSyncSystem::loadUser( const QJsonObject & user, const QString & serverName )
 {
     Q_ASSERT( fLoadUserFunc );
     if ( !fLoadUserFunc )
         return {};
-    return fLoadUserFunc( user, isLHSServer );
+    return fLoadUserFunc( user, serverName );
 }
 
 bool CSyncSystem::isLastRequestOfType( ERequestType type ) const
@@ -553,7 +579,7 @@ bool CSyncSystem::isLastRequestOfType( ERequestType type ) const
 }
 
 // functions to handle the responses from the servers
-bool CSyncSystem::handleError( QNetworkReply * reply, bool isLHSServer )
+bool CSyncSystem::handleError( QNetworkReply * reply, const QString & serverName, QString & errorMsg, bool reportMsg )
 {
     Q_ASSERT( reply );
     if ( !reply )
@@ -563,13 +589,14 @@ bool CSyncSystem::handleError( QNetworkReply * reply, bool isLHSServer )
     {
         if ( reply->error() == QNetworkReply::OperationCanceledError )
         {
-            emit sigAddToLog( EMsgType::eWarning, QString( "Request canceled on server '%1'" ).arg( fSettings->serverName( isLHSServer ) ) );
+            emit sigAddToLog( EMsgType::eWarning, QString( "Request canceled on server '%1'" ).arg( serverName ) );
             return false;
         }
 
         auto data = reply->readAll();
-        if ( fUserMsgFunc )
-            fUserMsgFunc( tr( "Error response from server" ), tr( "Error from Server: %1%2" ).arg( reply->errorString() ).arg( data.isEmpty() ? QString() : QString( " - %1" ).arg( QString( data ) ) ), true );
+        errorMsg = tr( "Error from Server: %1%2" ).arg( reply->errorString() ).arg( data.isEmpty() ? QString() : QString( " - %1" ).arg( QString( data ) ) );
+        if ( fUserMsgFunc && reportMsg )
+            fUserMsgFunc( tr( "Error response from server" ), errorMsg, true );
         return false;
     }
     return true;
@@ -577,7 +604,7 @@ bool CSyncSystem::handleError( QNetworkReply * reply, bool isLHSServer )
 
 void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
 {
-    auto isLHSServer = this->isLHSServer( reply );
+    auto serverName = this->serverName( reply );
     auto requestType = this->requestType( reply );
     auto extraData = this->extraData( reply );
 
@@ -588,11 +615,12 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
     }
 
     //emit sigAddToLog( EMsgType::eInfo, QString( "Request Completed: %1" ).arg( reply->url().toString() ) );
-    //emit sigAddToLog( EMsgType::eInfo, QString( "Is LHS? %1" ).arg( isLHSServer ? "Yes" : "No" ) );
+    //emit sigAddToLog( EMsgType::eInfo, QString( "Is LHS? %1" ).arg( serverName ? "Yes" : "No" ) );
     //emit sigAddToLog( EMsgType::eInfo, QString( "Request Type: %1" ).arg( toString( requestType ) ) );
     //emit sigAddToLog( EMsgType::eInfo, QString( "Extra Data: %1" ).arg( extraData.toString() ) );
 
-    if ( !handleError( reply, isLHSServer ) )
+    QString errorMsg;
+    if ( !handleError( reply, serverName, errorMsg, requestType != ERequestType::eTestServer ) )
     {
         switch ( requestType )
         {
@@ -606,6 +634,8 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
         case ERequestType::eReloadMediaData:
         case ERequestType::eUpdateData:
         case ERequestType::eUpdateFavorite:
+        case ERequestType::eTestServer:
+            emit sigTestServerResults(serverName, false, errorMsg );
         default:
             break;
         }
@@ -625,7 +655,7 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
     case ERequestType::eGetUsers:
         if ( !fProgressSystem->wasCanceled() )
         {
-            handleGetUsersResponse( data, isLHSServer );
+            handleGetUsersResponse( data, serverName );
 
             if ( isLastRequestOfType( ERequestType::eGetUsers ) )
             {
@@ -636,7 +666,7 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
     case ERequestType::eGetMediaList:
         if ( !fProgressSystem->wasCanceled() )
         {
-            handleGetMediaListResponse( data, isLHSServer );
+            handleGetMediaListResponse( data, serverName );
 
             if ( isLastRequestOfType( ERequestType::eGetMediaList ) )
             {
@@ -647,24 +677,41 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
         break;
     case ERequestType::eReloadMediaData:
     {
-        handleReloadMediaResponse( data, isLHSServer, extraData.toString() );
+        handleReloadMediaResponse( data, serverName, extraData.toString() );
         break;
     }
     case ERequestType::eUpdateData:
     {
-        requestReloadMediaItemData( extraData.toString(), isLHSServer );
+        requestReloadMediaItemData( extraData.toString(), serverName );
         if ( fGetMediaDataForIDFunc )
         {
-            auto mediaData = fGetMediaDataForIDFunc( extraData.toString(), isLHSServer );
+            auto mediaData = fGetMediaDataForIDFunc( extraData.toString(), serverName );
             if ( mediaData )
-                emit sigAddToLog( EMsgType::eInfo, QString( "Updated '%1(%2)' on Server '%3' successfully" ).arg( mediaData->name() ).arg( extraData.toString() ).arg( fSettings->serverName( isLHSServer ) ) );
+                emit sigAddToLog( EMsgType::eInfo, tr( "Updated '%1(%2)' on Server '%3' successfully" ).arg( mediaData->name() ).arg( extraData.toString() ).arg( serverName ) );
         }
         break;
     }
     case ERequestType::eUpdateFavorite:
     {
-        requestReloadMediaItemData( extraData.toString(), isLHSServer );
-        emit sigAddToLog( EMsgType::eInfo, QString( "Updated Favorite status for '%1' on Server '%2' successfully" ).arg( extraData.toString() ).arg( fSettings->serverName( isLHSServer ) ) );
+        requestReloadMediaItemData( extraData.toString(), serverName );
+        emit sigAddToLog( EMsgType::eInfo, tr( "Updated Favorite status for '%1' on Server '%2' successfully" ).arg( extraData.toString() ).arg( serverName ) );
+        break;
+    }
+    case ERequestType::eTestServer:
+    {
+        auto pos = fTestServers.find( serverName );
+        Q_ASSERT( pos != fTestServers.end() );
+        if ( pos != fTestServers.end() )
+        {
+            auto testServer = ( *pos ).second;
+            fTestServers.erase( pos );
+
+            emit sigAddToLog( EMsgType::eInfo, tr( "Finished Testing server '%1' successfully" ).arg( testServer->friendlyName() ) );
+            emit sigTestServerResults( serverName, true, QString() );
+        }
+        else
+            emit sigTestServerResults( serverName, false, tr( "Internal error" ) );
+
         break;
     }
     }
@@ -672,10 +719,30 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
     postHandleRequest( requestType, reply );
 }
 
-void CSyncSystem::requestGetUsers( bool isLHSServer )
+void CSyncSystem::requestTestServer( std::shared_ptr< const SServerInfo > serverInfo )
 {
-    emit sigAddToLog( EMsgType::eInfo, tr( "Loading users from server '%1'" ).arg( fSettings->serverName( isLHSServer ) ) );;
-    auto && url = fSettings->getUrl( "Users", {}, isLHSServer );
+    fTestServers[ serverInfo->keyName() ] = serverInfo;
+
+    auto && url = serverInfo->getUrl( "Users", {} );
+    emit sigAddToLog( EMsgType::eInfo, tr( "Testing Server '%1' - %2" ).arg( serverInfo->friendlyName() ).arg( url.toString() ) );
+
+    if ( !url.isValid() )
+    {
+        emit sigTestServerResults( serverInfo->keyName(), false, tr( "Invalid URL - '%1'" ).arg( url.toString() ) );
+        return;
+    }
+
+    auto request = QNetworkRequest( url );
+
+    auto reply = makeRequest( request );
+    setServerName( reply, serverInfo->keyName() );
+    setRequestType( reply, ERequestType::eTestServer );
+}
+
+void CSyncSystem::requestGetUsers( const QString & serverName )
+{
+    emit sigAddToLog( EMsgType::eInfo, tr( "Loading users from server '%1'" ).arg( serverName ) );;
+    auto && url = fSettings->getUrl( "Users", {}, serverName );
     if ( !url.isValid() )
         return;
 
@@ -684,11 +751,11 @@ void CSyncSystem::requestGetUsers( bool isLHSServer )
     auto request = QNetworkRequest( url );
 
     auto reply = makeRequest( request );
-    setIsLHS( reply, isLHSServer );
+    setServerName( reply, serverName );
     setRequestType( reply, ERequestType::eGetUsers );
 }
 
-void CSyncSystem::handleGetUsersResponse( const QByteArray & data, bool isLHSServer )
+void CSyncSystem::handleGetUsersResponse( const QByteArray & data, const QString & serverName )
 {
     QJsonParseError error;
     auto doc = QJsonDocument::fromJson( data, &error );
@@ -703,7 +770,7 @@ void CSyncSystem::handleGetUsersResponse( const QByteArray & data, bool isLHSSer
     auto users = doc.array();
     fProgressSystem->pushState();
 
-    emit sigAddToLog( EMsgType::eInfo, QString( "Server '%1' has %2 Users" ).arg( fSettings->serverName( isLHSServer ) ).arg( users.count() ) );
+    emit sigAddToLog( EMsgType::eInfo, QString( "Server '%1' has %2 Users" ).arg( serverName ).arg( users.count() ) );
 
     for ( auto && ii : users )
     {
@@ -712,13 +779,13 @@ void CSyncSystem::handleGetUsersResponse( const QByteArray & data, bool isLHSSer
         fProgressSystem->incProgress();
 
         auto user = ii.toObject();
-        loadUser( user, isLHSServer );
+        loadUser( user, serverName );
     }
     fProgressSystem->popState();
     fProgressSystem->incProgress();
 }
 
-void CSyncSystem::requestUsersMediaList( bool isLHSServer )
+void CSyncSystem::requestGetMediaList( const QString & serverName )
 {
     if ( !fCurrUserData )
         return;
@@ -726,29 +793,29 @@ void CSyncSystem::requestUsersMediaList( bool isLHSServer )
     std::list< std::pair< QString, QString > > queryItems =
     {
         std::make_pair( "IncludeItemTypes", fSettings->getSyncItemTypes() ),
-        std::make_pair( "SortBy", "SortName" ),
+        std::make_pair( "SortBy", "Type,SortName" ),
         std::make_pair( "SortOrder", "Ascending" ),
         std::make_pair( "Recursive", "True" ),
         std::make_pair( "IsMissing", "False" ),
         std::make_pair( "Fields", "ProviderIds,ExternalUrls,Missing" )
     };
 
-    auto && url = fSettings->getUrl( QString( "Users/%1/Items" ).arg( fCurrUserData->getUserID( isLHSServer ) ), queryItems, isLHSServer );
+    auto && url = fSettings->getUrl( QString( "Users/%1/Items" ).arg( fCurrUserData->getUserID( serverName ) ), queryItems, serverName );
     if ( !url.isValid() )
         return;
 
     //qDebug() << url;
     auto request = QNetworkRequest( url );
 
-    emit sigAddToLog( EMsgType::eInfo, QString( "Requesting media for '%1' from server '%2'" ).arg( fCurrUserData->displayName() ).arg( fSettings->serverName( isLHSServer ) ) );
+    emit sigAddToLog( EMsgType::eInfo, QString( "Requesting media for '%1' from server '%2'" ).arg( fCurrUserData->displayName() ).arg( serverName ) );
 
     auto reply = makeRequest( request );
-    setIsLHS( reply, isLHSServer );
+    setServerName( reply, serverName );
     setRequestType( reply, ERequestType::eGetMediaList );
     setExtraData( reply, fCurrUserData->displayName() );
 }
 
-void CSyncSystem::handleGetMediaListResponse( const QByteArray & data, bool isLHSServer )
+void CSyncSystem::handleGetMediaListResponse( const QByteArray & data, const QString & serverName )
 {
     QJsonParseError error;
     auto doc = QJsonDocument::fromJson( data, &error );
@@ -765,7 +832,7 @@ void CSyncSystem::handleGetMediaListResponse( const QByteArray & data, bool isLH
     //qDebug() << doc.toJson();
     if ( !doc[ "Items" ].isArray() )
     {
-        loadMedia( doc.object(), isLHSServer );
+        loadMedia( doc.object(), serverName );
         return;
     }
 
@@ -776,7 +843,7 @@ void CSyncSystem::handleGetMediaListResponse( const QByteArray & data, bool isLH
     fProgressSystem->setTitle( tr( "Loading Users Media Data" ) );
     fProgressSystem->setMaximum( mediaList.count() );
 
-    emit sigAddToLog( EMsgType::eInfo, QString( "%1 has %2 media items on server '%3'" ).arg( fCurrUserData->displayName() ).arg( mediaList.count() ).arg( fSettings->serverName( isLHSServer ) ) );
+    emit sigAddToLog( EMsgType::eInfo, QString( "%1 has %2 media items on server '%3'" ).arg( fCurrUserData->displayName() ).arg( mediaList.count() ).arg( serverName ) );
     if ( fSettings->maxItems() > 0 )
         emit sigAddToLog( EMsgType::eInfo, QString( "Loading %2 media items" ).arg( fSettings->maxItems() ) );
 
@@ -796,28 +863,28 @@ void CSyncSystem::handleGetMediaListResponse( const QByteArray & data, bool isLH
 
         auto media = ii.toObject();
 
-        loadMedia( media, isLHSServer );
+        loadMedia( media, serverName );
     }
     fProgressSystem->resetProgress();
     fProgressSystem->popState();
     fProgressSystem->incProgress();
 }
 
-void CSyncSystem::requestReloadMediaItemData( const QString & mediaID, bool isLHSServer )
+void CSyncSystem::requestReloadMediaItemData( const QString & mediaID, const QString & serverName )
 {
     if ( !fGetMediaDataForIDFunc )
         return;
 
-    auto mediaData = fGetMediaDataForIDFunc( mediaID, isLHSServer );
+    auto mediaData = fGetMediaDataForIDFunc( mediaID, serverName );
     if ( !mediaData )
         return;
 
-    requestReloadMediaItemData( mediaData, isLHSServer );
+    requestReloadMediaItemData( mediaData, serverName );
 }
 
-void CSyncSystem::requestReloadMediaItemData( std::shared_ptr< CMediaData > mediaData, bool isLHSServer )
+void CSyncSystem::requestReloadMediaItemData( std::shared_ptr< CMediaData > mediaData, const QString & serverName )
 {
-    auto && url = fSettings->getUrl( QString( "Users/%1/Items/%2" ).arg( fCurrUserData->getUserID( isLHSServer ) ).arg( mediaData->getMediaID( isLHSServer ) ), {}, isLHSServer );
+    auto && url = fSettings->getUrl( QString( "Users/%1/Items/%2" ).arg( fCurrUserData->getUserID( serverName ) ).arg( mediaData->getMediaID( serverName ) ), {}, serverName );
     if ( !url.isValid() )
         return;
 
@@ -826,13 +893,13 @@ void CSyncSystem::requestReloadMediaItemData( std::shared_ptr< CMediaData > medi
 
     auto reply = makeRequest( request );
 
-    setIsLHS( reply, isLHSServer );
+    setServerName( reply, serverName );
     setRequestType( reply, ERequestType::eReloadMediaData );
-    setExtraData( reply, mediaData->getMediaID( isLHSServer ) );
+    setExtraData( reply, mediaData->getMediaID( serverName ) );
     //qDebug() << "Media Data for " << mediaData->name() << reply;
 }
 
-void CSyncSystem::handleReloadMediaResponse( const QByteArray & data, bool isLHSServer, const QString & itemID )
+void CSyncSystem::handleReloadMediaResponse( const QByteArray & data, const QString & serverName, const QString & itemID )
 {
     QJsonParseError error;
     auto doc = QJsonDocument::fromJson( data, &error );
@@ -849,7 +916,7 @@ void CSyncSystem::handleReloadMediaResponse( const QByteArray & data, bool isLHS
     if ( !fReloadMediaFunc )
         return;
 
-    fReloadMediaFunc( media, itemID, isLHSServer );
+    fReloadMediaFunc( media, itemID, serverName );
 }
 
 

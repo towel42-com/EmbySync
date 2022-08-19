@@ -20,48 +20,36 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef _MEDIAUSERDATAWIDGET_H
-#define _MEDIAUSERDATAWIDGET_H
+#ifndef __EDITSERVERDLG_H
+#define __EDITSERVERDLG_H
 
-#include <QGroupBox>
+#include <QDialog>
 #include <memory>
 
 namespace Ui
 {
-    class CMediaUserDataWidget;
+    class CEditServerDlg;
 }
 
-class CUserData;
-struct SMediaUserData;
-class CMediaUserDataWidget : public QGroupBox
+class CSyncSystem;
+class CEditServerDlg : public QDialog
 {
     Q_OBJECT
 public:
-    CMediaUserDataWidget( QWidget * parentWidget = nullptr );
-    CMediaUserDataWidget( const QString & title, QWidget * parentWidget = nullptr );
-    CMediaUserDataWidget( std::shared_ptr< SMediaUserData > mediaData, QWidget * parentWidget = nullptr );
+    CEditServerDlg( const QString & name, const QString & url, const QString & apiKey, QWidget * parent = nullptr );
+    virtual ~CEditServerDlg() override;
 
-    virtual ~CMediaUserDataWidget() override;
+    QString name() const;
+    QString url() const;
+    QString apiKey() const;
 
-    void setMediaUserData( std::shared_ptr< SMediaUserData > mediaData );
-    void applyMediaUserData( std::shared_ptr< SMediaUserData > mediaData );  // mediaData is not owned, mediaID is NOT changed
-
-    void setReadOnly( bool readOnly );
-    bool readOnly() const { return fReadOnly; }
-
-    std::shared_ptr< SMediaUserData > createMediaUserData() const; // creates a new user data based on current settings
-
+Q_SIGNALS:
 public Q_SLOTS:
     void slotChanged();
-    void slotApplyFromServer();
-Q_SIGNALS:
-    void sigApplyFromServer( CMediaUserDataWidget * which );
-
 private:
-    void load( std::shared_ptr< SMediaUserData > mediaData );
+    void updateButtons();
+    bool okToTest();
 
-    std::unique_ptr< Ui::CMediaUserDataWidget > fImpl;
-    std::shared_ptr< SMediaUserData > fMediaUserData;
-    bool fReadOnly{ false };
+    std::unique_ptr< Ui::CEditServerDlg > fImpl;
 };
 #endif 

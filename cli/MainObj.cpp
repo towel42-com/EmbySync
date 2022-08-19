@@ -83,7 +83,7 @@ CMainObj::CMainObj( const QString & settingsFile, QObject * parent /*= nullptr*/
     connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaLoaded, this, &CMainObj::slotProcess );
 
     connect( fSyncSystem.get(), &CSyncSystem::sigProcessingFinished, this, &CMainObj::slotProcessingFinished );
-    connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaCompletelyLoaded, this, &CMainObj::slotUserMediaCompletelyLoaded );
+    connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaLoaded, this, &CMainObj::slotUserMediaCompletelyLoaded );
     
     fUsersModel = new CUsersModel( fSettings, this );
     fMediaModel = new CMediaModel( fSettings, this );
@@ -123,19 +123,19 @@ CMainObj::CMainObj( const QString & settingsFile, QObject * parent /*= nullptr*/
         } );
 
     fSyncSystem->setLoadUserFunc(
-        [ this ]( const QJsonObject & userData, bool isLHSServer )
+        [ this ]( const QJsonObject & userData, const QString & serverName )
         {
-            return fUsersModel->loadUser( userData, isLHSServer );
+            return fUsersModel->loadUser( userData, serverName );
         } );
     fSyncSystem->setLoadMediaFunc(
-        [ this ]( const QJsonObject & mediaData, bool isLHSServer )
+        [ this ]( const QJsonObject & mediaData, const QString & serverName )
         {
-            return fMediaModel->loadMedia( mediaData, isLHSServer );
+            return fMediaModel->loadMedia( mediaData, serverName );
         } );
     fSyncSystem->setGetMediaDataForIDFunc(
-        [ this ]( const QString & mediaID, bool isLHSServer )
+        [ this ]( const QString & mediaID, const QString & serverName )
         {
-            return fMediaModel->getMediaDataForID( mediaID, isLHSServer );
+            return fMediaModel->getMediaDataForID( mediaID, serverName );
         } );
     fSyncSystem->setMergeMediaFunc(
         [ this ]( std::shared_ptr< CProgressSystem > progressSystem )
@@ -148,9 +148,9 @@ CMainObj::CMainObj( const QString & settingsFile, QObject * parent /*= nullptr*/
             return fMediaModel->getAllMedia();
         } );
     fSyncSystem->setReloadMediaFunc(
-        [ this ]( const QJsonObject & mediaData, const QString & mediaID, bool isLHSServer )
+        [ this ]( const QJsonObject & mediaData, const QString & mediaID, const QString & serverName )
         {
-            return fMediaModel->reloadMedia( mediaData, mediaID, isLHSServer );
+            return fMediaModel->reloadMedia( mediaData, mediaID, serverName );
         } );
 
 
@@ -209,7 +209,9 @@ void CMainObj::slotLoadingUsersFinished()
         unsyncableMsg = "The following users matched but can not be synced\n";
     for ( auto && ii : unsyncable )
     {
-        unsyncableMsg += "\t" + ii.second->displayName() + " - Missing from '" + fSettings->url( !ii.second->onLHSServer() ) + "\n";
+        auto missingServerList = ii.second->missingServers();
+        for ( auto && jj : missingServerList )
+            unsyncableMsg += "\t" + ii.second->displayName() + " - Missing from '" + jj + "\n";
     }
     if ( !unsyncableMsg.isEmpty() )
         slotAddToLog( EMsgType::eWarning, unsyncableMsg );
@@ -251,5 +253,5 @@ void CMainObj::slotProcessingFinished( const QString & userName )
 
 void CMainObj::slotProcess()
 {
-    fSyncSystem->process( fForce.first, fForce.second );
+    fSyncSystem->selectiveProcess( fSelectedServerToProcess );
 }

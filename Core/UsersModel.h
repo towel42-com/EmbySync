@@ -14,18 +14,14 @@ class CUsersModel : public QAbstractTableModel
 public:
     enum EColumns
     {
-        eLHSName,
-        eRHSName,
         eConnectedID,
-        eOnLHSServer,
-        eOnRHSServer
+        eDisplayName,
+        eFirstServerColumn=eDisplayName
     };
 
     enum ECustomRoles
     {
         eShowItemRole=Qt::UserRole+1,
-        eLHSNameRole,
-        eRHSNameRole,
         eConnectedIDRole
     };
 
@@ -48,15 +44,17 @@ public:
     SUsersSummary getMediaSummary() const;
 
     std::shared_ptr< CUserData > userDataForName( const QString & name );
+    std::shared_ptr< CUserData > userData( const QModelIndex & idx );
     void clear();
 
-    std::shared_ptr< CUserData > loadUser( const QJsonObject & user, bool isLHSServer );
+    std::shared_ptr< CUserData > loadUser( const QJsonObject & user, const QString & serverName );
     std::vector< std::shared_ptr< CUserData > > getAllUsers( bool sorted ) const;
 public Q_SLOTS:
     void slotSettingsChanged();
 private:
     std::shared_ptr< CUserData > getUserData( const QString & name ) const;
-    
+    int serverNum( int columnNum ) const;
+
     QVariant getColor( const QModelIndex & index, bool background ) const;
         
     std::map< QString, std::shared_ptr< CUserData > > fUserMap;

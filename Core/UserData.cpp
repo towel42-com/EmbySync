@@ -22,42 +22,107 @@
 
 #include "UserData.h"
 #include <QRegularExpression>
+#include "Settings.h"
 
-CUserData::CUserData( const QString & name, const QString & connectedID, bool isLHS ) :
+CUserData::CUserData( const QString & name, const QString & connectedID, const QString & userID, const QString & serverName ) :
     fConnectedID( connectedID )
 {
-    setName( name, isLHS );
+    setName( name, serverName );
+    setUserID( userID, serverName );
 }
 
-QString CUserData::name( bool isLHS ) const
+std::shared_ptr< SUserServerData > CUserData::getServerInfo( const QString & serverName ) const
 {
-    if ( isLHS )
-        return fName.first;
-    else
-        return fName.second;
+    auto pos = fInfoForServer.find( serverName );
+    if ( pos == fInfoForServer.end() )
+        return {};
+    return ( *pos ).second;
 }
 
-void CUserData::setName( const QString & name, bool isLHS )
+std::shared_ptr< SUserServerData > CUserData::getServerInfo( const QString & serverName, bool addIfMissing )
 {
-    if ( isLHS )
-        fName.first = name;
-    else
-        fName.second = name;
+    auto retVal = getServerInfo( serverName );
+    if ( retVal || !addIfMissing )
+        return retVal;
+
+    retVal = std::make_shared< SUserServerData >();
+    fInfoForServer[ serverName ] = retVal;
+    return retVal;
+}
+
+bool CUserData::isValid() const
+{
+    if ( !fConnectedID.isEmpty() )
+        return true;
+    for ( auto && ii : fInfoForServer )
+    {
+        if ( !ii.second->isValid() )
+            return true;
+    }
+    return false;
+}
+
+QString CUserData::name( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->fName;
+}
+
+void CUserData::setName( const QString & name, const QString & serverName )
+{
+    auto serverInfo = getServerInfo( serverName, true );
+    serverInfo->fName = name;
 }
 
 QString CUserData::displayName() const
 {
-    QString retVal = fName.first;
-    if ( ( !fName.first.isEmpty() && !fName.second.isEmpty() ) && ( fName.first != fName.second ) )
+    QString retVal = connectedID();
+
+    QStringList serverNames;
+    for ( auto && ii : fInfoForServer )
     {
-        retVal += "/";
-        retVal += fName.second;
+        if ( !ii.second->fName.isEmpty() && !serverNames.contains( ii.second->fName ) )
+            serverNames << ii.second->fName;
     }
-    if ( !connectedID().isEmpty() )
+
+    if ( !serverNames.isEmpty() )
     {
-        retVal += "(";
-        retVal += connectedID();
-        retVal += ")";
+        if ( !retVal.isEmpty() )
+            retVal += "(" + serverNames.join( "," ) + ")";
+        else
+            retVal = serverNames.join( "," );
+    }
+
+    return retVal;
+}
+
+QString CUserData::sortName( std::shared_ptr< CSettings > settings ) const
+{
+    if ( !connectedID().isEmpty() )
+        return connectedID();
+    for ( int ii = 0; ii < settings->serverCnt(); ++ii )
+    {
+        auto info = getServerInfo( settings->serverKeyName( ii ) );
+        if ( !info )
+            continue;
+        if ( info->fName.isEmpty() )
+            continue;
+        return info->fName;
+    }
+
+    return {};
+}
+
+QStringList CUserData::missingServers() const
+{
+    QStringList retVal;
+    for ( auto && ii : fInfoForServer )
+    {
+        if ( ii.second->isValid() )
+            continue;
+        retVal << ii.first;
     }
     return retVal;
 }
@@ -69,12 +134,29 @@ bool CUserData::isUser( const QRegularExpression & regEx ) const
 
     if ( isMatch( regEx, fConnectedID ) )
         return true;
-    if ( isMatch( regEx, fName.first ) )
-        return true;
-    if ( isMatch( regEx, fName.second ) )
-        return true;
+    for ( auto && ii : fInfoForServer )
+    {
+        if ( isMatch( regEx, ii.second->fName ) )
+            return true;
+    }
 
     return false;
+}
+
+bool CUserData::isUser( const QString & name ) const
+{
+    if ( !name.isEmpty() )
+        return false;
+
+    if ( connectedID() == name )
+        return true;
+    for ( auto && ii : fInfoForServer )
+    {
+        if ( ii.second->fName == name )
+            return true;
+    }
+
+    return displayName() == name;
 }
 
 bool CUserData::isMatch( const QRegularExpression & regEx, const QString & value ) const
@@ -83,34 +165,38 @@ bool CUserData::isMatch( const QRegularExpression & regEx, const QString & value
     return ( match.hasMatch() && ( match.captured( 0 ).length() == value.length() ) );
 }
 
-QString CUserData::getUserID( bool isLHS ) const
+QString CUserData::getUserID( const QString & serverName ) const
 {
-    if ( isLHS )
-        return fUserID.first;
-    else
-        return fUserID.second;
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->fUserID;
 }
 
-void CUserData::setUserID( const QString & id, bool isLHS )
+void CUserData::setUserID( const QString & id, const QString & serverName )
 {
-    if ( isLHS )
-        fUserID.first = id;
-    else
-        fUserID.second = id;
+    auto serverInfo = getServerInfo( serverName, true );
+    serverInfo->fUserID = id;
 }
 
-bool CUserData::onLHSServer() const
+bool CUserData::onServer( const QString & serverName ) const
 {
-    return !fUserID.first.isEmpty();
-}
-
-bool CUserData::onRHSServer() const
-{
-    return !fUserID.second.isEmpty();
+    auto serverInfo = getServerInfo( serverName );
+    return serverInfo != nullptr;
 }
 
 bool CUserData::canBeSynced() const
 {
-    return onLHSServer() && onRHSServer();
+    int serverCnt = 0;
+    for ( auto && ii : fInfoForServer )
+    {
+        if ( ii.second->isValid() )
+            serverCnt++;
+    }
+    return serverCnt > 1;
 }
 
+bool SUserServerData::isValid() const
+{
+    return !fName.isEmpty() && !fUserID.isEmpty();
+}

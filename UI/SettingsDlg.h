@@ -35,25 +35,35 @@ namespace Ui
     class CSettingsDlg;
 }
 
+class QListWidgetItem;
+class QTreeWidgetItem;
 class QLabel;
 class CSettings;
 class CUserData;
+class CSyncSystem;
+struct SServerInfo;
 class CSettingsDlg : public QDialog
 {
     Q_OBJECT
 public:
-    CSettingsDlg( std::shared_ptr< CSettings > settings, const std::vector< std::shared_ptr< CUserData > > & knownUsers, QWidget * parent = nullptr );
+    CSettingsDlg( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, const std::vector< std::shared_ptr< CUserData > > & knownUsers, QWidget * parent = nullptr );
+    virtual ~CSettingsDlg() override;
 
     void load();
-
-    virtual ~CSettingsDlg() override;
 
     virtual void accept() override;
 
     void save();
 
 public Q_SLOTS:
+    void slotTestServers();
+    void slotTestServerResults( const QString & serverName, bool results, const QString & msg );
 private:
+    std::vector< std::shared_ptr< SServerInfo > > getServerInfos() const;
+    std::shared_ptr< SServerInfo > getServerInfo( int ii ) const;
+
+    void editServer( QTreeWidgetItem * item );
+    void editUser( QListWidgetItem * item );
     void updateColors();
     void updateColor( QLabel * label, const QColor & color );
     void updateKnownUsers();
@@ -61,9 +71,11 @@ private:
 
     std::unique_ptr< Ui::CSettingsDlg > fImpl;
     std::shared_ptr< CSettings > fSettings;
+    std::shared_ptr< CSyncSystem > fSyncSystem;
     QColor fMediaSourceColor;
     QColor fMediaDestColor;
     QColor fDataMissingColor;
     std::vector< std::pair< std::shared_ptr< CUserData >, QTreeWidgetItem * > > fKnownUsers;
+    QPushButton * fTestButton{ nullptr };
 };
 #endif 

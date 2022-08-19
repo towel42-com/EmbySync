@@ -6,31 +6,20 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>396</width>
-    <height>292</height>
+    <width>403</width>
+    <height>413</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>User Data:</string>
   </property>
-  <layout class="QGridLayout" name="gridLayout">
-   <item row="3" column="0" colspan="2">
-    <layout class="QHBoxLayout" name="horizontalLayout_2">
-     <item>
-      <widget class="QLabel" name="label_3">
-       <property name="text">
-        <string>Playback Position:</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QTimeEdit" name="playbackPosition">
-       <property name="displayFormat">
-        <string>hh:mm:ss.z</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
+  <layout class="QFormLayout" name="formLayout">
+   <item row="0" column="0">
+    <widget class="QCheckBox" name="isFavorite">
+     <property name="text">
+      <string>Is Favorite?</string>
+     </property>
+    </widget>
    </item>
    <item row="1" column="0">
     <widget class="QCheckBox" name="hasBeenPlayed">
@@ -39,15 +28,15 @@
      </property>
     </widget>
    </item>
-   <item row="2" column="0" colspan="2">
+   <item row="2" column="0">
+    <widget class="QLabel" name="label_2">
+     <property name="text">
+      <string>Last Played Date (UTC):</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
     <layout class="QHBoxLayout" name="horizontalLayout">
-     <item>
-      <widget class="QLabel" name="label_2">
-       <property name="text">
-        <string>Last Played Date (UTC):</string>
-       </property>
-      </widget>
-     </item>
      <item>
       <widget class="QDateTimeEdit" name="lastPlayedDate">
        <property name="currentSection">
@@ -77,12 +66,61 @@
      </item>
     </layout>
    </item>
-   <item row="0" column="0">
-    <widget class="QCheckBox" name="isFavorite">
+   <item row="3" column="0">
+    <widget class="QLabel" name="label_3">
      <property name="text">
-      <string>Is Favorite?</string>
+      <string>Playback Position:</string>
      </property>
     </widget>
+   </item>
+   <item row="3" column="1">
+    <widget class="QTimeEdit" name="playbackPosition">
+     <property name="displayFormat">
+      <string>hh:mm:ss.z</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0">
+    <widget class="QLabel" name="label_5">
+     <property name="text">
+      <string>Play Count:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="1">
+    <widget class="QSpinBox" name="playCount">
+     <property name="maximum">
+      <number>32767</number>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="0" colspan="2">
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="apply">
+       <property name="text">
+        <string>Apply From Here</string>
+       </property>
+       <property name="icon">
+        <iconset resource="EmbySync.qrc">
+         <normaloff>:/resources/arrowright.png</normaloff>:/resources/arrowright.png</iconset>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
    <item row="5" column="1">
     <spacer name="verticalSpacer">
@@ -97,24 +135,6 @@
      </property>
     </spacer>
    </item>
-   <item row="4" column="0" colspan="2">
-    <layout class="QHBoxLayout" name="horizontalLayout_3">
-     <item>
-      <widget class="QLabel" name="label_5">
-       <property name="text">
-        <string>Play Count:</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QSpinBox" name="playCount">
-       <property name="maximum">
-        <number>32767</number>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
   </layout>
  </widget>
  <tabstops>
@@ -123,7 +143,6 @@
   <tabstop>lastPlayedDate</tabstop>
   <tabstop>setTimeToNowBtn</tabstop>
   <tabstop>playbackPosition</tabstop>
-  <tabstop>playCount</tabstop>
  </tabstops>
  <resources>
   <include location="EmbySync.qrc"/>

@@ -42,9 +42,9 @@ public:
     CMainObj( const QString & settingsFile, QObject * parent = nullptr );
 
     void run();
-    void setForceProcessing( bool forceLeft, bool forceRight )
+    void setSelectiveProcesssServer( const QString & selectedServer )
     {
-        fForce = { forceLeft, forceRight };
+        this->fSelectedServerToProcess = selectedServer;
     }
     bool aOK() const
     {
@@ -73,7 +73,7 @@ private:
     std::tuple< int, QString, QString > fCurrentProgress{ 0, QString(), QString() };
 
     std::list< std::shared_ptr< CUserData > > fUsersToSync;
-    std::pair< bool, bool > fForce;
+    QString fSelectedServerToProcess;
 };
 
 #endif

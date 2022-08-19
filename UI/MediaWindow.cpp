@@ -21,26 +21,39 @@
 // SOFTWARE.
 
 #include "MediaWindow.h"
+#include "MediaUserDataWidget.h"
 #include "ui_MediaWindow.h"
 #include "Core/SyncSystem.h"
 #include "Core/MediaData.h"
+#include "Core/Settings.h"
 #include "SABUtils/WidgetChanged.h"
 
+#include <QHBoxLayout>
 #include <QMetaMethod>
 #include <QMessageBox>
 
-CMediaWindow::CMediaWindow( std::shared_ptr< CSyncSystem > syncSystem, QWidget * parent )
+#include <QCloseEvent>
+
+CMediaWindow::CMediaWindow( std::shared_ptr< CSettings> settings, std::shared_ptr< CSyncSystem > syncSystem, QWidget * parent )
     : QWidget( parent ),
     fImpl( new Ui::CMediaWindow ),
-    fSyncSystem( syncSystem )
+    fSyncSystem( syncSystem ),
+    fSettings( settings )
 {
     fImpl->setupUi( this );
+    connect( fImpl->process, &QPushButton::clicked, this, &CMediaWindow::slotUploadUserMediaData );
 
-    connect( fImpl->applyToLeft, &QToolButton::clicked, this, &CMediaWindow::slotApplyToLeft );
-    connect( fImpl->applyToRight, &QToolButton::clicked, this, &CMediaWindow::slotApplyToRight );
-    connect( fImpl->process, &QToolButton::clicked, this, &CMediaWindow::slotUploadUserMediaData );
+    auto horizontalLayout = new QHBoxLayout( fImpl->userDataWidgets );
+    
+    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    {
+        auto userDataWidget = new CMediaUserDataWidget( this );
+        horizontalLayout->addWidget( userDataWidget );
+        fUserDataWidgets[ settings->serverKeyName( ii ) ] = userDataWidget;
+        connect( userDataWidget, &CMediaUserDataWidget::sigApplyFromServer, this, &CMediaWindow::slotApplyFromServer );
+    }
 
-    NSABUtils::setupWidgetChanged( this, QMetaMethod::fromSignal( &CMediaWindow::sigChanged ) );
+    NSABUtils::setupWidgetChanged( this, QMetaMethod::fromSignal( &CMediaWindow::sigChanged ), { fImpl->process } );
     connect( this, &CMediaWindow::sigChanged,
              [this]()
              {
@@ -64,13 +77,29 @@ void CMediaWindow::setMedia( std::shared_ptr< CMediaData > mediaInfo )
     fImpl->currMediaType->setText( mediaInfo ? mediaInfo->mediaType() : QString() );
     fImpl->externalUrls->setText( mediaInfo ? mediaInfo->externalUrlsText() : tr( "External Urls:" ) );
     fImpl->externalUrls->setTextFormat( Qt::RichText );
-    fImpl->lhsUserMediaData->setMediaUserData( mediaInfo ? mediaInfo->userMediaData( true ) : std::shared_ptr< SMediaUserData >() );
-    fImpl->rhsUserMediaData->setMediaUserData( mediaInfo ? mediaInfo->userMediaData( false ) : std::shared_ptr< SMediaUserData >() );
+
+    for ( auto && ii : fUserDataWidgets )
+    {
+        ii.second->setMediaUserData( mediaInfo ? mediaInfo->userMediaData( ii.first ) : std::shared_ptr< SMediaUserData >() );
+    }
+
+    fChanged = false;
+}
+
+void CMediaWindow::closeEvent( QCloseEvent * event )
+{
+    if ( !okToClose() )
+    {
+        event->ignore();
+        fChanged = false;
+    }
+    else
+        event->accept();
 }
 
 bool CMediaWindow::okToClose() 
 {
-    if ( fChanged )
+    if ( fChanged && isVisible() )
     {
         QMessageBox msgBox;
         msgBox.setText( tr( "The media information has changed" ) );
@@ -87,23 +116,29 @@ bool CMediaWindow::okToClose()
     return true;
 }
 
-void CMediaWindow::slotApplyToLeft()
-{
-    fImpl->lhsUserMediaData->applyMediaUserData( fImpl->rhsUserMediaData->createMediaUserData() );
-}
-
-void CMediaWindow::slotApplyToRight()
-{
-    fImpl->rhsUserMediaData->applyMediaUserData( fImpl->lhsUserMediaData->createMediaUserData() );
-}
-
 void CMediaWindow::slotUploadUserMediaData()
 {
     if ( !fMediaInfo )
         return;
 
-    fSyncSystem->updateUserDataForMedia( fMediaInfo, fImpl->lhsUserMediaData->createMediaUserData(), true );
-    fSyncSystem->updateUserDataForMedia( fMediaInfo, fImpl->rhsUserMediaData->createMediaUserData(), false );
+    for ( auto && ii : fUserDataWidgets )
+    {
+        fSyncSystem->updateUserDataForMedia( fMediaInfo, ii.second->createMediaUserData(), ii.first );
+    }
     fChanged = false;
+}
+
+void CMediaWindow::slotApplyFromServer( CMediaUserDataWidget * which )
+{
+    if ( !which )
+        return;
+
+    auto newData = which->createMediaUserData();
+    for ( auto && ii : fUserDataWidgets )
+    {
+        if ( ii.second == which )
+            continue;
+        ii.second->applyMediaUserData( newData );
+    }
 }
 
