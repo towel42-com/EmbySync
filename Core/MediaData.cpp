@@ -21,7 +21,7 @@
 // SOFTWARE.
 
 #include "MediaData.h"
-
+#include "Settings.h"
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
@@ -143,10 +143,15 @@ std::function< QString( uint64_t ) > CMediaData::mecsToStringFunc()
     return sMSecsToStringFunc;
 }
 
-CMediaData::CMediaData( const QString & name, const QString & type ) :
-    fType( type ),
-    fName( name )
+CMediaData::CMediaData( const QJsonObject & mediaObj, std::shared_ptr< CSettings > settings )
 {
+    fName = computeName( mediaObj );
+    fType = mediaObj[ "Type" ].toString();
+
+    for ( int ii = 0; ii < settings->serverCnt(); ++ii )
+    {
+        userMediaData( settings->serverKeyName( ii ), true );
+    }
 }
 
 std::shared_ptr< SMediaUserData > CMediaData::userMediaData( const QString & serverName, bool addIfMissing )
@@ -167,7 +172,6 @@ std::shared_ptr<SMediaUserData> CMediaData::userMediaData( const QString & serve
         return ( *pos ).second;
     return {};
 }
-
 
 QString CMediaData::name() const
 {
@@ -483,40 +487,21 @@ bool CMediaData::beenLoaded( const QString & serverName ) const
     return mediaData->fBeenLoaded;
 }
 
-QIcon CMediaData::getDirectionIcon() const
+QIcon CMediaData::getDirectionIcon( const QString & serverName ) const
 {
     static QIcon sErrorIcon( ":/resources/error.png" );
     static QIcon sEqualIcon( ":/resources/equal.png" );
-    static QIcon sArrowRightIcon( ":/resources/arrowright.png" );
-    static QIcon sArrowLeftIcon( ":/resources/arrowleft.png" );
+    static QIcon sArrowUpIcon( ":/resources/arrowup.png" );
+    static QIcon sArrowDownIcon( ":/resources/arrowdown.png" );
     QIcon retVal;
     if ( !isValidForAllServers() )
         retVal = sErrorIcon;
     else if ( userDataEqual() )
         retVal = sEqualIcon;
-    //else if ( needsUpdating( false ) )
-    //    retVal = sArrowRightIcon;
-    //else if ( needsUpdating( true ) )
-    //    retVal = sArrowLeftIcon;
+    else if ( needsUpdating( serverName ) )
+        retVal = sArrowDownIcon;
     else
-        retVal = {};
-
-    return retVal;
-}
-
-QString CMediaData::getDirectionLabel() const
-{
-    QString retVal;
-    if ( !isValidForAllServers() )
-        retVal = "<NA>";
-    else if ( userDataEqual() )
-        retVal = "   ==  ";
-    //else if ( needsUpdating( false ) )
-    //    retVal = ">>>";
-    //else if ( needsUpdating( true ) )
-    //    retVal = "<<<";
-    else
-        retVal = "   <>";
+        retVal = sArrowUpIcon;
 
     return retVal;
 }
@@ -538,13 +523,21 @@ bool CMediaData::needsUpdating( const QString & serverName ) const
     auto mediaData = userMediaData( serverName );
     if ( !mediaData )
         return {};
-    for ( auto && ii : fInfoForServer )
-    {
-        if ( ii.first == serverName )
-            continue;;
-        if ( mediaData->fLastPlayedDate < ii.second->fLastPlayedDate )
-            return true;
-    }
-    return false;
+    return ( mediaData != newestMediaData() );
 }
 
+std::shared_ptr<SMediaUserData> CMediaData::newestMediaData() const
+{
+    std::shared_ptr<SMediaUserData> retVal;
+    for ( auto && ii : fInfoForServer )
+    {
+        if ( !retVal )
+            retVal = ii.second;
+        else
+        {
+            if ( ii.second->fLastPlayedDate > retVal->fLastPlayedDate )
+                retVal = ii.second;
+        }
+    }
+    return retVal;
+}

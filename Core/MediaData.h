@@ -79,10 +79,9 @@ public:
     static std::function< QString( uint64_t ) > mecsToStringFunc();
     static QString computeName( const QJsonObject & media );
 
-    CMediaData( const QString & name, const QString & type );
+    CMediaData( const QJsonObject & mediaObj, std::shared_ptr< CSettings > settings );
     bool hasProviderIDs() const;
     void addProvider( const QString & providerName, const QString & providerID );
-
 
     QString name() const;
     QString mediaType() const;
@@ -132,9 +131,9 @@ public:
     bool allPlayCountEqual() const;
 
     std::shared_ptr<SMediaUserData> userMediaData( const QString & serverName ) const;
+    std::shared_ptr<SMediaUserData> newestMediaData() const;
 
-    QString getDirectionLabel() const;
-    QIcon getDirectionIcon() const;
+    QIcon getDirectionIcon( const QString & serverName ) const;
 private:
     std::shared_ptr< SMediaUserData > userMediaData( const QString & serverName, bool addIfMissing );
     template< typename T >
