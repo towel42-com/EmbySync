@@ -196,7 +196,7 @@ void CMainObj::slotLoadingUsersFinished()
     {
         if ( !( *ii )->canBeSynced() )
         {
-            unsyncable[ (*ii)->displayName() ] = *ii;
+            unsyncable[ (*ii)->allNames() ] = *ii;
             ii = fUsersToSync.erase( ii );
         }
         else
@@ -211,7 +211,7 @@ void CMainObj::slotLoadingUsersFinished()
     {
         auto missingServerList = ii.second->missingServers();
         for ( auto && jj : missingServerList )
-            unsyncableMsg += "\t" + ii.second->displayName() + " - Missing from '" + jj + "\n";
+            unsyncableMsg += "\t" + ii.second->allNames() + " - Missing from '" + jj + "\n";
     }
     if ( !unsyncableMsg.isEmpty() )
         slotAddToLog( EMsgType::eWarning, unsyncableMsg );
@@ -235,7 +235,7 @@ void CMainObj::slotProcessNextUser()
 
     auto currUser = fUsersToSync.front();
     fUsersToSync.pop_front();
-    slotAddToLog( EMsgType::eInfo, "Processing user: " + currUser->displayName() );
+    slotAddToLog( EMsgType::eInfo, "Processing user: " + currUser->allNames() );
 
     fSyncSystem->loadUsersMedia( currUser );
 }
