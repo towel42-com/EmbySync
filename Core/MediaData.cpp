@@ -429,6 +429,7 @@ void CMediaData::updateFromOther( const QString & otherServerName, std::shared_p
         return;
 
     fInfoForServer[ otherServerName ] = otherMediaData;
+    updateCanBeSynced();
 }
 
 
