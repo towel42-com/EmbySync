@@ -247,6 +247,9 @@ void CSettingsDlg::load()
     }
 
     updateKnownUsers();
+
+    fImpl->checkForLatest->setChecked( CSettings::checkForLatest() );
+    fImpl->loadLastProject->setChecked( CSettings::loadLastProject() );
 }
 
 void CSettingsDlg::save()
@@ -269,6 +272,9 @@ void CSettingsDlg::save()
     fSettings->setSyncGame( fImpl->syncGame->isChecked() );
     fSettings->setSyncBook( fImpl->syncBook->isChecked() );
     fSettings->setSyncUserList( syncUserStrings() );
+
+    CSettings::setCheckForLatest( fImpl->checkForLatest->isChecked() );
+    CSettings::setLoadLastProject( fImpl->loadLastProject->isChecked() );
 }
 
 std::vector< std::shared_ptr< CServerInfo > > CSettingsDlg::getServerInfos( bool enabledOnly ) const
