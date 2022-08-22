@@ -45,6 +45,30 @@ CSettings::~CSettings()
     save();
 }
 
+bool CSettings::checkForLatest()
+{
+    QSettings settings;
+    return settings.value( "CheckForLatest", true ).toBool();
+}
+
+void CSettings::setCheckForLatest( bool value )
+{
+    QSettings settings;
+    settings.setValue( "CheckForLatest", value );
+}
+
+bool CSettings::loadLastProject()
+{
+    QSettings settings;
+    return settings.value( "LoadLastProject", true ).toBool();
+}
+
+void CSettings::setLoadLastProject( bool value )
+{
+    QSettings settings;
+    settings.setValue( "LoadLastProject", value );
+}
+
 bool CSettings::load( const QString & fileName, std::function<void( const QString & title, const QString & msg )> errorFunc, bool addToRecentFileList )
 {
     fFileName = fileName;
