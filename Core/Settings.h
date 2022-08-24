@@ -49,6 +49,15 @@ public:
     CSettings();
     virtual ~CSettings();
 
+    // global settings store in the registry
+    static bool checkForLatest();
+    static void setCheckForLatest( bool value );
+
+    static bool loadLastProject();
+    static void setLoadLastProject( bool value );
+
+    // settings stored in the json settings file
+
     QString fileName() const { return fFileName; }
 
     bool load( bool addToRecentFileList, QWidget * parent );

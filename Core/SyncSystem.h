@@ -62,7 +62,9 @@ enum class ERequestType
     eReloadMediaData,
     eUpdateData,
     eUpdateFavorite,
-    eTestServer
+    eTestServer,
+    eDeleteConnectedID,
+    eSetConnectedID
 };
 
 QString toString( ERequestType request );
@@ -106,6 +108,7 @@ public:
     void setUserMsgFunc( std::function< void( const QString & title, const QString & msg, bool isCritical ) > userMsgFunc );
     void setProgressSystem( std::shared_ptr< CProgressSystem > funcs );
     void setLoadUserFunc( std::function< std::shared_ptr< CUserData >( const QString & serverName, const QJsonObject & user ) > loadUserFunc );
+    void setUpdateUserConnectIDFunc( std::function< void( const QString & serverName, const QString & userID, const QString & connectID ) > updateUserConnectID );
     void setLoadMediaFunc( std::function< std::shared_ptr< CMediaData >( const QString & serverName, const QJsonObject & media ) > loadMediaFunc );
     void setReloadMediaFunc( std::function< std::shared_ptr< CMediaData >( const QString & serverName, const QJsonObject & media, const QString & itemID ) > reloadMediaFunc );
     void setGetMediaDataForIDFunc( std::function< std::shared_ptr< CMediaData >( const QString & serverName, const QString & mediaID ) > getMediaDataForIDFunc );
@@ -190,7 +193,13 @@ private:
     void handleReloadMediaResponse( const QString & serverName, const QByteArray & data, const QString & id );
 
     void requestTestServer( std::shared_ptr< const CServerInfo > serverInfo );
-    void handleTestServer( const QByteArray & data );
+
+    void requestDeleteConnectedID( const QString & serverName, std::shared_ptr< CUserData > user );
+    void handleDeleteConnectedID( const QString & serverName, const QString & userName, const QString & userID, const QString & connectID, const QByteArray & data );
+
+    void requestSetConnectedID( const QString & serverName, std::shared_ptr< CUserData > user );
+    void requestSetConnectedID( const QString & serverName, const QString & userName, const QString & userID, const QString & connectID );
+    void handleSetConnectedID( const QString & serverName, const QString & userID, const QString & connectID, const QByteArray & data );
 
     std::shared_ptr< CSettings > fSettings;
 
@@ -207,6 +216,7 @@ private:
     std::function< std::shared_ptr< CMediaData >( const QString & serverName, const QString & mediaID ) > fGetMediaDataForIDFunc;
     std::function< bool( std::shared_ptr< CProgressSystem > progessSystem ) > fMergeMediaFunc;
     std::function< std::unordered_set< std::shared_ptr< CMediaData > >() > fGetAllMediaFunc;
+    std::function< void( const QString & serverName, const QString & userID, const QString & connectID) > fUpdateUserConnectID;
 
     std::function< void( std::shared_ptr< CMediaData > mediaData ) > fProcessNewMediaFunc;
     std::function< void( const QString & title, const QString & msg, bool isCritical ) > fUserMsgFunc;
