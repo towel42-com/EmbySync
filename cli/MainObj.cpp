@@ -127,6 +127,11 @@ CMainObj::CMainObj( const QString & settingsFile, QObject * parent /*= nullptr*/
         {
             return fUsersModel->loadUser( serverName, userData );
         } );
+    fSyncSystem->setUpdateUserConnectIDFunc(
+        [ this ]( const QString & serverName, const QString & userID, const QString & connectID )
+        {
+            return fUsersModel->updateUserConnectID( serverName, userID, connectID );
+        } );
     fSyncSystem->setLoadMediaFunc(
         [ this ]( const QString & serverName, const QJsonObject & mediaData )
         {
