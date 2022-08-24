@@ -1,5 +1,5 @@
 <RCC>
     <qresource prefix="/">
-        <file>token.txt</file>
+        <file>token.bin</file>
     </qresource>
 </RCC>
