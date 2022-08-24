@@ -93,7 +93,7 @@ QVariant CUsersModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
 
     if ( index.column() == eAllNames )
         return userData->allNames();
-    else if ( index.column() == eName )
+    else if ( index.column() == eConnectedID )
         return userData->connectedID();
 
     auto pos = fColumnToServerInfo.find( index.column() );
@@ -111,7 +111,7 @@ QVariant CUsersModel::headerData( int section, Qt::Orientation orientation, int 
     if ( orientation != Qt::Horizontal )
         return QAbstractTableModel::headerData( section, orientation, role );
 
-    if ( section == eName )
+    if ( section == eConnectedID )
         return tr( "Connected ID" );
     else if ( section == eAllNames )
         return tr( "All Names" );
@@ -124,10 +124,19 @@ QVariant CUsersModel::headerData( int section, Qt::Orientation orientation, int 
 
 QVariant CUsersModel::getColor( const QModelIndex & index, bool background ) const
 {
-    if ( index.column() <= eFirstServerColumn )
+    if ( !index.isValid() )
         return {};
 
     auto userData = fUsers[ index.row() ];
+    if ( index.column() == eConnectedID )
+    {
+        if ( userData->connectIDNeedsUpdate() )
+            return fSettings->dataMissingColor( background );
+    }
+
+    if ( index.column() <= eFirstServerColumn )
+        return {};
+
     auto pos = fColumnToServerInfo.find( index.column() );
     if ( pos == fColumnToServerInfo.end() )
         return {};
@@ -168,7 +177,7 @@ CUsersModel::SUsersSummary CUsersModel::getMediaSummary() const
     return retVal;
 }
 
-std::shared_ptr< CUserData > CUsersModel::userDataForName( const QString & name )
+std::shared_ptr< CUserData > CUsersModel::userDataForName( const QString & name ) const
 {
     for ( auto && ii : fUsers )
     {
@@ -178,13 +187,47 @@ std::shared_ptr< CUserData > CUsersModel::userDataForName( const QString & name 
     return {};
 }
 
-std::shared_ptr< CUserData > CUsersModel::userData( const QModelIndex & idx )
+std::shared_ptr< CUserData > CUsersModel::userData( const QModelIndex & idx ) const
 {
     if ( !idx.isValid() )
         return {};
     if ( ( idx.row() < 0 ) || ( idx.row() >= fUsers.size() ) )
         return {};
     return fUsers[ idx.row() ];
+}
+
+QModelIndex CUsersModel::indexForUser( std::shared_ptr< CUserData > user, int column ) const
+{
+    if ( !user )
+        return {};
+    for ( size_t ii = 0; ii < fUsers.size(); ++ii )
+    {
+        if ( fUsers[ ii ] == user )
+        {
+            return index( static_cast<int>( ii ), column, {} );
+        }
+    }
+    return {};
+}
+
+std::shared_ptr< CUserData > CUsersModel::findUser( const QString & serverName, const QString & userID ) const
+{
+    for ( auto && ii : fUsers )
+    {
+        if ( ii->isUser( serverName, userID ) )
+            return ii;
+    }
+    return {};
+}
+
+void CUsersModel::updateUserConnectID( const QString & serverName, const QString & userID, const QString & connectID )
+{
+    auto user = findUser( serverName, userID );
+    if ( !user )
+        return;
+
+    user->setConnectedID( connectID );
+    emit dataChanged( indexForUser( user, 0 ), indexForUser( user, columnCount() - 1 ) );
 }
 
 void CUsersModel::clear()
