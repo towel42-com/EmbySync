@@ -35,7 +35,7 @@
 #include "Core/ProgressSystem.h"
 #include "SABUtils/QtUtils.h"
 #include "SABUtils/GitHubGetVersions.h"
-#include "SABUtils/DownloadGitHubAsset.h"
+#include "SABUtils/DownloadFile.h"
 
 #include "../Version.h"
 
@@ -207,7 +207,7 @@ CMainWindow::CMainWindow( QWidget * parent )
     slotSetCurrentMediaItem( QModelIndex() );
 
     fGitHubVersion.first = new NSABUtils::CGitHubGetVersions( {}, this );
-    fGitHubVersion.first->setCurrentVersion( NVersion::MAJOR_VERSION, NVersion::MINOR_VERSION - 1, NVersion::buildDateTime() );
+    fGitHubVersion.first->setCurrentVersion( NVersion::MAJOR_VERSION, NVersion::MINOR_VERSION, NVersion::buildDateTime() );
     connect( fGitHubVersion.first, &NSABUtils::CGitHubGetVersions::sigVersionsDownloaded, this, &CMainWindow::slotVersionsDownloaded );
 
     if ( CSettings::loadLastProject() )
@@ -320,7 +320,7 @@ void CMainWindow::slotVersionsDownloaded()
             if ( !asset )
                 return;
 
-            NSABUtils::CDownloadGitHubAsset dlg( asset, this );
+            NSABUtils::CDownloadFile dlg( asset->fName, asset->fUrl.second, asset->fSize, this );
             if ( dlg.startDownload() && ( dlg.exec() == QDialog::Accepted ) && dlg.installAfterDownload() )
             {
                 QProcess::startDetached( dlg.getDownloadFile(), {} );
