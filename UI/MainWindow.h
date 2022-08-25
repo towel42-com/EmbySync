@@ -80,7 +80,7 @@ public Q_SLOTS:
     void slotSelectiveProcess();
 
     void slotLoadLastProject();
-    void slotCheckForLatest();
+    //void slotCheckForLatest();
 
 private Q_SLOTS:
     void slotCurrentUserChanged( const QModelIndex & index );
