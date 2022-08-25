@@ -97,8 +97,11 @@ void CMediaTree::slotSetHSlider( int position )
 
 void CMediaTree::slotHScrollTo( int value, int max )
 {
-    auto newPos = fImpl->media->horizontalScrollBar()->maximum() * value / max;
-    fImpl->media->horizontalScrollBar()->setValue( newPos );
+    if ( max > 0 )
+    {
+        auto newPos = fImpl->media->horizontalScrollBar()->maximum() * value / max;
+        fImpl->media->horizontalScrollBar()->setValue( newPos );
+    }
 }
 
 void CMediaTree::slotUpdateHorizontalScroll( int /*action*/ )

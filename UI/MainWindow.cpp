@@ -34,6 +34,9 @@
 #include "Core/ServerInfo.h"
 #include "Core/ProgressSystem.h"
 #include "SABUtils/QtUtils.h"
+#include "SABUtils/GitHubGetVersions.h"
+#include "SABUtils/DownloadGitHubAsset.h"
+
 #include "../Version.h"
 
 #include "ui_MainWindow.h"
@@ -50,7 +53,7 @@
 #include <QMetaMethod>
 #include <QAbstractItemModelTester>
 #include <QInputDialog>
-
+#include <QProcess>
 CMainWindow::CMainWindow( QWidget * parent )
     : QMainWindow( parent ),
     fImpl( new Ui::CMainWindow )
@@ -97,6 +100,11 @@ CMainWindow::CMainWindow( QWidget * parent )
         [ this ]( const QString & serverName, const QJsonObject & userData )
         {
             return fUsersModel->loadUser( serverName, userData );
+        } );
+    fSyncSystem->setUpdateUserConnectIDFunc(
+        [ this ]( const QString & serverName, const QString & userID, const QString & connectID )
+        {
+            return fUsersModel->updateUserConnectID( serverName, userID, connectID );
         } );
     fSyncSystem->setLoadMediaFunc(
         [ this ]( const QString & serverName, const QJsonObject & mediaData )
@@ -195,29 +203,13 @@ CMainWindow::CMainWindow( QWidget * parent )
     connect( fImpl->actionProcess, &QAction::triggered, fSyncSystem.get(), &CSyncSystem::slotProcess );
     connect( fImpl->actionSelectiveProcess, &QAction::triggered, this, &CMainWindow::slotSelectiveProcess );
 
-    auto recentProjects = fSettings->recentProjectList();
-    bool found = false;
-    if ( !recentProjects.isEmpty() )
-    {
-        for ( int ii = 0; ii < recentProjects.size(); ++ii )
-        {
-            if ( QFile( recentProjects[ ii ] ).exists() )
-            {
-                auto project = recentProjects[ ii ];
-                QTimer::singleShot( 0, [this, project]()
-                                    {
-                                        loadFile( project );
-                                    } );
-                found = true;
-                break;
-            }
-        }
-    }
-    if ( !found )
-    {
-        QTimer::singleShot( 0, this, &CMainWindow::slotSettings );
-    }
     slotSetCurrentMediaItem( QModelIndex() );
+
+    if ( CSettings::loadLastProject() )
+        QTimer::singleShot( 0, this, &CMainWindow::slotLoadLastProject );
+
+    if ( CSettings::checkForLatest() )
+        QTimer::singleShot( 0, this, &CMainWindow::slotCheckForLatest );
 }
 
 CMainWindow::~CMainWindow()

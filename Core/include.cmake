@@ -54,6 +54,7 @@ set(qtproject_UIS
 
 
 set(qtproject_QRC
+    Token.qrc
 )
 
 set( project_pub_DEPS

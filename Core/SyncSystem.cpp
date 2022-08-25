@@ -58,6 +58,8 @@ QString toString( ERequestType request )
         case ERequestType::eUpdateData: return "UpdateData";
         case ERequestType::eUpdateFavorite: return "UpdateFavorite";
         case ERequestType::eTestServer: return "TestServer";
+        case ERequestType::eDeleteConnectedID: return "DeleteConnectedID";
+        case ERequestType::eSetConnectedID: return "SetConnectedID";
     }
     return {};
 }
@@ -143,6 +145,11 @@ void CSyncSystem::setMergeMediaFunc( std::function< bool( std::shared_ptr< CProg
 void CSyncSystem::setGetAllMediaFunc( std::function< std::unordered_set< std::shared_ptr< CMediaData > >() > getAllMediaFunc )
 {
     fGetAllMediaFunc = getAllMediaFunc;
+}
+
+void CSyncSystem::setUpdateUserConnectIDFunc( std::function< void( const QString & serverName, const QString & userID, const QString & connectID ) > updateUserConnectID )
+{
+    fUpdateUserConnectID = updateUserConnectID;
 }
 
 void CSyncSystem::reset()
@@ -641,7 +648,8 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
         switch ( requestType )
         {
         case ERequestType::eGetUsers:
-            emit sigLoadingUsersFinished();
+            if ( isLastRequestOfType( ERequestType::eGetUsers ) )
+                emit sigLoadingUsersFinished();
             break;
         case ERequestType::eGetMediaList:
             emit sigUserMediaLoaded();
@@ -652,6 +660,8 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
         case ERequestType::eUpdateFavorite:
         case ERequestType::eTestServer:
             emit sigTestServerResults(serverName, false, errorMsg );
+        case ERequestType::eDeleteConnectedID:
+        case ERequestType::eSetConnectedID:
         default:
             break;
         }
@@ -674,9 +684,7 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
             handleGetUsersResponse( serverName, data );
 
             if ( isLastRequestOfType( ERequestType::eGetUsers ) )
-            {
                 emit sigLoadingUsersFinished();
-            }
         }
         break;
     case ERequestType::eGetMediaList:
@@ -727,6 +735,25 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
         }
         else
             emit sigTestServerResults( serverName, false, tr( "Internal error" ) );
+
+        break;
+    }
+    case ERequestType::eDeleteConnectedID:
+    {
+        auto tmp = extraData.toStringList();
+        Q_ASSERT( tmp.length() == 3 );
+
+        handleDeleteConnectedID( serverName, tmp[ 0 ], tmp[ 1 ], tmp[ 2 ], data );
+        break;
+    }
+    case ERequestType::eSetConnectedID:
+    {
+        auto tmp = extraData.toStringList();
+        Q_ASSERT( tmp.length() == 3 );
+
+        handleSetConnectedID( serverName, tmp[ 0 ], tmp[ 1 ], data );
+        //if ( isLastRequestOfType( ERequestType::eSetConnectedID ) )
+        //    emit sigLoadingUsersFinished();
 
         break;
     }
@@ -797,8 +824,77 @@ void CSyncSystem::handleGetUsersResponse( const QString & serverName, const QByt
         auto user = ii.toObject();
         loadUser( serverName, user );
     }
+
     fProgressSystem->popState();
     fProgressSystem->incProgress();
+}
+
+//void CSyncSystem::updateConnectedIDs( const QString & serverName )
+//{
+//    auto && users = fConnectedIDNeedsUpdate[ serverName ];
+//    for ( auto && ii : users )
+//    {
+//        requestDeleteConnectedID( serverName, ii );
+//    }
+//}
+
+void CSyncSystem::requestDeleteConnectedID( const QString & serverName, std::shared_ptr< CUserData > user )
+{
+    if ( !user )
+        return;
+
+    auto && url = fSettings->serverInfo( serverName )->getUrl( QString( "Users/%1/Connect/Link/Delete" ).arg( user->getUserID( serverName ) ), {} );
+    if ( !url.isValid() )
+        return;
+
+    //qDebug() << url;
+    auto request = QNetworkRequest( url );
+
+    emit sigAddToLog( EMsgType::eInfo, QString( "Deleting ConnectID for User '%1' from server '%2'" ).arg( user->userName( serverName ) ).arg( serverName ) );
+
+    auto reply = makeRequest( request );
+    setServerName( reply, serverName );
+    setRequestType( reply, ERequestType::eDeleteConnectedID );
+    setExtraData( reply, QStringList() << user->userName( serverName ) << user->getUserID( serverName ) << user->connectedID() );
+}
+
+void CSyncSystem::handleDeleteConnectedID( const QString & serverName, const QString & userName, const QString & userID, const QString & connectID, const QByteArray & data )
+{
+    qDebug() << data;
+    requestSetConnectedID( serverName, userName, userID, connectID );
+}
+
+void CSyncSystem::requestSetConnectedID( const QString & serverName, std::shared_ptr< CUserData > user )
+{
+    requestSetConnectedID( serverName, user->userName( serverName ), user->getUserID( serverName ), user->connectedID() );
+}
+
+void CSyncSystem::requestSetConnectedID( const QString & serverName, const QString & userName, const QString & userID, const QString & connectID )
+{
+    std::list< std::pair< QString, QString > > queryItems =
+    {
+        std::make_pair( "ConnectUsername ", connectID )
+    };
+
+    auto && url = fSettings->serverInfo( serverName )->getUrl( QString( "Users/%1/Connect/Link" ).arg( userID ), queryItems );
+    if ( !url.isValid() )
+        return;
+
+    //qDebug() << url;
+    auto request = QNetworkRequest( url );
+
+    emit sigAddToLog( EMsgType::eInfo, QString( "Setting ConnectID for User '%1' from server '%2' to '%3'" ).arg( userName ).arg( serverName ).arg( connectID ) );
+
+    auto reply = makeRequest( request );
+    setServerName( reply, serverName );
+    setRequestType( reply, ERequestType::eSetConnectedID );
+    setExtraData( reply, QStringList() << userID << connectID );
+}
+
+void CSyncSystem::handleSetConnectedID( const QString & serverName, const QString & userID, const QString & connectID, const QByteArray & data )
+{
+    qDebug() << data;
+    fUpdateUserConnectID( serverName, userID, connectID );
 }
 
 void CSyncSystem::requestGetMediaList( const QString & serverName )

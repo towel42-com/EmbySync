@@ -45,6 +45,7 @@ public:
     CUserData( const QString & serverName, const QString & name, const QString & connectedID, const QString & userID );
 
     QString connectedID() const { return fConnectedID; }
+    void setConnectedID( const QString & connectedID ) { fConnectedID = connectedID; }
 
     bool isValid() const;
     QString name( const QString & serverName ) const;
@@ -59,9 +60,11 @@ public:
     
     bool isUser( const QString & name ) const;
     bool isUser( const QRegularExpression & regEx ) const;
+    bool isUser( const QString & serverName, const QString & userID ) const;
 
- 
-   QTreeWidgetItem * getItem() const { return fItem; }
+    bool connectIDNeedsUpdate() const;
+
+    QTreeWidgetItem * getItem() const { return fItem; }
     void setItem( QTreeWidgetItem * item ) { fItem = item; }
 
     QString getUserID( const QString & serverName ) const;
