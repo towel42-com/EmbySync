@@ -307,7 +307,7 @@ void CMainWindow::slotCheckForLatest()
             NSABUtils::CDownloadGitHubAsset dlg( asset, this );
             if ( dlg.startDownload() && ( dlg.exec() == QDialog::Accepted ) && dlg.installAfterDownload() )
             {
-                QProcess::startDetached( dlg.getDownloadFile() );
+                QProcess::startDetached( dlg.getDownloadFile(), {} );
                 close();
             }
         }
