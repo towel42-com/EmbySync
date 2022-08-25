@@ -27,7 +27,8 @@ public:
     enum ECustomRoles
     {
         eShowItemRole=Qt::UserRole+1,
-        eConnectedIDRole
+        eConnectedIDRole,
+        eConnectedIDValidRole
     };
 
     CUsersModel( std::shared_ptr< CSettings > settings, QObject * parent );
@@ -59,12 +60,15 @@ public:
 
     std::shared_ptr< CUserData > loadUser( const QString & serverName, const QJsonObject & user );
     std::vector< std::shared_ptr< CUserData > > getAllUsers( bool sorted ) const;
+
+    bool hasUsersWithConnectedIDNeedingUpdate() const;
+    std::list< std::shared_ptr< CUserData > > usersWithConnectedIDNeedingUpdate() const;
 public Q_SLOTS:
     void slotSettingsChanged();
 private:
     void setupColumns();
     int serverNum( int columnNum ) const;
-    std::shared_ptr< CUserData > getUserData( const QString & name ) const;
+    std::shared_ptr< CUserData > getUserData( const QString & name, bool exhaustiveSearch=false ) const;
 
     QVariant getColor( const QModelIndex & index, bool background ) const;
         

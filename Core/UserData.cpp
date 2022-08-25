@@ -23,15 +23,16 @@
 #include "UserData.h"
 #include "Settings.h"
 #include "ServerInfo.h"
+#include "SABUtils/StringUtils.h"
 
 #include <QRegularExpression>
-
 
 CUserData::CUserData( const QString & serverName, const QString & name, const QString & connectedID, const QString & userID ) :
     fConnectedID( connectedID )
 {
     setName( serverName, name );
     setUserID( serverName, userID );
+    setConnectedID( serverName, connectedID );
 }
 
 std::shared_ptr< SUserServerData > CUserData::getServerInfo( const QString & serverName ) const
@@ -53,6 +54,14 @@ std::shared_ptr< SUserServerData > CUserData::getServerInfo( const QString & ser
     return retVal;
 }
 
+void CUserData::setConnectedID( const QString & serverName, const QString & connectedID )
+{
+    fConnectedID = connectedID;
+    auto retVal = getServerInfo( serverName );
+    if ( retVal )
+        retVal->fConnectedIDOnServer = connectedID;
+}
+
 bool CUserData::isValid() const
 {
     if ( !fConnectedID.isEmpty() )
@@ -63,6 +72,14 @@ bool CUserData::isValid() const
             return true;
     }
     return false;
+}
+
+QString CUserData::connectedID( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->fConnectedIDOnServer;
 }
 
 QString CUserData::name( const QString & serverName ) const
@@ -161,7 +178,7 @@ bool CUserData::isUser( const QRegularExpression & regEx ) const
 
 bool CUserData::isUser( const QString & name ) const
 {
-    if ( !name.isEmpty() )
+    if ( name.isEmpty() )
         return false;
 
     if ( connectedID() == name )
@@ -184,17 +201,9 @@ bool CUserData::isUser( const QString & serverName, const QString & userID ) con
     return ( *pos ).second->fUserID == userID;
 }
 
-bool CUserData::connectIDNeedsUpdate() const
+bool CUserData::connectedIDNeedsUpdate() const
 {
-    if ( fConnectedID.isEmpty() )
-        return false;
-    auto regExpStr = R"((?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\]))";
-    //auto regExpStr = R"(/(?(DEFINE)(?<address>(?&mailbox) | (?&group)) (? (?&name_addr) | (?&addr_spec)) (? (?&display_name)? (?&angle_addr)) (? (?&CFWS)? < (?&addr_spec) > (?&CFWS)?) (? (?&display_name) : (?:(?&mailbox_list) | (?&CFWS))? ; (?&CFWS)?) (? (?&phrase)) (? (?&mailbox) (?: , (?&mailbox))*) (? (?&local_part) \@ (?&domain)) (? (?&dot_atom) | (?&quoted_string)) (? (?&dot_atom) | (?&domain_literal)) (? (?&CFWS)? \[ (?: (?&FWS)? (?&dcontent))* (?&FWS)? \] (?&CFWS)?) (? (?&dtext) | (?&quoted_pair)) (? (?&NO_WS_CTL) | [\x21-\x5a\x5e-\x7e]) (? (?&ALPHA) | (?&DIGIT) | [!#\$%&'*+-/=?^_`{|}~]) (? (?&CFWS)? (?&atext)+ (?&CFWS)?) (? (?&CFWS)? (?&dot_atom_text) (?&CFWS)?) (? (?&atext)+ (?: \. (?&atext)+)*) (? [\x01-\x09\x0b\x0c\x0e-\x7f]) (? \\ (?&text)) (? (?&NO_WS_CTL) | [\x21\x23-\x5b\x5d-\x7e]) (? (?&qtext) | (?&quoted_pair)) (? (?&CFWS)? (?&DQUOTE) (?:(?&FWS)? (?&qcontent))* (?&FWS)? (?&DQUOTE) (?&CFWS)?) (? (?&atom) | (?&quoted_string)) (? (?&word)+) # Folding white space (? (?: (?&WSP)* (?&CRLF))? (?&WSP)+) (? (?&NO_WS_CTL) | [\x21-\x27\x2a-\x5b\x5d-\x7e]) (? (?&ctext) | (?&quoted_pair) | (?&comment)) (? \( (?: (?&FWS)? (?&ccontent))* (?&FWS)? \) ) (? (?: (?&FWS)? (?&comment))* (?: (?:(?&FWS)? (?&comment)) | (?&FWS))) # No whitespace control (? [\x01-\x08\x0b\x0c\x0e-\x1f\x7f]) (? [A-Za-z]) (? [0-9]) (? \x0d \x0a) (? ") (? [\x20\x09]) ) (?&address)/x</address>)";
-    QRegularExpression regExp( regExpStr );
-    Q_ASSERT( regExp.isValid() );
-    auto match = regExp.match( fConnectedID );
-    bool retVal = match.hasMatch() && ( match.capturedLength() == fConnectedID.length() );
-    return !retVal;
+    return !fConnectedID.isEmpty() && !NSABUtils::NStringUtils::isValidEmailAddress( fConnectedID );
 }
 
 bool CUserData::isMatch( const QRegularExpression & regEx, const QString & value ) const

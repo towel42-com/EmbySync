@@ -58,6 +58,7 @@ enum class ERequestType
 {
     eNone,
     eGetUsers,
+    eGetUser,
     eGetMediaList,
     eReloadMediaData,
     eUpdateData,
@@ -65,6 +66,14 @@ enum class ERequestType
     eTestServer,
     eDeleteConnectedID,
     eSetConnectedID
+};
+
+enum class ENetworkRequestType
+{
+    eNone,
+    eDeleteResource,
+    eGet,
+    ePost
 };
 
 QString toString( ERequestType request );
@@ -133,6 +142,10 @@ public:
     void updateUserDataForMedia( const QString & serverName, std::shared_ptr<CMediaData> mediaData, std::shared_ptr<SMediaUserData> newData );
 
     void selectiveProcess( const QString & selectedServer );
+
+    void repairConnectIDs( const std::list< std::shared_ptr< CUserData > > & users );
+    void setConnectedID( const QString & newID, std::shared_ptr< CUserData > & user );
+
 Q_SIGNALS:
     void sigAddToLog( int msgType, const QString & msg );
     void sigLoadingUsersFinished();
@@ -170,8 +183,9 @@ private Q_SLOTS:
     void slotSSlErrors( QNetworkReply * reply, const QList<QSslError> & errors );
 
     void slotCheckPendingRequests();
+    void slotRepairNextUser();
 private:
-    QNetworkReply * makeRequest( const QNetworkRequest & request );
+    QNetworkReply * makeRequest( const QNetworkRequest & request, ENetworkRequestType requestType = ENetworkRequestType::eGet, const QByteArray & data = {} );
 
     std::shared_ptr<CUserData> loadUser( const QString & serverName, const QJsonObject & user );
     std::shared_ptr< CMediaData> loadMedia( const QString & serverName, const QJsonObject & media );
@@ -182,6 +196,9 @@ private:
 
     void requestGetUsers( const QString & serverName );
     void handleGetUsersResponse( const QString & serverName, const QByteArray & data );
+
+    void requestGetUser( const QString & serverName, const QString & userID );
+    void handleGetUserResponse( const QString & serverName, const QByteArray & data );
 
     void requestGetMediaList( const QString & serverNameServer );
     void handleGetMediaListResponse( const QString & serverName, const QByteArray & data );
@@ -194,12 +211,11 @@ private:
 
     void requestTestServer( std::shared_ptr< const CServerInfo > serverInfo );
 
-    void requestDeleteConnectedID( const QString & serverName, std::shared_ptr< CUserData > user );
-    void handleDeleteConnectedID( const QString & serverName, const QString & userName, const QString & userID, const QString & connectID, const QByteArray & data );
+    void requestDeleteConnectedID( const QString & serverName );
+    void handleDeleteConnectedID( const QString & serverName );
 
-    void requestSetConnectedID( const QString & serverName, std::shared_ptr< CUserData > user );
-    void requestSetConnectedID( const QString & serverName, const QString & userName, const QString & userID, const QString & connectID );
-    void handleSetConnectedID( const QString & serverName, const QString & userID, const QString & connectID, const QByteArray & data );
+    void requestSetConnectedID( const QString & serverName );
+    void handleSetConnectedID( const QString & serverName );
 
     std::shared_ptr< CSettings > fSettings;
 
@@ -216,7 +232,7 @@ private:
     std::function< std::shared_ptr< CMediaData >( const QString & serverName, const QString & mediaID ) > fGetMediaDataForIDFunc;
     std::function< bool( std::shared_ptr< CProgressSystem > progessSystem ) > fMergeMediaFunc;
     std::function< std::unordered_set< std::shared_ptr< CMediaData > >() > fGetAllMediaFunc;
-    std::function< void( const QString & serverName, const QString & userID, const QString & connectID) > fUpdateUserConnectID;
+    std::function< void( const QString & serverName, const QString & userID, const QString & connectID ) > fUpdateUserConnectID;
 
     std::function< void( std::shared_ptr< CMediaData > mediaData ) > fProcessNewMediaFunc;
     std::function< void( const QString & title, const QString & msg, bool isCritical ) > fUserMsgFunc;
@@ -226,5 +242,7 @@ private:
     std::unordered_map< QString, TOptionalBoolPair > fLeftAndRightFinished;
     std::shared_ptr< CUserData > fCurrUserData;
     std::unordered_map< QString, std::shared_ptr< const CServerInfo > > fTestServers;
+    std::list< std::pair< QString, std::shared_ptr< CUserData > > > fUsersNeedingConnectIDUpdates;
+    std::pair< QString, std::shared_ptr< CUserData > > fCurrUserConnectID;
 };
 #endif
