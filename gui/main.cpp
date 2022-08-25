@@ -39,6 +39,7 @@ int main( int argc, char ** argv )
 
     NSABUtils::initResources();
     Q_INIT_RESOURCE( EmbySync );
+    Q_INIT_RESOURCE( Token );
 
     QApplication::setAttribute( Qt::AA_EnableHighDpiScaling );
     QApplication::setAttribute( Qt::AA_UseHighDpiPixmaps );

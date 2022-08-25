@@ -56,6 +56,7 @@ public:
     };
     CMainWindow( QWidget * parent = nullptr );
 
+
     virtual ~CMainWindow() override;
 
     virtual void closeEvent( QCloseEvent * closeEvent ) override;
@@ -77,6 +78,10 @@ public Q_SLOTS:
     void slotUserMediaCompletelyLoaded();
     void slotPendingMediaUpdate();
     void slotSelectiveProcess();
+
+    void slotLoadLastProject();
+    void slotCheckForLatest();
+
 private Q_SLOTS:
     void slotCurrentUserChanged( const QModelIndex & index );
     void slotUsersContextMenu( const QPoint & pos );
