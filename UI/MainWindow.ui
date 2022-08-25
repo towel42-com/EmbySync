@@ -111,6 +111,8 @@
     <addaction name="actionSettings"/>
     <addaction name="actionOnlyShowSyncableUsers"/>
     <addaction name="actionOnlyShowMediaWithDifferences"/>
+    <addaction name="separator"/>
+    <addaction name="actionCheckForLatestVersion"/>
    </widget>
    <widget class="QMenu" name="menuProcess">
     <property name="title">
@@ -169,7 +171,7 @@
      <normaloff>:/resources/settings.png</normaloff>:/resources/settings.png</iconset>
    </property>
    <property name="text">
-    <string>Edit Settings</string>
+    <string>Settings...</string>
    </property>
   </action>
   <action name="actionLoadSettings">
@@ -318,6 +320,14 @@
   <action name="actionRepairUserConnectedIDs">
    <property name="text">
     <string>Repair User Connected IDs</string>
+   </property>
+  </action>
+  <action name="actionCheckForLatestVersion">
+   <property name="text">
+    <string>Check for Latest Version...</string>
+   </property>
+   <property name="toolTip">
+    <string>Check for Latest Version...</string>
    </property>
   </action>
  </widget>

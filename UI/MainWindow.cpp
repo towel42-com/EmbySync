@@ -203,13 +203,18 @@ CMainWindow::CMainWindow( QWidget * parent )
     connect( fImpl->actionProcess, &QAction::triggered, fSyncSystem.get(), &CSyncSystem::slotProcess );
     connect( fImpl->actionSelectiveProcess, &QAction::triggered, this, &CMainWindow::slotSelectiveProcess );
 
+    connect( fImpl->actionCheckForLatestVersion, &QAction::triggered, this, &CMainWindow::slotActionCheckForLatest );
     slotSetCurrentMediaItem( QModelIndex() );
+
+    fGitHubVersion.first = new NSABUtils::CGitHubGetVersions( {}, this );
+    fGitHubVersion.first->setCurrentVersion( NVersion::MAJOR_VERSION, NVersion::MINOR_VERSION - 1, NVersion::buildDateTime() );
+    connect( fGitHubVersion.first, &NSABUtils::CGitHubGetVersions::sigVersionsDownloaded, this, &CMainWindow::slotVersionsDownloaded );
 
     if ( CSettings::loadLastProject() )
         QTimer::singleShot( 0, this, &CMainWindow::slotLoadLastProject );
 
-    //if ( CSettings::checkForLatest() )
-    //    QTimer::singleShot( 0, this, &CMainWindow::slotCheckForLatest );
+    if ( CSettings::checkForLatest() )
+        QTimer::singleShot( 0, this, &CMainWindow::slotCheckForLatest );
 }
 
 CMainWindow::~CMainWindow()
@@ -270,48 +275,62 @@ void CMainWindow::slotLoadLastProject()
     }
 }
 
-//void CMainWindow::slotCheckForLatest()
-//{
-//    //if ( !fi.open( QFile::ReadOnly ) )
-//    //    return;
-//    //auto len = fi.read( 1 )[ 0 ].operator char();
-//    //QByteArray token;
-//    //for ( char ii = 0; ii < len; ++ii )
-//    //{
-//    //    auto curr = fi.read( 1 )[ 0 ].operator char();
-//    //    curr += ii;
-//    //    token.push_back( curr );
-//    //}
-//
-//    NSABUtils::CGitHubGetVersions gitHubVersions( {} );
-//    gitHubVersions.setCurrentVersion( NVersion::MAJOR_VERSION, NVersion::MINOR_VERSION, NVersion::buildDateTime() );
-//    gitHubVersions.requestLatestVersion();
-//
-//    if ( gitHubVersions.hasError() )
-//    {
-//        QMessageBox::critical( this, tr( "Error Checking for Update" ), gitHubVersions.errorString() );
-//        return;
-//    }
-//
-//    if ( gitHubVersions.hasUpdate() && gitHubVersions.updateRelease()->getAssetForOS() )
-//    {
-//        auto update = gitHubVersions.updateRelease();
-//
-//        if ( QMessageBox::information( this, tr( "Update Available" ), tr( "There is an update available: '%1'\nWould you like to download it?" ).arg( update->getTitle() ), QMessageBox::Yes, QMessageBox::No ) == QMessageBox::Yes )
-//        {
-//            auto asset = update->getAssetForOS();
-//            if ( !asset )
-//                return;
-//
-//            NSABUtils::CDownloadGitHubAsset dlg( asset, this );
-//            if ( dlg.startDownload() && ( dlg.exec() == QDialog::Accepted ) && dlg.installAfterDownload() )
-//            {
-//                QProcess::startDetached( dlg.getDownloadFile(), {} );
-//                close();
-//            }
-//        }
-//    }
-//}
+void CMainWindow::slotCheckForLatest()
+{
+    checkForLatest( true );
+}
+
+void CMainWindow::slotActionCheckForLatest()
+{
+    checkForLatest( false );
+}
+
+void CMainWindow::checkForLatest( bool quiteIfUpToDate )
+{
+    //if ( !fi.open( QFile::ReadOnly ) )
+    //    return;
+    //auto len = fi.read( 1 )[ 0 ].operator char();
+    //QByteArray token;
+    //for ( char ii = 0; ii < len; ++ii )
+    //{
+    //    auto curr = fi.read( 1 )[ 0 ].operator char();
+    //    curr += ii;
+    //    token.push_back( curr );
+    //}
+
+    fGitHubVersion.second = quiteIfUpToDate;
+    fGitHubVersion.first->requestLatestVersion();
+}
+
+void CMainWindow::slotVersionsDownloaded()
+{
+    if ( fGitHubVersion.first->hasError() )
+    {
+        QMessageBox::critical( this, tr( "Error Checking for Update" ), fGitHubVersion.first->errorString() );
+        return;
+    }
+
+    if ( fGitHubVersion.first->hasUpdate() && fGitHubVersion.first->updateRelease()->getAssetForOS() )
+    {
+        auto update = fGitHubVersion.first->updateRelease();
+
+        if ( QMessageBox::information( this, tr( "Update Available" ), tr( "There is an update available: '%1'\nWould you like to download it?" ).arg( update->getTitle() ), QMessageBox::Yes, QMessageBox::No ) == QMessageBox::Yes )
+        {
+            auto asset = update->getAssetForOS();
+            if ( !asset )
+                return;
+
+            NSABUtils::CDownloadGitHubAsset dlg( asset, this );
+            if ( dlg.startDownload() && ( dlg.exec() == QDialog::Accepted ) && dlg.installAfterDownload() )
+            {
+                QProcess::startDetached( dlg.getDownloadFile(), {} );
+                close();
+            }
+        }
+    }
+    else if ( !fGitHubVersion.second )
+        QMessageBox::information( this, tr( "Latest Version" ), fGitHubVersion.first->updateVersion() );
+}
 
 void CMainWindow::reset()
 {

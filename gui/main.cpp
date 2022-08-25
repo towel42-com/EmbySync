@@ -27,6 +27,8 @@
 #include "SABUtils/SABUtilsResources.h"
 
 #include <QApplication>
+#include <QMessageBox>
+#include "SABUtils/ValidateOpenSSL.h"
 
 
 int main( int argc, char ** argv )
@@ -49,6 +51,13 @@ int main( int argc, char ** argv )
     appl.setOrganizationName( QString::fromStdString( NVersion::VENDOR ) );
     appl.setOrganizationDomain( QString::fromStdString( NVersion::HOMEPAGE ) );
     appl.setOrganizationDomain( "github.com/towel42-com/EmbySync" ); // QString::fromStdString( NVersion::HOMEPAGE ) );
+
+    auto aOK = NSABUtils::validateOpenSSL( true );
+    if ( !aOK.first )
+    {
+        QMessageBox::critical( nullptr, QObject::tr( "Could not find OpenSSL libraries" ), aOK.second );
+        return -1;
+    }
 
     CMainWindow mainWindow;
     mainWindow.setWindowTitle( QString::fromStdString( NVersion::getWindowTitle() ) );

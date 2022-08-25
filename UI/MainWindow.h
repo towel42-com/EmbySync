@@ -32,6 +32,8 @@ namespace Ui
 {
     class CMainWindow;
 }
+namespace NSABUtils{ class CGitHubGetVersions; }
+
 class CMediaData;
 class CUserData;
 class CSettings;
@@ -80,7 +82,8 @@ public Q_SLOTS:
     void slotSelectiveProcess();
 
     void slotLoadLastProject();
-    //void slotCheckForLatest();
+    void slotCheckForLatest();
+    void slotActionCheckForLatest();
 
 private Q_SLOTS:
     void slotCurrentUserChanged( const QModelIndex & index );
@@ -104,7 +107,10 @@ private Q_SLOTS:
     void slotViewMediaInfo();
     void slotSetConnectID();
     void slotAutoSetConnectID();
+    void slotVersionsDownloaded();
 private:
+    void checkForLatest( bool quiteIfUpToDate );
+
 
     std::shared_ptr< CMediaData > getMediaData( QModelIndex idx ) const;
         
@@ -145,7 +151,7 @@ private:
     QTimer * fMediaLoadedTimer{ nullptr };
 
     QPointer< CMediaWindow > fMediaWindow;
-
+    std::pair< NSABUtils::CGitHubGetVersions *, bool > fGitHubVersion{ nullptr, false };
     std::vector< CMediaTree * > fMediaTrees;
 
 };
