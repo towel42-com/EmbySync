@@ -71,6 +71,9 @@ QVariant CUsersModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
     if ( role == ECustomRoles::eConnectedIDRole )
         return userData->connectedID();
 
+    if ( role == ECustomRoles::eConnectedIDValidRole )
+        return !userData->connectedID().isEmpty() && !userData->connectedIDNeedsUpdate();
+
     //// reverse for black background
     if ( role == Qt::ForegroundRole )
     {
@@ -122,6 +125,27 @@ QVariant CUsersModel::headerData( int section, Qt::Orientation orientation, int 
     return ( *pos ).second.second->displayName();
 }
 
+bool CUsersModel::hasUsersWithConnectedIDNeedingUpdate() const
+{
+    for ( auto && ii : fUsers )
+    {
+        if ( ii->connectedIDNeedsUpdate() )
+            return true;
+    }
+    return false;
+}
+
+std::list< std::shared_ptr< CUserData > > CUsersModel::usersWithConnectedIDNeedingUpdate() const
+{
+    std::list< std::shared_ptr< CUserData > > retVal;
+    for ( auto && ii : fUsers )
+    {
+        if ( ii->connectedIDNeedsUpdate() )
+            retVal.push_back( ii );
+    }
+    return retVal;
+}
+
 QVariant CUsersModel::getColor( const QModelIndex & index, bool background ) const
 {
     if ( !index.isValid() )
@@ -130,7 +154,7 @@ QVariant CUsersModel::getColor( const QModelIndex & index, bool background ) con
     auto userData = fUsers[ index.row() ];
     if ( index.column() == eConnectedID )
     {
-        if ( userData->connectIDNeedsUpdate() )
+        if ( userData->connectedIDNeedsUpdate() )
             return fSettings->dataMissingColor( background );
     }
 
@@ -226,7 +250,7 @@ void CUsersModel::updateUserConnectID( const QString & serverName, const QString
     if ( !user )
         return;
 
-    user->setConnectedID( connectID );
+    user->setConnectedID( serverName, connectID );
     emit dataChanged( indexForUser( user, 0 ), indexForUser( user, columnCount() - 1 ) );
 }
 
@@ -239,16 +263,21 @@ void CUsersModel::clear()
     endResetModel();
 }
 
-std::shared_ptr< CUserData > CUsersModel::getUserData( const QString & name ) const
+std::shared_ptr< CUserData > CUsersModel::getUserData( const QString & name, bool exhaustiveSearch ) const
 {
     auto pos = fUserMap.find( name );
-    if ( pos == fUserMap.end() )
-        return {};
+    if ( pos != fUserMap.end() )
+        return ( *pos ).second;
+    if ( exhaustiveSearch )
+    {
+        for ( auto && ii : fUsers )
+        {
+            if ( ii->isUser( name ) )
+                return ii;
+        }
+    }
 
-    auto userData = ( *pos ).second;
-    if ( !userData )
-        return {};
-    return userData;
+    return {};
 }
 
 std::vector< std::shared_ptr< CUserData > > CUsersModel::getAllUsers( bool sorted ) const
@@ -283,7 +312,7 @@ std::shared_ptr< CUserData > CUsersModel::loadUser( const QString & serverName, 
 
     auto userData = getUserData( connectedID );
     if ( !userData )
-        userData = getUserData( currName );
+        userData = getUserData( currName, true );
 
     if ( !userData )
     {
@@ -297,15 +326,9 @@ std::shared_ptr< CUserData > CUsersModel::loadUser( const QString & serverName, 
     {
         userData->setName( serverName, currName );
         userData->setUserID( serverName, userID );
+        userData->setConnectedID( serverName, connectedID );
 
-        int ii = 0;
-        for ( ; ii < static_cast<int>( fUsers.size() ); ++ii )
-        {
-            if ( fUsers[ ii ] == userData )
-                break;
-        }
-        Q_ASSERT( ii != fUsers.size() );
-        dataChanged( index( ii, 0 ), index( ii, columnCount() - 1 ) );
+        emit dataChanged( indexForUser( userData, 0 ), indexForUser( userData, columnCount() - 1 ) );
     }
 
     return userData;

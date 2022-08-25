@@ -27,6 +27,7 @@
 #include "ServerInfo.h"
 #include "MediaData.h"
 #include "MediaUserData.h"
+#include "SABUtils/StringUtils.h"
 
 #include <unordered_set>
 
@@ -53,6 +54,7 @@ QString toString( ERequestType request )
     {
         case ERequestType::eNone: return "None";
         case ERequestType::eGetUsers: return "GetUsers";
+        case ERequestType::eGetUser: return "GetUser";
         case ERequestType::eGetMediaList: return "GetMediaList";
         case ERequestType::eReloadMediaData: return "ReloadMediaData";
         case ERequestType::eUpdateData: return "UpdateData";
@@ -341,8 +343,7 @@ void CSyncSystem::requestUpdateUserDataForMedia( const QString & serverName, std
     auto request = QNetworkRequest( url );
     request.setHeader( QNetworkRequest::ContentTypeHeader, "application/json" );
 
-    QNetworkReply * reply = nullptr;
-    reply = fManager->post( request, data );
+    auto reply = makeRequest( request, ENetworkRequestType::ePost, data );
 
     setServerName( reply, serverName );
     setExtraData( reply, mediaID );
@@ -369,12 +370,12 @@ void CSyncSystem::requestSetFavorite( const QString & serverName, std::shared_pt
 
     auto request = QNetworkRequest( url );
 
-    QByteArray data;
+
     QNetworkReply * reply = nullptr;
     if ( newData->fIsFavorite )
-        reply = fManager->post( request, data ); 
+        reply = makeRequest( request, ENetworkRequestType::ePost );
     else
-        reply = fManager->deleteResource( request );
+        reply = makeRequest( request, ENetworkRequestType::eDeleteResource );
 
     setServerName( reply, serverName );
     setExtraData( reply, mediaID );
@@ -561,7 +562,7 @@ void CSyncSystem::slotSSlErrors( QNetworkReply * /*reply*/, const QList<QSslErro
     //qDebug() << "slotSSlErrors: 0x" << Qt::hex << reply << errors;
 }
 
-QNetworkReply * CSyncSystem::makeRequest( const QNetworkRequest & request )
+QNetworkReply * CSyncSystem::makeRequest( const QNetworkRequest & request, ENetworkRequestType requestType, const QByteArray & data )
 {
     if ( !fPendingRequestTimer )
     {
@@ -571,7 +572,17 @@ QNetworkReply * CSyncSystem::makeRequest( const QNetworkRequest & request )
         connect( fPendingRequestTimer, &QTimer::timeout, this, &CSyncSystem::slotCheckPendingRequests );
     }
     fPendingRequestTimer->start();
-    return fManager->get( request );
+    switch ( requestType )
+    {
+        case ENetworkRequestType::eDeleteResource:
+            return fManager->deleteResource( request );
+        case ENetworkRequestType::ePost:
+            return fManager->post( request, data );
+        case ENetworkRequestType::eGet:
+            return fManager->get( request );
+        default:
+            return nullptr;
+    }
 }
 
 std::shared_ptr< CMediaData > CSyncSystem::loadMedia( const QString & serverName, const QJsonObject & media )
@@ -651,6 +662,8 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
             if ( isLastRequestOfType( ERequestType::eGetUsers ) )
                 emit sigLoadingUsersFinished();
             break;
+        case ERequestType::eGetUser:
+            break;
         case ERequestType::eGetMediaList:
             emit sigUserMediaLoaded();
             break;
@@ -686,6 +699,9 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
             if ( isLastRequestOfType( ERequestType::eGetUsers ) )
                 emit sigLoadingUsersFinished();
         }
+        break;
+    case ERequestType::eGetUser:
+        handleGetUserResponse( serverName, data );
         break;
     case ERequestType::eGetMediaList:
         if ( !fProgressSystem->wasCanceled() )
@@ -740,21 +756,12 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
     }
     case ERequestType::eDeleteConnectedID:
     {
-        auto tmp = extraData.toStringList();
-        Q_ASSERT( tmp.length() == 3 );
-
-        handleDeleteConnectedID( serverName, tmp[ 0 ], tmp[ 1 ], tmp[ 2 ], data );
+        handleDeleteConnectedID( serverName );
         break;
     }
     case ERequestType::eSetConnectedID:
     {
-        auto tmp = extraData.toStringList();
-        Q_ASSERT( tmp.length() == 3 );
-
-        handleSetConnectedID( serverName, tmp[ 0 ], tmp[ 1 ], data );
-        //if ( isLastRequestOfType( ERequestType::eSetConnectedID ) )
-        //    emit sigLoadingUsersFinished();
-
+        handleSetConnectedID( serverName );
         break;
     }
     }
@@ -829,72 +836,149 @@ void CSyncSystem::handleGetUsersResponse( const QString & serverName, const QByt
     fProgressSystem->incProgress();
 }
 
-//void CSyncSystem::updateConnectedIDs( const QString & serverName )
-//{
-//    auto && users = fConnectedIDNeedsUpdate[ serverName ];
-//    for ( auto && ii : users )
-//    {
-//        requestDeleteConnectedID( serverName, ii );
-//    }
-//}
 
-void CSyncSystem::requestDeleteConnectedID( const QString & serverName, std::shared_ptr< CUserData > user )
+
+void CSyncSystem::requestGetUser( const QString & serverName, const QString & userID )
 {
-    if ( !user )
+    emit sigAddToLog( EMsgType::eInfo, tr( "Loading users from server '%1'" ).arg( serverName ) );;
+    auto && url = fSettings->serverInfo( serverName )->getUrl( QString( "Users/%1" ).arg( userID ), {} );
+    if ( !url.isValid() )
         return;
 
-    auto && url = fSettings->serverInfo( serverName )->getUrl( QString( "Users/%1/Connect/Link/Delete" ).arg( user->getUserID( serverName ) ), {} );
+    emit sigAddToLog( EMsgType::eInfo, tr( "Server URL: %1" ).arg( url.toString() ) );
+
+    auto request = QNetworkRequest( url );
+
+    auto reply = makeRequest( request );
+    setServerName( reply, serverName );
+    setRequestType( reply, ERequestType::eGetUser );
+}
+
+void CSyncSystem::handleGetUserResponse( const QString & serverName, const QByteArray & data )
+{
+    QJsonParseError error;
+    auto doc = QJsonDocument::fromJson( data, &error );
+    if ( error.error != QJsonParseError::NoError )
+    {
+        if ( fUserMsgFunc )
+            fUserMsgFunc( tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ), true );
+        return;
+    }
+
+    //qDebug() << doc.toJson();
+
+    emit sigAddToLog( EMsgType::eInfo, QString( "Reloading user on server %1" ).arg( serverName ) );
+
+    auto user = doc.object();
+    loadUser( serverName, user );
+}
+
+void CSyncSystem::repairConnectIDs( const std::list< std::shared_ptr< CUserData > > & users )
+{
+    auto needsTimer = fUsersNeedingConnectIDUpdates.empty();
+
+    for ( auto && ii : users )
+    {
+        fUsersNeedingConnectIDUpdates.push_back( { ii->connectedID(), ii } );
+    }
+
+    if ( needsTimer )
+        QTimer::singleShot( 0, [this]() { slotRepairNextUser(); } );
+}
+
+void CSyncSystem::setConnectedID( const QString & connectedID, std::shared_ptr< CUserData > & user )
+{
+    auto needsTimer = fUsersNeedingConnectIDUpdates.empty();
+
+    fUsersNeedingConnectIDUpdates.push_back( { connectedID, user } );
+
+    if ( needsTimer )
+        QTimer::singleShot( 0, [this]() { slotRepairNextUser(); } );
+}
+
+void CSyncSystem::slotRepairNextUser()
+{
+    if ( fUsersNeedingConnectIDUpdates.empty() )
+        return;
+
+    fCurrUserConnectID = fUsersNeedingConnectIDUpdates.front();
+    fUsersNeedingConnectIDUpdates.pop_front();
+
+    QStringList servers;
+    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    {
+        auto serverName = fSettings->serverInfo( ii )->keyName();
+        if ( !fCurrUserConnectID.second->onServer( serverName ) )
+            continue;
+
+        auto connectedIDOnServer = fCurrUserConnectID.second->connectedID( serverName );
+        if ( connectedIDOnServer.isEmpty() )
+            requestSetConnectedID( serverName );
+        else if ( !NSABUtils::NStringUtils::isValidEmailAddress( connectedIDOnServer ) )
+            servers << serverName;
+    }
+    for ( auto && server : servers )
+    {
+        requestDeleteConnectedID( server );
+    }
+}
+
+void CSyncSystem::requestDeleteConnectedID( const QString & serverName )
+{
+    if ( !fCurrUserConnectID.second )
+        return;
+
+    auto && url = fSettings->serverInfo( serverName )->getUrl( QString( "Users/%1/Connect/Link" ).arg( fCurrUserConnectID.second->getUserID( serverName ) ), {} );
     if ( !url.isValid() )
         return;
 
     //qDebug() << url;
     auto request = QNetworkRequest( url );
 
-    emit sigAddToLog( EMsgType::eInfo, QString( "Deleting ConnectID for User '%1' from server '%2'" ).arg( user->userName( serverName ) ).arg( serverName ) );
+    emit sigAddToLog( EMsgType::eInfo, QString( "Deleting ConnectID for User '%1' from server '%2'" ).arg( fCurrUserConnectID.second->userName( serverName ) ).arg( serverName ) );
 
-    auto reply = makeRequest( request );
+    auto reply = makeRequest( request, ENetworkRequestType::eDeleteResource );
     setServerName( reply, serverName );
     setRequestType( reply, ERequestType::eDeleteConnectedID );
-    setExtraData( reply, QStringList() << user->userName( serverName ) << user->getUserID( serverName ) << user->connectedID() );
 }
 
-void CSyncSystem::handleDeleteConnectedID( const QString & serverName, const QString & userName, const QString & userID, const QString & connectID, const QByteArray & data )
+void CSyncSystem::handleDeleteConnectedID( const QString & serverName )
 {
-    qDebug() << data;
-    requestSetConnectedID( serverName, userName, userID, connectID );
+    requestSetConnectedID( serverName );
 }
 
-void CSyncSystem::requestSetConnectedID( const QString & serverName, std::shared_ptr< CUserData > user )
+void CSyncSystem::requestSetConnectedID( const QString & serverName  )
 {
-    requestSetConnectedID( serverName, user->userName( serverName ), user->getUserID( serverName ), user->connectedID() );
-}
+    if ( !fCurrUserConnectID.second )
+        return;
 
-void CSyncSystem::requestSetConnectedID( const QString & serverName, const QString & userName, const QString & userID, const QString & connectID )
-{
     std::list< std::pair< QString, QString > > queryItems =
     {
-        std::make_pair( "ConnectUsername ", connectID )
+        std::make_pair( "ConnectUsername", fCurrUserConnectID.first )
     };
 
-    auto && url = fSettings->serverInfo( serverName )->getUrl( QString( "Users/%1/Connect/Link" ).arg( userID ), queryItems );
+    auto && url = fSettings->serverInfo( serverName )->getUrl( QString( "Users/%1/Connect/Link" ).arg( fCurrUserConnectID.second->getUserID( serverName ) ), queryItems );
     if ( !url.isValid() )
         return;
+
 
     //qDebug() << url;
     auto request = QNetworkRequest( url );
 
-    emit sigAddToLog( EMsgType::eInfo, QString( "Setting ConnectID for User '%1' from server '%2' to '%3'" ).arg( userName ).arg( serverName ).arg( connectID ) );
+    emit sigAddToLog( EMsgType::eInfo, QString( "Setting ConnectID for User '%1' from server '%2' to '%3'" ).arg( fCurrUserConnectID.second->userName( serverName ) ).arg( serverName ).arg( fCurrUserConnectID.first ) );
 
-    auto reply = makeRequest( request );
+    auto reply = makeRequest( request, ENetworkRequestType::ePost );
     setServerName( reply, serverName );
     setRequestType( reply, ERequestType::eSetConnectedID );
-    setExtraData( reply, QStringList() << userID << connectID );
 }
 
-void CSyncSystem::handleSetConnectedID( const QString & serverName, const QString & userID, const QString & connectID, const QByteArray & data )
+void CSyncSystem::handleSetConnectedID( const QString & serverName )
 {
-    qDebug() << data;
-    fUpdateUserConnectID( serverName, userID, connectID );
+    if ( !fCurrUserConnectID.second )
+        return;
+
+    requestGetUser( serverName, fCurrUserConnectID.second->getUserID( serverName ) );
+    fUpdateUserConnectID( serverName, fCurrUserConnectID.second->getUserID( serverName ), fCurrUserConnectID.second->connectedID() );
 }
 
 void CSyncSystem::requestGetMediaList( const QString & serverName )
