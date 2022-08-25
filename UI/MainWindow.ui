@@ -116,6 +116,8 @@
     <property name="title">
      <string>Process</string>
     </property>
+    <addaction name="actionRepairUserConnectedIDs"/>
+    <addaction name="separator"/>
     <addaction name="actionProcess"/>
     <addaction name="actionSelectiveProcess"/>
    </widget>
@@ -311,6 +313,11 @@
    </property>
    <property name="toolTip">
     <string>Save As..</string>
+   </property>
+  </action>
+  <action name="actionRepairUserConnectedIDs">
+   <property name="text">
+    <string>Repair User Connected IDs</string>
    </property>
   </action>
  </widget>

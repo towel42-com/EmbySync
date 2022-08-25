@@ -79,10 +79,11 @@ public Q_SLOTS:
     void slotSelectiveProcess();
 private Q_SLOTS:
     void slotCurrentUserChanged( const QModelIndex & index );
-
+    void slotUsersContextMenu( const QPoint & pos );
+    void slotRepairUserConnectedIDs();
     void slotReloadServers();
     void slotReloadCurrentUser();
-    
+
     void slotToggleOnlyShowSyncableUsers();
     void slotToggleOnlyShowMediaWithDifferences();
     void slotToggleShowMediaWithIssues();
@@ -96,7 +97,8 @@ private Q_SLOTS:
     void slotViewMedia( const QModelIndex & current );
 
     void slotViewMediaInfo();
-
+    void slotSetConnectID();
+    void slotAutoSetConnectID();
 private:
 
     std::shared_ptr< CMediaData > getMediaData( QModelIndex idx ) const;

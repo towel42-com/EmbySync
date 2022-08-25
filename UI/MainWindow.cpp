@@ -74,11 +74,14 @@ CMainWindow::CMainWindow( QWidget * parent )
     connect( this, &CMainWindow::sigDataChanged, this, &CMainWindow::slotDataChanged );
 
     connect( fImpl->actionViewMediaInformation, &QAction::triggered, this, &CMainWindow::slotViewMediaInfo );
-
+    connect( fImpl->actionRepairUserConnectedIDs, &QAction::triggered, this, &CMainWindow::slotRepairUserConnectedIDs );
     fImpl->users->setModel( fUsersFilterModel );
 #ifdef NDEBUG
     fImpl->users->setColumnHidden( CUsersModel::eAllNames, true );
 #endif
+
+    fImpl->users->setContextMenuPolicy( Qt::ContextMenuPolicy::CustomContextMenu );
+    connect( fImpl->users, &QTreeView::customContextMenuRequested, this, &CMainWindow::slotUsersContextMenu );
 
 
     fMediaFilterModel->sort( -1, Qt::SortOrder::AscendingOrder );
@@ -255,6 +258,70 @@ void CMainWindow::slotSettings()
     }
 }
 
+void CMainWindow::slotLoadLastProject()
+{
+    auto recentProjects = fSettings->recentProjectList();
+    if ( !recentProjects.isEmpty() )
+    {
+        for ( int ii = 0; ii < recentProjects.size(); ++ii )
+        {
+            if ( QFile( recentProjects[ ii ] ).exists() )
+            {
+                auto project = recentProjects[ ii ];
+                QTimer::singleShot( 0, [ this, project ]()
+                    {
+                        loadFile( project );
+                    } );
+                break;
+            }
+        }
+    }
+}
+
+void CMainWindow::slotCheckForLatest()
+{
+    QFile fi( ":/token.bin" );
+    if ( !fi.open( QFile::ReadOnly ) )
+        return;
+    auto len = fi.read( 1 )[ 0 ].operator char();
+    QByteArray token;
+    for ( char ii = 0; ii < len; ++ii )
+    {
+        auto curr = fi.read( 1 )[ 0 ].operator char();
+        curr += ii;
+        token.push_back( curr );
+    }
+
+    NSABUtils::CGitHubGetVersions gitHubVersions( token );
+    gitHubVersions.setCurrentVersion( NVersion::MAJOR_VERSION, NVersion::MINOR_VERSION - 1, NVersion::buildDateTime() );
+    gitHubVersions.requestLatestVersion();
+
+    if ( gitHubVersions.hasError() )
+    {
+        QMessageBox::critical( this, tr( "Error Checking for Update" ), gitHubVersions.errorString() );
+        return;
+    }
+
+    if ( gitHubVersions.hasUpdate() && gitHubVersions.updateRelease()->getAssetForOS() )
+    {
+        auto update = gitHubVersions.updateRelease();
+
+        if ( QMessageBox::information( this, tr( "Update Available" ), tr( "There is an update available: '%1'\nWould you like to download it?" ).arg( update->getTitle() ), QMessageBox::Yes, QMessageBox::No ) == QMessageBox::Yes )
+        {
+            auto asset = update->getAssetForOS();
+            if ( !asset )
+                return;
+
+            NSABUtils::CDownloadGitHubAsset dlg( asset, this );
+            if ( dlg.startDownload() && ( dlg.exec() == QDialog::Accepted ) && dlg.installAfterDownload() )
+            {
+                QProcess::startDetached( dlg.getDownloadFile() );
+                close();
+            }
+        }
+    }
+}
+
 void CMainWindow::reset()
 {
     resetServers();
@@ -351,12 +418,14 @@ void CMainWindow::slotDataChanged()
     bool hasCurrentUser = fImpl->users->selectionModel()->currentIndex().isValid();
     bool canSync = fSettings->canSync();
     bool hasDataToProcess = canSync && fMediaModel->hasMediaToProcess();
+    bool hasUsersNeedingFixing = fUsersModel->hasUsersWithConnectedIDNeedingUpdate();
 
     fImpl->actionReloadServers->setEnabled( canSync );
     fImpl->actionReloadCurrentUser->setEnabled( canSync && hasCurrentUser );
 
     fImpl->actionProcess->setEnabled( hasDataToProcess );
     fImpl->actionSelectiveProcess->setEnabled( hasDataToProcess );
+    fImpl->actionRepairUserConnectedIDs->setEnabled( hasUsersNeedingFixing );
 }
 
 void CMainWindow::slotLoadingUsersFinished()
@@ -708,4 +777,64 @@ void CMainWindow::slotSelectiveProcess()
     if ( pos == servers.end() )
         return;
     fSyncSystem->selectiveProcess( (*pos).second );
+}
+
+void CMainWindow::slotRepairUserConnectedIDs()
+{
+    auto users = fUsersModel->usersWithConnectedIDNeedingUpdate();
+    fSyncSystem->repairConnectIDs( users );
+}
+
+void CMainWindow::slotSetConnectID()
+{
+    auto currIdx = fImpl->users->currentIndex();
+    if ( !currIdx.isValid() )
+        return;
+
+    auto userData = getUserData( currIdx );
+    if ( !userData )
+        return;
+    
+    auto newConnectedID = QInputDialog::getText( this, tr( "Enter Connect ID" ), tr( "Connect ID:" ), QLineEdit::Normal, userData->connectedID() );
+    if ( newConnectedID.isEmpty() || ( newConnectedID == userData->connectedID() ) )
+        return;
+
+    fSyncSystem->setConnectedID( newConnectedID, userData );
+ }
+
+void CMainWindow::slotAutoSetConnectID()
+{
+    auto currIdx = fImpl->users->currentIndex();
+    if ( !currIdx.isValid() )
+        return;
+
+    auto userData = getUserData( currIdx );
+    if ( !userData )
+        return;
+
+    fSyncSystem->repairConnectIDs( { userData } );
+}
+
+void CMainWindow::slotUsersContextMenu( const QPoint & pos )
+{
+    auto idx = fImpl->users->indexAt( pos );
+    if ( !idx.isValid() )
+        return;
+
+    auto userData = getUserData( idx );
+    if ( !userData )
+        return;
+
+    QMenu menu( tr( "Context Menu" ) );
+
+    QAction action( "Set Connect ID" );
+    menu.addAction( &action );
+    connect( &action, &QAction::triggered, this, &CMainWindow::slotSetConnectID );
+
+    QAction action2( "AutoSet Connect ID" );
+    menu.addAction( &action2 );
+    action2.setEnabled( userData->connectedIDNeedsUpdate() );
+    connect( &action2, &QAction::triggered, this, &CMainWindow::slotAutoSetConnectID );
+
+    menu.exec( fImpl->users->mapToGlobal( pos ) );
 }
