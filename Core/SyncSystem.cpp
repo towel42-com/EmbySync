@@ -851,7 +851,7 @@ void CSyncSystem::handleGetServerInfoResponse( const QString & serverName, const
         return;
     }
 
-    qDebug() << doc.toJson();
+    //qDebug() << doc.toJson();
     auto serverInfo = doc.object();
 
     fSettings->updateServerInfo( serverName, serverInfo );
