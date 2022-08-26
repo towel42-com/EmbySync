@@ -307,7 +307,7 @@ bool CSettings::save( std::function<void( const QString & title, const QString &
     return true;
 }
 
-bool CSettings::canSync() const
+bool CSettings::canAllServersSync() const
 {
     for ( auto && ii : fServers )
     {
@@ -315,6 +315,16 @@ bool CSettings::canSync() const
             return false;
     }
     return true;
+}
+
+bool CSettings::canAnyServerSync() const
+{
+    for ( auto && ii : fServers )
+    {
+        if ( ii->canSync() )
+            return true;
+    }
+    return false;
 }
 
 QColor CSettings::getColor( const QColor & clr, bool forBackground /*= true */ ) const
@@ -527,7 +537,7 @@ bool CSettings::loadServer( const QJsonObject & obj, QString & errorMsg )
     if ( !serverInfo )
         return false;
 
-    if ( this->serverInfo( serverInfo->keyName() ) )
+    if ( this->findServerInfo( serverInfo->keyName() ) )
     {
         errorMsg = QString( "Server %1(%2)' already exists" ).arg( serverInfo->displayName() ).arg( serverInfo->keyName() );
         return false;
@@ -558,7 +568,7 @@ std::shared_ptr< const CServerInfo > CSettings::serverInfo( int serverNum ) cons
     return fServers[ serverNum ];
 }
 
-std::shared_ptr< const CServerInfo > CSettings::serverInfo( const QString & serverName ) const
+std::shared_ptr< const CServerInfo > CSettings::findServerInfo( const QString & serverName ) const
 {
     auto pos = fServerMap.find( serverName );
     if ( pos != fServerMap.end() )
@@ -566,7 +576,7 @@ std::shared_ptr< const CServerInfo > CSettings::serverInfo( const QString & serv
     return {};
 }
 
-std::shared_ptr< const CServerInfo > CSettings::serverInfo( const QString & serverName )
+std::shared_ptr< const CServerInfo > CSettings::findServerInfo( const QString & serverName )
 {
     auto pos = fServerMap.find( serverName );
     if ( pos != fServerMap.end() )
@@ -574,7 +584,16 @@ std::shared_ptr< const CServerInfo > CSettings::serverInfo( const QString & serv
     return {};
 }
 
-std::shared_ptr< CServerInfo > CSettings::serverInfoInternal( const QString & serverName )
+void CSettings::updateServerInfo( const QString & serverName, const QJsonObject & serverData )
+{
+    auto serverInfo = findServerInfoInternal( serverName );
+    if ( !serverInfo )
+        return;
+
+    serverInfo->update( serverData );
+}
+
+std::shared_ptr< CServerInfo > CSettings::findServerInfoInternal( const QString & serverName )
 {
     auto pos = fServerMap.find( serverName );
     if ( pos != fServerMap.end() )
@@ -589,14 +608,14 @@ int CSettings::serverCnt() const
 
 void CSettings::setAPIKey( const QString & serverName, const QString & apiKey )
 {
-    auto serverInfo = this->serverInfoInternal( serverName );
+    auto serverInfo = this->findServerInfoInternal( serverName );
     if ( serverInfo->setAPIKey( apiKey ) )
         fChanged = true;
 }
 
 void CSettings::changeServerDisplayName( const QString & newServerName, const QString & oldServerName )
 {
-    auto serverInfo = this->serverInfoInternal( oldServerName );
+    auto serverInfo = this->findServerInfoInternal( oldServerName );
     if ( serverInfo )
     {
         if ( serverInfo->setDisplayName( newServerName, false ) )
@@ -610,7 +629,7 @@ void CSettings::changeServerDisplayName( const QString & newServerName, const QS
 
 void CSettings::setURL( const QString & serverName, const QString & url )
 {
-    auto serverInfo = this->serverInfoInternal( serverName );
+    auto serverInfo = this->findServerInfoInternal( serverName );
     if ( serverInfo->setUrl( url ) )
         fChanged = true;
 }

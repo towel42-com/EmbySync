@@ -209,6 +209,7 @@ CMainWindow::CMainWindow( QWidget * parent )
     fGitHubVersion.first = new NSABUtils::CGitHubGetVersions( {}, this );
     fGitHubVersion.first->setCurrentVersion( NVersion::MAJOR_VERSION, NVersion::MINOR_VERSION, NVersion::buildDateTime() );
     connect( fGitHubVersion.first, &NSABUtils::CGitHubGetVersions::sigVersionsDownloaded, this, &CMainWindow::slotVersionsDownloaded );
+    connect( fGitHubVersion.first, &NSABUtils::CGitHubGetVersions::sigLogMessage, this, &CMainWindow::slotAddInfoToLog );
 
     if ( CSettings::loadLastProject() )
         QTimer::singleShot( 0, this, &CMainWindow::slotLoadLastProject );
@@ -287,17 +288,6 @@ void CMainWindow::slotActionCheckForLatest()
 
 void CMainWindow::checkForLatest( bool quiteIfUpToDate )
 {
-    //if ( !fi.open( QFile::ReadOnly ) )
-    //    return;
-    //auto len = fi.read( 1 )[ 0 ].operator char();
-    //QByteArray token;
-    //for ( char ii = 0; ii < len; ++ii )
-    //{
-    //    auto curr = fi.read( 1 )[ 0 ].operator char();
-    //    curr += ii;
-    //    token.push_back( curr );
-    //}
-
     fGitHubVersion.second = quiteIfUpToDate;
     fGitHubVersion.first->requestLatestVersion();
 }
@@ -426,7 +416,7 @@ void CMainWindow::loadSettings()
 void CMainWindow::slotDataChanged()
 {
     bool hasCurrentUser = fImpl->users->selectionModel()->currentIndex().isValid();
-    bool canSync = fSettings->canSync();
+    bool canSync = fSettings->canAnyServerSync();
     bool hasDataToProcess = canSync && fMediaModel->hasMediaToProcess();
     bool hasUsersNeedingFixing = fUsersModel->hasUsersWithConnectedIDNeedingUpdate();
 
@@ -448,6 +438,7 @@ void CMainWindow::slotLoadingUsersFinished()
 void CMainWindow::slotReloadServers()
 {
     resetServers();
+    fSyncSystem->loadServers();
     fSyncSystem->loadUsers();
 }
 
@@ -568,6 +559,11 @@ void CMainWindow::slotAddToLog( int msgType, const QString & msg )
     fImpl->statusbar->showMessage( fullMsg, 500 );
 }
 
+void CMainWindow::slotAddInfoToLog( const QString & msg )
+{
+    slotAddToLog( EMsgType::eInfo, msg );
+}
+
 void CMainWindow::progressReset()
 {
     if ( fProgressDlg )
@@ -662,6 +658,8 @@ void CMainWindow::loadServers()
     for ( auto && ii : fMediaTrees )
         delete ii;
     fMediaTrees.clear();
+
+    fSyncSystem->loadServers();
 
     for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
     {

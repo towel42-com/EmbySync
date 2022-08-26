@@ -23,7 +23,7 @@
 #include "ServerInfo.h"
 #include <QUrlQuery>
 #include <QJsonObject>
-
+#include <QJsonArray>
 
 CServerInfo::CServerInfo( const QString & name, const QString & url, const QString & apiKey, bool enabled ) :
     fName( { name, false } ),
@@ -99,12 +99,20 @@ QUrl CServerInfo::getUrl( const QString & extraPath, const std::list< std::pair<
     return retVal;
 }
 
-QString CServerInfo::displayName() const
+QString CServerInfo::displayName( bool verbose ) const
 {
-    if ( !fName.first.isEmpty() )
-        return fName.first;
-    else
-        return keyName();
+    QString name;
+
+    if ( !fServerName.isEmpty() )
+        name = fServerName;
+    else if ( !fName.first.isEmpty() )
+        name = fName.first;
+    else 
+        name = keyName();
+    if ( !verbose )
+        return name;
+    name += tr( " - %1" ).arg( getUrl().toString( QUrl::RemoveUserInfo | QUrl::RemoveQuery ) );
+    return name;
 }
 
 QString CServerInfo::keyName() const
@@ -198,5 +206,23 @@ bool CServerInfo::setIsEnabled( bool isEnabled )
         return false;
     fIsEnabled = isEnabled;
     return true;
+}
+
+void CServerInfo::update( const QJsonObject & serverData )
+{
+    fLocalAddress = serverData[ "LocalAddress" ].toString();
+    auto addresses = serverData[ "LocalAddresses" ].toArray();
+    for ( auto && ii : addresses )
+        fLocalAddresses.push_back( ii.toString() );
+    fWANAddress = serverData[ "WANAddress" ].toString();
+    addresses = serverData[ "WANAddresses" ].toArray();
+    for ( auto && ii : addresses )
+        fWANAddresses.push_back( ii.toString() );
+
+    fServerName = serverData[ "ServerName" ].toString();
+    fVersion = serverData[ "Version" ].toString();
+    fID = serverData[ "Id" ].toString();
+
+    emit sigServerInfoChanged();
 }
 

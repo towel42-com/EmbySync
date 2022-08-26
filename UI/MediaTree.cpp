@@ -36,8 +36,10 @@ CMediaTree::CMediaTree( const std::shared_ptr< const CServerInfo > & serverInfo,
 {
     fImpl->setupUi( this );
     fImpl->media->setExpandsOnDoubleClick( false );
-    fImpl->serverLabel->setText( tr( "Server: <a href=\"%1\">%2 - %1</a>" ).arg( serverInfo->getUrl().toString( QUrl::RemoveUserInfo | QUrl::RemoveQuery ) ).arg( serverInfo->displayName() ) );
+    slotMediaInfoChanged();
     installEventFilter( this );
+
+    connect( serverInfo.get(), &CServerInfo::sigServerInfoChanged, this, &CMediaTree::slotMediaInfoChanged );
 }
 
 CMediaTree::~CMediaTree()
@@ -117,6 +119,11 @@ void CMediaTree::slotVActionTriggered( int action )
     {
         emit sigVSliderMoved( fImpl->media->verticalScrollBar()->value() );
     }
+}
+
+void CMediaTree::slotMediaInfoChanged()
+{
+    fImpl->serverLabel->setText( tr( "Server: <a href=\"%1\">%2</a>" ).arg( fServerInfo->getUrl().toString( QUrl::RemoveQuery ) ).arg( fServerInfo->displayName( true ) ) );
 }
 
 void CMediaTree::hideColumns()

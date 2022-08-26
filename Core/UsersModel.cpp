@@ -27,6 +27,11 @@ void CUsersModel::setupColumns()
             continue;
         fServerNumToColumn[ ii ] = columnNum;
         fColumnToServerInfo[ columnNum ] = std::make_pair( ii, serverInfo );
+        connect( serverInfo.get(), &CServerInfo::sigServerInfoChanged,
+                 [this, serverInfo, ii]()
+                 {
+                     emit headerDataChanged( Qt::Orientation::Horizontal, ii, ii );
+                 } );
         columnNum++;
     }
 }

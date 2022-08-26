@@ -57,6 +57,7 @@ class CServerInfo;
 enum class ERequestType
 {
     eNone,
+    eGetServerInfo,
     eGetUsers,
     eGetUser,
     eGetMediaList,
@@ -129,23 +130,21 @@ public:
     void testServer( const QString & serverName );
 
     bool isRunning() const;
-
-    void loadUsers();
-
     void reset();
 
+    void loadServers();
+
+    void loadUsers();
     void loadUsersMedia( std::shared_ptr< CUserData > user );
     void clearCurrUser();
-
     std::shared_ptr< CUserData > currUser() const;
-
-    void updateUserDataForMedia( const QString & serverName, std::shared_ptr<CMediaData> mediaData, std::shared_ptr<SMediaUserData> newData );
-
-    void selectiveProcess( const QString & selectedServer );
 
     void repairConnectIDs( const std::list< std::shared_ptr< CUserData > > & users );
     void setConnectedID( const QString & newID, std::shared_ptr< CUserData > & user );
 
+    void updateUserDataForMedia( const QString & serverName, std::shared_ptr<CMediaData> mediaData, std::shared_ptr<SMediaUserData> newData );
+
+    void selectiveProcess( const QString & selectedServer );
 Q_SIGNALS:
     void sigAddToLog( int msgType, const QString & msg );
     void sigLoadingUsersFinished();
@@ -193,6 +192,9 @@ private:
     bool isLastRequestOfType( ERequestType type ) const;
 
     bool handleError( QNetworkReply * reply, const QString & serverName, QString & errorMsg, bool reportMsg );
+
+    void requestGetServerInfo( const QString & serverName );
+    void handleGetServerInfoResponse( const QString & serverName, const QByteArray & data );
 
     void requestGetUsers( const QString & serverName );
     void handleGetUsersResponse( const QString & serverName, const QByteArray & data );
