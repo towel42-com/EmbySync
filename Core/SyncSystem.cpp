@@ -53,6 +53,7 @@ QString toString( ERequestType request )
     switch ( request )
     {
         case ERequestType::eNone: return "None";
+        case ERequestType::eGetServerInfo: return "GetServerInfo";
         case ERequestType::eGetUsers: return "GetUsers";
         case ERequestType::eGetUser: return "GetUser";
         case ERequestType::eGetMediaList: return "GetMediaList";
@@ -159,9 +160,38 @@ void CSyncSystem::reset()
     fAttributes.clear();
 }
 
+void CSyncSystem::loadServers()
+{
+    if ( !fSettings->canAnyServerSync() )
+    {
+        if ( fUserMsgFunc )
+            fUserMsgFunc( tr( "Server Settings are not Setup" ), tr( "Server Settings are not setup.  Please fix and try again" ), true );
+        return;
+    }
+
+    fProgressSystem->setTitle( tr( "Loading Server Information" ) );
+    int enabledServers = 0;
+    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    {
+        auto serverInfo = fSettings->serverInfo( ii );
+        if ( !serverInfo->isEnabled() )
+            continue;
+        enabledServers++;
+    }
+    fProgressSystem->setMaximum( enabledServers );
+
+    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    {
+        auto serverInfo = fSettings->serverInfo( ii );
+        if ( !serverInfo->isEnabled() )
+            continue;
+        requestGetServerInfo( fSettings->serverInfo( ii )->keyName() );
+    }
+}
+
 void CSyncSystem::loadUsers()
 {
-    if ( !fSettings->canSync() )
+    if ( !fSettings->canAnyServerSync() )
     {
         if ( fUserMsgFunc )
             fUserMsgFunc( tr( "Server Settings are not Setup" ), tr( "Server Settings are not setup.  Please fix and try again" ), true );
@@ -328,7 +358,7 @@ void CSyncSystem::requestUpdateUserDataForMedia( const QString & serverName, std
     if ( userID.isEmpty() || mediaID.isEmpty() )
         return;
 
-    auto && url = fSettings->serverInfo( serverName )->getUrl( QString( "Users/%1/Items/%2/UserData" ).arg( userID ).arg( mediaID ), {} );
+    auto && url = fSettings->findServerInfo( serverName )->getUrl( QString( "Users/%1/Items/%2/UserData" ).arg( userID ).arg( mediaID ), {} );
     if ( !url.isValid() )
         return;
 
@@ -360,7 +390,7 @@ void CSyncSystem::requestSetFavorite( const QString & serverName, std::shared_pt
     if ( userID.isEmpty() || mediaID.isEmpty() )
         return;
 
-    auto && url = fSettings->serverInfo( serverName )->getUrl( QString( "Users/%1/FavoriteItems/%3" ).arg( userID ).arg( mediaID ), {} );
+    auto && url = fSettings->findServerInfo( serverName )->getUrl( QString( "Users/%1/FavoriteItems/%3" ).arg( userID ).arg( mediaID ), {} );
     if ( !url.isValid() )
         return;
 
@@ -494,7 +524,7 @@ void CSyncSystem::slotCheckPendingRequests()
 
 void CSyncSystem::testServer( const QString & serverName )
 {
-    auto serverInfo = fSettings->serverInfo( serverName );
+    auto serverInfo = fSettings->findServerInfo( serverName );
     if ( !serverInfo )
         return;
     testServer( serverInfo );
@@ -658,25 +688,27 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
     {
         switch ( requestType )
         {
-        case ERequestType::eGetUsers:
-            if ( isLastRequestOfType( ERequestType::eGetUsers ) )
-                emit sigLoadingUsersFinished();
-            break;
-        case ERequestType::eGetUser:
-            break;
-        case ERequestType::eGetMediaList:
-            emit sigUserMediaLoaded();
-            break;
-        case ERequestType::eNone:
-        case ERequestType::eReloadMediaData:
-        case ERequestType::eUpdateData:
-        case ERequestType::eUpdateFavorite:
-        case ERequestType::eTestServer:
-            emit sigTestServerResults(serverName, false, errorMsg );
-        case ERequestType::eDeleteConnectedID:
-        case ERequestType::eSetConnectedID:
-        default:
-            break;
+            case ERequestType::eGetServerInfo:
+                break;
+            case ERequestType::eGetUsers:
+                if ( isLastRequestOfType( ERequestType::eGetUsers ) )
+                    emit sigLoadingUsersFinished();
+                break;
+            case ERequestType::eGetUser:
+                break;
+            case ERequestType::eGetMediaList:
+                emit sigUserMediaLoaded();
+                break;
+            case ERequestType::eNone:
+            case ERequestType::eReloadMediaData:
+            case ERequestType::eUpdateData:
+            case ERequestType::eUpdateFavorite:
+            case ERequestType::eTestServer:
+                emit sigTestServerResults( serverName, false, errorMsg );
+            case ERequestType::eDeleteConnectedID:
+            case ERequestType::eSetConnectedID:
+            default:
+                break;
         }
 
         postHandleRequest( reply, serverName, requestType );
@@ -690,6 +722,9 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
     switch ( requestType )
     {
     case ERequestType::eNone:
+        break;
+    case ERequestType::eGetServerInfo:
+        handleGetServerInfoResponse( serverName, data );
         break;
     case ERequestType::eGetUsers:
         if ( !fProgressSystem->wasCanceled() )
@@ -789,10 +824,43 @@ void CSyncSystem::requestTestServer( std::shared_ptr< const CServerInfo > server
     setRequestType( reply, ERequestType::eTestServer );
 }
 
+void CSyncSystem::requestGetServerInfo( const QString & serverName )
+{
+    emit sigAddToLog( EMsgType::eInfo, tr( "Loading server information from server '%1'" ).arg( serverName ) );;
+    auto && url = fSettings->findServerInfo( serverName )->getUrl( "/System/Info/Public", {} );
+    if ( !url.isValid() )
+        return;
+
+    emit sigAddToLog( EMsgType::eInfo, tr( "Server URL: %1" ).arg( url.toString() ) );
+
+    auto request = QNetworkRequest( url );
+
+    auto reply = makeRequest( request );
+    setServerName( reply, serverName );
+    setRequestType( reply, ERequestType::eGetServerInfo );
+}
+
+void CSyncSystem::handleGetServerInfoResponse( const QString & serverName, const QByteArray & data )
+{
+    QJsonParseError error;
+    auto doc = QJsonDocument::fromJson( data, &error );
+    if ( error.error != QJsonParseError::NoError )
+    {
+        if ( fUserMsgFunc )
+            fUserMsgFunc( tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ), true );
+        return;
+    }
+
+    qDebug() << doc.toJson();
+    auto serverInfo = doc.object();
+
+    fSettings->updateServerInfo( serverName, serverInfo );
+}
+
 void CSyncSystem::requestGetUsers( const QString & serverName )
 {
     emit sigAddToLog( EMsgType::eInfo, tr( "Loading users from server '%1'" ).arg( serverName ) );;
-    auto && url = fSettings->serverInfo( serverName )->getUrl( "Users", {} );
+    auto && url = fSettings->findServerInfo( serverName )->getUrl( "Users", {} );
     if ( !url.isValid() )
         return;
 
@@ -841,7 +909,7 @@ void CSyncSystem::handleGetUsersResponse( const QString & serverName, const QByt
 void CSyncSystem::requestGetUser( const QString & serverName, const QString & userID )
 {
     emit sigAddToLog( EMsgType::eInfo, tr( "Loading users from server '%1'" ).arg( serverName ) );;
-    auto && url = fSettings->serverInfo( serverName )->getUrl( QString( "Users/%1" ).arg( userID ), {} );
+    auto && url = fSettings->findServerInfo( serverName )->getUrl( QString( "Users/%1" ).arg( userID ), {} );
     if ( !url.isValid() )
         return;
 
@@ -928,7 +996,7 @@ void CSyncSystem::requestDeleteConnectedID( const QString & serverName )
     if ( !fCurrUserConnectID.second )
         return;
 
-    auto && url = fSettings->serverInfo( serverName )->getUrl( QString( "Users/%1/Connect/Link" ).arg( fCurrUserConnectID.second->getUserID( serverName ) ), {} );
+    auto && url = fSettings->findServerInfo( serverName )->getUrl( QString( "Users/%1/Connect/Link" ).arg( fCurrUserConnectID.second->getUserID( serverName ) ), {} );
     if ( !url.isValid() )
         return;
 
@@ -957,7 +1025,7 @@ void CSyncSystem::requestSetConnectedID( const QString & serverName  )
         std::make_pair( "ConnectUsername", fCurrUserConnectID.first )
     };
 
-    auto && url = fSettings->serverInfo( serverName )->getUrl( QString( "Users/%1/Connect/Link" ).arg( fCurrUserConnectID.second->getUserID( serverName ) ), queryItems );
+    auto && url = fSettings->findServerInfo( serverName )->getUrl( QString( "Users/%1/Connect/Link" ).arg( fCurrUserConnectID.second->getUserID( serverName ) ), queryItems );
     if ( !url.isValid() )
         return;
 
@@ -996,7 +1064,7 @@ void CSyncSystem::requestGetMediaList( const QString & serverName )
         std::make_pair( "Fields", "ProviderIds,ExternalUrls,Missing" )
     };
 
-    auto && url = fSettings->serverInfo( serverName )->getUrl( QString( "Users/%1/Items" ).arg( fCurrUserData->getUserID( serverName ) ), queryItems );
+    auto && url = fSettings->findServerInfo( serverName )->getUrl( QString( "Users/%1/Items" ).arg( fCurrUserData->getUserID( serverName ) ), queryItems );
     if ( !url.isValid() )
         return;
 
@@ -1079,7 +1147,7 @@ void CSyncSystem::requestReloadMediaItemData( const QString & serverName, const 
 
 void CSyncSystem::requestReloadMediaItemData( const QString & serverName, std::shared_ptr< CMediaData > mediaData )
 {
-    auto && url = fSettings->serverInfo( serverName )->getUrl( QString( "Users/%1/Items/%2" ).arg( fCurrUserData->getUserID( serverName ) ).arg( mediaData->getMediaID( serverName ) ), {} );
+    auto && url = fSettings->findServerInfo( serverName )->getUrl( QString( "Users/%1/Items/%2" ).arg( fCurrUserData->getUserID( serverName ) ).arg( mediaData->getMediaID( serverName ) ), {} );
     if ( !url.isValid() )
         return;
 

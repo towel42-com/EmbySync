@@ -66,6 +66,8 @@ private Q_SLOTS:
     void slotHScrollTo( int value, int max );
     void slotUpdateHorizontalScroll( int );
     void slotVActionTriggered( int action );
+
+    void slotMediaInfoChanged();
 private:
     std::unique_ptr< Ui::CMediaTree > fImpl;
     std::vector< CMediaTree * > fPeers;

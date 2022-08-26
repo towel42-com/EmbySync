@@ -26,11 +26,13 @@
 #include <QString>
 #include <QUrl>
 #include <utility>
+#include <QObject>
 
 class QJsonObject;
 
-class CServerInfo
+class CServerInfo : public QObject
 {
+    Q_OBJECT;
 public:
     CServerInfo() = default;
     CServerInfo( const QString & name, const QString & url, const QString & apiKey, bool enabled );
@@ -48,7 +50,7 @@ public:
     QUrl getUrl( const QString & extraPath, const std::list< std::pair< QString, QString > > & queryItems ) const;
 
 
-    QString displayName() const; // returns the name, if empty returns the fqdn, if the same fqdn is used more than once, it use fqdn:port
+    QString displayName( bool verbose=false ) const; // returns the name, if empty returns the fqdn, if the same fqdn is used more than once, it use fqdn:port, verbose includes the url
     bool setDisplayName( const QString & name, bool generated );
     void autoSetDisplayName( bool usePort );
 
@@ -64,14 +66,28 @@ public:
     QJsonObject toJson() const;
     static std::shared_ptr< CServerInfo > fromJson( const QJsonObject & obj, QString & errorMsg );
 
-    bool isEnabled() const { return fIsEnabled; }
+    bool isEnabled() const { return canSync() && fIsEnabled; }
     bool setIsEnabled( bool isEnabled );
+
+    void update( const QJsonObject & serverData );
+Q_SIGNALS:
+    void sigServerInfoChanged();
 private:
     std::pair< QString, bool > fName; // may be automatically generated or not
     mutable QString fKeyName;
     QString fURL;
     QString fAPIKey;
     bool fIsEnabled{ true };
+
+    // from server info
+    QString fLocalAddress;
+    std::list< QString > fLocalAddresses;
+    QString fWANAddress;
+    std::list< QString > fWANAddresses;
+
+    QString fServerName;
+    QString fVersion;
+    QString fID;
 };
 
 #endif 

@@ -35,6 +35,7 @@ set(qtproject_SRCS
 
 set(qtproject_H
     MediaModel.h
+    ServerInfo.h
     SyncSystem.h
     UsersModel.h
 )
@@ -44,7 +45,6 @@ set(project_H
     MediaUserData.h
     MergeMedia.h
     ProgressSystem.h
-    ServerInfo.h
     Settings.h
     UserData.h
 )
