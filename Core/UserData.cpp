@@ -227,6 +227,77 @@ void CUserData::setUserID( const QString & serverName, const QString & id )
     updateCanBeSynced();
 }
 
+bool CUserData::hasImageTagInfo( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return false;
+    return !serverInfo->fImageTagInfo.first.isEmpty();
+}
+
+std::pair< QString, double > CUserData::getImageTagInfo( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return {};
+
+    return serverInfo->fImageTagInfo;
+}
+
+void CUserData::setImageTagInfo( const QString & serverName, const QString & tag, double ratio )
+{
+    auto serverInfo = getServerInfo( serverName, true );
+    serverInfo->fImageTagInfo = { tag, ratio };
+}
+
+QImage CUserData::globalAvatar() const // when all servers use the same image
+{
+    return fImage.has_value() ? fImage.value().scaled( QSize( 32, 32 ) ) : QImage();
+}
+
+void CUserData::checkAllAvatarsTheSame( int serverNum )
+{
+    if ( fImage.has_value() )
+        return;
+    if ( serverNum != this->fInfoForServer.size() )
+        return;
+
+    std::optional< QImage > prev;
+    for ( auto && ii : fInfoForServer )
+    {
+        if ( prev.has_value() )
+        {
+            if ( prev.value() != ii.second->fImage )
+                return;
+        }
+        else
+            prev = ii.second->fImage;
+    }
+    if ( prev.has_value() )
+        fImage = prev;
+}
+
+QImage CUserData::getAvatar( const QString & serverName ) const
+{
+    if ( fImage.has_value() )
+    {
+        return fImage.value().scaled( QSize( 32, 32 ) );
+    }
+
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->fImage.scaled( QSize( 32,32 ) );
+}
+
+void CUserData::setAvatar( const QString & serverName, int serverCnt, const QImage & image )
+{
+    auto serverInfo = getServerInfo( serverName, true );
+    serverInfo->fImage = image;
+
+    checkAllAvatarsTheSame( serverCnt );
+}
+
 bool CUserData::onServer( const QString & serverName ) const
 {
     auto serverInfo = getServerInfo( serverName );

@@ -25,6 +25,8 @@
 
 #include <QString>
 #include <list>
+#include <optional>
+#include <QImage>
 #include <memory>
 #include <map>
 
@@ -38,6 +40,9 @@ struct SUserServerData
     QString fName;
     QString fUserID;
     QString fConnectedIDOnServer;
+
+    QImage fImage;
+    std::pair< QString, double > fImageTagInfo;
 };
 
 class CUserData
@@ -71,10 +76,20 @@ public:
     QString getUserID( const QString & serverName ) const;
     void setUserID( const QString & serverName, const QString & id );
 
+    bool hasImageTagInfo( const QString & serverName ) const;
+
+    std::pair< QString, double > getImageTagInfo( const QString & serverName ) const;
+    void setImageTagInfo( const QString & serverName, const QString & tag, double ratio );
+    
+    QImage globalAvatar() const; // when all servers use the same image
+    QImage getAvatar( const QString & serverName ) const;
+    void setAvatar( const QString & serverName, int serverCnt, const QImage & image );
+
     bool canBeSynced() const;
     bool onServer( const QString & serverName ) const;
 private:
     void updateCanBeSynced();
+    void checkAllAvatarsTheSame( int serverNum );
 
     std::shared_ptr< SUserServerData > getServerInfo( const QString & serverName, bool addIfMissing );
     std::shared_ptr< SUserServerData > getServerInfo( const QString & serverName ) const;
@@ -83,6 +98,7 @@ private:
     QString fConnectedID;
     bool fCanBeSynced{ false };
 
+    mutable std::optional< QImage > fImage;
     std::map< QString, std::shared_ptr< SUserServerData > > fInfoForServer; // serverName to Info
     QTreeWidgetItem * fItem{ nullptr };
 };

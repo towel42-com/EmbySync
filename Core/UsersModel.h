@@ -12,7 +12,7 @@
 class CSettings;
 class CUserData;
 class CServerInfo;
-
+class CSyncSystem;
 class CUsersModel : public QAbstractTableModel
 {
     Q_OBJECT;
@@ -54,6 +54,8 @@ public:
     std::shared_ptr< CUserData > findUser( const QString & serverName, const QString & userID ) const;
     QModelIndex indexForUser( std::shared_ptr< CUserData > user, int column = 0 ) const;
 
+    void setUserImage( const QString & serverName, const QString & userID, const QByteArray & data );
+
     void updateUserConnectID( const QString & serverName, const QString & userID, const QString & connectID );
 
     void clear();
@@ -63,6 +65,8 @@ public:
 
     bool hasUsersWithConnectedIDNeedingUpdate() const;
     std::list< std::shared_ptr< CUserData > > usersWithConnectedIDNeedingUpdate() const;
+
+    void loadAvatars( std::shared_ptr< CSyncSystem > syncSystem ) const;
 public Q_SLOTS:
     void slotSettingsChanged();
 private:

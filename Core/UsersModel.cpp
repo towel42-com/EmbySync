@@ -2,10 +2,13 @@
 #include "UserData.h"
 #include "Settings.h"
 #include "ServerInfo.h"
+#include "SyncSystem.h"
 
 #include <QColor>
 #include <set>
 #include <QJsonObject>
+#include <QJsonDocument>
+#include <QImage>
 
 CUsersModel::CUsersModel( std::shared_ptr< CSettings > settings, QObject * parent ) :
     QAbstractTableModel( parent ),
@@ -96,6 +99,21 @@ QVariant CUsersModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
         return color;
     }
 
+    auto pos = fColumnToServerInfo.find( index.column() );
+    QString serverName;
+    if ( pos != fColumnToServerInfo.end() )
+        serverName = ( *pos ).second.second->keyName();
+
+    if ( role == Qt::DecorationRole )
+    {
+        if ( index.column() == 0 )
+            return userData->globalAvatar();
+        if ( serverName.isEmpty() )
+            return {};
+        if ( userData->globalAvatar().isNull() )
+            return userData->getAvatar( serverName );
+    }
+
     if ( role != Qt::DisplayRole )
         return {};
 
@@ -104,10 +122,7 @@ QVariant CUsersModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
     else if ( index.column() == eConnectedID )
         return userData->connectedID();
 
-    auto pos = fColumnToServerInfo.find( index.column() );
-    if ( pos == fColumnToServerInfo.end() )
-        return {};
-    return userData->name( ( *pos ).second.second->keyName() );
+    return userData->name( serverName );
 }
 
 QVariant CUsersModel::headerData( int section, Qt::Orientation orientation, int role /*= Qt::DisplayRole */ ) const
@@ -149,6 +164,22 @@ std::list< std::shared_ptr< CUserData > > CUsersModel::usersWithConnectedIDNeedi
             retVal.push_back( ii );
     }
     return retVal;
+}
+
+void CUsersModel::loadAvatars( std::shared_ptr< CSyncSystem > syncSystem ) const
+{
+    for ( auto && user : fUsers )
+    {
+        for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+        {
+            auto server = fSettings->serverInfo( ii );
+            if ( !server->isEnabled() )
+                continue;
+            auto serverName = server->keyName();
+            if ( user->hasImageTagInfo( serverName ) )
+                syncSystem->requestGetUserImage( serverName, user->getUserID( serverName ) );
+        }
+    }
 }
 
 QVariant CUsersModel::getColor( const QModelIndex & index, bool background ) const
@@ -239,6 +270,21 @@ QModelIndex CUsersModel::indexForUser( std::shared_ptr< CUserData > user, int co
     return {};
 }
 
+void CUsersModel::setUserImage( const QString & serverName, const QString & userID, const QByteArray & data )
+{
+    auto image = QImage::fromData( data );
+    if ( !image.isNull() )
+    {
+        auto user = findUser( serverName, userID );
+        if ( !user )
+            return;
+
+        user->setAvatar( serverName, fSettings->serverCnt(), image );
+        emit dataChanged( indexForUser( user, 0 ), indexForUser( user, columnCount() - 1 ) );
+    }
+
+}
+
 std::shared_ptr< CUserData > CUsersModel::findUser( const QString & serverName, const QString & userID ) const
 {
     for ( auto && ii : fUsers )
@@ -305,6 +351,8 @@ std::vector< std::shared_ptr< CUserData > > CUsersModel::getAllUsers( bool sorte
 
 std::shared_ptr< CUserData > CUsersModel::loadUser( const QString & serverName, const QJsonObject & user )
 {
+    qDebug().noquote().nospace() << QJsonDocument( user ).toJson();
+
     auto currName = user[ "Name" ].toString();
     auto userID = user[ "Id" ].toString();
     if ( currName.isEmpty() || userID.isEmpty() )
@@ -335,7 +383,11 @@ std::shared_ptr< CUserData > CUsersModel::loadUser( const QString & serverName, 
 
         emit dataChanged( indexForUser( userData, 0 ), indexForUser( userData, columnCount() - 1 ) );
     }
-
+    if ( user.contains( "PrimaryImageTag" ) )
+    {
+        userData->setImageTagInfo( serverName, user[ "PrimaryImageTag" ].toString(), user.contains( "PrimaryImageAspectRatio" ) ? user[ "PrimaryImageAspectRatio" ].toDouble() : 1.0 );
+    }
+        
     return userData;
 }
 
