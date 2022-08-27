@@ -396,6 +396,7 @@ void CMainWindow::slotDataChanged()
 void CMainWindow::slotLoadingUsersFinished()
 {
     onlyShowSyncableUsers();
+    fUsersModel->loadAvatars( fSyncSystem );
     fUsersFilterModel->sort( 0, Qt::SortOrder::AscendingOrder );
     NSABUtils::autoSize( fImpl->users, -1 );
 }
