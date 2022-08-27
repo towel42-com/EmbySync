@@ -135,13 +135,13 @@ public:
 
     QString getSyncItemTypes() const;
     bool onlyShowSyncableUsers() { return fOnlyShowSyncableUsers; };
-    void setOnlyShowSyncableUsers( bool value );;
+    void setOnlyShowSyncableUsers( bool value );
 
     bool onlyShowMediaWithDifferences() { return fOnlyShowMediaWithDifferences; };
-    void setOnlyShowMediaWithDifferences( bool value );;
+    void setOnlyShowMediaWithDifferences( bool value );
 
     bool showMediaWithIssues() { return fShowMediaWithIssues; };
-    void setShowMediaWithIssues( bool value );;
+    void setShowMediaWithIssues( bool value );
 
     QStringList syncUserList() const { return fSyncUserList; }
     void setSyncUserList( const QStringList & value );
