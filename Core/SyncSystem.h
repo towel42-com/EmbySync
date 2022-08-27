@@ -60,6 +60,7 @@ enum class ERequestType
     eGetServerInfo,
     eGetUsers,
     eGetUser,
+    eGetUserImage,
     eGetMediaList,
     eReloadMediaData,
     eUpdateData,
@@ -135,6 +136,8 @@ public:
     void repairConnectIDs( const std::list< std::shared_ptr< CUserData > > & users );
     void setConnectedID( const QString & newID, std::shared_ptr< CUserData > & user );
 
+    void requestGetUserImage( const QString & serverName, const QString & userID );
+
     void updateUserDataForMedia( const QString & serverName, std::shared_ptr<CMediaData> mediaData, std::shared_ptr<SMediaUserData> newData );
 
     void selectiveProcess( const QString & selectedServer );
@@ -195,7 +198,9 @@ private:
     void requestGetUser( const QString & serverName, const QString & userID );
     void handleGetUserResponse( const QString & serverName, const QByteArray & data );
 
-    void requestGetMediaList( const QString & serverNameServer );
+    void handleGetUserImageResponse( const QString & serverName, const QString & userID, const QByteArray & data );
+
+        void requestGetMediaList( const QString & serverNameServer );
     void handleGetMediaListResponse( const QString & serverName, const QByteArray & data );
 
     void requestReloadMediaItemData( const QString & serverName, const QString & mediaID );

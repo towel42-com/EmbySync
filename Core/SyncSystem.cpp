@@ -40,7 +40,6 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QAuthenticator>
-
 #include <QScrollBar>
 #include <QSettings>
 #include <QFileInfo>
@@ -59,6 +58,7 @@ QString toString( ERequestType request )
         case ERequestType::eGetServerInfo: return "GetServerInfo";
         case ERequestType::eGetUsers: return "GetUsers";
         case ERequestType::eGetUser: return "GetUser";
+        case ERequestType::eGetUserImage: return "GetUserImage";
         case ERequestType::eGetMediaList: return "GetMediaList";
         case ERequestType::eReloadMediaData: return "ReloadMediaData";
         case ERequestType::eUpdateData: return "UpdateData";
@@ -652,6 +652,7 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
                     emit sigLoadingUsersFinished();
                 break;
             case ERequestType::eGetUser:
+            case ERequestType::eGetUserImage:
                 break;
             case ERequestType::eGetMediaList:
                 emit sigUserMediaLoaded();
@@ -694,6 +695,9 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
         break;
     case ERequestType::eGetUser:
         handleGetUserResponse( serverName, data );
+        break;
+    case ERequestType::eGetUserImage:
+        handleGetUserImageResponse( serverName, extraData.toString(), data );
         break;
     case ERequestType::eGetMediaList:
         if ( !fProgressSystem->wasCanceled() )
@@ -781,7 +785,7 @@ void CSyncSystem::requestTestServer( std::shared_ptr< const CServerInfo > server
 
 void CSyncSystem::requestGetServerInfo( const QString & serverName )
 {
-    emit sigAddToLog( EMsgType::eInfo, tr( "Loading server information from server '%1'" ).arg( serverName ) );;
+    emit sigAddToLog( EMsgType::eInfo, tr( "Loading server information from server '%1'" ).arg( serverName ) );
 
     // SystemService 
     auto && url = fSettings->findServerInfo( serverName )->getUrl( "/System/Info/Public", {} );
@@ -864,11 +868,9 @@ void CSyncSystem::handleGetUsersResponse( const QString & serverName, const QByt
     fProgressSystem->incProgress();
 }
 
-
-
 void CSyncSystem::requestGetUser( const QString & serverName, const QString & userID )
 {
-    emit sigAddToLog( EMsgType::eInfo, tr( "Loading users from server '%1'" ).arg( serverName ) );;
+    emit sigAddToLog( EMsgType::eInfo, tr( "Loading users from server '%1'" ).arg( serverName ) );
     
     // UserService
     auto && url = fSettings->findServerInfo( serverName )->getUrl( QString( "Users/%1" ).arg( userID ), {} );
@@ -900,8 +902,39 @@ void CSyncSystem::handleGetUserResponse( const QString & serverName, const QByte
     emit sigAddToLog( EMsgType::eInfo, QString( "Reloading user on server %1" ).arg( serverName ) );
 
     auto user = doc.object();
-    loadUser( serverName, user );
+    auto userData = loadUser( serverName, user );
+    if ( userData->hasImageTagInfo( serverName ) )
+    {
+        requestGetUserImage( serverName, userData->getUserID( serverName ) );
+    }
 }
+
+void CSyncSystem::requestGetUserImage( const QString & serverName, const QString & userID )
+{
+    emit sigAddToLog( EMsgType::eInfo, tr( "Loading user image from server '%1'" ).arg( serverName ) );
+
+    // UserService
+    auto && url = fSettings->findServerInfo( serverName )->getUrl( QString( "/Users/%1/Images/Primary" ).arg( userID ), {} );
+    if ( !url.isValid() )
+        return;
+    auto request = QNetworkRequest( url );
+
+    auto reply = makeRequest( request );
+    setServerName( reply, serverName );
+    setRequestType( reply, ERequestType::eGetUserImage );
+    setExtraData( reply, userID );
+}
+
+void CSyncSystem::handleGetUserImageResponse( const QString & serverName, const QString & userID, const QByteArray & data )
+{
+    auto user = fUsersModel->findUser( serverName, userID );
+    if ( !user )
+        return;
+
+    emit sigAddToLog( EMsgType::eInfo, tr( "Setting user image from server '%1' for '%2'" ).arg( serverName ).arg( user->name( serverName ) ) );
+    fUsersModel->setUserImage( serverName, userID, data );
+}
+
 
 void CSyncSystem::repairConnectIDs( const std::list< std::shared_ptr< CUserData > > & users )
 {
