@@ -31,7 +31,7 @@ public:
         eConnectedIDValidRole
     };
 
-    CUsersModel( std::shared_ptr< CSettings > settings, QObject * parent );
+    CUsersModel( std::shared_ptr< CSettings > settings, QObject * parent=nullptr );
 
     virtual int rowCount( const QModelIndex & parent = QModelIndex() ) const override;
     virtual int columnCount( const QModelIndex & parent = QModelIndex() ) const override;

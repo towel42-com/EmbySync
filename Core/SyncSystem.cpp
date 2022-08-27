@@ -24,6 +24,9 @@
 #include "ProgressSystem.h"
 #include "UserData.h"
 #include "Settings.h"
+#include "UsersModel.h"
+#include "MediaModel.h"
+
 #include "ServerInfo.h"
 #include "MediaData.h"
 #include "MediaUserData.h"
@@ -87,9 +90,11 @@ QString createMessage( EMsgType msgType, const QString & msg )
     return fullMsg;
 }
 
-CSyncSystem::CSyncSystem( std::shared_ptr< CSettings > settings, QObject * parent ) :
+CSyncSystem::CSyncSystem( std::shared_ptr< CSettings > settings, std::shared_ptr< CUsersModel > usersModel, std::shared_ptr< CMediaModel > mediaModel, QObject * parent ) :
     QObject( parent ),
     fSettings( settings ),
+    fUsersModel( usersModel ),
+    fMediaModel( mediaModel ),
     fProgressSystem( new CProgressSystem )
 {
     fManager = new QNetworkAccessManager( this );
@@ -118,41 +123,6 @@ void CSyncSystem::setUserMsgFunc( std::function< void( const QString & title, co
 void CSyncSystem::setProgressSystem( std::shared_ptr< CProgressSystem > funcs )
 {
     fProgressSystem = funcs;
-}
-
-void CSyncSystem::setLoadUserFunc( std::function< std::shared_ptr< CUserData >( const QString & serverName, const QJsonObject & user ) > loadUserFunc )
-{
-    fLoadUserFunc = loadUserFunc;
-}
-
-void CSyncSystem::setLoadMediaFunc( std::function< std::shared_ptr< CMediaData >( const QString & serverName, const QJsonObject & media ) > loadMediaFunc )
-{
-    fLoadMediaFunc = loadMediaFunc;
-}
-
-void CSyncSystem::setReloadMediaFunc( std::function< std::shared_ptr< CMediaData >( const QString & serverName, const QJsonObject & media, const QString & itemID ) > reloadMediaFunc )
-{
-    fReloadMediaFunc = reloadMediaFunc;
-}
-
-void CSyncSystem::setGetMediaDataForIDFunc( std::function< std::shared_ptr< CMediaData >( const QString & serverName, const QString & mediaID ) > getMediaDataForIDFunc )
-{
-    fGetMediaDataForIDFunc = getMediaDataForIDFunc;
-}
-
-void CSyncSystem::setMergeMediaFunc( std::function< bool( std::shared_ptr< CProgressSystem > progressSystem ) > mergeMediaFunc )
-{
-    fMergeMediaFunc = mergeMediaFunc;
-}
-
-void CSyncSystem::setGetAllMediaFunc( std::function< std::unordered_set< std::shared_ptr< CMediaData > >() > getAllMediaFunc )
-{
-    fGetAllMediaFunc = getAllMediaFunc;
-}
-
-void CSyncSystem::setUpdateUserConnectIDFunc( std::function< void( const QString & serverName, const QString & userID, const QString & connectID ) > updateUserConnectID )
-{
-    fUpdateUserConnectID = updateUserConnectID;
 }
 
 void CSyncSystem::reset()
@@ -261,12 +231,7 @@ void CSyncSystem::selectiveProcess( const QString & selectedServer )
 
     fProgressSystem->setTitle( title );
 
-    Q_ASSERT( fGetAllMediaFunc );
-    if ( !fGetAllMediaFunc )
-        return;
-
-    auto allMedia = fGetAllMediaFunc();
-
+    auto allMedia = fMediaModel->getAllMedia();
     int cnt = 0;
     for ( auto && ii : allMedia )
     {
@@ -559,11 +524,7 @@ void CSyncSystem::slotMergeMedia()
         return;
     }
 
-    Q_ASSERT( fMergeMediaFunc );
-    if ( !fMergeMediaFunc )
-        return;
-
-    if ( !fMergeMediaFunc( fProgressSystem ) )
+    if ( !fMediaModel->mergeMedia( fProgressSystem ) )
         fCurrUserData.reset();
 
     emit sigUserMediaLoaded();
@@ -617,20 +578,14 @@ QNetworkReply * CSyncSystem::makeRequest( const QNetworkRequest & request, ENetw
     }
 }
 
-std::shared_ptr< CMediaData > CSyncSystem::loadMedia( const QString & serverName, const QJsonObject & media )
+std::shared_ptr< CMediaData > CSyncSystem::loadMedia( const QString & serverName, const QJsonObject & mediaData )
 {
-    Q_ASSERT( fLoadMediaFunc );
-    if ( !fLoadMediaFunc )
-        return{};
-    return fLoadMediaFunc( serverName, media );
+    return fMediaModel->loadMedia( serverName, mediaData );
 }
 
-std::shared_ptr<CUserData> CSyncSystem::loadUser( const QString & serverName, const QJsonObject & user )
+std::shared_ptr<CUserData> CSyncSystem::loadUser( const QString & serverName, const QJsonObject & userData )
 {
-    Q_ASSERT( fLoadUserFunc );
-    if ( !fLoadUserFunc )
-        return {};
-    return fLoadUserFunc( serverName, user );
+    return fUsersModel->loadUser( serverName, userData );
 }
 
 bool CSyncSystem::isLastRequestOfType( ERequestType type ) const
@@ -760,12 +715,9 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
     case ERequestType::eUpdateData:
     {
         requestReloadMediaItemData( serverName, extraData.toString() );
-        if ( fGetMediaDataForIDFunc )
-        {
-            auto mediaData = fGetMediaDataForIDFunc( serverName, extraData.toString() );
-            if ( mediaData )
-                emit sigAddToLog( EMsgType::eInfo, tr( "Updated '%1(%2)' on Server '%3' successfully" ).arg( mediaData->name() ).arg( extraData.toString() ).arg( serverName ) );
-        }
+        auto mediaData = fMediaModel->getMediaDataForID( serverName, extraData.toString() );
+        if ( mediaData )
+            emit sigAddToLog( EMsgType::eInfo, tr( "Updated '%1(%2)' on Server '%3' successfully" ).arg( mediaData->name() ).arg( extraData.toString() ).arg( serverName ) );
         break;
     }
     case ERequestType::eUpdateFavorite:
@@ -1058,7 +1010,7 @@ void CSyncSystem::handleSetConnectedID( const QString & serverName )
         return;
 
     requestGetUser( serverName, fCurrUserConnectID.second->getUserID( serverName ) );
-    fUpdateUserConnectID( serverName, fCurrUserConnectID.second->getUserID( serverName ), fCurrUserConnectID.second->connectedID() );
+    return fUsersModel->updateUserConnectID( serverName, fCurrUserConnectID.second->getUserID( serverName ), fCurrUserConnectID.second->connectedID() );
 }
 
 void CSyncSystem::requestGetMediaList( const QString & serverName )
@@ -1148,10 +1100,7 @@ void CSyncSystem::handleGetMediaListResponse( const QString & serverName, const 
 
 void CSyncSystem::requestReloadMediaItemData( const QString & serverName, const QString & mediaID )
 {
-    if ( !fGetMediaDataForIDFunc )
-        return;
-
-    auto mediaData = fGetMediaDataForIDFunc( serverName, mediaID );
+    auto mediaData = fMediaModel->getMediaDataForID( serverName, mediaID );
     if ( !mediaData )
         return;
 
@@ -1187,15 +1136,9 @@ void CSyncSystem::handleReloadMediaResponse( const QString & serverName, const Q
         return;
     }
 
-    auto media = doc.object();
-
-    Q_ASSERT( fReloadMediaFunc );
-    if ( !fReloadMediaFunc )
-        return;
-
-    fReloadMediaFunc( serverName, media, itemID );
+    auto mediaData = doc.object();
+    fMediaModel->reloadMedia( serverName, mediaData, itemID );
 }
-
 
 void CSyncSystem::slotCanceled()
 {

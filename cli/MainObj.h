@@ -63,8 +63,8 @@ private:
     std::shared_ptr< CSettings > fSettings;
     std::shared_ptr< CSyncSystem > fSyncSystem;
 
-    CMediaModel * fMediaModel{ nullptr };
-    CUsersModel * fUsersModel{ nullptr };
+    std::shared_ptr< CMediaModel > fMediaModel;
+    std::shared_ptr< CUsersModel > fUsersModel;
 
     QString fSettingsFile;
     QRegularExpression fUserRegExp;

@@ -142,10 +142,10 @@ private:
 
     QProgressDialog * fProgressDlg{ nullptr };
 
-    CMediaModel * fMediaModel{ nullptr };
+    std::shared_ptr< CMediaModel >fMediaModel;
     CMediaFilterModel * fMediaFilterModel{ nullptr };
 
-    CUsersModel * fUsersModel{ nullptr };
+    std::shared_ptr< CUsersModel > fUsersModel;
     CUsersFilterModel * fUsersFilterModel{ nullptr };
 
     QTimer * fPendingMediaUpdateTimer{ nullptr };

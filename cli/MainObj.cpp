@@ -76,7 +76,10 @@ CMainObj::CMainObj( const QString & settingsFile, QObject * parent /*= nullptr*/
         return;
     }
 
-    fSyncSystem = std::make_shared< CSyncSystem >( fSettings );
+    fUsersModel = std::make_shared< CUsersModel >( fSettings );
+    fMediaModel = std::make_shared< CMediaModel >( fSettings );
+
+    fSyncSystem = std::make_shared< CSyncSystem >( fSettings, fUsersModel, fMediaModel );
 
     connect( fSyncSystem.get(), &CSyncSystem::sigAddToLog, this, &CMainObj::slotAddToLog );
     connect( fSyncSystem.get(), &CSyncSystem::sigLoadingUsersFinished, this, &CMainObj::slotLoadingUsersFinished );
@@ -85,9 +88,6 @@ CMainObj::CMainObj( const QString & settingsFile, QObject * parent /*= nullptr*/
     connect( fSyncSystem.get(), &CSyncSystem::sigProcessingFinished, this, &CMainObj::slotProcessingFinished );
     connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaLoaded, this, &CMainObj::slotUserMediaCompletelyLoaded );
     
-    fUsersModel = new CUsersModel( fSettings, this );
-    fMediaModel = new CMediaModel( fSettings, this );
-
     auto progressSystem = std::make_shared< CProgressSystem >();
     progressSystem->setSetTitleFunc( [ this ]( const QString & title )
     {
@@ -121,43 +121,6 @@ CMainObj::CMainObj( const QString & settingsFile, QObject * parent /*= nullptr*/
             else 
                 std::cout << "\r" << "INFO: " << msg.toStdString() << std::endl;
         } );
-
-    fSyncSystem->setLoadUserFunc(
-        [ this ]( const QString & serverName, const QJsonObject & userData )
-        {
-            return fUsersModel->loadUser( serverName, userData );
-        } );
-    fSyncSystem->setUpdateUserConnectIDFunc(
-        [ this ]( const QString & serverName, const QString & userID, const QString & connectID )
-        {
-            return fUsersModel->updateUserConnectID( serverName, userID, connectID );
-        } );
-    fSyncSystem->setLoadMediaFunc(
-        [ this ]( const QString & serverName, const QJsonObject & mediaData )
-        {
-            return fMediaModel->loadMedia( serverName, mediaData );
-        } );
-    fSyncSystem->setGetMediaDataForIDFunc(
-        [ this ]( const QString & serverName, const QString & mediaID )
-        {
-            return fMediaModel->getMediaDataForID( serverName, mediaID );
-        } );
-    fSyncSystem->setMergeMediaFunc(
-        [ this ]( std::shared_ptr< CProgressSystem > progressSystem )
-        {
-            return fMediaModel->mergeMedia( progressSystem );
-        } );
-    fSyncSystem->setGetAllMediaFunc(
-        [ this ]()
-        {
-            return fMediaModel->getAllMedia();
-        } );
-    fSyncSystem->setReloadMediaFunc(
-        [ this ]( const QString & serverName, const QJsonObject & mediaData, const QString & mediaID )
-        {
-            return fMediaModel->reloadMedia( serverName, mediaData, mediaID );
-        } );
-
 
     fAOK = true;
 }

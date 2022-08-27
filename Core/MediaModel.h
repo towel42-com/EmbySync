@@ -51,7 +51,7 @@ public:
         eEqual=2,
         eRightToLeft=3
     };
-    CMediaModel( std::shared_ptr< CSettings > settings, QObject * parent );
+    CMediaModel( std::shared_ptr< CSettings > settings, QObject * parent = nullptr );
 
     virtual int rowCount( const QModelIndex & parent = QModelIndex() ) const override;
     virtual int columnCount( const QModelIndex & parent = QModelIndex() ) const override;
@@ -105,7 +105,7 @@ private:
 
 struct SMediaSummary
 {
-    SMediaSummary( CMediaModel * model );
+    SMediaSummary( std::shared_ptr< CMediaModel > model );
 
     int fTotalMedia{ 0 };
 

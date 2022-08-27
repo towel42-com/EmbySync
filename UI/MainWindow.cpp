@@ -61,18 +61,18 @@ CMainWindow::CMainWindow( QWidget * parent )
     fImpl->setupUi( this );
     fSettings = std::make_shared< CSettings >();
 
-    fMediaModel = new CMediaModel( fSettings, this );
-    fMediaFilterModel = new CMediaFilterModel( this );
-    fMediaFilterModel->setSourceModel( fMediaModel );
-    connect( fMediaModel, &CMediaModel::sigPendingMediaUpdate, this, &CMainWindow::slotPendingMediaUpdate );
+    fMediaModel = std::make_shared< CMediaModel >( fSettings );
+    fMediaFilterModel = new CMediaFilterModel( fMediaModel.get() );
+    fMediaFilterModel->setSourceModel( fMediaModel.get() );
+    connect( fMediaModel.get(), &CMediaModel::sigPendingMediaUpdate, this, &CMainWindow::slotPendingMediaUpdate );
 
-    fUsersModel = new CUsersModel( fSettings, this );
-    fUsersFilterModel = new CUsersFilterModel( this );
-    fUsersFilterModel->setSourceModel( fUsersModel );
-    connect( this, &CMainWindow::sigSettingsLoaded, fUsersModel, &CUsersModel::slotSettingsChanged );
+    fUsersModel = std::make_shared< CUsersModel >( fSettings );
+    fUsersFilterModel = new CUsersFilterModel( fUsersModel.get() );
+    fUsersFilterModel->setSourceModel( fUsersModel.get() );
+    connect( this, &CMainWindow::sigSettingsLoaded, fUsersModel.get(), &CUsersModel::slotSettingsChanged );
 
-    NSABUtils::setupModelChanged( fUsersModel, this, QMetaMethod::fromSignal( &CMainWindow::sigDataChanged ) );
-    NSABUtils::setupModelChanged( fMediaModel, this, QMetaMethod::fromSignal( &CMainWindow::sigDataChanged ) );
+    NSABUtils::setupModelChanged( fUsersModel.get(), this, QMetaMethod::fromSignal( &CMainWindow::sigDataChanged ) );
+    NSABUtils::setupModelChanged( fMediaModel.get(), this, QMetaMethod::fromSignal( &CMainWindow::sigDataChanged ) );
 
     connect( this, &CMainWindow::sigDataChanged, this, &CMainWindow::slotDataChanged );
 
@@ -90,47 +90,12 @@ CMainWindow::CMainWindow( QWidget * parent )
     fMediaFilterModel->sort( -1, Qt::SortOrder::AscendingOrder );
     fUsersFilterModel->sort( -1, Qt::SortOrder::AscendingOrder );
 
-    fSyncSystem = std::make_shared< CSyncSystem >( fSettings, this );
+    fSyncSystem = std::make_shared< CSyncSystem >( fSettings, fUsersModel, fMediaModel, this );
     connect( fSyncSystem.get(), &CSyncSystem::sigAddToLog, this, &CMainWindow::slotAddToLog );
     connect( fSyncSystem.get(), &CSyncSystem::sigLoadingUsersFinished, this, &CMainWindow::slotLoadingUsersFinished );
     connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaLoaded, this, &CMainWindow::slotUserMediaLoaded );
     connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaLoaded, this, &CMainWindow::slotUserMediaCompletelyLoaded );
 
-    fSyncSystem->setLoadUserFunc(
-        [ this ]( const QString & serverName, const QJsonObject & userData )
-        {
-            return fUsersModel->loadUser( serverName, userData );
-        } );
-    fSyncSystem->setUpdateUserConnectIDFunc(
-        [ this ]( const QString & serverName, const QString & userID, const QString & connectID )
-        {
-            return fUsersModel->updateUserConnectID( serverName, userID, connectID );
-        } );
-    fSyncSystem->setLoadMediaFunc(
-        [ this ]( const QString & serverName, const QJsonObject & mediaData )
-        {
-            return fMediaModel->loadMedia( serverName, mediaData );
-        } );
-    fSyncSystem->setReloadMediaFunc(
-        [ this ]( const QString & serverName, const QJsonObject & mediaData, const QString & mediaID )
-        {
-            return fMediaModel->reloadMedia( serverName, mediaData, mediaID );
-        } );
-    fSyncSystem->setGetMediaDataForIDFunc(
-        [ this ]( const QString & serverName, const QString & mediaID )
-        {
-            return fMediaModel->getMediaDataForID( serverName, mediaID );
-        } );
-    fSyncSystem->setMergeMediaFunc(
-        [ this ]( std::shared_ptr< CProgressSystem > progressSystem )
-        {
-            return fMediaModel->mergeMedia( progressSystem );
-        } );
-    fSyncSystem->setGetAllMediaFunc(
-        [ this ]()
-        {
-            return fMediaModel->getAllMedia();
-        } );
     fSyncSystem->setUserMsgFunc(
         [ this ]( const QString & title, const QString & msg, bool isCritical )
         {
@@ -489,7 +454,7 @@ std::shared_ptr< CUserData > CMainWindow::getCurrUserData() const
 
 std::shared_ptr< CUserData > CMainWindow::getUserData( QModelIndex idx ) const
 {
-    if ( idx.model() != fUsersModel )
+    if ( idx.model() != fUsersModel.get() )
         idx = fUsersFilterModel->mapToSource( idx );
 
     auto retVal = fUsersModel->userData( idx );
@@ -617,7 +582,7 @@ void CMainWindow::progressIncValue()
 
 std::shared_ptr< CMediaData > CMainWindow::getMediaData( QModelIndex idx ) const
 {
-    if ( idx.model() != fMediaModel )
+    if ( idx.model() != fMediaModel.get() )
     {
         idx = fMediaFilterModel->mapToSource( idx );
     }
