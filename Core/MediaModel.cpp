@@ -451,7 +451,7 @@ QVariant CMediaModel::getColor( const QModelIndex & index, const QString & serve
     return {};
 }
 
-SMediaSummary::SMediaSummary( CMediaModel * model )
+SMediaSummary::SMediaSummary( std::shared_ptr< CMediaModel > model )
 {
     for ( auto && ii : model->fData )
     {
