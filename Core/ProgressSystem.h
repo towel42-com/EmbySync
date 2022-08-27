@@ -47,15 +47,15 @@ public:
     void setSetTitleFunc( std::function< void( const QString & title ) > setTitleFunc );
     void setTitleFunc( std::function< QString() > titleFunc );
 
-    void setMaximumFunc( std::function< int() > maximumFunc );;
-    void setSetMaximumFunc( std::function< void( int ) > setMaximumFunc );;
+    void setMaximumFunc( std::function< int() > maximumFunc );
+    void setSetMaximumFunc( std::function< void( int ) > setMaximumFunc );
 
-    void setValueFunc( std::function< int() > valueFunc );;
-    void setSetValueFunc( std::function< void( int ) > setValueFunc );;
+    void setValueFunc( std::function< int() > valueFunc );
+    void setSetValueFunc( std::function< void( int ) > setValueFunc );
 
-    void setIncFunc( std::function< void() > incFunc );;
-    void setResetFunc( std::function< void() > resetFunc );;
-    void setWasCanceledFunc( std::function< bool() > wasCanceledFunc );;
+    void setIncFunc( std::function< void() > incFunc );
+    void setResetFunc( std::function< void() > resetFunc );
+    void setWasCanceledFunc( std::function< bool() > wasCanceledFunc );
 
 private:
     std::function< void( const QString & title ) > fSetTitleFunc;
