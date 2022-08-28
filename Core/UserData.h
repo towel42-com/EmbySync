@@ -31,7 +31,6 @@
 #include <map>
 
 class CMediaData;
-class QTreeWidgetItem;
 class CSettings;
 
 struct SUserServerData
@@ -70,9 +69,6 @@ public:
 
     bool connectedIDNeedsUpdate() const;
 
-    QTreeWidgetItem * getItem() const { return fItem; }
-    void setItem( QTreeWidgetItem * item ) { fItem = item; }
-
     QString getUserID( const QString & serverName ) const;
     void setUserID( const QString & serverName, const QString & id );
 
@@ -100,6 +96,5 @@ private:
 
     mutable std::optional< QImage > fImage;
     std::map< QString, std::shared_ptr< SUserServerData > > fInfoForServer; // serverName to Info
-    QTreeWidgetItem * fItem{ nullptr };
 };
 #endif 
