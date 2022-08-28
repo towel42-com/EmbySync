@@ -351,7 +351,7 @@ std::vector< std::shared_ptr< CUserData > > CUsersModel::getAllUsers( bool sorte
 
 std::shared_ptr< CUserData > CUsersModel::loadUser( const QString & serverName, const QJsonObject & user )
 {
-    qDebug().noquote().nospace() << QJsonDocument( user ).toJson();
+    //qDebug().noquote().nospace() << QJsonDocument( user ).toJson();
 
     auto currName = user[ "Name" ].toString();
     auto userID = user[ "Id" ].toString();
