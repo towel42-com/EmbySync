@@ -1,3 +1,8 @@
+1.4 - User Avatars, Media Names and ConnectID
+    Display the server name based on server info
+    Show the users avatar
+    Support for check for latest using git releases
+    Support for fixing/cleaning up ConnectID when its not using an email address
 1.3 - Support for multiple servers
 1.2 - More Configurable sync options
 	Enable the user to set what Media Types to sync
