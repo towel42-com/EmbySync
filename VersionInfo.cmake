@@ -28,7 +28,7 @@ STRING(TIMESTAMP BUILD_DATE "%m/%d/%Y")
 STRING(TIMESTAMP BUILD_TIME "%I:%M:%S")
 
 SET( MAJOR_VERSION    1 )
-SET( MINOR_VERSION    3 )
+SET( MINOR_VERSION    4 )
 SET( APP_NAME         "EmbySync" )
 SET( VENDOR           "Scott Aron Bloom" )
 SET( HOMEPAGE         "www.towel42.com" )
