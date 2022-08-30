@@ -150,7 +150,8 @@ std::shared_ptr< CMediaData > CMergeMedia::findMediaForProviders( const QString 
     if ( pos == fProviderSearchMap.end() )
         return {};
 
-    std::optional< std::shared_ptr< CMediaData > > retVal;
+    std::map< std::shared_ptr< CMediaData >, int > mapCount;
+
     for ( auto && ii : providerIDs )
     {
         if ( ii.second.isEmpty() )
@@ -158,14 +159,24 @@ std::shared_ptr< CMediaData > CMergeMedia::findMediaForProviders( const QString 
         auto currMedia = findMediaForProvider( ( *pos ).second, ii.first, ii.second );
         if ( !currMedia )
             continue;
-        if ( !retVal.has_value() )
-            retVal = currMedia;
-        else if ( retVal.value() != currMedia )
-            return {};
+
+        mapCount[ currMedia ]++;
     }
-    if ( retVal.has_value() )
-        return retVal.value();
-    return {};
+
+    if ( mapCount.size() == 1 )
+        return ( *mapCount.begin() ).first;
+    
+    int max = 0;
+    std::shared_ptr< CMediaData > retVal;
+    for ( auto && ii : mapCount )
+    {
+        if ( ii.second > max )
+        {
+            max = ii.second;
+            retVal = ii.first;
+        }
+    }
+    return retVal;
 }
 
 
