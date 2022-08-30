@@ -48,9 +48,13 @@ CMediaWindow::CMediaWindow( std::shared_ptr< CSettings> settings, std::shared_pt
     
     for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
     {
+        auto serverInfo = settings->serverInfo( ii );
+        if ( !serverInfo->isEnabled() )
+            continue;
+
         auto userDataWidget = new CMediaUserDataWidget( this );
         horizontalLayout->addWidget( userDataWidget );
-        fUserDataWidgets[ settings->serverInfo( ii )->keyName() ] = userDataWidget;
+        fUserDataWidgets[ serverInfo->keyName() ] = userDataWidget;
         connect( userDataWidget, &CMediaUserDataWidget::sigApplyFromServer, this, &CMediaWindow::slotApplyFromServer );
     }
 
