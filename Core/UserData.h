@@ -80,6 +80,7 @@ public:
     QImage globalAvatar() const; // when all servers use the same image
     QImage getAvatar( const QString & serverName ) const;
     void setAvatar( const QString & serverName, int serverCnt, const QImage & image );
+    QImage anyAvatar() const; // first avatar non-null
 
     bool canBeSynced() const;
     bool onServer( const QString & serverName ) const;

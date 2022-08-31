@@ -255,6 +255,16 @@ QImage CUserData::globalAvatar() const // when all servers use the same image
     return fImage.has_value() ? fImage.value().scaled( QSize( 32, 32 ) ) : QImage();
 }
 
+QImage CUserData::anyAvatar() const
+{
+    for ( auto && ii : fInfoForServer )
+    {
+        if ( !ii.second->fImage.isNull() )
+            return ii.second->fImage;
+    }
+    return {};
+}
+
 void CUserData::checkAllAvatarsTheSame( int serverNum )
 {
     if ( fImage.has_value() )
