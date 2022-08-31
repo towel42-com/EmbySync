@@ -56,9 +56,12 @@ public:
 public Q_SLOTS:
     void slotTestServers();
     void slotTestServerResults( const QString & serverName, bool results, const QString & msg );
+    void slotMoveServerUp();
+    void slotMoveServerDown();
+    void slotCurrServerChanged();
 private:
     void loadKnownUsers( const std::vector< std::shared_ptr< CUserData > > & knownUsers );
-
+    void moveCurrServer( bool up );
     void load();
     void save();
 

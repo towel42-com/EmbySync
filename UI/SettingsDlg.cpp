@@ -140,8 +140,63 @@ CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, std::shared_p
              {
                  return editServer( item );
              } );
+    connect( fImpl->servers, &QTreeWidget::itemSelectionChanged, this, &CSettingsDlg::slotCurrServerChanged );
+    connect( fImpl->moveServerUp, &QToolButton::clicked, this, &CSettingsDlg::slotMoveServerUp );
+    connect( fImpl->moveServerDown, &QToolButton::clicked, this, &CSettingsDlg::slotMoveServerDown );
 
     fImpl->tabWidget->setCurrentIndex( 0 );
+}
+
+void CSettingsDlg::slotMoveServerUp()
+{
+    moveCurrServer( true );
+}
+
+void CSettingsDlg::slotMoveServerDown()
+{
+    moveCurrServer( false );
+}
+
+void CSettingsDlg::slotCurrServerChanged()
+{
+    auto curr = fImpl->servers->currentItem();
+    if ( !curr )
+        return;
+
+    auto itemAbove = fImpl->servers->itemAbove( curr );
+    fImpl->moveServerUp->setEnabled( itemAbove != nullptr );
+
+    auto itemBelow = fImpl->servers->itemBelow( curr );
+    fImpl->moveServerDown->setEnabled( itemBelow != nullptr );
+}
+
+
+void CSettingsDlg::moveCurrServer( bool up )
+{
+    auto curr = fImpl->servers->currentItem();
+    if ( !curr )
+        return;
+
+    auto parentItem = curr->parent();
+    auto treeWidget = curr->treeWidget();
+    if ( parentItem )
+    {
+        auto currIdx = parentItem->indexOfChild( curr );
+        parentItem->takeChild( currIdx );
+        currIdx += up ? -1 : +1;
+        parentItem->insertChild( currIdx, curr );
+    }
+    else
+    {
+        auto currIdx = treeWidget->indexOfTopLevelItem( curr );
+        treeWidget->takeTopLevelItem( currIdx );
+        currIdx += up ? -1 : +1;
+        treeWidget->insertTopLevelItem( currIdx, curr );
+    }
+    treeWidget->selectionModel()->clearSelection();
+    curr->setSelected( true );
+    treeWidget->setCurrentItem( curr );
+    slotCurrServerChanged();
 }
 
 void CSettingsDlg::loadKnownUsers( const std::vector< std::shared_ptr< CUserData > > & knownUsers )
@@ -158,7 +213,10 @@ void CSettingsDlg::loadKnownUsers( const std::vector< std::shared_ptr< CUserData
         for ( int jj = 0; jj < fSettings->serverCnt(); ++jj )
             data << ii->name( fSettings->serverInfo( jj )->keyName() );
 
-        fKnownUsers.push_back( std::make_pair( ii, new QTreeWidgetItem( fImpl->knownUsers, data ) ) );
+        auto item = new QTreeWidgetItem( fImpl->knownUsers, data );
+        item->setIcon( 0, QIcon( QPixmap::fromImage( ii->anyAvatar() ) ) );
+
+        fKnownUsers.push_back( std::make_pair( ii, item ) );
     }
 }
 
