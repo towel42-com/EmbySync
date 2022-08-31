@@ -12,6 +12,8 @@
         <file>resources/error.png</file>
         <file>resources/issues.png</file>
         <file>resources/load.png</file>
+        <file>resources/movedown.png</file>
+        <file>resources/moveup.png</file>
         <file>resources/open.png</file>
         <file>resources/process.png</file>
         <file>resources/processLeft.png</file>
