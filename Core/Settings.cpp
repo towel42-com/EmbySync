@@ -593,6 +593,15 @@ void CSettings::updateServerInfo( const QString & serverName, const QJsonObject 
     serverInfo->update( serverData );
 }
 
+void CSettings::setServerIcon( const QString & serverName, const QByteArray & data, const QString & type )
+{
+    auto serverInfo = findServerInfoInternal( serverName );
+    if ( !serverInfo )
+        return;
+
+    serverInfo->setIcon( data, type );
+}
+
 std::shared_ptr< CServerInfo > CSettings::findServerInfoInternal( const QString & serverName )
 {
     auto pos = fServerMap.find( serverName );

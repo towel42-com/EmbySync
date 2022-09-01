@@ -56,6 +56,8 @@ QString toString( ERequestType request )
     {
         case ERequestType::eNone: return "None";
         case ERequestType::eGetServerInfo: return "GetServerInfo";
+        case ERequestType::eGetServerHomePage: return "GetServerHomePage";
+        case ERequestType::eGetServerIcon: return "GetServerIcon";
         case ERequestType::eGetUsers: return "GetUsers";
         case ERequestType::eGetUser: return "GetUser";
         case ERequestType::eGetUserImage: return "GetUserImage";
@@ -156,6 +158,7 @@ void CSyncSystem::loadServers()
         if ( !serverInfo->isEnabled() )
             continue;
         requestGetServerInfo( fSettings->serverInfo( ii )->keyName() );
+        requestGetServerHomePage( fSettings->serverInfo( ii )->keyName() );
     }
 }
 
@@ -555,7 +558,7 @@ void CSyncSystem::slotSSlErrors( QNetworkReply * /*reply*/, const QList<QSslErro
     //qDebug() << "slotSSlErrors: 0x" << Qt::hex << reply << errors;
 }
 
-QNetworkReply * CSyncSystem::makeRequest( const QNetworkRequest & request, ENetworkRequestType requestType, const QByteArray & data )
+QNetworkReply * CSyncSystem::makeRequest( QNetworkRequest & request, ENetworkRequestType requestType, const QByteArray & data )
 {
     if ( !fPendingRequestTimer )
     {
@@ -565,6 +568,9 @@ QNetworkReply * CSyncSystem::makeRequest( const QNetworkRequest & request, ENetw
         connect( fPendingRequestTimer, &QTimer::timeout, this, &CSyncSystem::slotCheckPendingRequests );
     }
     fPendingRequestTimer->start();
+
+    request.setAttribute( QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy );
+
     switch ( requestType )
     {
         case ENetworkRequestType::eDeleteResource:
@@ -684,6 +690,12 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
     case ERequestType::eGetServerInfo:
         handleGetServerInfoResponse( serverName, data );
         break;
+    case ERequestType::eGetServerHomePage:
+        handleGetServerHomePageResponse( serverName, data );
+        break;
+    case ERequestType::eGetServerIcon:
+        handleGetServerIconResponse( serverName, data, extraData.toString() );
+        break;
     case ERequestType::eGetUsers:
         if ( !fProgressSystem->wasCanceled() )
         {
@@ -792,8 +804,6 @@ void CSyncSystem::requestGetServerInfo( const QString & serverName )
     if ( !url.isValid() )
         return;
 
-    emit sigAddToLog( EMsgType::eInfo, tr( "Server URL: %1" ).arg( url.toString() ) );
-
     auto request = QNetworkRequest( url );
 
     auto reply = makeRequest( request );
@@ -816,6 +826,73 @@ void CSyncSystem::handleGetServerInfoResponse( const QString & serverName, const
     auto serverInfo = doc.object();
 
     fSettings->updateServerInfo( serverName, serverInfo );
+}
+
+void CSyncSystem::requestGetServerHomePage( const QString & serverName )
+{
+    emit sigAddToLog( EMsgType::eInfo, tr( "Loading server homepage from server '%1'" ).arg( serverName ) );
+
+    // SystemService 
+    auto && url = QUrl( fSettings->findServerInfo( serverName )->url( true ) );
+    if ( !url.isValid() )
+        return;
+
+    emit sigAddToLog( EMsgType::eInfo, tr( "Server URL: %1" ).arg( url.toString() ) );
+
+    auto request = QNetworkRequest( url );
+
+    auto reply = makeRequest( request );
+    setServerName( reply, serverName );
+    setRequestType( reply, ERequestType::eGetServerHomePage );
+}
+
+void CSyncSystem::handleGetServerHomePageResponse( const QString & serverName, const QByteArray & data )
+{
+    static std::list< QRegularExpression > regExs =
+    {
+          QRegularExpression( "\\<link\\s+rel=\"(?<rel>(shortcut |mask-)icon)\" href=\"(?<url>.*)\"\\>" )
+        , QRegularExpression( "\\<link\\s+rel=\"(?<rel>(shortcut |mask-)icon)\" type=\"(?<type>.*)\" href=\"(?<url>.*)\"\\>" )
+        , QRegularExpression( "\\<link\\s+rel=\"(?<rel>(shortcut |mask-)icon)\" href=\"(?<url>.*)\" color=\"(?<color>.*)\"\\>" )
+    };
+
+    for ( auto && ii : regExs )
+    {
+        auto match = ii.match( data );
+        if ( match.hasMatch() )
+        {
+            auto url = match.captured( "url" );
+            auto type = match.captured( "type" );
+            auto color = match.captured( "color" );
+            auto rel = match.captured( "rel" );
+            requestGetServerIcon( serverName, url, type );
+            return;
+        }
+    }
+}
+
+
+void CSyncSystem::requestGetServerIcon( const QString & serverName, const QString & iconRelPath, const QString & type )
+{
+    emit sigAddToLog( EMsgType::eInfo, tr( "Loading server icon from server '%1'" ).arg( serverName ) );
+
+    // SystemService 
+    auto && url = QUrl( fSettings->findServerInfo( serverName )->url( true ) + "/" + iconRelPath );
+    if ( !url.isValid() )
+        return;
+
+    emit sigAddToLog( EMsgType::eInfo, tr( "Server URL: %1" ).arg( url.toString() ) );
+
+    auto request = QNetworkRequest( url );
+
+    auto reply = makeRequest( request );
+    setServerName( reply, serverName );
+    setExtraData( reply, type );
+    setRequestType( reply, ERequestType::eGetServerIcon );
+}
+
+void CSyncSystem::handleGetServerIconResponse( const QString & serverName, const QByteArray & data, const QString & type )
+{
+    fSettings->setServerIcon( serverName, data, type );
 }
 
 void CSyncSystem::requestGetUsers( const QString & serverName )

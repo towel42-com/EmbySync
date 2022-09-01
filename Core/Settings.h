@@ -75,6 +75,7 @@ public:
     std::shared_ptr< const CServerInfo > findServerInfo( const QString & serverName );
 
     void updateServerInfo( const QString & serverName, const QJsonObject & serverData );
+    void setServerIcon( const QString & serverName, const QByteArray & data, const QString & type );
 
     bool canAllServersSync() const;
     bool canAnyServerSync() const;

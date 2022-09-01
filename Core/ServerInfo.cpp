@@ -24,6 +24,7 @@
 #include <QUrlQuery>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QPixmap>
 
 CServerInfo::CServerInfo( const QString & name, const QString & url, const QString & apiKey, bool enabled ) :
     fName( { name, false } ),
@@ -57,9 +58,18 @@ bool CServerInfo::setUrl( const QString & url )
     return true;
 }
 
-QString CServerInfo::url() const
+QString CServerInfo::url( bool clean ) const
 {
-    return fURL;
+    auto retVal = fURL;
+    if ( clean )
+    {
+        if ( retVal.isEmpty() )
+            return {};
+
+        if ( retVal.indexOf( "://" ) == -1 )
+            retVal = "http://" + retVal;
+    }
+    return retVal;
 }
 
 QUrl CServerInfo::getUrl() const
@@ -67,12 +77,9 @@ QUrl CServerInfo::getUrl() const
     return getUrl( QString(), std::list< std::pair< QString, QString > >() );
 }
 
-
 QUrl CServerInfo::getUrl( const QString & extraPath, const std::list< std::pair< QString, QString > > & queryItems ) const
 {
-    auto path = fURL;
-    if ( path.isEmpty() )
-        return {};
+    auto path = url( true );
 
     if ( !extraPath.isEmpty() )
     {
@@ -81,10 +88,7 @@ QUrl CServerInfo::getUrl( const QString & extraPath, const std::list< std::pair<
         path += extraPath;
     }
 
-    if ( path.indexOf( "://" ) == -1 )
-        path = "http://" + path;
-
-    QUrl retVal( path );
+    auto retVal = QUrl( path );
 
     QUrlQuery query;
     query.addQueryItem( "api_key", fAPIKey );
@@ -223,6 +227,20 @@ void CServerInfo::update( const QJsonObject & serverData )
     fVersion = serverData[ "Version" ].toString();
     fID = serverData[ "Id" ].toString();
 
+    emit sigServerInfoChanged();
+}
+
+void CServerInfo::setIcon( const QByteArray & data, const QString & type )
+{
+    QPixmap pm;
+    pm.loadFromData( data );
+    if ( pm.isNull() )
+    {
+        qDebug() << data << type;
+        return;
+    }
+
+    fIcon = QIcon( pm );
     emit sigServerInfoChanged();
 }
 

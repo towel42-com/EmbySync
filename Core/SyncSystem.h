@@ -58,6 +58,8 @@ enum class ERequestType
 {
     eNone,
     eGetServerInfo,
+    eGetServerHomePage,
+    eGetServerIcon,
     eGetUsers,
     eGetUser,
     eGetUserImage,
@@ -180,7 +182,7 @@ private Q_SLOTS:
     void slotCheckPendingRequests();
     void slotRepairNextUser();
 private:
-    QNetworkReply * makeRequest( const QNetworkRequest & request, ENetworkRequestType requestType = ENetworkRequestType::eGet, const QByteArray & data = {} );
+    QNetworkReply * makeRequest( QNetworkRequest & request, ENetworkRequestType requestType = ENetworkRequestType::eGet, const QByteArray & data = {} );
 
     std::shared_ptr<CUserData> loadUser( const QString & serverName, const QJsonObject & user );
     std::shared_ptr< CMediaData> loadMedia( const QString & serverName, const QJsonObject & media );
@@ -191,6 +193,12 @@ private:
 
     void requestGetServerInfo( const QString & serverName );
     void handleGetServerInfoResponse( const QString & serverName, const QByteArray & data );
+
+    void requestGetServerHomePage( const QString & serverName );
+    void handleGetServerHomePageResponse( const QString & serverName, const QByteArray & data );
+
+    void requestGetServerIcon( const QString & serverName, const QString & iconRelPath, const QString & type );
+    void handleGetServerIconResponse( const QString & serverName, const QByteArray & data, const QString & type );
 
     void requestGetUsers( const QString & serverName );
     void handleGetUsersResponse( const QString & serverName, const QByteArray & data );
