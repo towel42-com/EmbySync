@@ -129,20 +129,25 @@ QVariant CUsersModel::headerData( int section, Qt::Orientation orientation, int 
 {
     if ( section < 0 || section > columnCount() )
         return QAbstractTableModel::headerData( section, orientation, role );
-    if ( role != Qt::DisplayRole )
-        return QAbstractTableModel::headerData( section, orientation, role );
     if ( orientation != Qt::Horizontal )
         return QAbstractTableModel::headerData( section, orientation, role );
 
-    if ( section == eConnectedID )
-        return tr( "Connected ID" );
-    else if ( section == eAllNames )
-        return tr( "All Names" );
-   
+    if ( role == Qt::DisplayRole )
+    {
+        if ( section == eConnectedID )
+            return tr( "Connected ID" );
+        else if ( section == eAllNames )
+            return tr( "All Names" );
+    }
+
     auto pos = fColumnToServerInfo.find( section );
     if ( pos == fColumnToServerInfo.end() )
         return {};
-    return ( *pos ).second.second->displayName();
+    if ( role == Qt::DisplayRole )
+        return ( *pos ).second.second->displayName();
+    else if ( role == Qt::DecorationRole )
+        return ( *pos ).second.second->icon();
+    return {};
 }
 
 bool CUsersModel::hasUsersWithConnectedIDNeedingUpdate() const

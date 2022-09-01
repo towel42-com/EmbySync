@@ -27,6 +27,7 @@
 #include <QUrl>
 #include <utility>
 #include <QObject>
+#include <QIcon>
 
 class QJsonObject;
 
@@ -45,10 +46,9 @@ public:
     }
 
     bool setUrl( const QString & url );
-    QString url() const;
-    QUrl getUrl() const;
+    QString url( bool clean=false ) const;
+    QUrl getUrl() const; // includes the query for apikey
     QUrl getUrl( const QString & extraPath, const std::list< std::pair< QString, QString > > & queryItems ) const;
-
 
     QString displayName( bool verbose=false ) const; // returns the name, if empty returns the fqdn, if the same fqdn is used more than once, it use fqdn:port, verbose includes the url
     bool setDisplayName( const QString & name, bool generated );
@@ -70,6 +70,10 @@ public:
     bool setIsEnabled( bool isEnabled );
 
     void update( const QJsonObject & serverData );
+
+    QIcon icon() const { return fIcon; }
+    void setIcon( const QByteArray & data, const QString & type );
+
 Q_SIGNALS:
     void sigServerInfoChanged();
 private:
@@ -80,6 +84,7 @@ private:
     bool fIsEnabled{ true };
 
     // from server info
+    QIcon fIcon;
     QString fLocalAddress;
     std::list< QString > fLocalAddresses;
     QString fWANAddress;
