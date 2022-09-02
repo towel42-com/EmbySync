@@ -25,37 +25,20 @@
 
 #include <QMainWindow>
 #include <memory>
-#include <tuple>
-#include <optional>
-#include <QPointer>
 namespace Ui
 {
     class CMainWindow;
 }
 namespace NSABUtils{ class CGitHubGetVersions; }
-
-class CMediaData;
-class CUserData;
 class CSettings;
-class CSyncSystem;
 class QProgressDialog;
-class CMediaModel;
-class CMediaFilterModel;
 class CUsersModel;
 class CUsersFilterModel;
-class QTreeView;
-class CMediaWindow;
-class CMediaTree;
 
 class CMainWindow : public QMainWindow
 {
     Q_OBJECT
 public:
-    enum class EWhichTree
-    {
-        eLHS,
-        eRHS
-    };
     CMainWindow( QWidget * parent = nullptr );
 
 
@@ -64,57 +47,38 @@ public:
     virtual void closeEvent( QCloseEvent * closeEvent ) override;
     virtual void showEvent( QShowEvent * event ) override;
 Q_SIGNALS:
+    void sigSettingsChanged();
     void sigSettingsLoaded();
     void sigDataChanged();
+    void sigCanceled();
 public Q_SLOTS:
     void slotSettings();
 
     void loadSettings();
 
-    void slotDataChanged();
+    void slotUpdateActions();
 
     void slotLoadSettings();
     void slotSave();
     void slotSaveAs();
     void slotRecentMenuAboutToShow();
-    void slotUserMediaCompletelyLoaded();
-    void slotPendingMediaUpdate();
-    void slotSelectiveProcess();
 
     void slotLoadLastProject();
     void slotCheckForLatest();
     void slotActionCheckForLatest();
 
 private Q_SLOTS:
-    void slotCurrentUserChanged( const QModelIndex & index );
-    void slotUsersContextMenu( const QPoint & pos );
-    void slotRepairUserConnectedIDs();
-    void slotReloadServers();
-    void slotReloadCurrentUser();
-
-    void slotToggleOnlyShowSyncableUsers();
-    void slotToggleOnlyShowMediaWithDifferences();
-    void slotToggleShowMediaWithIssues();
-
     void slotAddToLog( int msgType, const QString & msg );
     void slotAddInfoToLog( const QString & msg );
-
-    void slotLoadingUsersFinished();
-    void slotUserMediaLoaded();
-
-    void slotSetCurrentMediaItem( const QModelIndex & current );
-    void slotViewMedia( const QModelIndex & current );
-
-    void slotViewMediaInfo();
-    void slotSetConnectID();
-    void slotAutoSetConnectID();
     void slotVersionsDownloaded();
+    void slotCurentTabChanged( int idx );
+
 private:
+    void setupProgressSystem();
     void checkForLatest( bool quiteIfUpToDate );
+    QAction * findEditMenuInsertBefore();
 
 
-    std::shared_ptr< CMediaData > getMediaData( QModelIndex idx ) const;
-        
     void progressSetup( const QString & title );
 
     void progressSetMaximum( int count );
@@ -123,37 +87,26 @@ private:
     void progressIncValue();
     void progressReset();
 
-    void onlyShowSyncableUsers();
-    void onlyShowMediaWithDifferences();
-    void showMediaWithIssues();
-    std::shared_ptr< CUserData > getCurrUserData() const;
-    std::shared_ptr< CUserData > getUserData( QModelIndex idx ) const;
-
     void loadFile( const QString & fileName );
 
     void reset();
 
-    void loadServers();
-    void resetServers();
-
     std::unique_ptr< Ui::CMainWindow > fImpl;
     std::shared_ptr< CSettings > fSettings;
-    std::shared_ptr< CSyncSystem > fSyncSystem;
+    std::shared_ptr< CUsersModel > fUsersModel;
 
     QProgressDialog * fProgressDlg{ nullptr };
 
-    std::shared_ptr< CMediaModel >fMediaModel;
-    CMediaFilterModel * fMediaFilterModel{ nullptr };
+    struct SCurrentTab
+    {
+        std::list< QMenu * > fMenus;
+        std::list< QAction * > fEditActions;
+        std::list< QToolBar * > fToolBars;
+    };
 
-    std::shared_ptr< CUsersModel > fUsersModel;
-    CUsersFilterModel * fUsersFilterModel{ nullptr };
+    SCurrentTab fCurrentTabInfo;
+    QAction * fEditMenuInsertBefore{ nullptr };
 
-    QTimer * fPendingMediaUpdateTimer{ nullptr };
-    QTimer * fMediaLoadedTimer{ nullptr };
-
-    QPointer< CMediaWindow > fMediaWindow;
     std::pair< NSABUtils::CGitHubGetVersions *, bool > fGitHubVersion{ nullptr, false };
-    std::vector< CMediaTree * > fMediaTrees;
-
 };
-#endif 
+#endif

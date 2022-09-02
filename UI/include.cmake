@@ -5,6 +5,7 @@ set(qtproject_SRCS
     MediaTree.cpp
     MediaUserDataWidget.cpp
     MediaWindow.cpp 
+    PlayStateCompare.cpp
 )
 
 set(qtproject_H
@@ -14,6 +15,7 @@ set(qtproject_H
     MediaTree.h
     MediaUserDataWidget.h
     MediaWindow.h 
+    PlayStateCompare.h
 )
 
 set(project_H
@@ -26,6 +28,7 @@ set(qtproject_UIS
     MediaTree.ui
     MediaUserDataWidget.ui
     MediaWindow.ui 
+    PlayStateCompare.ui
 )
 
 
