@@ -30,14 +30,25 @@ void CUsersModel::setupColumns()
             continue;
         fServerNumToColumn[ ii ] = columnNum;
         fColumnToServerInfo[ columnNum ] = std::make_pair( ii, serverInfo );
-        connect( serverInfo.get(), &CServerInfo::sigServerInfoChanged,
-                 [this, serverInfo, ii]()
-                 {
-                     emit headerDataChanged( Qt::Orientation::Horizontal, ii, ii );
-                 } );
         columnNum++;
+
+        disconnect( serverInfo.get(), &CServerInfo::sigServerInfoChanged, this, &CUsersModel::slotServerInfoChanged );
+        connect( serverInfo.get(), &CServerInfo::sigServerInfoChanged, this, &CUsersModel::slotServerInfoChanged );
     }
 }
+
+void CUsersModel::slotServerInfoChanged()
+{
+    int colMin = 32767;
+    int colMax = -1;
+    for ( auto && ii : fServerNumToColumn )
+    {
+        colMin = std::min( ii.second, colMin );
+        colMax = std::max( ii.second, colMax );
+    }
+    emit headerDataChanged( Qt::Orientation::Horizontal, colMin, colMax );
+}
+
 
 int CUsersModel::serverNum( int columnNum ) const
 {
