@@ -24,53 +24,11 @@
        <property name="currentIndex">
         <number>0</number>
        </property>
-       <widget class="QWidget" name="playedState">
+       <widget class="CPlayStateCompare" name="playStateCompare">
         <attribute name="title">
          <string>Played State</string>
         </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_2">
-         <item>
-          <widget class="QSplitter" name="playedStateSplitter">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-           <widget class="QWidget" name="layoutWidget">
-            <layout class="QVBoxLayout" name="verticalLayout">
-             <item>
-              <widget class="QLabel" name="usersLabel">
-               <property name="text">
-                <string>Users:</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QTreeView" name="users">
-               <property name="alternatingRowColors">
-                <bool>true</bool>
-               </property>
-               <property name="sortingEnabled">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="mediaSummaryLabel">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="text">
-            <string>Media Summary:</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
+        <layout class="QVBoxLayout" name="verticalLayout_2"/>
        </widget>
       </widget>
       <widget class="QGroupBox" name="groupBox">
@@ -129,37 +87,11 @@
      <string>Edit</string>
     </property>
     <addaction name="actionSettings"/>
-    <addaction name="actionOnlyShowSyncableUsers"/>
-    <addaction name="actionOnlyShowMediaWithDifferences"/>
+    <addaction name="separator"/>
     <addaction name="separator"/>
     <addaction name="actionCheckForLatestVersion"/>
    </widget>
-   <widget class="QMenu" name="menuProcess">
-    <property name="title">
-     <string>Process</string>
-    </property>
-    <addaction name="actionRepairUserConnectedIDs"/>
-    <addaction name="separator"/>
-    <addaction name="actionProcess"/>
-    <addaction name="actionSelectiveProcess"/>
-   </widget>
-   <widget class="QMenu" name="menuReload">
-    <property name="title">
-     <string>Reload</string>
-    </property>
-    <addaction name="actionReloadServers"/>
-    <addaction name="actionReloadCurrentUser"/>
-   </widget>
-   <widget class="QMenu" name="menuView">
-    <property name="title">
-     <string>View</string>
-    </property>
-    <addaction name="actionViewMediaInformation"/>
-   </widget>
    <addaction name="menuFile"/>
-   <addaction name="menuReload"/>
-   <addaction name="menuProcess"/>
-   <addaction name="menuView"/>
    <addaction name="menuEdit"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -175,15 +107,6 @@
    </attribute>
    <addaction name="actionLoadSettings"/>
    <addaction name="actionSave"/>
-   <addaction name="actionOnlyShowSyncableUsers"/>
-   <addaction name="actionOnlyShowMediaWithDifferences"/>
-   <addaction name="actionShowMediaWithIssues"/>
-   <addaction name="separator"/>
-   <addaction name="actionReloadServers"/>
-   <addaction name="actionReloadCurrentUser"/>
-   <addaction name="separator"/>
-   <addaction name="actionProcess"/>
-   <addaction name="actionSelectiveProcess"/>
   </widget>
   <action name="actionSettings">
    <property name="icon">
@@ -226,45 +149,6 @@
     <string>Alt+F4</string>
    </property>
   </action>
-  <action name="actionProcess">
-   <property name="icon">
-    <iconset resource="EmbySync.qrc">
-     <normaloff>:/resources/process.png</normaloff>:/resources/process.png</iconset>
-   </property>
-   <property name="text">
-    <string>Process Media</string>
-   </property>
-   <property name="toolTip">
-    <string>Process Media</string>
-   </property>
-  </action>
-  <action name="actionReloadServers">
-   <property name="icon">
-    <iconset resource="EmbySync.qrc">
-     <normaloff>:/resources/reloadServers.png</normaloff>:/resources/reloadServers.png</iconset>
-   </property>
-   <property name="text">
-    <string>Reload Users from Servers</string>
-   </property>
-   <property name="toolTip">
-    <string>Reload Servers</string>
-   </property>
-  </action>
-  <action name="actionOnlyShowSyncableUsers">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="EmbySync.qrc">
-     <normaloff>:/resources/syncusers.png</normaloff>:/resources/syncusers.png</iconset>
-   </property>
-   <property name="text">
-    <string>Only Show Syncable Users?</string>
-   </property>
-  </action>
   <action name="actionNoRecentFiles">
    <property name="enabled">
     <bool>false</bool>
@@ -273,73 +157,12 @@
     <string>No Recent Settings</string>
    </property>
   </action>
-  <action name="actionOnlyShowMediaWithDifferences">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="EmbySync.qrc">
-     <normaloff>:/resources/syncmedia.png</normaloff>:/resources/syncmedia.png</iconset>
-   </property>
-   <property name="text">
-    <string>Only Show Media with Differences?</string>
-   </property>
-  </action>
-  <action name="actionReloadCurrentUser">
-   <property name="icon">
-    <iconset resource="EmbySync.qrc">
-     <normaloff>:/resources/reloadUsers.png</normaloff>:/resources/reloadUsers.png</iconset>
-   </property>
-   <property name="text">
-    <string>Reload Current User's Media</string>
-   </property>
-   <property name="toolTip">
-    <string>Reload Current User</string>
-   </property>
-  </action>
-  <action name="actionSelectiveProcess">
-   <property name="icon">
-    <iconset resource="EmbySync.qrc">
-     <normaloff>:/resources/processRight.png</normaloff>:/resources/processRight.png</iconset>
-   </property>
-   <property name="text">
-    <string>Select a Server and Update other servers to it..</string>
-   </property>
-   <property name="toolTip">
-    <string>Select a Server and Update other servers to it</string>
-   </property>
-  </action>
-  <action name="actionShowMediaWithIssues">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="EmbySync.qrc">
-     <normaloff>:/resources/issues.png</normaloff>:/resources/issues.png</iconset>
-   </property>
-   <property name="text">
-    <string>Show Media with Issues</string>
-   </property>
-   <property name="toolTip">
-    <string>Show Media with Issues</string>
-   </property>
-  </action>
-  <action name="actionViewMediaInformation">
-   <property name="text">
-    <string>Media Information...</string>
-   </property>
-  </action>
   <action name="actionSaveAs">
    <property name="text">
     <string>Save As...</string>
    </property>
    <property name="toolTip">
     <string>Save As..</string>
-   </property>
-  </action>
-  <action name="actionRepairUserConnectedIDs">
-   <property name="text">
-    <string>Repair User Connected IDs</string>
    </property>
   </action>
   <action name="actionCheckForLatestVersion">
@@ -351,6 +174,14 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>CPlayStateCompare</class>
+   <extends>QWidget</extends>
+   <header>PlayStateCompare.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="EmbySync.qrc"/>
  </resources>
