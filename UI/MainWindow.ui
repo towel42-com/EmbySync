@@ -14,32 +14,59 @@
    <string>EmbySync</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout_5">
+   <layout class="QVBoxLayout" name="verticalLayout_3">
     <item>
-     <widget class="QSplitter" name="splitter">
+     <widget class="QSplitter" name="splitter_2">
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
-      <widget class="QSplitter" name="upperSplitter">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
+      <widget class="QTabWidget" name="tabWidget">
+       <property name="currentIndex">
+        <number>0</number>
        </property>
-       <widget class="QWidget" name="layoutWidget_1">
-        <layout class="QVBoxLayout" name="verticalLayout">
+       <widget class="QWidget" name="playedState">
+        <attribute name="title">
+         <string>Played State</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
-          <widget class="QLabel" name="usersLabel">
-           <property name="text">
-            <string>Users:</string>
+          <widget class="QSplitter" name="playedStateSplitter">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
            </property>
+           <widget class="QWidget" name="layoutWidget">
+            <layout class="QVBoxLayout" name="verticalLayout">
+             <item>
+              <widget class="QLabel" name="usersLabel">
+               <property name="text">
+                <string>Users:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QTreeView" name="users">
+               <property name="alternatingRowColors">
+                <bool>true</bool>
+               </property>
+               <property name="sortingEnabled">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
           </widget>
          </item>
          <item>
-          <widget class="QTreeView" name="users">
-           <property name="alternatingRowColors">
-            <bool>true</bool>
+          <widget class="QLabel" name="mediaSummaryLabel">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
            </property>
-           <property name="sortingEnabled">
-            <bool>true</bool>
+           <property name="text">
+            <string>Media Summary:</string>
            </property>
           </widget>
          </item>
@@ -66,13 +93,6 @@
         </item>
        </layout>
       </widget>
-     </widget>
-    </item>
-    <item>
-     <widget class="QLabel" name="mediaSummaryLabel">
-      <property name="text">
-       <string>Media Summary:</string>
-      </property>
      </widget>
     </item>
    </layout>
@@ -331,9 +351,6 @@
    </property>
   </action>
  </widget>
- <tabstops>
-  <tabstop>users</tabstop>
- </tabstops>
  <resources>
   <include location="EmbySync.qrc"/>
  </resources>
