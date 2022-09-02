@@ -621,7 +621,7 @@ bool CSyncSystem::handleError( QNetworkReply * reply, const QString & serverName
         }
 
         auto data = reply->readAll();
-        errorMsg = tr( "Error from Server: %1%2" ).arg( reply->errorString() ).arg( data.isEmpty() ? QString() : QString( " - %1" ).arg( QString( data ) ) );
+        errorMsg = tr( "Error from Server '%1': %2%3" ).arg( serverName ).arg( reply->errorString() ).arg( data.isEmpty() ? QString() : QString( " - %1" ).arg( QString( data ) ) );
         if ( fUserMsgFunc && reportMsg )
             fUserMsgFunc( tr( "Error response from server" ), errorMsg, true );
         return false;
