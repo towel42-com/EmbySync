@@ -315,7 +315,7 @@ void CSyncSystem::updateUserDataForMedia( const QString & serverName, std::share
 
 void CSyncSystem::requestUpdateUserDataForMedia( const QString & serverName, std::shared_ptr< CMediaData > mediaData, std::shared_ptr< SMediaUserData > newData )
 {
-    if ( !mediaData || !newData )
+    if ( !mediaData || !mediaData->userMediaData( serverName ) || !newData )
         return;
 
     if ( *mediaData->userMediaData( serverName ) == *newData )
