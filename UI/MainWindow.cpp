@@ -383,6 +383,7 @@ void CMainWindow::slotDataChanged()
     bool hasCurrentUser = fImpl->users->selectionModel()->currentIndex().isValid();
     bool canSync = fSettings->canAnyServerSync();
     bool hasDataToProcess = canSync && fMediaModel->hasMediaToProcess();
+    bool mediaLoaded = canSync && fMediaModel->rowCount();
     bool hasUsersNeedingFixing = fUsersModel->hasUsersWithConnectedIDNeedingUpdate();
 
     fImpl->actionReloadServers->setEnabled( canSync );
@@ -391,6 +392,8 @@ void CMainWindow::slotDataChanged()
     fImpl->actionProcess->setEnabled( hasDataToProcess );
     fImpl->actionSelectiveProcess->setEnabled( hasDataToProcess );
     fImpl->actionRepairUserConnectedIDs->setEnabled( hasUsersNeedingFixing );
+
+    fImpl->actionViewMediaInformation->setEnabled( mediaLoaded );
 }
 
 void CMainWindow::slotLoadingUsersFinished()
@@ -522,7 +525,7 @@ void CMainWindow::slotAddToLog( int msgType, const QString & msg )
     auto fullMsg = createMessage( static_cast<EMsgType>( msgType ), msg );
     qDebug() << fullMsg;
     fImpl->log->appendPlainText( fullMsg );
-    fImpl->statusbar->showMessage( fullMsg, 500 );
+    statusBar()->showMessage( fullMsg, 500 );
 }
 
 void CMainWindow::slotAddInfoToLog( const QString & msg )
@@ -633,8 +636,8 @@ void CMainWindow::loadServers()
         if ( !serverInfo->isEnabled() )
             continue;
 
-        auto mediaTree = new CMediaTree( fSettings->serverInfo( ii ), fImpl->upperSplitter );
-        fImpl->upperSplitter->addWidget( mediaTree );
+        auto mediaTree = new CMediaTree( fSettings->serverInfo( ii ), fImpl->playedStateSplitter );
+        fImpl->playedStateSplitter->addWidget( mediaTree );
         mediaTree->setModel( fMediaFilterModel );
         connect( mediaTree, &CMediaTree::sigCurrChanged, this, &CMainWindow::slotSetCurrentMediaItem );
         connect( mediaTree, &CMediaTree::sigViewMedia, this, &CMainWindow::slotViewMedia );
@@ -664,8 +667,6 @@ void CMainWindow::slotSetCurrentMediaItem( const QModelIndex & current )
 
     if ( fMediaWindow )
         fMediaWindow->setMedia( mediaInfo );
-
-    fImpl->actionViewMediaInformation->setEnabled( mediaInfo.get() != nullptr );
 
     slotDataChanged();
 }
