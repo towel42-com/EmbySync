@@ -459,6 +459,8 @@ SMediaSummary::SMediaSummary( std::shared_ptr< CMediaModel > model )
         for ( int jj = 0; jj < model->fSettings->serverCnt(); ++jj )
         {
             auto serverInfo = model->fSettings->serverInfo( jj );
+            if ( !serverInfo->isEnabled() )
+                continue;
 
             if ( !ii->isValidForServer( serverInfo->keyName() ) )
             {
