@@ -69,6 +69,8 @@ public:
     void loadAvatars( std::shared_ptr< CSyncSystem > syncSystem ) const;
 public Q_SLOTS:
     void slotSettingsChanged();
+    void slotServerInfoChanged();
+
 private:
     void setupColumns();
     int serverNum( int columnNum ) const;
