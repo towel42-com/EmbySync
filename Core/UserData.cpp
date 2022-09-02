@@ -252,7 +252,7 @@ void CUserData::setImageTagInfo( const QString & serverName, const QString & tag
 
 QImage CUserData::globalAvatar() const // when all servers use the same image
 {
-    return fImage.has_value() ? fImage.value().scaled( QSize( 32, 32 ) ) : QImage();
+    return fGlobalImage.has_value() ? fGlobalImage.value().scaled( QSize( 32, 32 ) ) : QImage();
 }
 
 QImage CUserData::anyAvatar() const
@@ -267,7 +267,7 @@ QImage CUserData::anyAvatar() const
 
 void CUserData::checkAllAvatarsTheSame( int serverNum )
 {
-    if ( fImage.has_value() )
+    if ( fGlobalImage.has_value() )
         return;
     if ( serverNum != this->fInfoForServer.size() )
         return;
@@ -284,18 +284,16 @@ void CUserData::checkAllAvatarsTheSame( int serverNum )
             prev = ii.second->fImage;
     }
     if ( prev.has_value() )
-        fImage = prev;
+        fGlobalImage = prev;
 }
 
 QImage CUserData::getAvatar( const QString & serverName ) const
 {
-    if ( fImage.has_value() )
-    {
-        return fImage.value().scaled( QSize( 32, 32 ) );
-    }
+    if ( fGlobalImage.has_value() )
+        return fGlobalImage.value();
 
     auto serverInfo = getServerInfo( serverName );
-    if ( !serverInfo )
+    if ( !serverInfo || serverInfo->fImage.isNull() )
         return {};
     return serverInfo->fImage.scaled( QSize( 32,32 ) );
 }

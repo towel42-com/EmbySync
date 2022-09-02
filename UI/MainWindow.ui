@@ -28,7 +28,6 @@
         <attribute name="title">
          <string>Played State</string>
         </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_2"/>
        </widget>
       </widget>
       <widget class="QGroupBox" name="groupBox">

@@ -95,7 +95,7 @@ private:
     QString fConnectedID;
     bool fCanBeSynced{ false };
 
-    mutable std::optional< QImage > fImage;
+    mutable std::optional< QImage > fGlobalImage; // when all avatars are the same on the server
     std::map< QString, std::shared_ptr< SUserServerData > > fInfoForServer; // serverName to Info
 };
 #endif 
