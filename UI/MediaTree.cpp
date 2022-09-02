@@ -123,6 +123,8 @@ void CMediaTree::slotVActionTriggered( int action )
 
 void CMediaTree::slotMediaInfoChanged()
 {
+    fImpl->serverImage->setHidden( fServerInfo->icon().isNull() );
+    fImpl->serverImage->setPixmap( fServerInfo->icon().pixmap( fImpl->serverLabel->height() ) );
     fImpl->serverLabel->setText( tr( "Server: <a href=\"%1\">%2</a>" ).arg( fServerInfo->getUrl().toString( QUrl::RemoveQuery ) ).arg( fServerInfo->displayName( true ) ) );
 }
 

@@ -13,7 +13,7 @@
   <property name="windowTitle">
    <string>Media for Server</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
+  <layout class="QGridLayout" name="gridLayout">
    <property name="leftMargin">
     <number>0</number>
    </property>
@@ -26,17 +26,27 @@
    <property name="bottomMargin">
     <number>0</number>
    </property>
-   <item>
-    <widget class="QLabel" name="serverLabel">
-     <property name="text">
-      <string>Server Name:</string>
+   <item row="0" column="0">
+    <widget class="QLabel" name="serverImage">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
      </property>
-     <property name="openExternalLinks">
-      <bool>true</bool>
+     <property name="text">
+      <string/>
      </property>
     </widget>
    </item>
-   <item>
+   <item row="0" column="1">
+    <widget class="QLabel" name="serverLabel">
+     <property name="text">
+      <string>Server:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0" colspan="2">
     <widget class="QTreeView" name="media">
      <property name="alternatingRowColors">
       <bool>true</bool>
