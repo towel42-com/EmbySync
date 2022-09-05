@@ -122,29 +122,6 @@ QString CMediaData::computeName( const QJsonObject & media )
     return retVal;
 }
 
-bool CMediaData::isValidForServer( const QString & serverName ) const
-{
-    auto mediaInfo = userMediaData( serverName );
-    if ( !mediaInfo )
-        return false;
-    return mediaInfo->isValid();
-}
-
-bool CMediaData::isValidForAllServers() const
-{
-    for ( auto && ii : fInfoForServer )
-    {
-        if ( !ii.second->isValid() )
-            return false;
-    }
-    return true;
-}
-
-bool CMediaData::canBeSynced() const
-{
-    return fCanBeSynced;
-}
-
 void CMediaData::loadUserDataFromJSON( const QString & serverName, const QJsonObject & media )
 {
     //auto tmp = QJsonDocument( media );
@@ -189,23 +166,6 @@ QString CMediaData::externalUrlsText() const
     retVal = retVal.arg( externalUrls.join( "\n" ) );
     return retVal;
 }
-
-bool CMediaData::userDataEqual() const
-{
-    auto pos = fInfoForServer.begin();
-    auto nextPos = fInfoForServer.begin();
-    nextPos++;
-
-    for( ; ( pos != fInfoForServer.end() ) && ( nextPos != fInfoForServer.end() ); ++pos, ++nextPos )
-    {
-        if ( !( *pos ).second->userDataEqual( *( ( *nextPos ).second ) ) )
-            return false;
-    }
-    return true;
-}
-
-
-
 
 bool CMediaData::hasProviderIDs() const
 {
@@ -412,7 +372,7 @@ QIcon CMediaData::getDirectionIcon( const QString & serverName ) const
         retVal = sErrorIcon;
     else if ( !canBeSynced() )
         return {};
-    else if ( userDataEqual() )
+    else if ( validUserDataEqual() )
         retVal = sEqualIcon;
     else if ( needsUpdating( serverName ) )
         retVal = sArrowDownIcon;
@@ -460,4 +420,58 @@ std::shared_ptr<SMediaUserData> CMediaData::newestMediaData() const
         }
     }
     return retVal;
+}
+
+bool CMediaData::isValidForServer( const QString & serverName ) const
+{
+    auto mediaInfo = userMediaData( serverName );
+    if ( !mediaInfo )
+        return false;
+    return mediaInfo->isValid();
+}
+
+bool CMediaData::isValidForAllServers() const
+{
+    for ( auto && ii : fInfoForServer )
+    {
+        if ( !ii.second->isValid() )
+            return false;
+    }
+    return true;
+}
+
+bool CMediaData::canBeSynced() const
+{
+    return fCanBeSynced;
+}
+
+EMediaSyncStatus CMediaData::syncStatus() const
+{
+    if ( !canBeSynced() )
+        return EMediaSyncStatus::eNoServerPairs;
+
+    if ( validUserDataEqual() )
+        return EMediaSyncStatus::eMediaEqualOnValidServers;
+    return EMediaSyncStatus::eMediaNeedsUpdating;
+}
+
+
+bool CMediaData::validUserDataEqual() const
+{
+    std::list< std::pair< QString, std::shared_ptr< SMediaUserData > > > validServerData;
+    for ( auto && ii : fInfoForServer )
+    {
+        if ( ii.second->isValid() )
+            validServerData.push_back( ii );
+    }
+
+    auto pos = validServerData.begin();
+    auto nextPos = validServerData.begin();
+    nextPos++;
+    for ( ; ( pos != validServerData.end() ) && ( nextPos != validServerData.end() ); ++pos, ++nextPos )
+    {
+        if ( !( *pos ).second->userDataEqual( *( ( *nextPos ).second ) ) )
+            return false;
+    }
+    return true;
 }

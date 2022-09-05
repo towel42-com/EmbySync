@@ -40,6 +40,14 @@ class QColor;
 class CSettings;
 struct SMediaUserData;
 
+enum class EMediaSyncStatus
+{
+    eNoServerPairs, // 1 or less servers have this media, nothing to sync show as issue media
+    eMediaEqualOnValidServers, // 2 or more servers have media, but all have the same data
+    eMediaNeedsUpdating    // 2 or more servers have media and a sync is necessar
+};
+
+
 class CMediaData
 {
 public:
@@ -67,8 +75,6 @@ public:
 
     QString externalUrlsText() const;
 
-    bool userDataEqual() const;
-
     QString getMediaID( const QString & serverName ) const;
     void setMediaID( const QString & serverName, const QString & id );
 
@@ -77,8 +83,10 @@ public:
     bool isValidForServer( const QString & serverName ) const;
     bool isValidForAllServers() const;
     bool canBeSynced() const;
+    bool validUserDataEqual() const;
+    EMediaSyncStatus syncStatus() const;
 
-    bool needsUpdating( const QString & serverName ) const;
+     bool needsUpdating( const QString & serverName ) const;
     template <class T>
     void needsUpdating( T ) const = delete;
 
