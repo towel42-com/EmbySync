@@ -240,7 +240,7 @@ void CSyncSystem::selectiveProcess( const QString & selectedServer )
     {
         if ( !ii || !ii->isValidForAllServers() )
             continue;
-        if ( ii->userDataEqual() )
+        if ( ii->validUserDataEqual() )
             continue;
 
         cnt++;
@@ -259,7 +259,7 @@ void CSyncSystem::selectiveProcess( const QString & selectedServer )
     {
         if ( !ii || !ii->isValidForAllServers() )
             continue;
-        if ( ii->userDataEqual() )
+        if ( ii->validUserDataEqual() )
             continue;
 
         fProgressSystem->incProgress();
@@ -270,7 +270,7 @@ void CSyncSystem::selectiveProcess( const QString & selectedServer )
 
 bool CSyncSystem::processMedia( std::shared_ptr< CMediaData > mediaData, const QString & selectedServer )
 {
-    if ( !mediaData || mediaData->userDataEqual() )
+    if ( !mediaData || mediaData->validUserDataEqual() )
         return false;
 
     if ( !fCurrUserData )

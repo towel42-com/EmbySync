@@ -67,7 +67,7 @@ bool CMediaModel::hasMediaToProcess() const
     {
         if ( !ii->canBeSynced() )
             continue;
-        if ( !ii->userDataEqual() )
+        if ( !ii->validUserDataEqual() )
             return true;
     }
     return false;
@@ -90,13 +90,13 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
         if ( !mediaData )
             return false;
 
-        if ( !mediaData->isValidForAllServers() )
+        auto mediaSyncStatus = mediaData->syncStatus();
+        if ( mediaSyncStatus == EMediaSyncStatus::eNoServerPairs )
             return fSettings->showMediaWithIssues();
-
-        if ( !fSettings->onlyShowMediaWithDifferences() )
+        if ( mediaSyncStatus == EMediaSyncStatus::eMediaEqualOnValidServers )
+            return !fSettings->onlyShowMediaWithDifferences();
+        else if ( mediaSyncStatus == EMediaSyncStatus::eMediaNeedsUpdating )
             return true;
-
-        return !mediaData->userDataEqual();
     }
 
     int column = index.column();
@@ -408,7 +408,7 @@ QVariant CMediaModel::getColor( const QModelIndex & index, const QString & serve
         }
     }
 
-    if ( !mediaData->userDataEqual() )
+    if ( !mediaData->validUserDataEqual() )
     {
         bool dataSame = false;
 
