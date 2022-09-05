@@ -97,6 +97,7 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
             return !fSettings->onlyShowMediaWithDifferences();
         else if ( mediaSyncStatus == EMediaSyncStatus::eMediaNeedsUpdating )
             return true;
+        return false;
     }
 
     int column = index.column();
