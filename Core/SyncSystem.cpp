@@ -1113,7 +1113,7 @@ void CSyncSystem::handleDeleteConnectedID( const QString & serverName )
     else
     {
         requestGetUser( serverName, std::get< 2 >( fCurrUserConnectID )->getUserID( serverName ) );
-        return fUsersModel->updateUserConnectID( serverName, std::get< 2 >( fCurrUserConnectID )->getUserID( serverName ), std::get< 2 >( fCurrUserConnectID )->connectedID() );
+        return fUsersModel->updateUserConnectID( serverName, std::get< 2 >( fCurrUserConnectID )->getUserID( serverName ), std::get< 2 >( fCurrUserConnectID )->connectedID( serverName ) );
     }
 
 }

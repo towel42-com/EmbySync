@@ -92,7 +92,7 @@ public:
     std::shared_ptr<SUserServerData> newestServerInfo() const;
 
     QImage globalAvatar() const; // when all servers use the same image
-    QImage getAvatar( const QString & serverName ) const;
+    QImage getAvatar( const QString & serverName, bool useUnsetIcon=false ) const;
     void setAvatar( const QString & serverName, int serverCnt, const QImage & image );
     QImage anyAvatar() const; // first avatar non-null
 

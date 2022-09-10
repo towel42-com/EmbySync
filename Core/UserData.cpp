@@ -54,10 +54,20 @@ std::shared_ptr< SUserServerData > CUserData::getServerInfo( const QString & ser
 
 void CUserData::setConnectedID( const QString & serverName, const QString & connectedID )
 {
-    fConnectedID = connectedID;
     auto retVal = getServerInfo( serverName );
     if ( retVal )
         retVal->fConnectedIDOnServer = connectedID;
+
+    auto tmp = allSame< QString >(
+        []( std::shared_ptr< SUserServerData > rhs )
+        {
+            return rhs->fConnectedIDOnServer;
+        } );
+
+    if ( tmp.has_value() )
+        fConnectedID = tmp.value();
+    else
+        fConnectedID.clear();
 }
 
 bool CUserData::isValidForServer( const QString & serverName ) const
@@ -143,7 +153,10 @@ QString CUserData::sortName( std::shared_ptr< CSettings > settings ) const
         return connectedID();
     for ( int ii = 0; ii < settings->serverCnt(); ++ii )
     {
-        auto info = getServerInfo( settings->serverInfo( ii )->keyName() );
+        auto serverInfo = settings->serverInfo( ii );
+        if ( !serverInfo->isEnabled() )
+            continue;
+        auto info = getServerInfo( serverInfo->keyName() );
         if ( !info )
             continue;
         if ( info->fName.isEmpty() )
@@ -347,15 +360,22 @@ std::shared_ptr<SUserServerData> CUserData::newestServerInfo() const
     return retVal;
 }
 
-QImage CUserData::getAvatar( const QString & serverName ) const
+QImage CUserData::getAvatar( const QString & serverName, bool useUnset ) const
 {
+    QImage retVal;
     if ( fGlobalImage.has_value() )
-        return fGlobalImage.value();
-
-    auto serverInfo = getServerInfo( serverName );
-    if ( !serverInfo || serverInfo->fImage.isNull() )
-        return {};
-    return serverInfo->fImage.scaled( QSize( 32,32 ) );
+        retVal = fGlobalImage.value();
+    else
+    {
+        auto serverInfo = getServerInfo( serverName );
+        if ( !serverInfo || serverInfo->fImage.isNull() )
+            retVal = useUnset ? QImage( ":/resources/missingAvatar.png" ) : QImage();
+        else
+            retVal = serverInfo->fImage;
+    }
+    if ( !retVal.isNull() )
+        retVal = retVal.scaled( QSize( 32, 32 ) );
+    return retVal;
 }
 
 void CUserData::setAvatar( const QString & serverName, int serverCnt, const QImage & image )
