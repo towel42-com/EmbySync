@@ -328,8 +328,8 @@ void CUserInfoCompare::slotSetConnectID()
     if ( !serverInfo )
         return;
 
-    auto newConnectedID = QInputDialog::getText( this, tr( "Enter Connect ID" ), tr( "Connect ID:" ), QLineEdit::Normal, userData->connectedID() );
-    if ( newConnectedID == userData->connectedID() )
+    auto newConnectedID = QInputDialog::getText( this, tr( "Enter Connect ID" ), tr( "Connect ID:" ), QLineEdit::Normal, userData->connectedID( serverInfo->keyName() ) );
+    if ( newConnectedID == userData->connectedID( serverInfo->keyName() ) )
         return;
 
     fSyncSystem->setConnectedID( serverInfo->keyName(), newConnectedID, userData );
