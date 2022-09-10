@@ -155,7 +155,7 @@ QVariant CUsersModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
         }
         else if ( columnNum == EServerColumns::eIconStatus )
         {
-            return userData->getAvatar( serverName );
+            return userData->getAvatar( serverName, true );
         }
     }
 
@@ -173,11 +173,6 @@ QVariant CUsersModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
             return userData->name( serverName );
         case EServerColumns::eServerConnectedID:
             return userData->connectedID( serverName );
-        case EServerColumns::eIconStatus:
-        {
-            if ( userData->getAvatar( serverName ).isNull() )
-                return tr( "Unset" );
-        };
     }
     return {};
 }
@@ -447,6 +442,9 @@ void CUsersModel::clear()
 
 std::shared_ptr< CUserData > CUsersModel::getUserData( const QString & name, bool exhaustiveSearch ) const
 {
+    if ( name.isEmpty() )
+        return {};
+
     auto pos = fUserMap.find( name );
     if ( pos != fUserMap.end() )
         return ( *pos ).second;
@@ -482,7 +480,7 @@ std::vector< std::shared_ptr< CUserData > > CUsersModel::getAllUsers( bool sorte
 
 std::shared_ptr< CUserData > CUsersModel::loadUser( const QString & serverName, const QJsonObject & user )
 {
-    qDebug().noquote().nospace() << QJsonDocument( user ).toJson();
+    //qDebug().noquote().nospace() << QJsonDocument( user ).toJson();
 
     auto currName = user[ "Name" ].toString();
     auto userID = user[ "Id" ].toString();
@@ -501,6 +499,10 @@ std::shared_ptr< CUserData > CUsersModel::loadUser( const QString & serverName, 
     if ( !userData )
     {
         userData = std::make_shared< CUserData >( serverName, userID );
+        userData->setName( serverName, currName );
+        userData->setUserID( serverName, userID );
+        userData->setConnectedID( serverName, connectedID );
+
         beginInsertRows( QModelIndex(), static_cast<int>( fUsers.size() ), static_cast<int>( fUsers.size() ) );
         fUsers.push_back( userData );
         fUserMap[ userData->sortName( fSettings ) ] = userData;

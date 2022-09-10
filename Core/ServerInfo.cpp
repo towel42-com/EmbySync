@@ -232,11 +232,12 @@ void CServerInfo::update( const QJsonObject & serverData )
 
 void CServerInfo::setIcon( const QByteArray & data, const QString & type )
 {
+    (void)type;
     QPixmap pm;
     pm.loadFromData( data );
     if ( pm.isNull() )
     {
-        qDebug() << data << type;
+        //qDebug() << data << type;
         return;
     }
 
