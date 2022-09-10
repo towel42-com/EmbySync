@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>CUserDataWidget</class>
+ <widget class="QGroupBox" name="CUserDataWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>403</width>
+    <height>413</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>User Data:</string>
+  </property>
+  <layout class="QFormLayout" name="formLayout">
+   <item row="0" column="0">
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QLabel" name="avatar">
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>Name:</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="0" column="1">
+    <layout class="QHBoxLayout" name="horizontalLayout_3">
+     <item>
+      <widget class="QLineEdit" name="name"/>
+     </item>
+     <item>
+      <widget class="QToolButton" name="setAvatarBtn">
+       <property name="text">
+        <string>...</string>
+       </property>
+       <property name="icon">
+        <iconset resource="EmbySync.qrc">
+         <normaloff>:/resources/missingAvatar.png</normaloff>:/resources/missingAvatar.png</iconset>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="label_3">
+     <property name="text">
+      <string>Connect ID:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QLineEdit" name="connectID"/>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="label_2">
+     <property name="text">
+      <string>Creation Date (UTC):</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <layout class="QHBoxLayout" name="horizontalLayout_4">
+     <item>
+      <widget class="QDateTimeEdit" name="creationDate">
+       <property name="readOnly">
+        <bool>false</bool>
+       </property>
+       <property name="currentSection">
+        <enum>QDateTimeEdit::MonthSection</enum>
+       </property>
+       <property name="displayFormat">
+        <string>M/d/yyyy hh:mm</string>
+       </property>
+       <property name="calendarPopup">
+        <bool>true</bool>
+       </property>
+       <property name="timeSpec">
+        <enum>Qt::UTC</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="setCreatedDateToNow">
+       <property name="text">
+        <string>...</string>
+       </property>
+       <property name="icon">
+        <iconset resource="EmbySync.qrc">
+         <normaloff>:/resources/clock.png</normaloff>:/resources/clock.png</iconset>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="3" column="0">
+    <widget class="QLabel" name="label_4">
+     <property name="text">
+      <string>Last Login Date (UTC):</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="1">
+    <layout class="QHBoxLayout" name="horizontalLayout_5">
+     <item>
+      <widget class="QDateTimeEdit" name="lastLoginDate">
+       <property name="currentSection">
+        <enum>QDateTimeEdit::MonthSection</enum>
+       </property>
+       <property name="displayFormat">
+        <string>M/d/yyyy hh:mm</string>
+       </property>
+       <property name="calendarPopup">
+        <bool>true</bool>
+       </property>
+       <property name="timeSpec">
+        <enum>Qt::UTC</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="setLastLoginDateToNow">
+       <property name="text">
+        <string>...</string>
+       </property>
+       <property name="icon">
+        <iconset resource="EmbySync.qrc">
+         <normaloff>:/resources/clock.png</normaloff>:/resources/clock.png</iconset>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="4" column="0">
+    <widget class="QLabel" name="label_5">
+     <property name="text">
+      <string>Last Activity Date (UTC):</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="1">
+    <layout class="QHBoxLayout" name="horizontalLayout_6">
+     <item>
+      <widget class="QDateTimeEdit" name="lastActivityDate">
+       <property name="currentSection">
+        <enum>QDateTimeEdit::MonthSection</enum>
+       </property>
+       <property name="displayFormat">
+        <string>M/d/yyyy hh:mm</string>
+       </property>
+       <property name="calendarPopup">
+        <bool>true</bool>
+       </property>
+       <property name="timeSpec">
+        <enum>Qt::UTC</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="setLastActivityDateToNow">
+       <property name="text">
+        <string>...</string>
+       </property>
+       <property name="icon">
+        <iconset resource="EmbySync.qrc">
+         <normaloff>:/resources/clock.png</normaloff>:/resources/clock.png</iconset>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="5" column="1">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="6" column="0" colspan="2">
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="apply">
+       <property name="text">
+        <string>Apply From Here</string>
+       </property>
+       <property name="icon">
+        <iconset resource="EmbySync.qrc">
+         <normaloff>:/resources/arrowright.png</normaloff>:/resources/arrowright.png</iconset>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>name</tabstop>
+  <tabstop>setAvatarBtn</tabstop>
+  <tabstop>connectID</tabstop>
+  <tabstop>creationDate</tabstop>
+  <tabstop>lastLoginDate</tabstop>
+  <tabstop>setLastLoginDateToNow</tabstop>
+  <tabstop>lastActivityDate</tabstop>
+  <tabstop>setLastActivityDateToNow</tabstop>
+  <tabstop>apply</tabstop>
+ </tabstops>
+ <resources>
+  <include location="EmbySync.qrc"/>
+ </resources>
+ <connections/>
+</ui>
