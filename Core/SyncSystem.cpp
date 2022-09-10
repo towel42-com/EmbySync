@@ -63,11 +63,12 @@ QString toString( ERequestType request )
         case ERequestType::eGetUserImage: return "GetUserImage";
         case ERequestType::eGetMediaList: return "GetMediaList";
         case ERequestType::eReloadMediaData: return "ReloadMediaData";
-        case ERequestType::eUpdateData: return "UpdateData";
+        case ERequestType::eUpdateUserMediaData: return "UpdateData";
         case ERequestType::eUpdateFavorite: return "UpdateFavorite";
         case ERequestType::eTestServer: return "TestServer";
         case ERequestType::eDeleteConnectedID: return "DeleteConnectedID";
         case ERequestType::eSetConnectedID: return "SetConnectedID";
+        case ERequestType::eUpdateUserData: return "UpdateUserData";
     }
     return {};
 }
@@ -344,7 +345,15 @@ void CSyncSystem::requestUpdateUserDataForMedia( const QString & serverName, std
 
     setServerName( reply, serverName );
     setExtraData( reply, mediaID );
-    setRequestType( reply, ERequestType::eUpdateData );
+    setRequestType( reply, ERequestType::eUpdateUserMediaData );
+}
+
+void CSyncSystem::handleUpdateUserDataForMedia( const QString & serverName, const QString & mediaID )
+{
+    requestReloadMediaItemData( serverName, mediaID );
+    auto mediaData = fMediaModel->getMediaDataForID( serverName, mediaID );
+    if ( mediaData )
+        emit sigAddToLog( EMsgType::eInfo, tr( "Updated '%1(%2)' on Server '%3' successfully" ).arg( mediaData->name() ).arg( mediaID ).arg( serverName ) );
 }
 
 void CSyncSystem::requestSetFavorite( const QString & serverName, std::shared_ptr< CMediaData > mediaData, std::shared_ptr< SMediaUserData > newData )
@@ -378,6 +387,55 @@ void CSyncSystem::requestSetFavorite( const QString & serverName, std::shared_pt
     setServerName( reply, serverName );
     setExtraData( reply, mediaID );
     setRequestType( reply, ERequestType::eUpdateFavorite );
+}
+
+void CSyncSystem::handleSetFavorite( const QString & serverName, const QString & mediaID )
+{
+    requestReloadMediaItemData( serverName, mediaID );
+    emit sigAddToLog( EMsgType::eInfo, tr( "Updated Favorite status for '%1' on Server '%2' successfully" ).arg( mediaID ).arg( serverName ) );
+}
+
+void CSyncSystem::updateUserData( const QString & serverName, std::shared_ptr<CUserData> userData, std::shared_ptr<SUserServerData> newData )
+{
+    requestUpdateUserData( serverName, userData, newData );
+}
+
+void CSyncSystem::requestUpdateUserData( const QString & serverName, std::shared_ptr<CUserData> userData, std::shared_ptr<SUserServerData> newData )
+{
+    if ( !userData || !userData->getServerInfo( serverName ) || !newData )
+        return;
+
+    if ( *userData->getServerInfo( serverName ) == *newData )
+        return;
+
+    auto && userID = userData->getUserID( serverName );
+    if ( userID.isEmpty() )
+        return;
+
+    // UserService
+    auto && url = fSettings->findServerInfo( serverName )->getUrl( QString( "Users/%1" ).arg( userID ), {} );
+    if ( !url.isValid() )
+        return;
+
+    auto obj = newData->userDataJSON();
+    QByteArray data = QJsonDocument( obj ).toJson();
+
+    //qDebug() << "userID" << userID;
+    //qDebug() << "mediaID" << mediaID;
+
+    //qDebug() << url;
+
+    auto request = QNetworkRequest( url );
+    auto reply = makeRequest( request, ENetworkRequestType::ePost, data );
+
+    setServerName( reply, serverName );
+    setExtraData( reply, userID );
+    setRequestType( reply, ERequestType::eUpdateUserData );
+}
+
+void CSyncSystem::handleUpdateUserData( const QString & serverName, const QString & userID )
+{
+    requestGetUser( serverName, userID );
 }
 
 void CSyncSystem::setServerName( QNetworkReply * reply, const QString & serverName )
@@ -459,7 +517,7 @@ void CSyncSystem::postHandleRequest( QNetworkReply * reply, const QString & serv
     if ( !isRunning() )
     {
         fProgressSystem->resetProgress();
-        if ( ( requestType == ERequestType::eReloadMediaData ) || ( requestType == ERequestType::eUpdateData ) )
+        if ( ( requestType == ERequestType::eReloadMediaData ) || ( requestType == ERequestType::eUpdateUserMediaData ) )
             emit sigProcessingFinished( fCurrUserData->userName( serverName ) );
     }
 }
@@ -666,13 +724,15 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
                 break;
             case ERequestType::eNone:
             case ERequestType::eReloadMediaData:
-            case ERequestType::eUpdateData:
+            case ERequestType::eUpdateUserMediaData:
             case ERequestType::eUpdateFavorite:
             case ERequestType::eTestServer:
                 emit sigTestServerResults( serverName, false, errorMsg );
             case ERequestType::eDeleteConnectedID:
             case ERequestType::eSetConnectedID:
-            default:
+            case ERequestType::eUpdateUserData:
+            case ERequestType::eGetServerHomePage:
+            case ERequestType::eGetServerIcon:
                 break;
         }
 
@@ -729,34 +789,24 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
         handleReloadMediaResponse( serverName, data, extraData.toString() );
         break;
     }
-    case ERequestType::eUpdateData:
+    case ERequestType::eUpdateUserMediaData:
     {
-        requestReloadMediaItemData( serverName, extraData.toString() );
-        auto mediaData = fMediaModel->getMediaDataForID( serverName, extraData.toString() );
-        if ( mediaData )
-            emit sigAddToLog( EMsgType::eInfo, tr( "Updated '%1(%2)' on Server '%3' successfully" ).arg( mediaData->name() ).arg( extraData.toString() ).arg( serverName ) );
+        handleUpdateUserDataForMedia( serverName, extraData.toString() );
+        break;
+    }
+    case ERequestType::eUpdateUserData:
+    {
+        handleUpdateUserData( serverName, extraData.toString() );
         break;
     }
     case ERequestType::eUpdateFavorite:
     {
-        requestReloadMediaItemData( serverName, extraData.toString() );
-        emit sigAddToLog( EMsgType::eInfo, tr( "Updated Favorite status for '%1' on Server '%2' successfully" ).arg( extraData.toString() ).arg( serverName ) );
+        handleSetFavorite( serverName, extraData.toString() );
         break;
     }
     case ERequestType::eTestServer:
     {
-        auto pos = fTestServers.find( serverName );
-        Q_ASSERT( pos != fTestServers.end() );
-        if ( pos != fTestServers.end() )
-        {
-            auto testServer = ( *pos ).second;
-            fTestServers.erase( pos );
-
-            emit sigAddToLog( EMsgType::eInfo, tr( "Finished Testing server '%1' successfully" ).arg( testServer->displayName() ) );
-            emit sigTestServerResults( serverName, true, QString() );
-        }
-        else
-            emit sigTestServerResults( serverName, false, tr( "Internal error" ) );
+        handleTestServer( serverName );
 
         break;
     }
@@ -794,6 +844,22 @@ void CSyncSystem::requestTestServer( std::shared_ptr< const CServerInfo > server
     auto reply = makeRequest( request );
     setServerName( reply, serverInfo->keyName() );
     setRequestType( reply, ERequestType::eTestServer );
+}
+
+void CSyncSystem::handleTestServer( const QString & serverName )
+{
+    auto pos = fTestServers.find( serverName );
+    Q_ASSERT( pos != fTestServers.end() );
+    if ( pos != fTestServers.end() )
+    {
+        auto testServer = ( *pos ).second;
+        fTestServers.erase( pos );
+
+        emit sigAddToLog( EMsgType::eInfo, tr( "Finished Testing server '%1' successfully" ).arg( testServer->displayName() ) );
+        emit sigTestServerResults( serverName, true, QString() );
+    }
+    else
+        emit sigTestServerResults( serverName, false, tr( "Internal error" ) );
 }
 
 void CSyncSystem::requestGetServerInfo( const QString & serverName )

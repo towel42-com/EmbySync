@@ -37,8 +37,11 @@ class CSettings;
 struct SUserServerData
 {
     bool isValid() const;
-    void setLastModified( std::initializer_list< QDateTime > dateTS );
     bool userDataEqual( const SUserServerData & rhs ) const;
+
+    QDateTime latestAccess() const;
+    QJsonObject userDataJSON() const;
+
 
     QString fName;
     QString fUserID;
@@ -46,8 +49,16 @@ struct SUserServerData
 
     QImage fImage;
     std::pair< QString, double > fImageTagInfo;
-    QDateTime fLastModifed;
+    QDateTime fDateCreated;
+    QDateTime fLastLoginDate;
+    QDateTime fLastActivityDate;
 };
+bool operator==( const SUserServerData & lhs, const SUserServerData & rhs );
+inline bool operator!=( const SUserServerData & lhs, const SUserServerData & rhs )
+{
+    return !operator==( lhs, rhs );
+}
+
 
 class CUserData
 {
@@ -77,7 +88,9 @@ public:
     QString getUserID( const QString & serverName ) const;
     void setUserID( const QString & serverName, const QString & id );
 
-    void setLastModified( const QString & serverName, std::initializer_list< QDateTime > dateTS );
+    void setDateCreated( const QString & serverName, const QDateTime & dateTS );
+    void setLastActivityDate( const QString & serverName, const QDateTime & dateTS );
+    void setLastLoginDate( const QString & serverName, const QDateTime & dateTS );
 
     bool hasImageTagInfo( const QString & serverName ) const;
 
@@ -87,6 +100,8 @@ public:
     bool allUserNamesTheSame() const;
     bool allConnectIDTheSame() const;
     bool allIconsTheSame() const;
+    bool allLastActivityDateSame() const;
+    bool allLastLoginDateSame() const;
 
     bool needsUpdating( const QString & serverName ) const;
     std::shared_ptr<SUserServerData> newestServerInfo() const;
@@ -96,12 +111,18 @@ public:
     void setAvatar( const QString & serverName, int serverCnt, const QImage & image );
     QImage anyAvatar() const; // first avatar non-null
 
+    QDateTime getDateCreated( const QString & serverName ) const;
+    QDateTime getLastActivityDate( const QString & serverName ) const;
+    QDateTime getLastLoginDate( const QString & serverName ) const;
+
     bool canBeSynced() const;
     bool onServer( const QString & serverName ) const;
 
     QIcon getDirectionIcon( const QString & serverName ) const;
     bool isValidForServer( const QString & serverName ) const;
     bool validUserDataEqual() const;
+
+    std::shared_ptr< SUserServerData > getServerInfo( const QString & serverName ) const;
 private:
 
     template < typename T >
@@ -124,7 +145,6 @@ private:
     void checkAllAvatarsTheSame( int serverNum );
 
     std::shared_ptr< SUserServerData > getServerInfo( const QString & serverName, bool addIfMissing );
-    std::shared_ptr< SUserServerData > getServerInfo( const QString & serverName ) const;
     bool isMatch( const QRegularExpression & regEx, const QString & value ) const;
 
     QString fConnectedID;

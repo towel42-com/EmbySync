@@ -67,6 +67,7 @@ public:
 
     void autoSizeDataTrees();
     void hideDataTreeColumns();
+    virtual bool prepForClose() = 0;
 Q_SIGNALS:
     void sigAddToLog( int msgType, const QString & msg );
     void sigAddInfoToLog( const QString & msg );

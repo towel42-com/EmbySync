@@ -99,7 +99,9 @@ void CMediaWindow::closeEvent( QCloseEvent * event )
         fChanged = false;
     }
     else
+    {
         event->accept();
+    }
 }
 
 bool CMediaWindow::okToClose() 

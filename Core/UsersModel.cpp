@@ -173,6 +173,12 @@ QVariant CUsersModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
             return userData->name( serverName );
         case EServerColumns::eServerConnectedID:
             return userData->connectedID( serverName );
+        case EServerColumns::eDateCreated:
+            return userData->getDateCreated( serverName );
+        case EServerColumns::eLastActivityDate:
+            return userData->getLastActivityDate( serverName );
+        case EServerColumns::eLastLoginDate:
+            return userData->getLastLoginDate( serverName );
     }
     return {};
 }
@@ -231,18 +237,20 @@ QVariant CUsersModel::headerData( int section, Qt::Orientation orientation, int 
                 return tr( "%2" ).arg( ( *pos ).second.second->displayName() );
             case EServerColumns::eIconStatus:
                 return tr( "Icon Status" );
+            case EServerColumns::eDateCreated:
+                return tr( "Date Created" );
+            case EServerColumns::eLastActivityDate:
+                return tr( "Last Activity" );
+            case EServerColumns::eLastLoginDate:
+                return tr( "Last Login" );
         }
     }
     else if ( role == Qt::DecorationRole )
     {
         switch ( columnNum )
         {
-            case EServerColumns::eServerConnectedID:
-                return {};
             case EServerColumns::eUserName:
                 return ( *pos ).second.second->icon();
-            case EServerColumns::eIconStatus:
-                return {};
         }
     }
     return {};
@@ -321,6 +329,15 @@ QVariant CUsersModel::getColor( const QModelIndex & index, bool background ) con
             break;
         case eIconStatus:
             dataSame = userData->allIconsTheSame();
+            break;
+        case eDateCreated:
+            dataSame = true;
+            break;
+        case eLastActivityDate:
+            dataSame = userData->allLastActivityDateSame();
+            break;
+        case eLastLoginDate:
+            dataSame = userData->allLastLoginDateSame();
             break;
     }
 
@@ -512,7 +529,12 @@ std::shared_ptr< CUserData > CUsersModel::loadUser( const QString & serverName, 
     userData->setName( serverName, currName );
     userData->setUserID( serverName, userID );
     userData->setConnectedID( serverName, connectedID );
-    userData->setLastModified( serverName, { user[ "DateCreated" ].toVariant().toDateTime(), user[ "LastActivityDate" ].toVariant().toDateTime(), user[ "LastLoginDate" ].toVariant().toDateTime() } );
+    auto dateCreated = user[ "DateCreated" ].toVariant().toDateTime();
+    if ( dateCreated == QDateTime::fromString( "0001-01-01T00:00:00.000Z", Qt::ISODateWithMs ) )
+        dateCreated = QDateTime();
+    userData->setDateCreated( serverName, dateCreated );
+    userData->setLastActivityDate( serverName, user[ "LastActivityDate" ].toVariant().toDateTime() );
+    userData->setLastLoginDate( serverName, user[ "LastLoginDate" ].toVariant().toDateTime() );
 
     emit dataChanged( indexForUser( userData, 0 ), indexForUser( userData, columnCount() - 1 ) );
 

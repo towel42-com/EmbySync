@@ -29,6 +29,7 @@
 class QMenu;
 class QAction;
 class QToolBar;
+class CUserWindow;
 namespace Ui
 {
     class CUserInfoCompare;
@@ -68,6 +69,7 @@ public:
     void onlyShowUsersWithDifferences();
     void showUsersWithIssues();
 
+    virtual bool prepForClose() override;
 Q_SIGNALS:
     void sigSettingsLoaded();
     void sigModelDataChanged();
@@ -78,6 +80,9 @@ public Q_SLOTS:
     void slotCanceled();
     void slotModelDataChanged();
     void slotSettingsChanged();
+    void slotViewUser( const QModelIndex & current );
+    void slotSetCurrentUser( const QModelIndex & current );
+    void slotViewUserInfo();
 
 private Q_SLOTS:
     void slotReloadCurrentUser();
@@ -106,16 +111,21 @@ private:
     std::unique_ptr< Ui::CUserInfoCompare > fImpl;
     CUsersFilterModel * fUsersFilterModel{ nullptr };
 
-    QAction * fActionReloadCurrentUser{ nullptr };
+    QPointer< CUserWindow > fUserWindow;
 
-    QMenu * fProcessMenu{ nullptr };
-    QAction * fActionRepairUserConnectedIDs{ nullptr };
+    QPointer< QAction > fActionReloadCurrentUser{ nullptr };
 
-    QAction * fActionOnlyShowSyncableUsers{ nullptr };
-    QAction * fActionOnlyShowUsersWithDifferences{ nullptr };
-    QAction * fActionShowUsersWithIssues{ nullptr };
+    QPointer< QMenu > fProcessMenu{ nullptr };
+    QPointer< QAction > fActionRepairUserConnectedIDs{ nullptr };
 
-    std::list< QAction * > fEditActions;
+    QPointer< QMenu > fViewMenu{ nullptr };
+    QPointer< QAction > fActionViewUserInformation{ nullptr };
+
+    QPointer< QAction > fActionOnlyShowSyncableUsers{ nullptr };
+    QPointer< QAction > fActionOnlyShowUsersWithDifferences{ nullptr };
+    QPointer< QAction > fActionShowUsersWithIssues{ nullptr };
+
+    std::list< QPointer< QAction > > fEditActions;
     QToolBar * fToolBar{ nullptr };
     CDataTree * fContextTree{ nullptr };
 };

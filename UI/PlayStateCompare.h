@@ -70,6 +70,8 @@ public:
     void onlyShowSyncableUsers();
     void onlyShowMediaWithDifferences();
     void showMediaWithIssues();
+
+    virtual bool prepForClose() override;
 Q_SIGNALS:
     void sigModelDataChanged();
 
@@ -121,20 +123,20 @@ private:
 
     QPointer< CMediaWindow > fMediaWindow;
 
-    QAction * fActionReloadCurrentUser{ nullptr };
+    QPointer< QAction > fActionReloadCurrentUser{ nullptr };
 
-    QMenu * fProcessMenu{ nullptr };
-    QAction * fActionProcess{ nullptr };
-    QAction * fActionSelectiveProcess{ nullptr };
+    QPointer< QMenu > fProcessMenu{ nullptr };
+    QPointer< QAction > fActionProcess{ nullptr };
+    QPointer< QAction > fActionSelectiveProcess{ nullptr };
 
-    QMenu * fViewMenu{ nullptr };
-    QAction * fActionViewMediaInformation{ nullptr };
+    QPointer< QMenu > fViewMenu{ nullptr };
+    QPointer< QAction > fActionViewMediaInformation{ nullptr };
 
-    QAction * fActionOnlyShowSyncableUsers{ nullptr };
-    QAction * fActionOnlyShowMediaWithDifferences{ nullptr };
-    QAction * fActionShowMediaWithIssues{ nullptr };
+    QPointer< QAction > fActionOnlyShowSyncableUsers{ nullptr };
+    QPointer< QAction > fActionOnlyShowMediaWithDifferences{ nullptr };
+    QPointer< QAction > fActionShowMediaWithIssues{ nullptr };
 
-    std::list< QAction * > fEditActions;
-    QToolBar * fToolBar{ nullptr };
+    std::list< QPointer< QAction > > fEditActions;
+    QPointer< QToolBar > fToolBar{ nullptr };
 };
 #endif

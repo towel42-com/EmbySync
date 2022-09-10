@@ -29,6 +29,9 @@ public:
         eUserName,
         eServerConnectedID,
         eIconStatus,
+        eDateCreated,
+        eLastActivityDate,
+        eLastLoginDate,
         eServerColCount
     };
 

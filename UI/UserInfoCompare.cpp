@@ -24,8 +24,8 @@
 #include "ui_UserInfoCompare.h"
 
 #include "DataTree.h"
-#include "MediaWindow.h"
 #include "TabUIInfo.h"
+#include "UserWindow.h"
 
 #include "Core/MediaModel.h"
 #include "Core/ProgressSystem.h"
@@ -48,6 +48,7 @@
 #include <QMetaMethod>
 #include <QTimer>
 #include <QToolBar>
+#include <QCloseEvent>
 
 CUserInfoCompare::CUserInfoCompare( QWidget * parent )
     : CTabPageBase( parent ),
@@ -58,6 +59,9 @@ CUserInfoCompare::CUserInfoCompare( QWidget * parent )
 
     connect( this, &CUserInfoCompare::sigModelDataChanged, this, &CUserInfoCompare::slotModelDataChanged );
     connect( this, &CUserInfoCompare::sigDataContextMenuRequested, this, &CUserInfoCompare::slotUsersContextMenu );
+
+    connect( this, &CTabPageBase::sigSetCurrentDataItem, this, &CUserInfoCompare::slotSetCurrentUser );
+    connect( this, &CTabPageBase::sigViewData, this, &CUserInfoCompare::slotViewUser );
 }
 
 void CUserInfoCompare::setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CProgressSystem > progressSystem )
@@ -90,6 +94,17 @@ void CUserInfoCompare::setupActions()
     fActionRepairUserConnectedIDs->setToolTip( QCoreApplication::translate( "CUserInfoCompare", "Repair User Connected IDs", nullptr ) );
 
     fProcessMenu->addAction( fActionRepairUserConnectedIDs );
+
+    fViewMenu = new QMenu( this );
+    fViewMenu->setObjectName( QString::fromUtf8( "fViewMenu" ) );
+    fViewMenu->setTitle( QCoreApplication::translate( "CPlayStateCompare", "View", nullptr ) );
+
+    fActionViewUserInformation = new QAction( this );
+    fActionViewUserInformation->setObjectName( QString::fromUtf8( "fActionViewUserInformation" ) );
+    fActionViewUserInformation->setText( QCoreApplication::translate( "CPlayStateCompare", "User Information...", nullptr ) );
+
+    fViewMenu->addAction( fActionViewUserInformation );
+    connect( fActionViewUserInformation, &QAction::triggered, this, &CUserInfoCompare::slotViewUserInfo );
 
     fActionOnlyShowSyncableUsers = new QAction( this );
     fActionOnlyShowSyncableUsers->setObjectName( QString::fromUtf8( "fActionOnlyShowSyncableUsers" ) );
@@ -138,6 +153,19 @@ void CUserInfoCompare::setupActions()
 
 CUserInfoCompare::~CUserInfoCompare()
 {
+    if ( fUserWindow )
+        delete fUserWindow.data();
+}
+
+bool CUserInfoCompare::prepForClose()
+{
+    if ( fUserWindow )
+    {
+        if ( !fUserWindow->okToClose() )
+            return false;
+    }
+    deleteLater();
+    return true;
 }
 
 void CUserInfoCompare::loadSettings()
@@ -149,6 +177,7 @@ void CUserInfoCompare::loadSettings()
 
 bool CUserInfoCompare::okToClose()
 {
+    bool okToClose = fUserWindow ? fUserWindow->okToClose() : true;
     return true;
 }
 
@@ -292,11 +321,11 @@ std::shared_ptr< CTabUIInfo > CUserInfoCompare::getUIInfo() const
 {
     auto retVal = std::make_shared< CTabUIInfo >();
 
-    retVal->fMenus = { fProcessMenu };
+    retVal->fMenus = { fProcessMenu, fViewMenu };
     retVal->fToolBars = { fToolBar };
 
-    retVal->fMenuActions[ "Edit" ] = std::make_pair( true, QList< QAction * >( { fActionOnlyShowSyncableUsers, fActionOnlyShowUsersWithDifferences, fActionShowUsersWithIssues } ) );
-    retVal->fMenuActions[ "Reload" ] = std::make_pair( false, QList< QAction * >( { fActionReloadCurrentUser } ) );
+    retVal->fMenuActions[ "Edit" ] = std::make_pair( true, QList< QPointer< QAction > >( { fActionOnlyShowSyncableUsers, fActionOnlyShowUsersWithDifferences, fActionShowUsersWithIssues } ) );
+    retVal->fMenuActions[ "Reload" ] = std::make_pair( false, QList< QPointer< QAction > >( { fActionReloadCurrentUser } ) );
     return retVal;
 }
 
@@ -374,4 +403,41 @@ void CUserInfoCompare::slotUsersContextMenu( CDataTree* dataTree, const QPoint &
     connect( &action2, &QAction::triggered, this, &CUserInfoCompare::slotAutoSetConnectID );
 
     menu.exec( dataTree->dataTree()->mapToGlobal( pos ) );
+}
+
+
+void CUserInfoCompare::slotViewUser( const QModelIndex & current )
+{
+    slotViewUserInfo();
+    slotSetCurrentUser( current );
+}
+
+void CUserInfoCompare::slotSetCurrentUser( const QModelIndex & current )
+{
+    auto userData = getUserData( current );
+
+    if ( fUserWindow )
+        fUserWindow->setUser( userData );
+
+    slotModelDataChanged();
+}
+
+void CUserInfoCompare::slotViewUserInfo()
+{
+    if ( !fUserWindow )
+        fUserWindow = new CUserWindow( fSettings, fSyncSystem, nullptr );
+
+    auto idx = currentDataIndex();
+    if ( idx.isValid() )
+    {
+        auto userData = getUserData( idx );
+        if ( userData )
+        {
+            fUserWindow->setUser( userData );
+        }
+    }
+
+    fUserWindow->show();
+    fUserWindow->activateWindow();
+    fUserWindow->raise();
 }

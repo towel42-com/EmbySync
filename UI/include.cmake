@@ -7,6 +7,8 @@ set(qtproject_SRCS
     MediaWindow.cpp 
     PlayStateCompare.cpp
     UserInfoCompare.cpp
+    UserDataWidget.cpp
+    UserWindow.cpp
     TabPageBase.cpp
     TabUIInfo.cpp
 )
@@ -20,6 +22,8 @@ set(qtproject_H
     MediaWindow.h 
     PlayStateCompare.h
     UserInfoCompare.h
+    UserWindow.h
+    UserDataWidget.h
     TabPageBase.h
 )
 
@@ -36,6 +40,8 @@ set(qtproject_UIS
     MediaWindow.ui 
     PlayStateCompare.ui
     UserInfoCompare.ui
+    UserDataWidget.ui
+    UserWindow.ui
 )
 
 
