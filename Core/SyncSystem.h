@@ -53,6 +53,7 @@ class CSettings;
 class CProgressSystem;
 class QTimer;
 class CServerInfo;
+struct SUserServerData;
 
 enum class ERequestType
 {
@@ -65,11 +66,12 @@ enum class ERequestType
     eGetUserImage,
     eGetMediaList,
     eReloadMediaData,
-    eUpdateData,
+    eUpdateUserMediaData,
     eUpdateFavorite,
     eTestServer,
     eDeleteConnectedID,
-    eSetConnectedID
+    eSetConnectedID,
+    eUpdateUserData
 };
 
 enum class ENetworkRequestType
@@ -141,6 +143,7 @@ public:
     void requestGetUserImage( const QString & serverName, const QString & userID );
 
     void updateUserDataForMedia( const QString & serverName, std::shared_ptr<CMediaData> mediaData, std::shared_ptr<SMediaUserData> newData );
+    void updateUserData( const QString & serverName, std::shared_ptr<CUserData> userData, std::shared_ptr<SUserServerData> newData );;
 
     void selectiveProcess( const QString & selectedServer );
 Q_SIGNALS:
@@ -169,8 +172,6 @@ private:
 
 private Q_SLOTS:
     void slotRequestFinished( QNetworkReply * reply );
-    void postHandleRequest( QNetworkReply * reply, const QString & serverName, ERequestType requestType );
-    void decRequestCount( QNetworkReply * reply, ERequestType requestType );
 
     void slotMergeMedia();
 
@@ -188,6 +189,9 @@ private:
 
     std::shared_ptr<CUserData> loadUser( const QString & serverName, const QJsonObject & user );
     std::shared_ptr< CMediaData> loadMedia( const QString & serverName, const QJsonObject & media );
+
+    void postHandleRequest( QNetworkReply * reply, const QString & serverName, ERequestType requestType );
+    void decRequestCount( QNetworkReply * reply, ERequestType requestType );
 
     bool isLastRequestOfType( ERequestType type ) const;
 
@@ -210,16 +214,24 @@ private:
 
     void handleGetUserImageResponse( const QString & serverName, const QString & userID, const QByteArray & data );
 
-        void requestGetMediaList( const QString & serverNameServer );
+    void requestGetMediaList( const QString & serverNameServer );
     void handleGetMediaListResponse( const QString & serverName, const QByteArray & data );
 
     void requestReloadMediaItemData( const QString & serverName, const QString & mediaID );
     void requestReloadMediaItemData( const QString & serverName, std::shared_ptr< CMediaData > mediaData );
     void requestSetFavorite( const QString & serverName, std::shared_ptr< CMediaData > mediaData, std::shared_ptr< SMediaUserData > newData );
+    void handleSetFavorite( const QString & serverName, const QString & mediaID );
+
     void requestUpdateUserDataForMedia( const QString & serverName, std::shared_ptr< CMediaData > mediaData, std::shared_ptr< SMediaUserData > newData );
+    void handleUpdateUserDataForMedia( const QString & serverName, const QString & mediaID );
+         
     void handleReloadMediaResponse( const QString & serverName, const QByteArray & data, const QString & id );
 
+    void requestUpdateUserData( const QString & serverName, std::shared_ptr<CUserData> userData, std::shared_ptr<SUserServerData> newData );
+    void handleUpdateUserData( const QString & serverName, const QString & userID );
+
     void requestTestServer( std::shared_ptr< const CServerInfo > serverInfo );
+    void handleTestServer( const QString & serverName );
 
     void updateConnectID( const QString & serverName );
 

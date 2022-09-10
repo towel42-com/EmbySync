@@ -43,6 +43,7 @@
 #include <QApplication>
 #include <QIcon>
 #include <QInputDialog>
+#include <QCloseEvent>
 #include <QMenu>
 #include <QMessageBox>
 #include <QMetaMethod>
@@ -185,6 +186,17 @@ CPlayStateCompare::~CPlayStateCompare()
 {
     if ( fMediaWindow )
         delete fMediaWindow.data();
+}
+
+bool CPlayStateCompare::prepForClose()
+{
+    if ( fMediaWindow )
+    {
+        if ( !fMediaWindow->okToClose() )
+            return false;
+    }
+    close();
+    return true;
 }
 
 void CPlayStateCompare::loadSettings()
@@ -372,8 +384,8 @@ std::shared_ptr< CTabUIInfo > CPlayStateCompare::getUIInfo() const
     retVal->fMenus = { fProcessMenu, fViewMenu };
     retVal->fToolBars = { fToolBar };
 
-    retVal->fMenuActions[ "Edit" ] = std::make_pair( true, QList< QAction * >( { fActionOnlyShowSyncableUsers, fActionOnlyShowMediaWithDifferences, fActionShowMediaWithIssues } ) );
-    retVal->fMenuActions[ "Reload" ] = std::make_pair( false, QList< QAction * >( { fActionReloadCurrentUser } ) );
+    retVal->fMenuActions[ "Edit" ] = std::make_pair( true, QList< QPointer< QAction > >( { fActionOnlyShowSyncableUsers, fActionOnlyShowMediaWithDifferences, fActionShowMediaWithIssues } ) );
+    retVal->fMenuActions[ "Reload" ] = std::make_pair( false, QList< QPointer< QAction > >( { fActionReloadCurrentUser } ) );
     return retVal;
 }
 

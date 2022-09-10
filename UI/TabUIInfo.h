@@ -27,6 +27,8 @@
 #include <map>
 #include <QList>
 #include <QString>
+#include <QPointer>
+#include <QToolBar>
 class QMenu;
 class QAction;
 class QToolBar;
@@ -42,9 +44,9 @@ public:
     QMenu * findMenu( QMainWindow * mainWindow, const QString & text );
     QAction * findInsertBefore( QMenu * menu, bool insertBefore );
 
-    std::list< QMenu * > fMenus;
-    std::list< QToolBar * > fToolBars;
-    std::map< QString, std::pair< bool, QList< QAction * > > > fMenuActions;
+    QList< QPointer< QMenu > > fMenus;
+    QList< QPointer< QToolBar > > fToolBars;
+    std::map< QString, std::pair< bool, QList< QPointer< QAction > > > > fMenuActions;
 };
 
 #endif

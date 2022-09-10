@@ -50,8 +50,6 @@ public:
 
     virtual void closeEvent( QCloseEvent * closeEvent ) override;
 
-    bool pagesOKToClose();
-
     virtual void showEvent( QShowEvent * event ) override;
 Q_SIGNALS:
     void sigSettingsChanged();
@@ -86,6 +84,10 @@ private Q_SLOTS:
     void slotCurentTabChanged( int idx );
 
 private:
+    bool okToClosePages();
+    bool prepForClosePages();
+
+
     CTabPageBase * getCurrentPage() const;
     void setupPage( int pageIndex );
 

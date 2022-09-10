@@ -24,22 +24,9 @@
 #define __MEDIAUSERDATA_H
 //
 #include <QString>
-//#include <QMap>
-//#include <QUrlQuery>
 #include <QDateTime>
 #include <cstdint>
 #include <QJsonObject>
-//#include <QIcon>
-//
-//#include <memory>
-//
-//class QVariant;
-//class QListWidgetItem;
-//class QJsonObject;
-//class QTreeWidget;
-//class QListWidget;
-//class QColor;
-//class CSettings;
 
 struct SMediaUserData
 {

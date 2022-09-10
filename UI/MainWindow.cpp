@@ -172,11 +172,18 @@ void CMainWindow::showEvent( QShowEvent * /*event*/ )
 void CMainWindow::closeEvent( QCloseEvent * event )
 {
     bool okToClose = fSettings->maybeSave( this );
-    okToClose = okToClose && pagesOKToClose();
+    okToClose = okToClose && okToClosePages();
     if ( !okToClose )
         event->ignore();
     else
+    {
+        if ( !prepForClosePages() )
+        {
+            event->ignore();
+            return;
+        }
         event->accept();
+    }
 }
 
 void CMainWindow::slotSettingsChanged()
@@ -392,10 +399,14 @@ void CMainWindow::progressSetup( const QString & title )
         connect( fProgressDlg, &QProgressDialog::canceled, this, &CMainWindow::sigCanceled );
     }
     fProgressDlg->setLabelText( title );
-    fProgressDlg->setAutoClose( true );
-    fProgressDlg->setMinimumDuration( 0 );
-    fProgressDlg->setValue( 0 );
-    fProgressDlg->open();
+    if ( fProgressDlg )
+        fProgressDlg->setAutoClose( true );
+    if ( fProgressDlg )
+        fProgressDlg->setMinimumDuration( 0 );
+    if ( fProgressDlg )
+        fProgressDlg->setValue( 0 );
+    if ( fProgressDlg )
+        fProgressDlg->open();
 }
 
 void CMainWindow::progressSetMaximum( int count )
@@ -417,7 +428,8 @@ void CMainWindow::progressSetValue( int value )
     if ( !fProgressDlg )
         return;
     fProgressDlg->setValue( value );
-    fProgressDlg->open();
+    if ( fProgressDlg )
+        fProgressDlg->open();
 }
 
 void CMainWindow::progressIncValue()
@@ -490,11 +502,19 @@ void CMainWindow::loadSettingsIntoPages()
 }
 
 
-bool CMainWindow::pagesOKToClose()
+bool CMainWindow::okToClosePages()
 {
     bool aOK = true;
     for ( auto && ii : fPages )
         aOK = aOK && ii.second->okToClose();
+    return aOK;
+}
+
+bool CMainWindow::prepForClosePages()
+{
+    bool aOK = true;
+    for ( auto && ii : fPages )
+        aOK = aOK && ii.second->prepForClose();
     return aOK;
 }
 

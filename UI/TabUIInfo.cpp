@@ -34,17 +34,26 @@ void CTabUIInfo::clear()
 void CTabUIInfo::cleanupUI( QMainWindow * mainWindow )
 {
     for ( auto && ii : fMenus )
-        mainWindow->menuBar()->removeAction( ii->menuAction() );
+    {
+        if ( ii )
+            mainWindow->menuBar()->removeAction( ii->menuAction() );
+    }
     for ( auto && ii : fMenuActions )
     {
         auto menu = findMenu( mainWindow, ii.first );
         if ( !menu )
             continue;
-        for( auto && jj : ii.second.second )
-            menu->removeAction( jj );
+        for ( auto && jj : ii.second.second )
+        {
+            if ( jj )
+                menu->removeAction( jj );
+        }
     }
     for ( auto && ii : fToolBars )
-        mainWindow->removeToolBar( ii );
+    {
+        if ( ii )
+            mainWindow->removeToolBar( ii );
+    }
 
     clear();
 }
@@ -94,11 +103,15 @@ QMenu * CTabUIInfo::findMenu( QMainWindow * mainWindow, const QString & text )
 void CTabUIInfo::setupUI( QMainWindow * mainWindow, QMenu * insertBeforeMenu )
 {
     for ( auto && ii : fMenus )
-        mainWindow->menuBar()->insertAction( insertBeforeMenu->menuAction(), ii->menuAction() );
-
+    {
+        if ( ii )
+            mainWindow->menuBar()->insertAction( insertBeforeMenu->menuAction(), ii->menuAction() );
+    }
     for ( auto && ii : fToolBars )
-        mainWindow->addToolBar( Qt::TopToolBarArea, ii );
-
+    {
+        if ( ii )
+            mainWindow->addToolBar( Qt::TopToolBarArea, ii );
+    }
     for ( auto && ii : fMenuActions )
     {
         auto menu = findMenu( mainWindow, ii.first );
@@ -106,6 +119,10 @@ void CTabUIInfo::setupUI( QMainWindow * mainWindow, QMenu * insertBeforeMenu )
             continue;
     
         auto insertBefore = findInsertBefore( menu, ii.second.first );
-        menu->insertActions( insertBefore, ii.second.second );
+        for ( auto && jj : ii.second.second )
+        {
+            if ( jj )
+                menu->insertAction( insertBefore, jj );
+        }
     }
 }

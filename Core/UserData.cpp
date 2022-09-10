@@ -27,6 +27,7 @@
 
 #include <QRegularExpression>
 #include <QDebug>
+#include <QJsonObject>
 
 CUserData::CUserData( const QString & serverName, const QString & userID )
 {
@@ -246,11 +247,25 @@ void CUserData::setUserID( const QString & serverName, const QString & id )
     updateCanBeSynced();
 }
 
-void CUserData::setLastModified( const QString & serverName, std::initializer_list< QDateTime > dateTS )
+void CUserData::setDateCreated( const QString & serverName, const QDateTime & dateTS )
 {
     auto retVal = getServerInfo( serverName );
     if ( retVal )
-        retVal->setLastModified( dateTS );
+        retVal->fDateCreated = dateTS;
+}
+
+void CUserData::setLastActivityDate( const QString & serverName, const QDateTime & dateTS )
+{
+    auto retVal = getServerInfo( serverName );
+    if ( retVal )
+        retVal->fLastActivityDate = dateTS;
+}
+
+void CUserData::setLastLoginDate( const QString & serverName, const QDateTime & dateTS )
+{
+    auto retVal = getServerInfo( serverName );
+    if ( retVal )
+        retVal->fLastLoginDate = dateTS;
 }
 
 bool CUserData::hasImageTagInfo( const QString & serverName ) const
@@ -289,6 +304,30 @@ QImage CUserData::anyAvatar() const
             return ii.second->fImage;
     }
     return {};
+}
+
+QDateTime CUserData::getDateCreated( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo || !serverInfo->fDateCreated.isValid() )
+        return {};
+    return serverInfo->fDateCreated;
+}
+
+QDateTime CUserData::getLastActivityDate( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo || !serverInfo->fLastActivityDate.isValid() )
+        return {};
+    return serverInfo->fLastActivityDate;
+}
+
+QDateTime CUserData::getLastLoginDate( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo || !serverInfo->fLastLoginDate.isValid() )
+        return {};
+    return serverInfo->fLastLoginDate;
 }
 
 void CUserData::checkAllAvatarsTheSame( int serverNum )
@@ -333,6 +372,24 @@ bool CUserData::allIconsTheSame() const
         } ).has_value();
 }
 
+bool CUserData::allLastActivityDateSame() const
+{
+    return allSame< QDateTime >(
+        []( std::shared_ptr< SUserServerData > rhs )
+        {
+            return rhs->fLastActivityDate;
+        } ).has_value();
+}
+
+bool CUserData::allLastLoginDateSame() const
+{
+    return allSame< QDateTime >(
+        []( std::shared_ptr< SUserServerData > rhs )
+        {
+            return rhs->fLastLoginDate;
+        } ).has_value();
+}
+
 bool CUserData::needsUpdating( const QString & serverName ) const
 {
     auto serverInfo = getServerInfo( serverName );
@@ -353,7 +410,7 @@ std::shared_ptr<SUserServerData> CUserData::newestServerInfo() const
             retVal = ii.second;
         else
         {
-            if ( ii.second->fLastModifed > retVal->fLastModifed )
+            if ( ii.second->latestAccess() > retVal->latestAccess() )
                 retVal = ii.second;
         }
     }
@@ -408,31 +465,6 @@ void CUserData::updateCanBeSynced()
     fCanBeSynced = serverCnt > 1;
 }
 
-bool SUserServerData::isValid() const
-{
-    return !fName.isEmpty() && !fUserID.isEmpty();
-}
-
-void SUserServerData::setLastModified( std::initializer_list< QDateTime > dateTS )
-{
-    fLastModifed = std::max( dateTS );
-}
-
-bool SUserServerData::userDataEqual( const SUserServerData & rhs ) const
-{
-    if ( isValid() != rhs.isValid() )
-        return false;
-
-    auto equal = true;
-    equal = equal && fName == rhs.fName;
-    equal = equal && fConnectedIDOnServer == rhs.fConnectedIDOnServer;
-    if ( !fLastModifed.isNull() && !rhs.fLastModifed.isNull() )
-        equal = equal && fLastModifed == rhs.fLastModifed;
-    equal = equal && fImage == rhs.fImage;
-    equal = equal && fImageTagInfo == rhs.fImageTagInfo;
-    return equal;
-}
-
 bool CUserData::validUserDataEqual() const
 {
     std::list< std::pair< QString, std::shared_ptr< SUserServerData > > > validServerData;
@@ -472,4 +504,85 @@ QIcon CUserData::getDirectionIcon( const QString & serverName ) const
         retVal = sArrowUpIcon;
 
     return retVal;
+}
+
+//UserDto{
+//Name	string
+//ServerId	string
+//ServerName	string
+//Prefix	string
+//ConnectUserName	string
+//DateCreated	string( $date - time, nullable )
+//ConnectLinkType	string( $enum )( LinkedUser, Guest )
+//Id	string( $guid )
+//PrimaryImageTag	string
+//HasPassword	boolean
+//HasConfiguredPassword	boolean
+//HasConfiguredEasyPassword	boolean
+//EnableAutoLogin	boolean( nullable )
+//LastLoginDate	string( $date - time, nullable )
+//LastActivityDate	string( $date - time, nullable )
+//Configuration	Configuration.UserConfiguration{...}
+//Policy	Users.UserPolicy{...}
+//PrimaryImageAspectRatio	number( $double, nullable )
+//}
+
+QJsonObject SUserServerData::userDataJSON() const
+{
+    QJsonObject obj;
+    obj[ "Name" ] = fName;
+    if ( !fConnectedIDOnServer.isEmpty() )
+    {
+        obj[ "ConnectedUserName" ] = fConnectedIDOnServer;
+        obj[ "ConnectLinkType" ] = "LinkedUser";
+    }
+    if ( fDateCreated.isNull() )
+        obj[ "DateCreated" ] = QJsonValue::Null;
+    else
+        obj[ "DateCreated" ] = fDateCreated.toUTC().toString( Qt::ISODateWithMs );
+
+    if ( fLastLoginDate.isNull() )
+        obj[ "LastLoginDate" ] = QJsonValue::Null;
+    else
+        obj[ "LastLoginDate" ] = fLastLoginDate.toUTC().toString( Qt::ISODateWithMs );
+
+    if ( fLastActivityDate.isNull() )
+        obj[ "LastActivityDate" ] = QJsonValue::Null;
+    else
+        obj[ "LastActivityDate" ] = fLastActivityDate.toUTC().toString( Qt::ISODateWithMs );
+
+    return obj;
+}
+bool SUserServerData::isValid() const
+{
+    return !fName.isEmpty() && !fUserID.isEmpty();
+}
+
+bool SUserServerData::userDataEqual( const SUserServerData & rhs ) const
+{
+    if ( isValid() != rhs.isValid() )
+        return false;
+
+    auto equal = true;
+    equal = equal && fName == rhs.fName;
+    equal = equal && fConnectedIDOnServer == rhs.fConnectedIDOnServer;
+    if ( !fDateCreated.isNull() && !rhs.fDateCreated.isNull() )
+        equal = equal && fDateCreated == rhs.fDateCreated;
+    if ( !fLastActivityDate.isNull() && !rhs.fLastActivityDate.isNull() )
+        equal = equal && fLastActivityDate == rhs.fLastActivityDate;
+    if ( !fLastLoginDate.isNull() && !rhs.fLastLoginDate.isNull() )
+        equal = equal && fLastLoginDate == rhs.fLastLoginDate;
+    equal = equal && fImage == rhs.fImage;
+    equal = equal && fImageTagInfo == rhs.fImageTagInfo;
+    return equal;
+}
+
+QDateTime SUserServerData::latestAccess() const
+{
+    return std::max( { fDateCreated, fLastLoginDate, fLastActivityDate } );
+}
+
+bool operator==( const SUserServerData & lhs, const SUserServerData & rhs )
+{
+    return lhs.userDataEqual( rhs );
 }
