@@ -28,7 +28,7 @@ int CMediaModel::rowCount( const QModelIndex & parent /* = QModelIndex() */ ) co
 
 int CMediaModel::columnsPerServer( bool includeProviders ) const
 {
-    auto retVal = static_cast<int>( ePlaybackPosition ) + 1;
+    auto retVal = static_cast<int>( eFirstServerColumn ) + 1;
     if ( includeProviders )
         retVal += static_cast<int>( fProviderNames.size() );
     return retVal;
@@ -385,6 +385,9 @@ void CMediaModel::loadMergedMedia( std::shared_ptr<CProgressSystem> progressSyst
 
 QVariant CMediaModel::getColor( const QModelIndex & index, const QString & serverName, bool background ) const
 {
+    if ( !index.isValid() )
+        return {};
+
     if ( index.column() > fSettings->serverCnt() * columnsPerServer( false ) )
         return {};
     auto mediaData = fData[ index.row() ];
@@ -447,6 +450,7 @@ QVariant CMediaModel::getColor( const QModelIndex & index, const QString & serve
         auto serverName = this->serverNameForColumn( index.column() );
 
         auto isOlder = mediaData->needsUpdating( serverName );
+
         return isOlder ? older : newer;
     }
     return {};

@@ -24,14 +24,17 @@
 #include "ui_MainWindow.h"
 #include "../Version.h"
 #include "SettingsDlg.h"
+#include "TabUIInfo.h"
 
 #include "Core/ProgressSystem.h"
 #include "Core/Settings.h"
 #include "Core/SyncSystem.h"
 #include "Core/UsersModel.h"
+#include "Core/MediaModel.h"
 
 #include "SABUtils/DownloadFile.h"
 #include "SABUtils/GitHubGetVersions.h"
+#include "SABUtils/WidgetChanged.h"
 
 #include <QDebug>
 #include <QFileInfo>
@@ -39,6 +42,7 @@
 #include <QProcess>
 #include <QProgressDialog>
 #include <QTimer>
+#include <QMetaMethod>
 
 CMainWindow::CMainWindow( QWidget * parent )
     : QMainWindow( parent ),
@@ -48,22 +52,27 @@ CMainWindow::CMainWindow( QWidget * parent )
     fSettings = std::make_shared< CSettings >();
 
     fUsersModel = std::make_shared< CUsersModel >( fSettings );
+    NSABUtils::setupModelChanged( fUsersModel.get(), this, QMetaMethod::fromSignal( &CMainWindow::sigModelDataChanged ) );
     connect( this, &CMainWindow::sigSettingsLoaded, fUsersModel.get(), &CUsersModel::slotSettingsChanged );
+    connect( this, &CMainWindow::sigSettingsLoaded, this, &CMainWindow::slotSettingsChanged );
+    connect( this, &CMainWindow::sigSettingsChanged, this, &CMainWindow::slotSettingsChanged );
 
-    fImpl->playStateCompare->setup( fSettings, fUsersModel );
+    fMediaModel = std::make_shared< CMediaModel >( fSettings, this );
+    NSABUtils::setupModelChanged( fMediaModel.get(), this, QMetaMethod::fromSignal( &CMainWindow::sigModelDataChanged ) );
+
+    fSyncSystem = std::make_shared< CSyncSystem >( fSettings, fUsersModel, fMediaModel, this );
+    connect( fSyncSystem.get(), &CSyncSystem::sigAddToLog, this, &CMainWindow::slotAddToLog );
+    connect( fSyncSystem.get(), &CSyncSystem::sigAddInfoToLog, this, &CMainWindow::slotAddInfoToLog );
+    connect( fSyncSystem.get(), &CSyncSystem::sigLoadingUsersFinished, this, &CMainWindow::slotLoadingUsersFinished );
 
     setupProgressSystem();
 
-    connect( fImpl->playStateCompare, &CPlayStateCompare::sigAddToLog, this, &CMainWindow::slotAddToLog );
-    connect( fImpl->playStateCompare, &CPlayStateCompare::sigAddInfoToLog, this, &CMainWindow::slotAddInfoToLog );
+    connect( fImpl->actionReloadServers, &QAction::triggered, this, &CMainWindow::slotReloadServers );
 
-    connect( this, &CMainWindow::sigCanceled, fImpl->playStateCompare, &CPlayStateCompare::slotCanceled );
-    connect( this, &CMainWindow::sigDataChanged, fImpl->playStateCompare, &CPlayStateCompare::slotDataChanged );
-    connect( this, &CMainWindow::sigSettingsChanged, fImpl->playStateCompare, &CPlayStateCompare::slotSettingsChanged );
-    connect( this, &CMainWindow::sigSettingsLoaded, fImpl->playStateCompare, &CPlayStateCompare::sigSettingsLoaded );
+    for( int ii = 0; ii < fImpl->tabWidget->count(); ++ii )
+        setupPage( ii );
 
-    connect( this, &CMainWindow::sigDataChanged, this, &CMainWindow::slotUpdateActions );
-
+    connect( this, &CMainWindow::sigModelDataChanged, this, &CMainWindow::slotUpdateActions );
     connect( fImpl->tabWidget, &QTabWidget::currentChanged, this, &CMainWindow::slotCurentTabChanged );
 
 
@@ -81,8 +90,11 @@ CMainWindow::CMainWindow( QWidget * parent )
     connect( fGitHubVersion.first, &NSABUtils::CGitHubGetVersions::sigVersionsDownloaded, this, &CMainWindow::slotVersionsDownloaded );
     connect( fGitHubVersion.first, &NSABUtils::CGitHubGetVersions::sigLogMessage, this, &CMainWindow::slotAddInfoToLog );
 
-    slotCurentTabChanged( 0 );
-    fImpl->tabWidget->setCurrentIndex( 0 );
+    auto idx = fImpl->tabWidget->currentIndex();
+    if ( idx != 1 )
+        fImpl->tabWidget->setCurrentIndex( 1 );
+    else
+        slotCurentTabChanged( 1 );
 
     if ( CSettings::loadLastProject() )
         QTimer::singleShot( 0, this, &CMainWindow::slotLoadLastProject );
@@ -93,51 +105,60 @@ CMainWindow::CMainWindow( QWidget * parent )
 
 void CMainWindow::setupProgressSystem()
 {
-    auto progressSystem = std::make_shared< CProgressSystem >();
-    progressSystem->setSetTitleFunc( [this]( const QString & title )
+    fProgressSystem = std::make_shared< CProgressSystem >();
+    fProgressSystem->setSetTitleFunc( [this]( const QString & title )
                                      {
                                          return progressSetup( title );
                                      } );
-    progressSystem->setTitleFunc( [this]()
+    fProgressSystem->setTitleFunc( [this]()
                                   {
                                       if ( fProgressDlg )
                                           return fProgressDlg->labelText();
                                       return QString();
                                   } );
-    progressSystem->setMaximumFunc( [this]()
+    fProgressSystem->setMaximumFunc( [this]()
                                     {
                                         if ( fProgressDlg )
                                             return fProgressDlg->maximum();
                                         return 0;
                                     } );
-    progressSystem->setSetMaximumFunc( [this]( int count )
+    fProgressSystem->setSetMaximumFunc( [this]( int count )
                                        {
                                            progressSetMaximum( count );
                                        } );
-    progressSystem->setValueFunc( [this]()
+    fProgressSystem->setValueFunc( [this]()
                                   {
                                       return progressValue();
                                   } );
-    progressSystem->setSetValueFunc( [this]( int value )
+    fProgressSystem->setSetValueFunc( [this]( int value )
                                      {
                                          return progressSetValue( value );
                                      } );
-    progressSystem->setIncFunc( [this]()
+    fProgressSystem->setIncFunc( [this]()
                                 {
                                     return progressIncValue();
                                 } );
-    progressSystem->setResetFunc( [this]()
+    fProgressSystem->setResetFunc( [this]()
                                   {
                                       return progressReset();
                                   } );
-    progressSystem->setWasCanceledFunc( [this]()
+    fProgressSystem->setWasCanceledFunc( [this]()
                                         {
                                             if ( fProgressDlg )
                                                 return fProgressDlg->wasCanceled();
                                             return false;
                                         } );
 
-    fImpl->playStateCompare->setProgressSystem( progressSystem );
+    fSyncSystem->setProgressSystem( fProgressSystem );
+
+    fSyncSystem->setUserMsgFunc(
+        [this]( const QString & title, const QString & msg, bool isCritical )
+        {
+            if ( isCritical )
+                QMessageBox::critical( this, title, msg );
+            else
+                QMessageBox::information( this, title, msg );
+        } );
 }
 
 CMainWindow::~CMainWindow()
@@ -151,17 +172,29 @@ void CMainWindow::showEvent( QShowEvent * /*event*/ )
 void CMainWindow::closeEvent( QCloseEvent * event )
 {
     bool okToClose = fSettings->maybeSave( this );
-        okToClose = okToClose && fImpl->playStateCompare->okToClose();
+    okToClose = okToClose && pagesOKToClose();
     if ( !okToClose )
         event->ignore();
     else
         event->accept();
 }
 
+void CMainWindow::slotSettingsChanged()
+{
+    fUsersModel->clear();
+    fSyncSystem->loadUsers();
+}
+
+void CMainWindow::slotReloadServers()
+{
+    resetPages();
+    fSyncSystem->loadServers();
+    fSyncSystem->loadUsers();
+}
 
 void CMainWindow::slotSettings()
 {
-    CSettingsDlg settings( fSettings, fImpl->playStateCompare->syncSystem(), fImpl->playStateCompare->getAllUsers( true ), this );
+    CSettingsDlg settings( fSettings, fSyncSystem, fUsersModel->getAllUsers( true ), this );
     settings.exec();
     if ( fSettings->changed() )
     {
@@ -238,7 +271,9 @@ void CMainWindow::slotVersionsDownloaded()
 
 void CMainWindow::reset()
 {
-    fImpl->playStateCompare->resetServers();
+    resetPages();
+
+    fUsersModel->clear();
     fSettings->reset();
     fImpl->log->clear();
 }
@@ -283,7 +318,7 @@ void CMainWindow::loadFile( const QString & fileName )
     reset();
     if ( fSettings->load( fileName, true, this ) )
     {
-        fImpl->playStateCompare->resetServers();
+        resetPages();
         loadSettings();
     }
 }
@@ -316,7 +351,7 @@ void CMainWindow::loadSettings()
 
     setWindowTitle( windowTitle );
 
-    fImpl->playStateCompare->loadSettings();
+    loadSettingsIntoPages();
 
 
     emit sigSettingsChanged();
@@ -325,6 +360,8 @@ void CMainWindow::loadSettings()
 
 void CMainWindow::slotUpdateActions()
 {
+    bool canSync = fSettings->canAnyServerSync();
+    fImpl->actionReloadServers->setEnabled( canSync );
 }
 
 void CMainWindow::slotAddToLog( int msgType, const QString & msg )
@@ -391,51 +428,79 @@ void CMainWindow::progressIncValue()
     fProgressDlg->setValue( progressValue() + 1 );
 }
 
-void CMainWindow::slotCurentTabChanged( int idx )
+void CMainWindow::slotCurentTabChanged( int /*idx*/ )
 {
-    for ( auto && ii : fCurrentTabInfo.fMenus )
-        menuBar()->removeAction( ii->menuAction() );
-    for ( auto && ii : fCurrentTabInfo.fEditActions )
-        fImpl->menuEdit->removeAction( ii );
-    for ( auto && ii : fCurrentTabInfo.fToolBars )
-        removeToolBar( ii );
+    if ( fCurrentTabUIInfo )
+        fCurrentTabUIInfo->cleanupUI( this );
 
-    if ( idx == 0 )
-    {
-        fCurrentTabInfo.fMenus = fImpl->playStateCompare->getMenus();
-        fCurrentTabInfo.fEditActions = fImpl->playStateCompare->getEditActions();
-        fCurrentTabInfo.fToolBars = fImpl->playStateCompare->getToolBars();
-    }
+    auto currPage = getCurrentPage();
+    if ( currPage )
+        fCurrentTabUIInfo = currPage->getUIInfo();
+    else
+        fCurrentTabUIInfo.reset();
 
-    for ( auto && ii : fCurrentTabInfo.fMenus )
-        menuBar()->insertAction( fImpl->menuEdit->menuAction(), ii->menuAction() );
-    
-    auto insertBefore = findEditMenuInsertBefore();
-    for ( auto && ii : fCurrentTabInfo.fEditActions )
-        fImpl->menuEdit->insertAction( insertBefore, ii );
-    for ( auto && ii : fCurrentTabInfo.fToolBars )
-        addToolBar( Qt::TopToolBarArea, ii );
+    if ( !fCurrentTabUIInfo )
+        return;
+
+    fCurrentTabUIInfo->setupUI( this, fImpl->menuEdit );
 }
 
-QAction * CMainWindow::findEditMenuInsertBefore()
+CTabPageBase * CMainWindow::getCurrentPage() const
 {
-    if ( !fEditMenuInsertBefore )
-    {
-        auto editActions = fImpl->menuEdit->actions();
-        fEditMenuInsertBefore = nullptr;
-        for ( int ii = 1; ii < editActions.count(); ++ii )
-        {
-            auto prev = editActions.at( ii - 1 );
-            auto curr = editActions.at( ii );
+    auto currIndex = fImpl->tabWidget->currentIndex();
+    auto pos = fPages.find( currIndex );
+    if ( pos == fPages.end() )
+        return nullptr;
+    return ( *pos ).second;
+}
 
-            if ( prev->isSeparator() && curr->isSeparator() )
-            {
-                fEditMenuInsertBefore = curr;
-                break;
-            }
-        }
-        Q_ASSERT( fEditMenuInsertBefore );
-    }
+void CMainWindow::setupPage( int index )
+{
+    auto page = dynamic_cast< CTabPageBase * >( fImpl->tabWidget->widget( index ) );
+    if ( !page )
+        return;
 
-    return fEditMenuInsertBefore;
+
+    fPages[ index ] = page;
+    
+    page->setupPage( fSettings, fSyncSystem, fMediaModel, fUsersModel, fProgressSystem );
+    connect( page, &CTabPageBase::sigAddToLog, this, &CMainWindow::slotAddToLog );
+    connect( page, &CTabPageBase::sigAddInfoToLog, this, &CMainWindow::slotAddInfoToLog );
+
+    connect( this, &CMainWindow::sigCanceled, page, &CTabPageBase::slotCanceled );
+    connect( this, &CMainWindow::sigModelDataChanged, page, &CTabPageBase::slotModelDataChanged );
+    connect( this, &CMainWindow::sigSettingsChanged, page, &CTabPageBase::slotSettingsChanged );
+    connect( this, &CMainWindow::sigSettingsLoaded, page, &CTabPageBase::sigSettingsLoaded );
+}
+
+void CMainWindow::resetPages()
+{
+    fUsersModel->clear();
+    fMediaModel->clear();
+    fSyncSystem->reset();
+
+    for ( auto && ii : fPages )
+        ii.second->resetPage();
+}
+
+void CMainWindow::loadSettingsIntoPages()
+{
+    for ( auto && ii : fPages )
+        ii.second->loadSettings();
+}
+
+
+bool CMainWindow::pagesOKToClose()
+{
+    bool aOK = true;
+    for ( auto && ii : fPages )
+        aOK = aOK && ii.second->okToClose();
+    return aOK;
+}
+
+void CMainWindow::slotLoadingUsersFinished()
+{
+    fUsersModel->loadAvatars( fSyncSystem );
+    for ( auto && ii : fPages )
+        ii.second->loadingUsersFinished();
 }

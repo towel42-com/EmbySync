@@ -68,6 +68,7 @@ public:
 
     void setServers( const std::vector < std::shared_ptr< CServerInfo > > & servers );
 
+    int enabledServerCnt() const;
     int serverCnt() const;
     int getServerPos( const QString & serverName ) const;
     std::shared_ptr< const CServerInfo > serverInfo( int serverNum ) const;
@@ -144,6 +145,12 @@ public:
     bool showMediaWithIssues() { return fShowMediaWithIssues; };
     void setShowMediaWithIssues( bool value );
 
+    bool onlyShowUsersWithDifferences() { return fOnlyShowUsersWithDifferences; };
+    void setOnlyShowUsersWithDifferences( bool value );
+
+    bool showUsersWithIssues() { return fShowUsersWithIssues; };
+    void setShowUsersWithIssues( bool value );
+
     QStringList syncUserList() const { return fSyncUserList; }
     void setSyncUserList( const QStringList & value );
 
@@ -180,8 +187,12 @@ private:
     int fMaxItems{ -1 };
 
     bool fOnlyShowSyncableUsers{ true };
+
     bool fOnlyShowMediaWithDifferences{ true };
     bool fShowMediaWithIssues{ false };
+
+    bool fOnlyShowUsersWithDifferences{ true };
+    bool fShowUsersWithIssues{ false };
 
     bool fSyncAudio{ true };
     bool fSyncVideo{ true };

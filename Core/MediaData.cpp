@@ -399,7 +399,7 @@ bool CMediaData::needsUpdating( const QString & serverName ) const
 
     auto mediaData = userMediaData( serverName );
     if ( !mediaData )
-        return {};
+        return false;
     return ( mediaData != newestMediaData() );
 }
 
@@ -454,7 +454,6 @@ EMediaSyncStatus CMediaData::syncStatus() const
         return EMediaSyncStatus::eMediaEqualOnValidServers;
     return EMediaSyncStatus::eMediaNeedsUpdating;
 }
-
 
 bool CMediaData::validUserDataEqual() const
 {

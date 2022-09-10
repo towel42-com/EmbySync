@@ -20,15 +20,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef _MEDIATREE_H
-#define _MEDIATREE_H
+#ifndef _DATATREE_H
+#define _DATATREE_H
 
 #include <QWidget>
 #include <memory>
 
 namespace Ui
 {
-    class CMediaTree;
+    class CDataTree;
 }
 
 class QLabel;
@@ -36,29 +36,34 @@ class CSettings;
 class CUserData;
 class QAbstractItemModel;
 class CServerInfo;
-class CMediaTree : public QWidget
+class CDataTree : public QWidget
 {
     Q_OBJECT
 public:
-    CMediaTree( const std::shared_ptr< const CServerInfo > & serverInfo, QWidget * parent = nullptr );
-    virtual ~CMediaTree() override;
+    CDataTree( const std::shared_ptr< const CServerInfo > & serverInfo, QWidget * parent = nullptr );
+    virtual ~CDataTree() override;
 
     void setModel( QAbstractItemModel * model );
     void hideColumns();
 
-    void addPeerMediaTree( CMediaTree * peer );
+    void addPeerDataTree( CDataTree * peer );
     QModelIndex currentIndex() const;
+    QModelIndex indexAt( const QPoint & pt ) const;
     void autoSize();
 
     virtual bool eventFilter( QObject * obj, QEvent * event ) override;
 
+    bool hasCurrentItem() const;
+
+    QWidget * dataTree() const;
+    const std::shared_ptr< const CServerInfo > serverInfo() const { return fServerInfo; }
 Q_SIGNALS:
     void sigCurrChanged( const QModelIndex & idx );
-    void sigViewMedia( const QModelIndex & idx );
+    void sigViewData( const QModelIndex & idx );
     void sigVSliderMoved( int position );
     void sigHSliderMoved( int position );
     void sigHScrollTo( int value, int max );
-
+    void sigDataContextMenuRequested( CDataTree * tree, const QPoint & pos );
 private Q_SLOTS:
     void slotSetCurrentMediaItem( const QModelIndex & idx );
     void slotSetVSlider( int position );
@@ -66,11 +71,12 @@ private Q_SLOTS:
     void slotHScrollTo( int value, int max );
     void slotUpdateHorizontalScroll( int );
     void slotVActionTriggered( int action );
+    void slotServerInfoChanged();
+    void slotContextMenuRequested( const QPoint & pos );
 
-    void slotMediaInfoChanged();
 private:
-    std::unique_ptr< Ui::CMediaTree > fImpl;
-    std::vector< CMediaTree * > fPeers;
+    std::unique_ptr< Ui::CDataTree > fImpl;
+    std::vector< CDataTree * > fPeers;
 
     const std::shared_ptr< const CServerInfo > fServerInfo;
 };

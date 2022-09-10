@@ -23,8 +23,9 @@
 #include "PlayStateCompare.h"
 #include "ui_PlayStateCompare.h"
 
-#include "MediaTree.h"
+#include "DataTree.h"
 #include "MediaWindow.h"
+#include "TabUIInfo.h"
 
 #include "Core/MediaModel.h"
 #include "Core/ProgressSystem.h"
@@ -49,73 +50,45 @@
 #include <QToolBar>
 
 CPlayStateCompare::CPlayStateCompare( QWidget * parent )
-    : QWidget( parent ),
+    : CTabPageBase( parent ),
     fImpl( new Ui::CPlayStateCompare )
 {
     fImpl->setupUi( this );
     setupActions();
 
-    connect( this, &CPlayStateCompare::sigDataChanged, this, &CPlayStateCompare::slotDataChanged );
-    connect( fImpl->users, &QTreeView::customContextMenuRequested, this, &CPlayStateCompare::slotUsersContextMenu );
+    connect( this, &CPlayStateCompare::sigModelDataChanged, this, &CPlayStateCompare::slotModelDataChanged );
+
+    connect( this, &CTabPageBase::sigSetCurrentDataItem, this, &CPlayStateCompare::slotSetCurrentMediaItem );
+    connect( this, &CTabPageBase::sigViewData, this, &CPlayStateCompare::slotViewMedia );
 }
 
-void CPlayStateCompare::setup( std::shared_ptr< CSettings > settings, std::shared_ptr< CUsersModel > userModel )
+void CPlayStateCompare::setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CProgressSystem > progressSystem )
 {
-    fSettings = settings;
-    fUsersModel = userModel;
+    CTabPageBase::setupPage( settings, syncSystem, mediaModel, userModel, progressSystem );
 
-    fUsersFilterModel = new CUsersFilterModel( fUsersModel.get() );
+    fUsersFilterModel = new CUsersFilterModel( true, fUsersModel.get() );
     fUsersFilterModel->setSourceModel( fUsersModel.get() );
 
-    fMediaModel = std::make_shared< CMediaModel >( fSettings );
     fMediaFilterModel = new CMediaFilterModel( fMediaModel.get() );
     fMediaFilterModel->setSourceModel( fMediaModel.get() );
     connect( fMediaModel.get(), &CMediaModel::sigPendingMediaUpdate, this, &CPlayStateCompare::slotPendingMediaUpdate );
 
     fMediaFilterModel->sort( -1, Qt::SortOrder::AscendingOrder );
     fUsersFilterModel->sort( -1, Qt::SortOrder::AscendingOrder );
-    NSABUtils::setupModelChanged( fMediaModel.get(), this, QMetaMethod::fromSignal( &CPlayStateCompare::sigDataChanged ) );
-    NSABUtils::setupModelChanged( fUsersModel.get(), this, QMetaMethod::fromSignal( &CPlayStateCompare::sigDataChanged ) );
+    NSABUtils::setupModelChanged( fMediaModel.get(), this, QMetaMethod::fromSignal( &CPlayStateCompare::sigModelDataChanged ) );
 
     fImpl->users->setModel( fUsersFilterModel );
-#ifdef NDEBUG
-    fImpl->users->setColumnHidden( CUsersModel::eAllNames, true );
-#endif
     fImpl->users->setContextMenuPolicy( Qt::ContextMenuPolicy::CustomContextMenu );
     connect( fImpl->users, &QTreeView::clicked, this, &CPlayStateCompare::slotCurrentUserChanged );
 
-    fSyncSystem = std::make_shared< CSyncSystem >( fSettings, fUsersModel, fMediaModel, this );
-    connect( fSyncSystem.get(), &CSyncSystem::sigAddToLog, this, &CPlayStateCompare::sigAddToLog );
-    connect( fSyncSystem.get(), &CSyncSystem::sigLoadingUsersFinished, this, &CPlayStateCompare::slotLoadingUsersFinished );
     connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaLoaded, this, &CPlayStateCompare::slotUserMediaLoaded );
     connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaLoaded, this, &CPlayStateCompare::slotUserMediaCompletelyLoaded );
-
-    fSyncSystem->setUserMsgFunc(
-        [this]( const QString & title, const QString & msg, bool isCritical )
-        {
-            if ( isCritical )
-                QMessageBox::critical( this, title, msg );
-            else
-                QMessageBox::information( this, title, msg );
-        } );
 
     slotSetCurrentMediaItem( QModelIndex() );
 }
 
 void CPlayStateCompare::setupActions()
 {
-    fReloadMenu = new QMenu( this );
-    fReloadMenu->setObjectName( QString::fromUtf8( "fReloadMenu" ) );
-    fReloadMenu->setTitle( QCoreApplication::translate( "CPlayStateCompare", "Reload", nullptr ) );
-
-    fActionReloadServers = new QAction( this );
-    fActionReloadServers->setObjectName( QString::fromUtf8( "fActionReloadServers" ) );
-    QIcon icon1;
-    icon1.addFile( QString::fromUtf8( ":/resources/reloadServers.png" ), QSize(), QIcon::Normal, QIcon::Off );
-    fActionReloadServers->setIcon( icon1 );
-    fActionReloadServers->setText( QCoreApplication::translate( "CPlayStateCompare", "Reload Users from Servers", nullptr ) );
-    fActionReloadServers->setToolTip( QCoreApplication::translate( "CPlayStateCompare", "Reload Servers", nullptr ) );
-
     fActionReloadCurrentUser = new QAction( this );
     fActionReloadCurrentUser->setObjectName( QString::fromUtf8( "fActionReloadCurrentUser" ) );
     QIcon icon2;
@@ -124,17 +97,9 @@ void CPlayStateCompare::setupActions()
     fActionReloadCurrentUser->setText( QCoreApplication::translate( "CPlayStateCompare", "Reload Current User's Media", nullptr ) );
     fActionReloadCurrentUser->setToolTip( QCoreApplication::translate( "CPlayStateCompare", "Reload Current User", nullptr ) );
 
-    fReloadMenu->addAction( fActionReloadServers );
-    fReloadMenu->addAction( fActionReloadCurrentUser );
-
     fProcessMenu = new QMenu( this );
     fProcessMenu->setObjectName( QString::fromUtf8( "fProcessMenu" ) );
     fProcessMenu->setTitle( QCoreApplication::translate( "CPlayStateCompare", "Process", nullptr ) );
-
-    fActionRepairUserConnectedIDs = new QAction( this );
-    fActionRepairUserConnectedIDs->setObjectName( QString::fromUtf8( "fActionRepairUserConnectedIDs" ) );
-    fActionRepairUserConnectedIDs->setText( QCoreApplication::translate( "CPlayStateCompare", "Repair User Connected IDs", nullptr ) );
-    fActionRepairUserConnectedIDs->setToolTip( QCoreApplication::translate( "CPlayStateCompare", "Repair User Connected IDs", nullptr ) );
 
     fActionProcess = new QAction( this );
     fActionProcess->setObjectName( QString::fromUtf8( "fActionProcess" ) );
@@ -152,8 +117,6 @@ void CPlayStateCompare::setupActions()
     fActionSelectiveProcess->setText( QCoreApplication::translate( "CPlayStateCompare", "Select a Server and Update other servers to it..", nullptr ) );
     fActionSelectiveProcess->setToolTip( QCoreApplication::translate( "CPlayStateCompare", "Select a Server and Update other servers to it", nullptr ) );
 
-    fProcessMenu->addAction( fActionRepairUserConnectedIDs );
-    fProcessMenu->addSeparator();
     fProcessMenu->addAction( fActionProcess );
     fProcessMenu->addAction( fActionSelectiveProcess );
 
@@ -200,16 +163,13 @@ void CPlayStateCompare::setupActions()
     fToolBar->addAction( fActionOnlyShowMediaWithDifferences );
     fToolBar->addAction( fActionShowMediaWithIssues );
     fToolBar->addSeparator();
-    fToolBar->addAction( fActionReloadServers );
     fToolBar->addAction( fActionReloadCurrentUser );
     fToolBar->addSeparator();
     fToolBar->addAction( fActionProcess );
     fToolBar->addAction( fActionSelectiveProcess );
 
-    connect( fActionReloadServers, &QAction::triggered, this, &CPlayStateCompare::slotReloadServers );
     connect( fActionReloadCurrentUser, &QAction::triggered, this, &CPlayStateCompare::slotReloadCurrentUser );
 
-    connect( fActionRepairUserConnectedIDs, &QAction::triggered, this, &CPlayStateCompare::slotRepairUserConnectedIDs );
     connect( fActionProcess, &QAction::triggered, this, &CPlayStateCompare::slotProcess );
     connect( fActionSelectiveProcess, &QAction::triggered, this, &CPlayStateCompare::slotSelectiveProcess );
 
@@ -227,17 +187,6 @@ CPlayStateCompare::~CPlayStateCompare()
         delete fMediaWindow.data();
 }
 
-void CPlayStateCompare::setProgressSystem( std::shared_ptr< CProgressSystem > funcs )
-{
-    fSyncSystem->setProgressSystem( funcs );
-    fProgressSystem = funcs;
-}
-
-std::vector< std::shared_ptr< CUserData > > CPlayStateCompare::getAllUsers( bool sorted ) const
-{
-    return fUsersModel->getAllUsers( sorted );
-}
-
 void CPlayStateCompare::loadSettings()
 {
     fActionOnlyShowSyncableUsers->setChecked( fSettings->onlyShowSyncableUsers() );
@@ -253,7 +202,11 @@ bool CPlayStateCompare::okToClose()
 
 void CPlayStateCompare::reset()
 {
-    resetServers();
+    resetPage();
+}
+
+void CPlayStateCompare::resetPage()
+{
 }
 
 void CPlayStateCompare::slotCanceled()
@@ -263,13 +216,10 @@ void CPlayStateCompare::slotCanceled()
 
 void CPlayStateCompare::slotSettingsChanged()
 {
-    fUsersModel->clear();
-    fSyncSystem->loadUsers();
     loadServers();
-    fSyncSystem->loadUsers();
 }
 
-void CPlayStateCompare::slotDataChanged()
+void CPlayStateCompare::slotModelDataChanged()
 {
     bool hasCurrentUser = fImpl->users->selectionModel()->currentIndex().isValid();
     bool canSync = fSettings->canAnyServerSync();
@@ -277,29 +227,24 @@ void CPlayStateCompare::slotDataChanged()
     bool mediaLoaded = canSync && fMediaModel->rowCount();
     bool hasUsersNeedingFixing = fUsersModel->hasUsersWithConnectedIDNeedingUpdate();
 
-    fActionReloadServers->setEnabled( canSync );
     fActionReloadCurrentUser->setEnabled( canSync && hasCurrentUser );
 
     fActionProcess->setEnabled( hasDataToProcess );
     fActionSelectiveProcess->setEnabled( hasDataToProcess );
-    fActionRepairUserConnectedIDs->setEnabled( hasUsersNeedingFixing );
 
     fActionViewMediaInformation->setEnabled( mediaLoaded );
 }
 
-void CPlayStateCompare::slotLoadingUsersFinished()
+void CPlayStateCompare::loadingUsersFinished()
 {
     onlyShowSyncableUsers();
-    fUsersModel->loadAvatars( fSyncSystem );
     fUsersFilterModel->sort( 0, Qt::SortOrder::AscendingOrder );
     NSABUtils::autoSize( fImpl->users, -1 );
 }
 
-void CPlayStateCompare::slotReloadServers()
+QSplitter * CPlayStateCompare::getDataSplitter() const
 {
-    resetServers();
-    fSyncSystem->loadServers();
-    fSyncSystem->loadUsers();
+    return fImpl->dataSplitter;
 }
 
 void CPlayStateCompare::slotReloadCurrentUser()
@@ -400,8 +345,7 @@ void CPlayStateCompare::onlyShowMediaWithDifferences()
     }
     fMediaFilterModel->sort( column, order );
 
-    for ( auto && ii : fMediaTrees )
-        ii->autoSize();
+    autoSizeDataTrees();
 }
 
 void CPlayStateCompare::slotToggleShowMediaWithIssues()
@@ -421,19 +365,16 @@ void CPlayStateCompare::showMediaWithIssues()
     fImpl->mediaSummaryLabel->setText( mediaSummary.getSummaryText() );
 }
 
-std::list< QMenu * > CPlayStateCompare::getMenus() const
+std::shared_ptr< CTabUIInfo > CPlayStateCompare::getUIInfo() const
 {
-    return { fReloadMenu, fProcessMenu, fViewMenu };
-}
+    auto retVal = std::make_shared< CTabUIInfo >();
 
-std::list< QAction * > CPlayStateCompare::getEditActions() const
-{
-    return { fActionOnlyShowSyncableUsers, fActionOnlyShowMediaWithDifferences, fActionShowMediaWithIssues };
-}
+    retVal->fMenus = { fProcessMenu, fViewMenu };
+    retVal->fToolBars = { fToolBar };
 
-std::list< QToolBar * > CPlayStateCompare::getToolBars() const
-{
-    return { fToolBar };
+    retVal->fMenuActions[ "Edit" ] = std::make_pair( true, QList< QAction * >( { fActionOnlyShowSyncableUsers, fActionOnlyShowMediaWithDifferences, fActionShowMediaWithIssues } ) );
+    retVal->fMenuActions[ "Reload" ] = std::make_pair( false, QList< QAction * >( { fActionReloadCurrentUser } ) );
+    return retVal;
 }
 
 std::shared_ptr< CMediaData > CPlayStateCompare::getMediaData( QModelIndex idx ) const
@@ -466,45 +407,9 @@ void CPlayStateCompare::slotPendingMediaUpdate()
     fPendingMediaUpdateTimer->start();
 }
 
-
-void CPlayStateCompare::resetServers()
-{
-    fUsersModel->clear();
-    fMediaModel->clear();
-    fSyncSystem->reset();
-}
-
 void CPlayStateCompare::loadServers()
 {
-    for ( auto && ii : fMediaTrees )
-        delete ii;
-    fMediaTrees.clear();
-
-    fSyncSystem->loadServers();
-
-    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
-    {
-        auto serverInfo = fSettings->serverInfo( ii );
-        if ( !serverInfo->isEnabled() )
-            continue;
-
-        auto mediaTree = new CMediaTree( fSettings->serverInfo( ii ), fImpl->playedStateSplitter );
-        fImpl->playedStateSplitter->addWidget( mediaTree );
-        mediaTree->setModel( fMediaFilterModel );
-        connect( mediaTree, &CMediaTree::sigCurrChanged, this, &CPlayStateCompare::slotSetCurrentMediaItem );
-        connect( mediaTree, &CMediaTree::sigViewMedia, this, &CPlayStateCompare::slotViewMedia );
-        fMediaTrees.push_back( mediaTree );
-    }
-
-    for ( size_t ii = 0; ii < fMediaTrees.size(); ++ii )
-    {
-        for ( size_t jj = 0; jj < fMediaTrees.size(); ++jj )
-        {
-            if ( ii == jj )
-                continue;
-            fMediaTrees[ ii ]->addPeerMediaTree( fMediaTrees[ jj ] );
-        }
-    }
+    CTabPageBase::loadServers( fMediaFilterModel );
 }
 
 void CPlayStateCompare::slotViewMedia( const QModelIndex & current )
@@ -520,7 +425,7 @@ void CPlayStateCompare::slotSetCurrentMediaItem( const QModelIndex & current )
     if ( fMediaWindow )
         fMediaWindow->setMedia( mediaInfo );
 
-    slotDataChanged();
+    slotModelDataChanged();
 }
 
 void CPlayStateCompare::slotViewMediaInfo()
@@ -528,19 +433,16 @@ void CPlayStateCompare::slotViewMediaInfo()
     if ( !fMediaWindow )
         fMediaWindow = new CMediaWindow( fSettings, fSyncSystem, nullptr );
 
-    for ( auto && ii : fMediaTrees )
+    auto idx = currentDataIndex();
+    if ( idx.isValid() )
     {
-        auto currIdx = ii->currentIndex();
-        if ( currIdx.isValid() )
+        auto mediaInfo = getMediaData( idx );
+        if ( mediaInfo )
         {
-            auto mediaInfo = getMediaData( currIdx );
-            if ( mediaInfo )
-            {
-                fMediaWindow->setMedia( mediaInfo );
-                break;
-            }
+            fMediaWindow->setMedia( mediaInfo );
         }
     }
+
     fMediaWindow->show();
     fMediaWindow->activateWindow();
     fMediaWindow->raise();
@@ -552,8 +454,7 @@ void CPlayStateCompare::slotUserMediaLoaded()
     if ( !currUser )
         return;
 
-    for ( auto && ii : fMediaTrees )
-        ii->hideColumns();
+    hideDataTreeColumns();
 }
 
 
@@ -605,64 +506,4 @@ void CPlayStateCompare::slotSelectiveProcess()
     if ( pos == servers.end() )
         return;
     fSyncSystem->selectiveProcess( (*pos).second );
-}
-
-void CPlayStateCompare::slotRepairUserConnectedIDs()
-{
-    auto users = fUsersModel->usersWithConnectedIDNeedingUpdate();
-    fSyncSystem->repairConnectIDs( users );
-}
-
-void CPlayStateCompare::slotSetConnectID()
-{
-    auto currIdx = fImpl->users->currentIndex();
-    if ( !currIdx.isValid() )
-        return;
-
-    auto userData = getUserData( currIdx );
-    if ( !userData )
-        return;
-    
-    auto newConnectedID = QInputDialog::getText( this, tr( "Enter Connect ID" ), tr( "Connect ID:" ), QLineEdit::Normal, userData->connectedID() );
-    if ( newConnectedID.isEmpty() || ( newConnectedID == userData->connectedID() ) )
-        return;
-
-    fSyncSystem->setConnectedID( newConnectedID, userData );
- }
-
-void CPlayStateCompare::slotAutoSetConnectID()
-{
-    auto currIdx = fImpl->users->currentIndex();
-    if ( !currIdx.isValid() )
-        return;
-
-    auto userData = getUserData( currIdx );
-    if ( !userData )
-        return;
-
-    fSyncSystem->repairConnectIDs( { userData } );
-}
-
-void CPlayStateCompare::slotUsersContextMenu( const QPoint & pos )
-{
-    auto idx = fImpl->users->indexAt( pos );
-    if ( !idx.isValid() )
-        return;
-
-    auto userData = getUserData( idx );
-    if ( !userData )
-        return;
-
-    QMenu menu( tr( "Context Menu" ) );
-
-    QAction action( "Set Connect ID" );
-    menu.addAction( &action );
-    connect( &action, &QAction::triggered, this, &CPlayStateCompare::slotSetConnectID );
-
-    QAction action2( "AutoSet Connect ID" );
-    menu.addAction( &action2 );
-    action2.setEnabled( userData->connectedIDNeedsUpdate() );
-    connect( &action2, &QAction::triggered, this, &CPlayStateCompare::slotAutoSetConnectID );
-
-    menu.exec( fImpl->users->mapToGlobal( pos ) );
 }

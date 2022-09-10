@@ -2,33 +2,40 @@ set(qtproject_SRCS
     EditServerDlg.cpp
     MainWindow.cpp
     SettingsDlg.cpp
-    MediaTree.cpp
+    DataTree.cpp
     MediaUserDataWidget.cpp
     MediaWindow.cpp 
     PlayStateCompare.cpp
+    UserInfoCompare.cpp
+    TabPageBase.cpp
+    TabUIInfo.cpp
 )
 
 set(qtproject_H
     EditServerDlg.h
     MainWindow.h
     SettingsDlg.h
-    MediaTree.h
+    DataTree.h
     MediaUserDataWidget.h
     MediaWindow.h 
     PlayStateCompare.h
+    UserInfoCompare.h
+    TabPageBase.h
 )
 
 set(project_H
+   TabUIInfo.h
 )
 
 set(qtproject_UIS
     EditServerDlg.ui
     MainWindow.ui
     SettingsDlg.ui
-    MediaTree.ui
+    DataTree.ui
     MediaUserDataWidget.ui
     MediaWindow.ui 
     PlayStateCompare.ui
+    UserInfoCompare.ui
 )
 
 

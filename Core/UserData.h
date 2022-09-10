@@ -27,6 +27,7 @@
 #include <list>
 #include <optional>
 #include <QImage>
+#include <QDateTime>
 #include <memory>
 #include <map>
 
@@ -36,18 +37,22 @@ class CSettings;
 struct SUserServerData
 {
     bool isValid() const;
+    void setLastModified( std::initializer_list< QDateTime > dateTS );
+    bool userDataEqual( const SUserServerData & rhs ) const;
+
     QString fName;
     QString fUserID;
     QString fConnectedIDOnServer;
 
     QImage fImage;
     std::pair< QString, double > fImageTagInfo;
+    QDateTime fLastModifed;
 };
 
 class CUserData
 {
 public:
-    CUserData( const QString & serverName, const QString & name, const QString & connectedID, const QString & userID );
+    CUserData( const QString & serverName, const QString & userID );
 
     QString connectedID() const { return fConnectedID; }
     QString connectedID( const QString & serverName ) const;
@@ -72,11 +77,20 @@ public:
     QString getUserID( const QString & serverName ) const;
     void setUserID( const QString & serverName, const QString & id );
 
+    void setLastModified( const QString & serverName, std::initializer_list< QDateTime > dateTS );
+
     bool hasImageTagInfo( const QString & serverName ) const;
 
     std::pair< QString, double > getImageTagInfo( const QString & serverName ) const;
     void setImageTagInfo( const QString & serverName, const QString & tag, double ratio );
     
+    bool allUserNamesTheSame() const;
+    bool allConnectIDTheSame() const;
+    bool allIconsTheSame() const;
+
+    bool needsUpdating( const QString & serverName ) const;
+    std::shared_ptr<SUserServerData> newestServerInfo() const;
+
     QImage globalAvatar() const; // when all servers use the same image
     QImage getAvatar( const QString & serverName ) const;
     void setAvatar( const QString & serverName, int serverCnt, const QImage & image );
@@ -84,7 +98,28 @@ public:
 
     bool canBeSynced() const;
     bool onServer( const QString & serverName ) const;
+
+    QIcon getDirectionIcon( const QString & serverName ) const;
+    bool isValidForServer( const QString & serverName ) const;
+    bool validUserDataEqual() const;
 private:
+
+    template < typename T >
+    std::optional< T > allSame( std::function < T( std::shared_ptr< SUserServerData > ) > getValue ) const
+    {
+        std::optional< T > prev;
+        for ( auto && ii : fInfoForServer )
+        {
+            if ( prev.has_value() )
+            {
+                if ( prev.value() != getValue( ii.second ) )
+                    return {};
+            }
+            else
+                prev = getValue( ii.second );
+        }
+        return prev;
+    }
     void updateCanBeSynced();
     void checkAllAvatarsTheSame( int serverNum );
 

@@ -26,13 +26,11 @@
 #include "SABUtils/StringUtils.h"
 
 #include <QRegularExpression>
+#include <QDebug>
 
-CUserData::CUserData( const QString & serverName, const QString & name, const QString & connectedID, const QString & userID ) :
-    fConnectedID( connectedID )
+CUserData::CUserData( const QString & serverName, const QString & userID )
 {
-    setName( serverName, name );
     setUserID( serverName, userID );
-    setConnectedID( serverName, connectedID );
 }
 
 std::shared_ptr< SUserServerData > CUserData::getServerInfo( const QString & serverName ) const
@@ -60,6 +58,14 @@ void CUserData::setConnectedID( const QString & serverName, const QString & conn
     auto retVal = getServerInfo( serverName );
     if ( retVal )
         retVal->fConnectedIDOnServer = connectedID;
+}
+
+bool CUserData::isValidForServer( const QString & serverName ) const
+{
+    auto info = getServerInfo( serverName );
+    if ( !info )
+        return false;
+    return info->isValid();
 }
 
 bool CUserData::isValid() const
@@ -227,6 +233,13 @@ void CUserData::setUserID( const QString & serverName, const QString & id )
     updateCanBeSynced();
 }
 
+void CUserData::setLastModified( const QString & serverName, std::initializer_list< QDateTime > dateTS )
+{
+    auto retVal = getServerInfo( serverName );
+    if ( retVal )
+        retVal->setLastModified( dateTS );
+}
+
 bool CUserData::hasImageTagInfo( const QString & serverName ) const
 {
     auto serverInfo = getServerInfo( serverName );
@@ -272,19 +285,66 @@ void CUserData::checkAllAvatarsTheSame( int serverNum )
     if ( serverNum != this->fInfoForServer.size() )
         return;
 
-    std::optional< QImage > prev;
+    fGlobalImage = allSame< QImage >(
+        []( std::shared_ptr< SUserServerData > rhs )
+        {
+            return rhs->fImage;
+        } );
+}
+
+
+bool CUserData::allUserNamesTheSame() const
+{
+    return allSame< QString >(
+        []( std::shared_ptr< SUserServerData > rhs )
+        {
+            return rhs->fName;
+        } ).has_value();
+}
+
+bool CUserData::allConnectIDTheSame() const
+{
+    return allSame< QString >(
+        []( std::shared_ptr< SUserServerData > rhs )
+        {
+            return rhs->fConnectedIDOnServer;
+        } ).has_value();
+}
+
+bool CUserData::allIconsTheSame() const
+{
+    return allSame< QImage >(
+        []( std::shared_ptr< SUserServerData > rhs )
+        {
+            return rhs->fImage;
+        } ).has_value();
+}
+
+bool CUserData::needsUpdating( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return {};
+    return serverInfo != newestServerInfo();
+}
+
+std::shared_ptr<SUserServerData> CUserData::newestServerInfo() const
+{
+    std::shared_ptr< SUserServerData > retVal;
     for ( auto && ii : fInfoForServer )
     {
-        if ( prev.has_value() )
-        {
-            if ( prev.value() != ii.second->fImage )
-                return;
-        }
+        if ( !ii.second )
+            continue;
+
+        if ( !retVal )
+            retVal = ii.second;
         else
-            prev = ii.second->fImage;
+        {
+            if ( ii.second->fLastModifed > retVal->fLastModifed )
+                retVal = ii.second;
+        }
     }
-    if ( prev.has_value() )
-        fGlobalImage = prev;
+    return retVal;
 }
 
 QImage CUserData::getAvatar( const QString & serverName ) const
@@ -331,4 +391,65 @@ void CUserData::updateCanBeSynced()
 bool SUserServerData::isValid() const
 {
     return !fName.isEmpty() && !fUserID.isEmpty();
+}
+
+void SUserServerData::setLastModified( std::initializer_list< QDateTime > dateTS )
+{
+    fLastModifed = std::max( dateTS );
+}
+
+bool SUserServerData::userDataEqual( const SUserServerData & rhs ) const
+{
+    if ( isValid() != rhs.isValid() )
+        return false;
+
+    auto equal = true;
+    equal = equal && fName == rhs.fName;
+    equal = equal && fConnectedIDOnServer == rhs.fConnectedIDOnServer;
+    if ( !fLastModifed.isNull() && !rhs.fLastModifed.isNull() )
+        equal = equal && fLastModifed == rhs.fLastModifed;
+    equal = equal && fImage == rhs.fImage;
+    equal = equal && fImageTagInfo == rhs.fImageTagInfo;
+    return equal;
+}
+
+bool CUserData::validUserDataEqual() const
+{
+    std::list< std::pair< QString, std::shared_ptr< SUserServerData > > > validServerData;
+    for ( auto && ii : fInfoForServer )
+    {
+        if ( ii.second->isValid() )
+            validServerData.push_back( ii );
+    }
+
+    auto pos = validServerData.begin();
+    auto nextPos = validServerData.begin();
+    nextPos++;
+    for ( ; ( pos != validServerData.end() ) && ( nextPos != validServerData.end() ); ++pos, ++nextPos )
+    {
+        if ( !( *pos ).second->userDataEqual( *( ( *nextPos ).second ) ) )
+            return false;
+    }
+    return true;
+}
+
+QIcon CUserData::getDirectionIcon( const QString & serverName ) const
+{
+    static QIcon sErrorIcon( ":/resources/error.png" );
+    static QIcon sEqualIcon( ":/resources/equal.png" );
+    static QIcon sArrowUpIcon( ":/resources/arrowup.png" );
+    static QIcon sArrowDownIcon( ":/resources/arrowdown.png" );
+    QIcon retVal;
+    if ( !isValidForServer( serverName ) )
+        retVal = sErrorIcon;
+    else if ( !canBeSynced() )
+        return {};
+    else if ( validUserDataEqual() )
+        retVal = sEqualIcon;
+    else if ( needsUpdating( serverName ) )
+        retVal = sArrowDownIcon;
+    else
+        retVal = sArrowUpIcon;
+
+    return retVal;
 }
