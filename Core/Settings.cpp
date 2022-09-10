@@ -145,6 +145,15 @@ bool CSettings::load( const QString & fileName, std::function<void( const QStrin
     else
         setShowMediaWithIssues( json[ "ShowMediaWithIssues" ].toBool() );
     
+    if ( json.object().find( "OnlyShowUsersWithDifferences" ) == json.object().end() )
+        setOnlyShowUsersWithDifferences( true );
+    else
+        setOnlyShowUsersWithDifferences( json[ "OnlyShowSyncableUsers" ].toBool() );
+
+    if ( json.object().find( "ShowUsersWithIssues" ) == json.object().end() )
+        setShowUsersWithIssues( false );
+    else
+        setShowUsersWithIssues( json[ "ShowUsersWithIssues" ].toBool() );
 
     if ( json.object().find( "MediaSourceColor" ) == json.object().end() )
         setMediaSourceColor( "yellow" );
@@ -468,6 +477,16 @@ void CSettings::setShowMediaWithIssues( bool value )
     fShowMediaWithIssues = value;
 }
 
+void CSettings::setOnlyShowUsersWithDifferences( bool value )
+{
+    fOnlyShowUsersWithDifferences = value;
+}
+
+void CSettings::setShowUsersWithIssues( bool value )
+{
+    fShowUsersWithIssues = value;
+}
+
 void CSettings::setSyncUserList( const QStringList & value )
 {
     updateValue( fSyncUserList, value );
@@ -487,6 +506,17 @@ void CSettings::setServers( const std::vector < std::shared_ptr< CServerInfo > >
     updateFriendlyServerNames();
 }
 
+
+int CSettings::enabledServerCnt() const
+{
+    int retVal = 0;
+    for ( int ii = 0; ii < serverCnt(); ++ii )
+    {
+        if ( fServers[ ii ]->isEnabled() )
+            retVal++;
+    }
+    return retVal;
+}
 
 bool CSettings::serversChanged( const std::vector< std::shared_ptr< CServerInfo > > & lhs, const std::vector< std::shared_ptr< CServerInfo > > & rhs ) const
 {

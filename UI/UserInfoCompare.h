@@ -20,8 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef _PLAYSTATECOMPARE_H
-#define _PLAYSTATECOMPARE_H
+#ifndef _USERINFOCOMPARE_H
+#define _USERINFOCOMPARE_H
 
 #include "TabPageBase.h"
 #include <memory>
@@ -31,110 +31,92 @@ class QAction;
 class QToolBar;
 namespace Ui
 {
-    class CPlayStateCompare;
+    class CUserInfoCompare;
 }
 
-class CMediaData;
+class CServerInfo;
 class CUserData;
 class CSettings;
 class CSyncSystem;
-class CMediaFilterModel;
 class CUsersModel;
 class CUsersFilterModel;
-class CMediaWindow;
 class CDataTree;
 class CProgressSystem;
 class CTabUIInfo;
+class CMediModel;
 
-class CPlayStateCompare : public CTabPageBase
+class CUserInfoCompare : public CTabPageBase
 {
     Q_OBJECT
 public:
-    CPlayStateCompare( QWidget * parent = nullptr );
-    virtual ~CPlayStateCompare() override;
+    CUserInfoCompare( QWidget * parent = nullptr );
+    virtual ~CUserInfoCompare() override;
 
     virtual void setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CProgressSystem > progressSystem ) override;
     virtual void setupActions();
 
     virtual bool okToClose() override;
-
-    virtual void loadSettings() override;
     virtual void resetPage() override;
+    virtual void loadSettings() override;
 
     virtual std::shared_ptr< CTabUIInfo > getUIInfo() const override;
-
-    virtual void loadingUsersFinished() override;
+    virtual void loadingUsersFinished();
 
     virtual QSplitter * getDataSplitter() const override;
 
     void onlyShowSyncableUsers();
-    void onlyShowMediaWithDifferences();
-    void showMediaWithIssues();
+    void onlyShowUsersWithDifferences();
+    void showUsersWithIssues();
+
 Q_SIGNALS:
+    void sigSettingsLoaded();
     void sigModelDataChanged();
+    void sigAddToLog( int msgType, const QString & msg );
+    void sigAddInfoToLog( const QString & msg );
 
 public Q_SLOTS:
-    virtual void slotCanceled() override;
-    virtual void slotModelDataChanged() override;
-    virtual void slotSettingsChanged() override;
+    void slotCanceled();
+    void slotModelDataChanged();
+    void slotSettingsChanged();
 
 private Q_SLOTS:
     void slotReloadCurrentUser();
 
-    void slotProcess();
-
-    void slotSelectiveProcess();
-
-    void slotUserMediaCompletelyLoaded();
-    void slotPendingMediaUpdate();
+    void slotRepairUserConnectedIDs();
 
     void slotCurrentUserChanged( const QModelIndex & index );
+    void slotUsersContextMenu( CDataTree * dataTree, const QPoint & pos );
 
     void slotToggleOnlyShowSyncableUsers();
-    void slotToggleOnlyShowMediaWithDifferences();
-    void slotToggleShowMediaWithIssues();
+    void slotToggleOnlyShowUsersWithDifferences();
+    void slotToggleShowUsersWithIssues();
 
 
-    void slotUserMediaLoaded();
-
-    void slotSetCurrentMediaItem( const QModelIndex & current );
-    void slotViewMedia( const QModelIndex & current );
-
-    void slotViewMediaInfo();
+    void slotSetConnectID();
+    void slotAutoSetConnectID();
 private:
-    std::shared_ptr< CMediaData > getMediaData( QModelIndex idx ) const;
-
     std::shared_ptr< CUserData > getCurrUserData() const;
     std::shared_ptr< CUserData > getUserData( QModelIndex idx ) const;
+    std::shared_ptr< const CServerInfo > getServerInfo( QModelIndex idx ) const;
 
     void reset();
 
     void loadServers();
 
-    std::unique_ptr< Ui::CPlayStateCompare > fImpl;
-
+    std::unique_ptr< Ui::CUserInfoCompare > fImpl;
     CUsersFilterModel * fUsersFilterModel{ nullptr };
-    CMediaFilterModel * fMediaFilterModel{ nullptr };
-
-    QTimer * fPendingMediaUpdateTimer{ nullptr };
-    QTimer * fMediaLoadedTimer{ nullptr };
-
-    QPointer< CMediaWindow > fMediaWindow;
 
     QAction * fActionReloadCurrentUser{ nullptr };
 
     QMenu * fProcessMenu{ nullptr };
-    QAction * fActionProcess{ nullptr };
-    QAction * fActionSelectiveProcess{ nullptr };
-
-    QMenu * fViewMenu{ nullptr };
-    QAction * fActionViewMediaInformation{ nullptr };
+    QAction * fActionRepairUserConnectedIDs{ nullptr };
 
     QAction * fActionOnlyShowSyncableUsers{ nullptr };
-    QAction * fActionOnlyShowMediaWithDifferences{ nullptr };
-    QAction * fActionShowMediaWithIssues{ nullptr };
+    QAction * fActionOnlyShowUsersWithDifferences{ nullptr };
+    QAction * fActionShowUsersWithIssues{ nullptr };
 
     std::list< QAction * > fEditActions;
     QToolBar * fToolBar{ nullptr };
+    CDataTree * fContextTree{ nullptr };
 };
 #endif

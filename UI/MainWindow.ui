@@ -22,11 +22,16 @@
       </property>
       <widget class="QTabWidget" name="tabWidget">
        <property name="currentIndex">
-        <number>0</number>
+        <number>1</number>
        </property>
        <widget class="CPlayStateCompare" name="playStateCompare">
         <attribute name="title">
          <string>Played State</string>
+        </attribute>
+       </widget>
+       <widget class="CUserInfoCompare" name="userInfoCompare">
+        <attribute name="title">
+         <string>User Info</string>
         </attribute>
        </widget>
       </widget>
@@ -90,7 +95,14 @@
     <addaction name="separator"/>
     <addaction name="actionCheckForLatestVersion"/>
    </widget>
+   <widget class="QMenu" name="menuReload">
+    <property name="title">
+     <string>Reload</string>
+    </property>
+    <addaction name="actionReloadServers"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuReload"/>
    <addaction name="menuEdit"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -172,12 +184,27 @@
     <string>Check for Latest Version...</string>
    </property>
   </action>
+  <action name="actionReloadServers">
+   <property name="icon">
+    <iconset resource="EmbySync.qrc">
+     <normaloff>:/resources/reloadServers.png</normaloff>:/resources/reloadServers.png</iconset>
+   </property>
+   <property name="text">
+    <string>Reload Servers</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
    <class>CPlayStateCompare</class>
    <extends>QWidget</extends>
    <header>PlayStateCompare.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>CUserInfoCompare</class>
+   <extends>QWidget</extends>
+   <header>UserInfoCompare.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

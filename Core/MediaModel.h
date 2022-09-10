@@ -29,7 +29,7 @@ public:
         eShowItemRole = Qt::UserRole + 1,
         eMediaNameRole,
         eDirSortRole,
-        eServerNameForColumnRole
+        eServerNameForColumnRole = Qt::UserRole + 10000
     };
 
     enum EColumns
@@ -41,7 +41,8 @@ public:
         ePlayed,
         eLastPlayed,
         ePlayCount,
-        ePlaybackPosition
+        ePlaybackPosition,
+        eFirstServerColumn = ePlaybackPosition
     };
 
     enum EDirSort

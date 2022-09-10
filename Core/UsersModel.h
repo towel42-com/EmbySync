@@ -21,14 +21,25 @@ public:
     {
         eConnectedID,
         eAllNames,
-        eFirstServerColumn=eAllNames
+        eFirstServerColumn
+    };
+
+    enum EServerColumns
+    {
+        eUserName,
+        eServerConnectedID,
+        eIconStatus,
+        eServerColCount
     };
 
     enum ECustomRoles
     {
         eShowItemRole=Qt::UserRole+1,
         eConnectedIDRole,
-        eConnectedIDValidRole
+        eConnectedIDValidRole,
+        eIsUserNameColumnRole,
+        eSyncDirectionIconRole,
+        eServerNameForColumnRole = Qt::UserRole + 10000
     };
 
     CUsersModel( std::shared_ptr< CSettings > settings, QObject * parent=nullptr );
@@ -36,6 +47,8 @@ public:
     virtual int rowCount( const QModelIndex & parent = QModelIndex() ) const override;
     virtual int columnCount( const QModelIndex & parent = QModelIndex() ) const override;
     virtual QVariant data( const QModelIndex & index, int role = Qt::DisplayRole ) const override;
+
+    std::shared_ptr< const CServerInfo > serverInfo( const QModelIndex & index ) const;
 
     virtual QVariant headerData( int section, Qt::Orientation orientation, int role = Qt::DisplayRole ) const override;
 
@@ -72,6 +85,9 @@ public Q_SLOTS:
     void slotServerInfoChanged();
 
 private:
+    int columnsPerServer() const;
+    int perServerColumn( int column ) const;
+
     void setupColumns();
     int serverNum( int columnNum ) const;
     std::shared_ptr< CUserData > getUserData( const QString & name, bool exhaustiveSearch=false ) const;
@@ -90,9 +106,15 @@ class CUsersFilterModel : public QSortFilterProxyModel
 {
     Q_OBJECT;
 public:
-    CUsersFilterModel( QObject * parent );
+    CUsersFilterModel( bool forUserSelection, QObject * parent );
 
     virtual bool filterAcceptsRow( int source_row, const QModelIndex & source_parent ) const override;
+    virtual bool filterAcceptsColumn( int source_row, const QModelIndex & source_parent ) const override;
 
+    virtual QVariant headerData( int section, Qt::Orientation orientation, int role = Qt::DisplayRole ) const override;
+    virtual QVariant data( const QModelIndex & index, int role = Qt::DisplayRole ) const;
+private:
+    bool fForUserSelection{ false };
 };
+
 #endif

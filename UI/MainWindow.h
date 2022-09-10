@@ -32,8 +32,13 @@ namespace Ui
 namespace NSABUtils{ class CGitHubGetVersions; }
 class CSettings;
 class QProgressDialog;
+class CProgressSystem;
 class CUsersModel;
+class CSyncSystem;
 class CUsersFilterModel;
+class CTabPageBase;
+class CMediaModel;
+class CTabUIInfo;
 
 class CMainWindow : public QMainWindow
 {
@@ -41,20 +46,24 @@ class CMainWindow : public QMainWindow
 public:
     CMainWindow( QWidget * parent = nullptr );
 
-
     virtual ~CMainWindow() override;
 
     virtual void closeEvent( QCloseEvent * closeEvent ) override;
+
+    bool pagesOKToClose();
+
     virtual void showEvent( QShowEvent * event ) override;
 Q_SIGNALS:
     void sigSettingsChanged();
     void sigSettingsLoaded();
-    void sigDataChanged();
+    void sigModelDataChanged();
     void sigCanceled();
 public Q_SLOTS:
     void slotSettings();
 
     void loadSettings();
+
+    void loadSettingsIntoPages();
 
     void slotUpdateActions();
 
@@ -66,6 +75,9 @@ public Q_SLOTS:
     void slotLoadLastProject();
     void slotCheckForLatest();
     void slotActionCheckForLatest();
+    void slotSettingsChanged();
+    void slotLoadingUsersFinished();
+    void slotReloadServers();
 
 private Q_SLOTS:
     void slotAddToLog( int msgType, const QString & msg );
@@ -74,9 +86,11 @@ private Q_SLOTS:
     void slotCurentTabChanged( int idx );
 
 private:
+    CTabPageBase * getCurrentPage() const;
+    void setupPage( int pageIndex );
+
     void setupProgressSystem();
     void checkForLatest( bool quiteIfUpToDate );
-    QAction * findEditMenuInsertBefore();
 
 
     void progressSetup( const QString & title );
@@ -91,21 +105,20 @@ private:
 
     void reset();
 
+    void resetPages();
+
     std::unique_ptr< Ui::CMainWindow > fImpl;
     std::shared_ptr< CSettings > fSettings;
+    std::shared_ptr< CSyncSystem > fSyncSystem;
     std::shared_ptr< CUsersModel > fUsersModel;
+    std::shared_ptr< CMediaModel > fMediaModel;
+    std::shared_ptr< CProgressSystem > fProgressSystem;
+
 
     QProgressDialog * fProgressDlg{ nullptr };
 
-    struct SCurrentTab
-    {
-        std::list< QMenu * > fMenus;
-        std::list< QAction * > fEditActions;
-        std::list< QToolBar * > fToolBars;
-    };
-
-    SCurrentTab fCurrentTabInfo;
-    QAction * fEditMenuInsertBefore{ nullptr };
+    std::unordered_map< int, CTabPageBase * > fPages;
+    std::shared_ptr< CTabUIInfo > fCurrentTabUIInfo;
 
     std::pair< NSABUtils::CGitHubGetVersions *, bool > fGitHubVersion{ nullptr, false };
 };

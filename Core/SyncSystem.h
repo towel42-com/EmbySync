@@ -136,7 +136,7 @@ public:
     std::shared_ptr< CUserData > currUser() const;
 
     void repairConnectIDs( const std::list< std::shared_ptr< CUserData > > & users );
-    void setConnectedID( const QString & newID, std::shared_ptr< CUserData > & user );
+    void setConnectedID( const QString & serverName, const QString & newID, std::shared_ptr< CUserData > & user );
 
     void requestGetUserImage( const QString & serverName, const QString & userID );
 
@@ -145,6 +145,7 @@ public:
     void selectiveProcess( const QString & selectedServer );
 Q_SIGNALS:
     void sigAddToLog( int msgType, const QString & msg );
+    void sigAddInfoToLog( const QString & msg );
     void sigLoadingUsersFinished();
     void sigUserMediaLoaded();
     void sigProcessingFinished( const QString & name );
@@ -181,6 +182,7 @@ private Q_SLOTS:
 
     void slotCheckPendingRequests();
     void slotRepairNextUser();
+
 private:
     QNetworkReply * makeRequest( QNetworkRequest & request, ENetworkRequestType requestType = ENetworkRequestType::eGet, const QByteArray & data = {} );
 
@@ -219,6 +221,8 @@ private:
 
     void requestTestServer( std::shared_ptr< const CServerInfo > serverInfo );
 
+    void updateConnectID( const QString & serverName );
+
     void requestDeleteConnectedID( const QString & serverName );
     void handleDeleteConnectedID( const QString & serverName );
 
@@ -243,7 +247,7 @@ private:
     std::unordered_map< QString, TOptionalBoolPair > fLeftAndRightFinished;
     std::shared_ptr< CUserData > fCurrUserData;
     std::unordered_map< QString, std::shared_ptr< const CServerInfo > > fTestServers;
-    std::list< std::pair< QString, std::shared_ptr< CUserData > > > fUsersNeedingConnectIDUpdates;
-    std::pair< QString, std::shared_ptr< CUserData > > fCurrUserConnectID;
+    std::list< std::tuple< QString, QString, std::shared_ptr< CUserData > > > fUsersNeedingConnectIDUpdates;
+    std::tuple< QString, QString, std::shared_ptr< CUserData > > fCurrUserConnectID;
 };
 #endif

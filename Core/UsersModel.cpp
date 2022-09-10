@@ -22,19 +22,25 @@ void CUsersModel::setupColumns()
     // caller responsible for reset model
     fColumnToServerInfo.clear();
     fServerNumToColumn.clear();
-    int columnNum = static_cast<int>( eFirstServerColumn ) + 1;
+    int columnNum = static_cast<int>( eFirstServerColumn );
+    auto colsPerServer = this->columnsPerServer();
     for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
     {
         auto serverInfo = fSettings->serverInfo( ii );
         if ( !serverInfo->isEnabled() )
             continue;
-        fServerNumToColumn[ ii ] = columnNum;
-        fColumnToServerInfo[ columnNum ] = std::make_pair( ii, serverInfo );
-        columnNum++;
+        for ( int jj = 0; jj < colsPerServer; ++jj )
+        {
+            fServerNumToColumn[ ii ] = columnNum;
+            fColumnToServerInfo[ columnNum ] = std::make_pair( ii, serverInfo );
+
+            columnNum++;
+        }
 
         disconnect( serverInfo.get(), &CServerInfo::sigServerInfoChanged, this, &CUsersModel::slotServerInfoChanged );
         connect( serverInfo.get(), &CServerInfo::sigServerInfoChanged, this, &CUsersModel::slotServerInfoChanged );
     }
+    Q_ASSERT( columnNum == columnCount() );
 }
 
 void CUsersModel::slotServerInfoChanged()
@@ -49,15 +55,6 @@ void CUsersModel::slotServerInfoChanged()
     emit headerDataChanged( Qt::Orientation::Horizontal, colMin, colMax );
 }
 
-
-int CUsersModel::serverNum( int columnNum ) const
-{
-    auto pos = fColumnToServerInfo.find( columnNum );
-    if ( pos == fColumnToServerInfo.end() )
-        return -1;
-    return ( *pos ).second.first;
-}
-
 int CUsersModel::rowCount( const QModelIndex & parent /* = QModelIndex() */ ) const
 {
     if ( parent.isValid() )
@@ -66,11 +63,18 @@ int CUsersModel::rowCount( const QModelIndex & parent /* = QModelIndex() */ ) co
     return static_cast<int>( fUsers.size() );
 }
 
+int CUsersModel::columnsPerServer() const
+{
+    return static_cast<int>( EServerColumns::eServerColCount );
+}
+
 int CUsersModel::columnCount( const QModelIndex & parent /* = QModelIndex() */ ) const
 {
     if ( parent.isValid() )
         return 0;
-    return static_cast<int>( eFirstServerColumn ) + static_cast< int >( fServerNumToColumn.size() ) + 1;
+    auto retVal = static_cast<int>( eFirstServerColumn );
+    retVal += fSettings->enabledServerCnt() * columnsPerServer();
+    return retVal;
 }
 
 QVariant CUsersModel::data( const QModelIndex & index, int role /*= Qt::DisplayRole */ ) const
@@ -110,19 +114,49 @@ QVariant CUsersModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
         return color;
     }
 
-    auto pos = fColumnToServerInfo.find( index.column() );
-    QString serverName;
-    if ( pos != fColumnToServerInfo.end() )
-        serverName = ( *pos ).second.second->keyName();
+    auto serverInfo = this->serverInfo( index );
+    auto serverName = serverInfo ? serverInfo->keyName() : QString();
+
+    if ( role == ECustomRoles::eServerNameForColumnRole )
+    {
+        if ( index.column() == CUsersModel::eConnectedID )
+            return "<ALL>";
+#ifndef NDEBUG
+        if ( index.column() == CUsersModel::eAllNames )
+            return "<ALL>";
+#endif
+        //qDebug() << "Server for column: " << index.column() << serverName;
+        return serverName;
+    }
+
+    auto columnNum = perServerColumn( index.column() );
+
+    if ( role == ECustomRoles::eIsUserNameColumnRole )
+    {
+        if ( index.column() < EColumns::eFirstServerColumn )
+            return false;
+        return columnNum == EServerColumns::eUserName;
+    }
+
+    if ( role == eSyncDirectionIconRole )
+    {
+        return userData->getDirectionIcon( serverName );
+    }
 
     if ( role == Qt::DecorationRole )
     {
-        if ( index.column() == 0 )
+        if ( index.column() == CUsersModel::eConnectedID )
             return userData->globalAvatar();
-        if ( serverName.isEmpty() )
-            return {};
-        if ( userData->globalAvatar().isNull() )
+        
+        if ( columnNum == EServerColumns::eUserName )
+        {
+            if ( userData->globalAvatar().isNull() )
+                return userData->getAvatar( serverName );
+        }
+        else if ( columnNum == EServerColumns::eIconStatus )
+        {
             return userData->getAvatar( serverName );
+        }
     }
 
     if ( role != Qt::DisplayRole )
@@ -133,7 +167,42 @@ QVariant CUsersModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
     else if ( index.column() == eConnectedID )
         return userData->connectedID();
 
-    return userData->name( serverName );
+    switch ( columnNum )
+    {
+        case EServerColumns::eUserName:
+            return userData->name( serverName );
+        case EServerColumns::eServerConnectedID:
+            return userData->connectedID( serverName );
+        case EServerColumns::eIconStatus:
+        {
+            if ( userData->getAvatar( serverName ).isNull() )
+                return tr( "Unset" );
+        };
+    }
+    return {};
+}
+
+int CUsersModel::serverNum( int columnNum ) const
+{
+    auto pos = fColumnToServerInfo.find( columnNum );
+    if ( pos == fColumnToServerInfo.end() )
+        return -1;
+    return ( *pos ).second.first;
+}
+
+std::shared_ptr< const CServerInfo > CUsersModel::serverInfo( const QModelIndex & index ) const
+{
+    auto pos = fColumnToServerInfo.find( index.column() );
+    if ( pos == fColumnToServerInfo.end() )
+        return {};
+    return ( *pos ).second.second;
+}
+
+int CUsersModel::perServerColumn( int column ) const
+{
+    if ( column >= EColumns::eFirstServerColumn )
+        column -= EColumns::eFirstServerColumn;
+    return column % columnsPerServer();
 }
 
 QVariant CUsersModel::headerData( int section, Qt::Orientation orientation, int role /*= Qt::DisplayRole */ ) const
@@ -151,13 +220,36 @@ QVariant CUsersModel::headerData( int section, Qt::Orientation orientation, int 
             return tr( "All Names" );
     }
 
+    auto columnNum = perServerColumn( section );
+
     auto pos = fColumnToServerInfo.find( section );
     if ( pos == fColumnToServerInfo.end() )
         return {};
+
     if ( role == Qt::DisplayRole )
-        return ( *pos ).second.second->displayName();
+    {
+        switch ( columnNum )
+        {
+            case EServerColumns::eServerConnectedID:
+                return tr( "Connected ID" );
+            case EServerColumns::eUserName:
+                return tr( "%2" ).arg( ( *pos ).second.second->displayName() );
+            case EServerColumns::eIconStatus:
+                return tr( "Icon Status" );
+        }
+    }
     else if ( role == Qt::DecorationRole )
-        return ( *pos ).second.second->icon();
+    {
+        switch ( columnNum )
+        {
+            case EServerColumns::eServerConnectedID:
+                return {};
+            case EServerColumns::eUserName:
+                return ( *pos ).second.second->icon();
+            case EServerColumns::eIconStatus:
+                return {};
+        }
+    }
     return {};
 }
 
@@ -222,13 +314,31 @@ QVariant CUsersModel::getColor( const QModelIndex & index, bool background ) con
         return fSettings->dataMissingColor( background );
     }
 
-    return {};
-}
+    // its on the server
+    bool dataSame = false;
+    switch ( perServerColumn( index.column() ) )
+    {
+        case eUserName:
+            dataSame = userData->allUserNamesTheSame();
+            break;
+        case eServerConnectedID:
+            dataSame = userData->allConnectIDTheSame();
+            break;
+        case eIconStatus:
+            dataSame = userData->allIconsTheSame();
+            break;
+    }
 
-void CUsersModel::slotSettingsChanged()
-{
-    beginResetModel();
-    endResetModel();
+    if ( dataSame )
+        return {};
+
+    auto older = fSettings->mediaDestColor( background );
+    auto newer = fSettings->mediaSourceColor( background );
+    auto serverInfo = this->serverInfo( index );
+    auto serverName = serverInfo ? serverInfo->keyName() : QString();
+    auto isOlder = userData->needsUpdating( serverName );
+
+    return isOlder ? older : newer;
 }
 
 CUsersModel::SUsersSummary CUsersModel::settingsChanged()
@@ -321,6 +431,11 @@ void CUsersModel::updateUserConnectID( const QString & serverName, const QString
     emit dataChanged( indexForUser( user, 0 ), indexForUser( user, columnCount() - 1 ) );
 }
 
+void CUsersModel::slotSettingsChanged()
+{
+    clear();
+}
+
 void CUsersModel::clear()
 {
     beginResetModel();
@@ -367,7 +482,7 @@ std::vector< std::shared_ptr< CUserData > > CUsersModel::getAllUsers( bool sorte
 
 std::shared_ptr< CUserData > CUsersModel::loadUser( const QString & serverName, const QJsonObject & user )
 {
-    //qDebug().noquote().nospace() << QJsonDocument( user ).toJson();
+    qDebug().noquote().nospace() << QJsonDocument( user ).toJson();
 
     auto currName = user[ "Name" ].toString();
     auto userID = user[ "Id" ].toString();
@@ -385,20 +500,20 @@ std::shared_ptr< CUserData > CUsersModel::loadUser( const QString & serverName, 
 
     if ( !userData )
     {
-        userData = std::make_shared< CUserData >( serverName, currName, connectedID, userID );
+        userData = std::make_shared< CUserData >( serverName, userID );
         beginInsertRows( QModelIndex(), static_cast<int>( fUsers.size() ), static_cast<int>( fUsers.size() ) );
         fUsers.push_back( userData );
         fUserMap[ userData->sortName( fSettings ) ] = userData;
         endInsertRows();
     }
-    else
-    {
-        userData->setName( serverName, currName );
-        userData->setUserID( serverName, userID );
-        userData->setConnectedID( serverName, connectedID );
 
-        emit dataChanged( indexForUser( userData, 0 ), indexForUser( userData, columnCount() - 1 ) );
-    }
+    userData->setName( serverName, currName );
+    userData->setUserID( serverName, userID );
+    userData->setConnectedID( serverName, connectedID );
+    userData->setLastModified( serverName, { user[ "DateCreated" ].toVariant().toDateTime(), user[ "LastActivityDate" ].toVariant().toDateTime(), user[ "LastLoginDate" ].toVariant().toDateTime() } );
+
+    emit dataChanged( indexForUser( userData, 0 ), indexForUser( userData, columnCount() - 1 ) );
+
     if ( user.contains( "PrimaryImageTag" ) )
     {
         userData->setImageTagInfo( serverName, user[ "PrimaryImageTag" ].toString(), user.contains( "PrimaryImageAspectRatio" ) ? user[ "PrimaryImageAspectRatio" ].toDouble() : 1.0 );
@@ -407,8 +522,9 @@ std::shared_ptr< CUserData > CUsersModel::loadUser( const QString & serverName, 
     return userData;
 }
 
-CUsersFilterModel::CUsersFilterModel( QObject * parent ) :
-    QSortFilterProxyModel( parent )
+CUsersFilterModel::CUsersFilterModel( bool forUserSelection, QObject * parent ) :
+    QSortFilterProxyModel( parent ),
+    fForUserSelection( forUserSelection )
 {
     setDynamicSortFilter( true );
 }
@@ -421,5 +537,64 @@ bool CUsersFilterModel::filterAcceptsRow( int source_row, const QModelIndex & so
     return childIdx.data( CUsersModel::eShowItemRole ).toBool();
 }
 
+bool CUsersFilterModel::filterAcceptsColumn( int source_col, const QModelIndex & source_parent ) const
+{
+    if ( !sourceModel() )
+        return true;
+#ifdef NDEBUG
+    if ( source_col == CUsersModel::eAllNames )
+        return false;
+#endif
 
+    if ( fForUserSelection )
+    {
+        if ( source_col < CUsersModel::eFirstServerColumn )
+            return true;
+        auto idx = sourceModel()->index( 0, source_col, source_parent );
+        return idx.data( CUsersModel::eIsUserNameColumnRole ).toBool();
+    }
+    else
+    {
+        if ( source_col < CUsersModel::eFirstServerColumn )
+            return false;
+        return true;
+    }
+}
+
+QVariant CUsersFilterModel::headerData( int section, Qt::Orientation orientation, int role /*= Qt::DisplayRole */ ) const
+{
+    auto retVal = QSortFilterProxyModel::headerData( section, orientation, role );
+    if ( !fForUserSelection )
+    {
+        auto index = this->index( 0, section );
+        auto isUserNameColumn = index.data( CUsersModel::eIsUserNameColumnRole ).toBool();
+        if ( isUserNameColumn )
+        {
+            if ( role == Qt::DisplayRole )
+            {
+                retVal = tr( "User Name" );
+                //auto srcColumn = this->mapToSource( index ).column();
+                //retVal = tr( "%1 - %2 - %3" ).arg( srcColumn ).arg( section ).arg( retVal.toString() );
+            }
+            else if ( role == Qt::DecorationRole )
+                retVal = QVariant();
+        }
+    }
+    return retVal;
+}
+
+QVariant CUsersFilterModel::data( const QModelIndex & index, int role /*= Qt::DisplayRole */ ) const
+{
+    auto retVal = QSortFilterProxyModel::data( index, role );
+    if ( !fForUserSelection && ( role != CUsersModel::eIsUserNameColumnRole ) )
+    {
+        auto isUserNameColumn = index.data( CUsersModel::eIsUserNameColumnRole ).toBool();
+        if ( isUserNameColumn )
+        {
+            if ( role == Qt::DecorationRole )
+                return index.data( CUsersModel::eSyncDirectionIconRole );
+        }
+    }
+    return retVal;
+}
 
