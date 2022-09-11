@@ -29,9 +29,9 @@
 #include <QDebug>
 #include <QJsonObject>
 
-CUserData::CUserData( const QString & serverName, const QString & userID )
+CUserData::CUserData( const QString & serverName, const QJsonObject & userObj )
 {
-    setUserID( serverName, userID );
+    loadFromJSON( serverName, userObj );
 }
 
 std::shared_ptr< SUserServerData > CUserData::getServerInfo( const QString & serverName ) const
@@ -59,6 +59,11 @@ void CUserData::setConnectedID( const QString & serverName, const QString & conn
     if ( retVal )
         retVal->fConnectedIDOnServer = connectedID;
 
+    updateConnectedID();
+}
+
+void CUserData::updateConnectedID()
+{
     auto tmp = allSame< QString >(
         []( std::shared_ptr< SUserServerData > rhs )
         {
@@ -238,6 +243,15 @@ QString CUserData::getUserID( const QString & serverName ) const
     if ( !serverInfo )
         return {};
     return serverInfo->fUserID;
+}
+
+void CUserData::loadFromJSON( const QString & serverName, const QJsonObject & userObj )
+{
+    auto retVal = getServerInfo( serverName, true );
+    if ( retVal )
+        retVal->loadFromJSON( userObj );
+    updateCanBeSynced();
+    updateConnectedID();
 }
 
 void CUserData::setUserID( const QString & serverName, const QString & id )
@@ -550,6 +564,26 @@ QJsonObject SUserServerData::userDataJSON() const
     obj[ "PrimaryImageAspectRatio" ] = std::get< 1 >( fAvatarInfo );
     return obj;
 }
+
+void SUserServerData::loadFromJSON( const QJsonObject & userObj )
+{
+    fName = userObj[ "Name" ].toString();
+    fUserID = userObj[ "Id" ].toString();
+
+    auto linkType = userObj[ "ConnectLinkType" ].toString();
+    fConnectedIDOnServer.clear();
+    if ( linkType == "LinkedUser" )
+        fConnectedIDOnServer = userObj[ "ConnectUserName" ].toString();
+    auto dateCreated = userObj[ "DateCreated" ].toVariant().toDateTime();
+    if ( dateCreated == QDateTime::fromString( "0001-01-01T00:00:00.000Z", Qt::ISODateWithMs ) )
+        dateCreated = QDateTime();
+    fDateCreated = dateCreated;
+    fLastActivityDate = userObj[ "LastActivityDate" ].toVariant().toDateTime();
+    fLastLoginDate = userObj[ "LastLoginDate" ].toVariant().toDateTime();
+    std::get< 0 >( fAvatarInfo ) = userObj[ "PrimaryImageTag" ].toString();
+    std::get< 1 >( fAvatarInfo ) = userObj[ "PrimaryImageAspectRatio" ].toDouble();
+}
+
 bool SUserServerData::isValid() const
 {
     return !fName.isEmpty() && !fUserID.isEmpty();

@@ -41,7 +41,7 @@ struct SUserServerData
 
     QDateTime latestAccess() const;
     QJsonObject userDataJSON() const;
-
+    void loadFromJSON( const QJsonObject & userObj );
 
     QString fName;
     QString fUserID;
@@ -62,7 +62,8 @@ inline bool operator!=( const SUserServerData & lhs, const SUserServerData & rhs
 class CUserData
 {
 public:
-    CUserData( const QString & serverName, const QString & userID );
+    CUserData( const QString & serverName, const QJsonObject & userObj );
+    void loadFromJSON( const QString & serverName, const QJsonObject & userObj );
 
     QString connectedID() const { return fConnectedID; }
     QString connectedID( const QString & serverName ) const;
@@ -71,7 +72,7 @@ public:
     bool isValid() const;
     QString name( const QString & serverName ) const;
     void setName( const QString & serverName, const QString & name );
-    
+
     QString userName( const QString & serverName ) const;
     QString allNames() const;
     QString sortName( std::shared_ptr< CSettings > settings ) const;
@@ -124,7 +125,6 @@ public:
 
     std::shared_ptr< SUserServerData > getServerInfo( const QString & serverName ) const;
 private:
-
     template < typename T >
     std::optional< T > allSame( std::function < T( std::shared_ptr< SUserServerData > ) > getValue ) const
     {
@@ -142,6 +142,7 @@ private:
         return prev;
     }
     void updateCanBeSynced();
+    void updateConnectedID();
     void checkAllAvatarsTheSame( int serverNum );
 
     std::shared_ptr< SUserServerData > getServerInfo( const QString & serverName, bool addIfMissing );
@@ -153,4 +154,4 @@ private:
     mutable std::optional< QImage > fGlobalImage; // when all avatars are the same on the server
     std::map< QString, std::shared_ptr< SUserServerData > > fInfoForServer; // serverName to Info
 };
-#endif 
+#endif
