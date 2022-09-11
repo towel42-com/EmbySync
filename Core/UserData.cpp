@@ -36,7 +36,7 @@ CUserData::CUserData( const QString & serverName, const QJsonObject & userObj )
     loadFromJSON( serverName, userObj );
 }
 
-std::shared_ptr< SUserServerData > CUserData::getServerInfo( const QString & serverName ) const
+std::shared_ptr< SUserServerData > CUserData::userInfo( const QString & serverName ) const
 {
     auto pos = fInfoForServer.find( serverName );
     if ( pos == fInfoForServer.end() )
@@ -44,9 +44,9 @@ std::shared_ptr< SUserServerData > CUserData::getServerInfo( const QString & ser
     return ( *pos ).second;
 }
 
-std::shared_ptr< SUserServerData > CUserData::getServerInfo( const QString & serverName, bool addIfMissing )
+std::shared_ptr< SUserServerData > CUserData::userInfo( const QString & serverName, bool addIfMissing )
 {
-    auto retVal = getServerInfo( serverName );
+    auto retVal = userInfo( serverName );
     if ( retVal || !addIfMissing )
         return retVal;
 
@@ -57,7 +57,7 @@ std::shared_ptr< SUserServerData > CUserData::getServerInfo( const QString & ser
 
 void CUserData::setConnectedID( const QString & serverName, const QString & type, const QString & connectedID )
 {
-    auto retVal = getServerInfo( serverName );
+    auto retVal = userInfo( serverName );
     if ( retVal )
         retVal->fConnectedID = { type, connectedID };
 
@@ -80,7 +80,7 @@ void CUserData::updateConnectedID()
 
 bool CUserData::isValidForServer( const QString & serverName ) const
 {
-    auto info = getServerInfo( serverName );
+    auto info = userInfo( serverName );
     if ( !info )
         return false;
     return info->isValid();
@@ -100,7 +100,7 @@ bool CUserData::isValid() const
 
 QString CUserData::connectedID( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     if ( !serverInfo )
         return {};
     return serverInfo->fConnectedID.second;
@@ -108,7 +108,7 @@ QString CUserData::connectedID( const QString & serverName ) const
 
 QString CUserData::connectedIDType( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     if ( !serverInfo )
         return {};
     return serverInfo->fConnectedID.first;
@@ -116,7 +116,7 @@ QString CUserData::connectedIDType( const QString & serverName ) const
 
 QString CUserData::name( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     if ( !serverInfo )
         return {};
     return serverInfo->fName;
@@ -124,14 +124,14 @@ QString CUserData::name( const QString & serverName ) const
 
 void CUserData::setName( const QString & serverName, const QString & name )
 {
-    auto serverInfo = getServerInfo( serverName, true );
+    auto serverInfo = userInfo( serverName, true );
     serverInfo->fName = name;
     updateCanBeSynced();
 }
 
 QString CUserData::userName( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     if ( !serverInfo )
         return connectedID();
 
@@ -176,7 +176,7 @@ QString CUserData::sortName( std::shared_ptr< CSettings > settings ) const
         auto serverInfo = settings->serverInfo( ii );
         if ( !serverInfo->isEnabled() )
             continue;
-        auto info = getServerInfo( serverInfo->keyName() );
+        auto info = userInfo( serverInfo->keyName() );
         if ( !info )
             continue;
      
@@ -192,7 +192,7 @@ QString CUserData::sortName( std::shared_ptr< CSettings > settings ) const
 
 QString CUserData::prefix( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     if ( !serverInfo )
         return {};
     return serverInfo->fPrefix;
@@ -200,7 +200,7 @@ QString CUserData::prefix( const QString & serverName ) const
 
 bool CUserData::enableAutoLogin( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     if ( !serverInfo )
         return {};
     return serverInfo->fEnableAutoLogin;
@@ -208,7 +208,7 @@ bool CUserData::enableAutoLogin( const QString & serverName ) const
 
 QString CUserData::audioLanguagePreference( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     if ( !serverInfo )
         return {};
     return serverInfo->fAudioLanguagePreference;
@@ -216,7 +216,7 @@ QString CUserData::audioLanguagePreference( const QString & serverName ) const
 
 bool CUserData::playDefaultAudioTrack( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     if ( !serverInfo )
         return {};
     return serverInfo->fPlayDefaultAudioTrack;
@@ -224,7 +224,7 @@ bool CUserData::playDefaultAudioTrack( const QString & serverName ) const
 
 QString CUserData::subtitleLanguagePreference( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     if ( !serverInfo )
         return {};
     return serverInfo->fSubtitleLanguagePreference;
@@ -232,7 +232,7 @@ QString CUserData::subtitleLanguagePreference( const QString & serverName ) cons
 
 bool CUserData::displayMissingEpisodes( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     if ( !serverInfo )
         return {};
     return serverInfo->fDisplayMissingEpisodes;
@@ -240,7 +240,7 @@ bool CUserData::displayMissingEpisodes( const QString & serverName ) const
 
 QString CUserData::subtitleMode( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     if ( !serverInfo )
         return {};
     return serverInfo->fSubtitleMode;
@@ -248,7 +248,7 @@ QString CUserData::subtitleMode( const QString & serverName ) const
 
 bool CUserData::enableLocalPassword( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     if ( !serverInfo )
         return {};
     return serverInfo->fEnableLocalPassword;
@@ -256,7 +256,7 @@ bool CUserData::enableLocalPassword( const QString & serverName ) const
 
 QStringList CUserData::orderedViews( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     if ( !serverInfo )
         return {};
     return serverInfo->fOrderedViews;
@@ -264,7 +264,7 @@ QStringList CUserData::orderedViews( const QString & serverName ) const
 
 QStringList CUserData::latestItemsExcludes( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     if ( !serverInfo )
         return {};
     return serverInfo->fLatestItemsExcludes;
@@ -272,7 +272,7 @@ QStringList CUserData::latestItemsExcludes( const QString & serverName ) const
 
 QStringList CUserData::myMediaExcludes( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     if ( !serverInfo )
         return {};
     return serverInfo->fMyMediaExcludes;
@@ -280,7 +280,7 @@ QStringList CUserData::myMediaExcludes( const QString & serverName ) const
 
 bool CUserData::hidePlayedInLatest( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     if ( !serverInfo )
         return {};
     return serverInfo->fHidePlayedInLatest;
@@ -288,7 +288,7 @@ bool CUserData::hidePlayedInLatest( const QString & serverName ) const
 
 bool CUserData::rememberAudioSelections( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     if ( !serverInfo )
         return {};
     return serverInfo->fRememberAudioSelections;
@@ -296,7 +296,7 @@ bool CUserData::rememberAudioSelections( const QString & serverName ) const
 
 bool CUserData::rememberSubtitleSelections( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     if ( !serverInfo )
         return {};
     return serverInfo->fRememberAudioSelections;
@@ -304,7 +304,7 @@ bool CUserData::rememberSubtitleSelections( const QString & serverName ) const
 
 bool CUserData::enableNextEpisodeAutoPlay( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     if ( !serverInfo )
         return {};
     return serverInfo->fEnableNextEpisodeAutoPlay;
@@ -312,7 +312,7 @@ bool CUserData::enableNextEpisodeAutoPlay( const QString & serverName ) const
 
 int CUserData::resumeRewindSeconds( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     if ( !serverInfo )
         return {};
     return serverInfo->fResumeRewindSeconds;
@@ -320,7 +320,7 @@ int CUserData::resumeRewindSeconds( const QString & serverName ) const
 
 QString CUserData::introSkipMode( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     if ( !serverInfo )
         return {};
     return serverInfo->fIntroSkipMode;
@@ -393,7 +393,7 @@ bool CUserData::isMatch( const QRegularExpression & regEx, const QString & value
 
 QString CUserData::getUserID( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     if ( !serverInfo )
         return {};
     return serverInfo->fUserID;
@@ -401,7 +401,7 @@ QString CUserData::getUserID( const QString & serverName ) const
 
 void CUserData::loadFromJSON( const QString & serverName, const QJsonObject & userObj )
 {
-    auto retVal = getServerInfo( serverName, true );
+    auto retVal = userInfo( serverName, true );
     if ( retVal )
         retVal->loadFromJSON( userObj );
     updateCanBeSynced();
@@ -410,14 +410,14 @@ void CUserData::loadFromJSON( const QString & serverName, const QJsonObject & us
 
 void CUserData::setUserID( const QString & serverName, const QString & id )
 {
-    auto serverInfo = getServerInfo( serverName, true );
+    auto serverInfo = userInfo( serverName, true );
     serverInfo->fUserID = id;
     updateCanBeSynced();
 }
 
 std::tuple< QString, double, QImage > CUserData::getAvatarInfo( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     if ( !serverInfo )
         return {};
 
@@ -431,7 +431,7 @@ bool CUserData::hasAvatarInfo( const QString & serverName ) const
 
 void CUserData::setAvatarInfo( const QString & serverName, const QString & tag, double ratio )
 {
-    auto serverInfo = getServerInfo( serverName, true );
+    auto serverInfo = userInfo( serverName, true );
     serverInfo->fAvatarInfo = { tag, ratio, {} };
 }
 
@@ -452,7 +452,7 @@ QImage CUserData::anyAvatar() const
 
 QDateTime CUserData::getDateCreated( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     if ( !serverInfo || !serverInfo->fDateCreated.isValid() )
         return {};
     return serverInfo->fDateCreated;
@@ -460,7 +460,7 @@ QDateTime CUserData::getDateCreated( const QString & serverName ) const
 
 QDateTime CUserData::getLastActivityDate( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     if ( !serverInfo || !serverInfo->fLastActivityDate.isValid() )
         return {};
     return serverInfo->fLastActivityDate;
@@ -468,7 +468,7 @@ QDateTime CUserData::getLastActivityDate( const QString & serverName ) const
 
 QDateTime CUserData::getLastLoginDate( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     if ( !serverInfo || !serverInfo->fLastLoginDate.isValid() )
         return {};
     return serverInfo->fLastLoginDate;
@@ -486,6 +486,25 @@ void CUserData::checkAllAvatarsTheSame( int serverNum )
         {
             return std::get< 2 >( rhs->fAvatarInfo );
         } );
+}
+
+bool CUserData::allUserDataTheSame() const
+{
+    // std::map< QString, std::shared_ptr< SUserServerData > >
+    auto && ii = fInfoForServer.cbegin();
+    auto lhs = ( *ii ).second;
+    auto jj = fInfoForServer.cbegin();
+    ++jj;
+    for ( ; jj != fInfoForServer.cend(); ++jj )
+    {
+        auto rhs = ( *jj ).second;
+        if ( lhs == rhs )
+            continue;
+
+        if ( !lhs->userDataEqual( *rhs ) )
+            return false;
+    }
+    return true;
 }
 
 
@@ -708,13 +727,13 @@ bool CUserData::allIntroSkipModeTheSame() const
 
 bool CUserData::needsUpdating( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     if ( !serverInfo )
         return {};
-    return serverInfo != newestServerInfo();
+    return serverInfo != newestUserInfo();
 }
 
-std::shared_ptr<SUserServerData> CUserData::newestServerInfo() const
+std::shared_ptr<SUserServerData> CUserData::newestUserInfo() const
 {
     std::shared_ptr< SUserServerData > retVal;
     for ( auto && ii : fInfoForServer )
@@ -740,7 +759,7 @@ QImage CUserData::getAvatar( const QString & serverName, bool useUnset ) const
         retVal = fGlobalImage.value();
     else
     {
-        auto serverInfo = getServerInfo( serverName );
+        auto serverInfo = userInfo( serverName );
         if ( !serverInfo || std::get< 2 >( serverInfo->fAvatarInfo ).isNull() )
             retVal = useUnset ? QImage( ":/resources/missingAvatar.png" ) : QImage();
         else
@@ -753,7 +772,7 @@ QImage CUserData::getAvatar( const QString & serverName, bool useUnset ) const
 
 void CUserData::setAvatar( const QString & serverName, int serverCnt, const QImage & image )
 {
-    auto serverInfo = getServerInfo( serverName, true );
+    auto serverInfo = userInfo( serverName, true );
     std::get< 2 >( serverInfo->fAvatarInfo ) = image;
 
     checkAllAvatarsTheSame( serverCnt );
@@ -761,7 +780,7 @@ void CUserData::setAvatar( const QString & serverName, int serverCnt, const QIma
 
 bool CUserData::onServer( const QString & serverName ) const
 {
-    auto serverInfo = getServerInfo( serverName );
+    auto serverInfo = userInfo( serverName );
     return serverInfo != nullptr;
 }
 

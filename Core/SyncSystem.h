@@ -155,7 +155,8 @@ public:
     void updateUserDataForMedia( const QString & serverName, std::shared_ptr<CMediaData> mediaData, std::shared_ptr<SMediaServerData> newData );
     void updateUserData( const QString & serverName, std::shared_ptr<CUserData> userData, std::shared_ptr<SUserServerData> newData );;
 
-    void selectiveProcess( const QString & selectedServer );
+    void selectiveProcessMedia( const QString & selectedServer );
+    void selectiveProcessUsers( const QString & selectedServer );
 Q_SIGNALS:
     void sigAddToLog( int msgType, const QString & msg );
     void sigAddInfoToLog( const QString & msg );
@@ -164,10 +165,12 @@ Q_SIGNALS:
     void sigProcessingFinished( const QString & name );
     void sigTestServerResults( const QString & serverName, bool results, const QString & msg );
 public Q_SLOTS:
-    void slotProcess();
+    void slotProcessMedia();
+    void slotProcessUsers();
     void slotCanceled();
 private:
     bool processMedia( std::shared_ptr< CMediaData > mediaData, const QString & selectedServer );
+    bool processUser( std::shared_ptr< CUserData > userData, const QString & selectedServer );
 
     void setServerName( QNetworkReply * reply, const QString & serverName );
     QString serverName( QNetworkReply * reply );

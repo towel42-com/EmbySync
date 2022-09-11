@@ -28,6 +28,8 @@
 
 #include <QSplitter>
 #include <QModelIndex>
+#include <QInputDialog>
+
 
 CTabPageBase::CTabPageBase( QWidget * parent )
     : QWidget( parent )
@@ -68,6 +70,36 @@ void CTabPageBase::hideDataTreeColumns()
 {
     for ( auto && ii : fDataTrees )
         ii->hideColumns();
+}
+
+QString CTabPageBase::selectServer() const
+{
+    QStringList serverNames;
+    std::map< QString, QString > servers;
+    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    {
+        auto serverInfo = fSettings->serverInfo( ii );
+        if ( !serverInfo->isEnabled() )
+            continue;
+
+        auto name = serverInfo->displayName();
+        auto key = serverInfo->keyName();
+
+        servers[ name ] = key;
+        serverNames << name;
+    }
+
+    if ( serverNames.isEmpty() )
+        return QString();
+
+    bool aOK = false;
+    auto whichServer = QInputDialog::getItem( const_cast< CTabPageBase * >( this ), tr( "Select Source Server" ), tr( "Source Server:" ), serverNames, 0, false, &aOK );
+    if ( !aOK || whichServer.isEmpty() )
+        return QString();
+    auto pos = servers.find( whichServer );
+    if ( pos == servers.end() )
+        return QString();
+    return ( *pos ).second;
 }
 
 void CTabPageBase::loadServers( QAbstractItemModel * model )

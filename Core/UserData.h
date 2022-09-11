@@ -71,6 +71,8 @@ public:
 
     bool hasAvatarInfo( const QString & serverName ) const;
 
+    bool allUserDataTheSame() const;
+
     bool allUserNamesTheSame() const;
     bool allConnectIDTheSame() const;
     bool allConnectIDTypeTheSame() const;
@@ -115,7 +117,8 @@ public:
     }
 
     bool needsUpdating( const QString & serverName ) const;
-    std::shared_ptr<SUserServerData> newestServerInfo() const;
+    std::shared_ptr<SUserServerData> newestUserInfo() const;
+    std::shared_ptr< SUserServerData > userInfo( const QString & serverName ) const;
 
     QImage globalAvatar() const; // when all servers use the same image
 
@@ -154,14 +157,12 @@ public:
     QIcon getDirectionIcon( const QString & serverName ) const;
     bool isValidForServer( const QString & serverName ) const;
     bool validUserDataEqual() const;
-
-    std::shared_ptr< SUserServerData > getServerInfo( const QString & serverName ) const;
 private:
     void updateCanBeSynced();
     void updateConnectedID();
     void checkAllAvatarsTheSame( int serverNum );
 
-    std::shared_ptr< SUserServerData > getServerInfo( const QString & serverName, bool addIfMissing );
+    std::shared_ptr< SUserServerData > userInfo( const QString & serverName, bool addIfMissing );
     bool isMatch( const QRegularExpression & regEx, const QString & value ) const;
 
     mutable QString fSortKey;

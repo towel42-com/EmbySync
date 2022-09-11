@@ -76,23 +76,34 @@ void CUserInfoCompare::setupPage( std::shared_ptr< CSettings > settings, std::sh
 
 void CUserInfoCompare::setupActions()
 {
-    fActionReloadCurrentUser = new QAction( this );
-    fActionReloadCurrentUser->setObjectName( QString::fromUtf8( "fActionReloadCurrentUser" ) );
-    QIcon icon2;
-    icon2.addFile( QString::fromUtf8( ":/resources/reloadUsers.png" ), QSize(), QIcon::Normal, QIcon::Off );
-    fActionReloadCurrentUser->setIcon( icon2 );
-    fActionReloadCurrentUser->setText( QCoreApplication::translate( "CUserInfoCompare", "Reload Current User's Media", nullptr ) );
-    fActionReloadCurrentUser->setToolTip( QCoreApplication::translate( "CUserInfoCompare", "Reload Current User", nullptr ) );
-
     fProcessMenu = new QMenu( this );
     fProcessMenu->setObjectName( QString::fromUtf8( "fProcessMenu" ) );
     fProcessMenu->setTitle( QCoreApplication::translate( "CUserInfoCompare", "Process", nullptr ) );
+
+    fActionProcess = new QAction( this );
+    fActionProcess->setObjectName( QString::fromUtf8( "fActionProcess" ) );
+    QIcon icon3;
+    icon3.addFile( QString::fromUtf8( ":/resources/process.png" ), QSize(), QIcon::Normal, QIcon::Off );
+    fActionProcess->setIcon( icon3 );
+    fActionProcess->setText( QCoreApplication::translate( "CPlayStateCompare", "Process Media", nullptr ) );
+    fActionProcess->setToolTip( QCoreApplication::translate( "CPlayStateCompare", "Process Media", nullptr ) );
+
+    fActionSelectiveProcess = new QAction( this );
+    fActionSelectiveProcess->setObjectName( QString::fromUtf8( "fActionSelectiveProcess" ) );
+    QIcon icon4;
+    icon4.addFile( QString::fromUtf8( ":/resources/processRight.png" ), QSize(), QIcon::Normal, QIcon::Off );
+    fActionSelectiveProcess->setIcon( icon4 );
+    fActionSelectiveProcess->setText( QCoreApplication::translate( "CPlayStateCompare", "Select a Server and Update other servers to it..", nullptr ) );
+    fActionSelectiveProcess->setToolTip( QCoreApplication::translate( "CPlayStateCompare", "Select a Server and Update other servers to it", nullptr ) );
 
     fActionRepairUserConnectedIDs = new QAction( this );
     fActionRepairUserConnectedIDs->setObjectName( QString::fromUtf8( "fActionRepairUserConnectedIDs" ) );
     fActionRepairUserConnectedIDs->setText( QCoreApplication::translate( "CUserInfoCompare", "Repair User Connected IDs", nullptr ) );
     fActionRepairUserConnectedIDs->setToolTip( QCoreApplication::translate( "CUserInfoCompare", "Repair User Connected IDs", nullptr ) );
 
+    fProcessMenu->addAction( fActionProcess );
+    fProcessMenu->addAction( fActionSelectiveProcess );
+    fProcessMenu->addSeparator();
     fProcessMenu->addAction( fActionRepairUserConnectedIDs );
 
     fViewMenu = new QMenu( this );
@@ -140,10 +151,11 @@ void CUserInfoCompare::setupActions()
     fToolBar->addAction( fActionOnlyShowUsersWithDifferences );
     fToolBar->addAction( fActionShowUsersWithIssues );
     fToolBar->addSeparator();
-    fToolBar->addAction( fActionReloadCurrentUser );
+    fToolBar->addAction( fActionProcess );
+    fToolBar->addAction( fActionSelectiveProcess );
 
-    connect( fActionReloadCurrentUser, &QAction::triggered, this, &CUserInfoCompare::slotReloadCurrentUser );
-
+    connect( fActionProcess, &QAction::triggered, this, &CUserInfoCompare::slotProcess );
+    connect( fActionSelectiveProcess, &QAction::triggered, this, &CUserInfoCompare::slotSelectiveProcess );
     connect( fActionRepairUserConnectedIDs, &QAction::triggered, this, &CUserInfoCompare::slotRepairUserConnectedIDs );
 
     connect( fActionOnlyShowSyncableUsers, &QAction::triggered, this, &CUserInfoCompare::slotToggleOnlyShowSyncableUsers );
@@ -208,8 +220,6 @@ void CUserInfoCompare::slotModelDataChanged()
     bool mediaLoaded = canSync && fMediaModel->rowCount();
     bool hasUsersNeedingFixing = fUsersModel->hasUsersWithConnectedIDNeedingUpdate();
 
-    fActionReloadCurrentUser->setEnabled( canSync && hasCurrentUser );
-
     fActionRepairUserConnectedIDs->setEnabled( hasUsersNeedingFixing );
 
     if ( fUserWindow )
@@ -227,10 +237,6 @@ void CUserInfoCompare::loadingUsersFinished()
 QSplitter * CUserInfoCompare::getDataSplitter() const
 {
     return fImpl->dataSplitter;
-}
-
-void CUserInfoCompare::slotReloadCurrentUser()
-{
 }
 
 void CUserInfoCompare::slotCurrentUserChanged( const QModelIndex & /*index*/ )
@@ -327,8 +333,7 @@ std::shared_ptr< CTabUIInfo > CUserInfoCompare::getUIInfo() const
     retVal->fMenus = { fProcessMenu, fViewMenu };
     retVal->fToolBars = { fToolBar };
 
-    retVal->fMenuActions[ "Edit" ] = std::make_pair( true, QList< QPointer< QAction > >( { fActionOnlyShowSyncableUsers, fActionOnlyShowUsersWithDifferences, fActionShowUsersWithIssues } ) );
-    retVal->fMenuActions[ "Reload" ] = std::make_pair( false, QList< QPointer< QAction > >( { fActionReloadCurrentUser } ) );
+    retVal->fActions[ "Edit" ] = std::make_pair( true, QList< QPointer< QAction > >( { fActionOnlyShowSyncableUsers, fActionOnlyShowUsersWithDifferences, fActionShowUsersWithIssues } ) );
     return retVal;
 }
 
@@ -443,4 +448,18 @@ void CUserInfoCompare::slotViewUserInfo()
     fUserWindow->show();
     fUserWindow->activateWindow();
     fUserWindow->raise();
+}
+
+void CUserInfoCompare::slotProcess()
+{
+    fSyncSystem->slotProcessUsers();
+}
+
+void CUserInfoCompare::slotSelectiveProcess()
+{
+    auto serverName = selectServer();
+    if ( serverName.isEmpty() )
+        return;
+
+    fSyncSystem->selectiveProcessUsers( serverName );
 }

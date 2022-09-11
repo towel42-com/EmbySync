@@ -62,6 +62,8 @@ public:
         eConnectedIDValidRole,
         eIsUserNameColumnRole,
         eSyncDirectionIconRole,
+        eIsMissingOnServerFGColor,
+        eIsMissingOnServerBGColor,
         eServerNameForColumnRole = Qt::UserRole + 10000
     };
 
@@ -115,7 +117,7 @@ private:
     int serverNum( int columnNum ) const;
     std::shared_ptr< CUserData > getUserData( const QString & name, bool exhaustiveSearch=false ) const;
 
-    QVariant getColor( const QModelIndex & index, bool background ) const;
+    QVariant getColor( const QModelIndex & index, bool background, bool missingOnly=false ) const;
         
     std::map< QString, std::shared_ptr< CUserData > > fUserMap;
     std::vector< std::shared_ptr< CUserData > > fUsers;

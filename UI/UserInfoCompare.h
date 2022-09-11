@@ -85,8 +85,8 @@ public Q_SLOTS:
     void slotViewUserInfo();
 
 private Q_SLOTS:
-    void slotReloadCurrentUser();
-
+    void slotProcess();
+    void slotSelectiveProcess();
     void slotRepairUserConnectedIDs();
 
     void slotCurrentUserChanged( const QModelIndex & index );
@@ -113,10 +113,10 @@ private:
 
     QPointer< CUserWindow > fUserWindow;
 
-    QPointer< QAction > fActionReloadCurrentUser{ nullptr };
-
     QPointer< QMenu > fProcessMenu{ nullptr };
     QPointer< QAction > fActionRepairUserConnectedIDs{ nullptr };
+    QPointer< QAction > fActionProcess{ nullptr };
+    QPointer< QAction > fActionSelectiveProcess{ nullptr };
 
     QPointer< QMenu > fViewMenu{ nullptr };
     QPointer< QAction > fActionViewUserInformation{ nullptr };

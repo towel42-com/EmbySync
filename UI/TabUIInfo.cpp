@@ -27,7 +27,7 @@
 void CTabUIInfo::clear()
 {
     fMenus.clear();
-    fMenuActions.clear();
+    fActions.clear();
     fToolBars.clear();
 }
 
@@ -38,16 +38,15 @@ void CTabUIInfo::cleanupUI( QMainWindow * mainWindow )
         if ( ii )
             mainWindow->menuBar()->removeAction( ii->menuAction() );
     }
-    for ( auto && ii : fMenuActions )
+    for ( auto && ii : fActions )
     {
         auto menu = findMenu( mainWindow, ii.first );
-        if ( !menu )
-            continue;
-        for ( auto && jj : ii.second.second )
-        {
-            if ( jj )
-                menu->removeAction( jj );
-        }
+        if ( menu )
+            removeFromContainer( menu, ii.second );
+        
+        auto toolBar = findToolBar( mainWindow, ii.first );
+        if ( toolBar )
+            removeFromContainer( toolBar, ii.second );
     }
     for ( auto && ii : fToolBars )
     {
@@ -59,12 +58,21 @@ void CTabUIInfo::cleanupUI( QMainWindow * mainWindow )
 }
 
 
-QAction * CTabUIInfo::findInsertBefore( QMenu * menu, bool insertBefore )
+void CTabUIInfo::removeFromContainer( QWidget * container, const std::pair< bool, QList< QPointer< QAction > > > & ii )
+{
+    for ( auto && jj : ii.second )
+    {
+        if ( jj )
+            container->removeAction( jj );
+    }
+}
+
+QAction * CTabUIInfo::findInsertBefore( QWidget * container, bool insertBefore )
 {
     if ( !insertBefore )
         return nullptr;
 
-    auto actions = menu->actions();
+    auto actions = container->actions();
     QAction * retVal = nullptr;
     for ( int ii = 1; ii < actions.count(); ++ii )
     {
@@ -100,6 +108,25 @@ QMenu * CTabUIInfo::findMenu( QMainWindow * mainWindow, const QString & text )
     return menu;
 }
 
+QToolBar * CTabUIInfo::findToolBar( QMainWindow * mainWindow, const QString & text )
+{
+    if ( !mainWindow || !mainWindow->menuBar() )
+        return nullptr;
+
+    auto toolBars = mainWindow->findChildren< QToolBar * >();
+
+    QToolBar * toolBar = nullptr;
+    for ( auto && jj : toolBars )
+    {
+        if ( jj->windowTitle() == text )
+        {
+            toolBar = jj;
+            break;
+        }
+    }
+    return toolBar;
+}
+
 void CTabUIInfo::setupUI( QMainWindow * mainWindow, QMenu * insertBeforeMenu )
 {
     for ( auto && ii : fMenus )
@@ -110,19 +137,29 @@ void CTabUIInfo::setupUI( QMainWindow * mainWindow, QMenu * insertBeforeMenu )
     for ( auto && ii : fToolBars )
     {
         if ( ii )
+        {
             mainWindow->addToolBar( Qt::TopToolBarArea, ii );
+            ii->show();
+        }
     }
-    for ( auto && ii : fMenuActions )
+    for ( auto && ii : fActions )
     {
         auto menu = findMenu( mainWindow, ii.first );
-        if ( !menu )
-            continue;
-    
-        auto insertBefore = findInsertBefore( menu, ii.second.first );
-        for ( auto && jj : ii.second.second )
-        {
-            if ( jj )
-                menu->insertAction( insertBefore, jj );
-        }
+        if ( menu )
+            addToContainer( menu, ii.second );
+
+        auto toolBar = findToolBar( mainWindow, ii.first );
+        if ( toolBar )
+            addToContainer( toolBar, ii.second );
+    }
+}
+
+void CTabUIInfo::addToContainer( QWidget * container, const std::pair< bool, QList< QPointer< QAction > > > & ii )
+{
+    auto insertBefore = findInsertBefore( container, ii.first );
+    for ( auto && jj : ii.second )
+    {
+        if ( jj )
+            container->insertAction( insertBefore, jj );
     }
 }
