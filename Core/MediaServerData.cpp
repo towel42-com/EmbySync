@@ -20,11 +20,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "MediaUserData.h"
+#include "MediaServerData.h"
 #include "MediaData.h"
 #include <QVariant>
 
-QJsonObject SMediaUserData::userDataJSON() const
+QJsonObject SMediaServerData::userDataJSON() const
 {
     QJsonObject obj;
     obj[ "IsFavorite" ] = fIsFavorite;
@@ -44,7 +44,7 @@ QJsonObject SMediaUserData::userDataJSON() const
     return obj;
 }
 
-void SMediaUserData::loadUserDataFromJSON( const QJsonObject & userDataObj )
+void SMediaServerData::loadUserDataFromJSON( const QJsonObject & userDataObj )
 {
     //qDebug() << QJsonDocument( userDataObj ).toJson();
 
@@ -57,22 +57,22 @@ void SMediaUserData::loadUserDataFromJSON( const QJsonObject & userDataObj )
     fPlayed = userDataObj[ "Played" ].toVariant().toBool();
 }
 
-bool SMediaUserData::isValid() const
+bool SMediaServerData::isValid() const
 {
     return !fMediaID.isEmpty();
 }
 
-bool operator==( const SMediaUserData & lhs, const SMediaUserData & rhs )
+bool operator==( const SMediaServerData & lhs, const SMediaServerData & rhs )
 {
     return lhs.userDataEqual( rhs );
 }
 
-uint64_t SMediaUserData::playbackPositionMSecs() const
+uint64_t SMediaServerData::playbackPositionMSecs() const
 {
     return fPlaybackPositionTicks / 10000;
 }
 
-QString SMediaUserData::playbackPosition() const
+QString SMediaServerData::playbackPosition() const
 {
     auto playbackMS = playbackPositionMSecs();
     if ( playbackMS == 0 )
@@ -83,23 +83,23 @@ QString SMediaUserData::playbackPosition() const
     return QString::number( playbackMS );
 }
 
-QTime SMediaUserData::playbackPositionTime() const
+QTime SMediaServerData::playbackPositionTime() const
 {
     auto playbackMS = playbackPositionMSecs();
     return QTime::fromMSecsSinceStartOfDay( playbackMS );
 }
 
-void SMediaUserData::setPlaybackPosition( const QTime & time )
+void SMediaServerData::setPlaybackPosition( const QTime & time )
 {
     setPlaybackPositionMSecs( 10000ULL * time.msecsSinceStartOfDay() );
 }
 
-void SMediaUserData::setPlaybackPositionMSecs( uint64_t msecs )
+void SMediaServerData::setPlaybackPositionMSecs( uint64_t msecs )
 {
     fPlaybackPositionTicks = ( 10000ULL * msecs );
 }
 
-bool SMediaUserData::userDataEqual( const SMediaUserData & rhs ) const
+bool SMediaServerData::userDataEqual( const SMediaServerData & rhs ) const
 {
     if ( isValid() != rhs.isValid() )
         return false;

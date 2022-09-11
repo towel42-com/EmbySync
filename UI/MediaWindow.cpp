@@ -92,7 +92,7 @@ void CMediaWindow::loadMedia( std::shared_ptr<CMediaData> & mediaInfo )
 
     for ( auto && ii : fUserDataWidgets )
     {
-        ii.second->setMediaUserData( fMediaInfo ? fMediaInfo->userMediaData( ii.first ) : std::shared_ptr< SMediaUserData >() );
+        ii.second->setMediaUserData( fMediaInfo ? fMediaInfo->userMediaData( ii.first ) : std::shared_ptr< SMediaServerData >() );
     }
 
     fChanged = false;

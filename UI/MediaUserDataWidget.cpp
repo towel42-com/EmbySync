@@ -21,7 +21,7 @@
 // SOFTWARE.
 
 #include "MediaUserDataWidget.h"
-#include "Core/MediaUserData.h"
+#include "Core/MediaServerData.h"
 
 #include "ui_MediaUserDataWidget.h"
 
@@ -72,7 +72,7 @@ CMediaUserDataWidget::CMediaUserDataWidget( const QString & title, QWidget * par
     setTitle( title );
 }
 
-CMediaUserDataWidget::CMediaUserDataWidget( std::shared_ptr< SMediaUserData > mediaData, QWidget * parentWidget /*= nullptr */ ) :
+CMediaUserDataWidget::CMediaUserDataWidget( std::shared_ptr< SMediaServerData > mediaData, QWidget * parentWidget /*= nullptr */ ) :
     CMediaUserDataWidget( "User Data:", parentWidget )
 {
     setMediaUserData( mediaData );
@@ -82,13 +82,13 @@ CMediaUserDataWidget::~CMediaUserDataWidget()
 {
 }
 
-void CMediaUserDataWidget::setMediaUserData( std::shared_ptr< SMediaUserData > mediaData )
+void CMediaUserDataWidget::setMediaUserData( std::shared_ptr< SMediaServerData > mediaData )
 {
     fMediaUserData = mediaData;
     load( fMediaUserData );
 }
 
-void CMediaUserDataWidget::applyMediaUserData( std::shared_ptr< SMediaUserData > mediaData )
+void CMediaUserDataWidget::applyMediaUserData( std::shared_ptr< SMediaServerData > mediaData )
 {
     if ( !mediaData )
         return;
@@ -96,7 +96,7 @@ void CMediaUserDataWidget::applyMediaUserData( std::shared_ptr< SMediaUserData >
     load( mediaData );
 }
 
-void CMediaUserDataWidget::load( std::shared_ptr< SMediaUserData > mediaData )
+void CMediaUserDataWidget::load( std::shared_ptr< SMediaServerData > mediaData )
 {
     if ( !mediaData )
     {
@@ -116,9 +116,9 @@ void CMediaUserDataWidget::load( std::shared_ptr< SMediaUserData > mediaData )
     }
 }
 
-std::shared_ptr< SMediaUserData > CMediaUserDataWidget::createMediaUserData() const
+std::shared_ptr< SMediaServerData > CMediaUserDataWidget::createMediaUserData() const
 {
-    auto retVal = std::make_shared< SMediaUserData >();
+    auto retVal = std::make_shared< SMediaServerData >();
     retVal->fIsFavorite = fImpl->isFavorite->isChecked();
     retVal->fPlayed = fImpl->hasBeenPlayed->isChecked();
     retVal->fLastPlayedDate = fImpl->lastPlayedDate->dateTime();

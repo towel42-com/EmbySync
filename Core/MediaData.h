@@ -38,7 +38,7 @@ class QTreeWidget;
 class QListWidget;
 class QColor;
 class CSettings;
-struct SMediaUserData;
+struct SMediaServerData;
 
 enum class EMediaSyncStatus
 {
@@ -109,13 +109,13 @@ public:
     uint64_t playCount( const QString & serverName ) const;
     bool allPlayCountEqual() const;
 
-    std::shared_ptr<SMediaUserData> userMediaData( const QString & serverName ) const;
-    std::shared_ptr<SMediaUserData> newestMediaData() const;
+    std::shared_ptr<SMediaServerData> userMediaData( const QString & serverName ) const;
+    std::shared_ptr<SMediaServerData> newestMediaData() const;
 
     QIcon getDirectionIcon( const QString & serverName ) const;
 private:
     template< typename T >
-    bool allEqual( std::function< T( std::shared_ptr< SMediaUserData > ) > func ) const
+    bool allEqual( std::function< T( std::shared_ptr< SMediaServerData > ) > func ) const
     {
         std::optional< T > prevValue;
         for ( auto && ii : fInfoForServer )
@@ -138,7 +138,7 @@ private:
     std::map< QString, QString > fExternalUrls;
 
     bool fCanBeSynced{ false };
-    std::map< QString, std::shared_ptr< SMediaUserData > > fInfoForServer;
+    std::map< QString, std::shared_ptr< SMediaServerData > > fInfoForServer;
 
     static std::function< QString( uint64_t ) > sMSecsToStringFunc;
 

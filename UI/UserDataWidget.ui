@@ -24,7 +24,7 @@
    <item row="0" column="1">
     <widget class="QLineEdit" name="name"/>
    </item>
-   <item row="1" column="0">
+   <item row="2" column="0">
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
       <widget class="QLabel" name="avatar">
@@ -42,7 +42,7 @@
      </item>
     </layout>
    </item>
-   <item row="1" column="1">
+   <item row="2" column="1">
     <layout class="QHBoxLayout" name="horizontalLayout_3">
      <item>
       <widget class="QDoubleSpinBox" name="avatarAspectRatio"/>
@@ -73,24 +73,45 @@
      </item>
     </layout>
    </item>
-   <item row="2" column="0">
+   <item row="3" column="0">
     <widget class="QLabel" name="label_3">
      <property name="text">
       <string>Connect ID:</string>
      </property>
     </widget>
    </item>
-   <item row="2" column="1">
+   <item row="3" column="1">
     <widget class="QLineEdit" name="connectID"/>
    </item>
-   <item row="3" column="0">
+   <item row="4" column="0">
+    <widget class="QLabel" name="label_7">
+     <property name="text">
+      <string>Connect ID Type:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="1">
+    <widget class="QComboBox" name="connectIDType">
+     <item>
+      <property name="text">
+       <string>Guest</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>LinkedUser</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="5" column="0">
     <widget class="QLabel" name="label_2">
      <property name="text">
       <string>Creation Date (UTC):</string>
      </property>
     </widget>
    </item>
-   <item row="3" column="1">
+   <item row="5" column="1">
     <layout class="QHBoxLayout" name="horizontalLayout_4">
      <item>
       <widget class="QDateTimeEdit" name="creationDate">
@@ -124,14 +145,14 @@
      </item>
     </layout>
    </item>
-   <item row="4" column="0">
+   <item row="6" column="0">
     <widget class="QLabel" name="label_4">
      <property name="text">
       <string>Last Login Date (UTC):</string>
      </property>
     </widget>
    </item>
-   <item row="4" column="1">
+   <item row="6" column="1">
     <layout class="QHBoxLayout" name="horizontalLayout_5">
      <item>
       <widget class="QDateTimeEdit" name="lastLoginDate">
@@ -162,14 +183,14 @@
      </item>
     </layout>
    </item>
-   <item row="5" column="0">
+   <item row="7" column="0">
     <widget class="QLabel" name="label_5">
      <property name="text">
       <string>Last Activity Date (UTC):</string>
      </property>
     </widget>
    </item>
-   <item row="5" column="1">
+   <item row="7" column="1">
     <layout class="QHBoxLayout" name="horizontalLayout_6">
      <item>
       <widget class="QDateTimeEdit" name="lastActivityDate">
@@ -200,7 +221,7 @@
      </item>
     </layout>
    </item>
-   <item row="6" column="1">
+   <item row="9" column="1">
     <spacer name="verticalSpacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
@@ -213,7 +234,7 @@
      </property>
     </spacer>
    </item>
-   <item row="7" column="0" colspan="2">
+   <item row="10" column="0" colspan="2">
     <layout class="QHBoxLayout" name="horizontalLayout_2">
      <item>
       <spacer name="horizontalSpacer">
@@ -252,19 +273,40 @@
      </item>
     </layout>
    </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="label_8">
+     <property name="text">
+      <string>Prefix:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QLineEdit" name="prefix"/>
+   </item>
+   <item row="8" column="0" colspan="2">
+    <widget class="QCheckBox" name="enableAutoLogin">
+     <property name="text">
+      <string>Enable Auto Login?</string>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
  <tabstops>
   <tabstop>name</tabstop>
+  <tabstop>prefix</tabstop>
   <tabstop>avatarAspectRatio</tabstop>
   <tabstop>setAvatarBtn</tabstop>
   <tabstop>connectID</tabstop>
+  <tabstop>connectIDType</tabstop>
   <tabstop>creationDate</tabstop>
   <tabstop>setCreatedDateToNow</tabstop>
   <tabstop>lastLoginDate</tabstop>
   <tabstop>setLastLoginDateToNow</tabstop>
   <tabstop>lastActivityDate</tabstop>
   <tabstop>setLastActivityDateToNow</tabstop>
+  <tabstop>enableAutoLogin</tabstop>
+  <tabstop>process</tabstop>
   <tabstop>apply</tabstop>
  </tabstops>
  <resources>

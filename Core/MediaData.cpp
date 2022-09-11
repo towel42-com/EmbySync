@@ -21,7 +21,7 @@
 // SOFTWARE.
 
 #include "MediaData.h"
-#include "MediaUserData.h"
+#include "MediaServerData.h"
 #include "Settings.h"
 #include "ServerInfo.h"
 
@@ -69,11 +69,11 @@ CMediaData::CMediaData( const QJsonObject & mediaObj, std::shared_ptr< CSettings
         auto serverInfo = settings->serverInfo( ii );
         if ( !serverInfo->isEnabled() )
             continue;
-        fInfoForServer[ serverInfo->keyName() ] = std::make_shared< SMediaUserData >();
+        fInfoForServer[ serverInfo->keyName() ] = std::make_shared< SMediaServerData >();
     }
 }
 
-std::shared_ptr<SMediaUserData> CMediaData::userMediaData( const QString & serverName ) const
+std::shared_ptr<SMediaServerData> CMediaData::userMediaData( const QString & serverName ) const
 {
     auto pos = fInfoForServer.find( serverName );
     if ( pos != fInfoForServer.end() )
@@ -200,7 +200,7 @@ uint64_t CMediaData::playCount( const QString & serverName ) const
 
 bool CMediaData::allPlayCountEqual() const
 {
-    return allEqual< uint64_t >( []( std::shared_ptr< SMediaUserData > data )
+    return allEqual< uint64_t >( []( std::shared_ptr< SMediaServerData > data )
                      {
                          return data->fPlayCount;
                      } );
@@ -216,7 +216,7 @@ bool CMediaData::isFavorite( const QString & serverName ) const
 
 bool CMediaData::allFavoriteEqual() const
 {
-    return allEqual< bool >( []( std::shared_ptr< SMediaUserData > data )
+    return allEqual< bool >( []( std::shared_ptr< SMediaServerData > data )
                                  {
                                      return data->fIsFavorite;
                                  } );
@@ -232,7 +232,7 @@ QDateTime CMediaData::lastPlayed( const QString & serverName ) const
 
 bool CMediaData::allLastPlayedEqual() const
 {
-    return allEqual< QDateTime >( []( std::shared_ptr< SMediaUserData > data )
+    return allEqual< QDateTime >( []( std::shared_ptr< SMediaServerData > data )
                              {
                                  return data->fLastPlayedDate;
                              } );
@@ -276,7 +276,7 @@ QTime CMediaData::playbackPositionTime( const QString & serverName ) const
 
 bool CMediaData::allPlayedEqual() const
 {
-    return allEqual< bool >( []( std::shared_ptr< SMediaUserData > data )
+    return allEqual< bool >( []( std::shared_ptr< SMediaServerData > data )
                                   {
                                       return data->fPlayed;
                                   } );
@@ -284,7 +284,7 @@ bool CMediaData::allPlayedEqual() const
 
 bool CMediaData::allPlaybackPositionTicksEqual() const
 {
-    return allEqual< int64_t >( []( std::shared_ptr< SMediaUserData > data )
+    return allEqual< int64_t >( []( std::shared_ptr< SMediaServerData > data )
                              {
                                  return data->fPlaybackPositionTicks;
                              } );
@@ -403,9 +403,9 @@ bool CMediaData::needsUpdating( const QString & serverName ) const
     return ( mediaData != newestMediaData() );
 }
 
-std::shared_ptr<SMediaUserData> CMediaData::newestMediaData() const
+std::shared_ptr<SMediaServerData> CMediaData::newestMediaData() const
 {
-    std::shared_ptr<SMediaUserData> retVal;
+    std::shared_ptr<SMediaServerData> retVal;
     for ( auto && ii : fInfoForServer )
     {
         if ( !ii.second->isValid() )
@@ -457,7 +457,7 @@ EMediaSyncStatus CMediaData::syncStatus() const
 
 bool CMediaData::validUserDataEqual() const
 {
-    std::list< std::pair< QString, std::shared_ptr< SMediaUserData > > > validServerData;
+    std::list< std::pair< QString, std::shared_ptr< SMediaServerData > > > validServerData;
     for ( auto && ii : fInfoForServer )
     {
         if ( ii.second->isValid() )

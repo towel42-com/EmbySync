@@ -1,5 +1,6 @@
 #include "UsersModel.h"
 #include "UserData.h"
+#include "UserServerData.h"
 #include "Settings.h"
 #include "ServerInfo.h"
 #include "SyncSystem.h"
@@ -159,6 +160,14 @@ QVariant CUsersModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
         }
     }
 
+    if ( role == Qt::CheckStateRole )
+    {
+        if ( columnNum == EServerColumns::eEnableAutoLogin )
+        {
+            return userData->enableAutoLogin( serverName ) ? Qt::CheckState::Checked : Qt::CheckState::Unchecked;
+        }
+    }
+
     if ( role != Qt::DisplayRole )
         return {};
 
@@ -173,6 +182,12 @@ QVariant CUsersModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
             return userData->name( serverName );
         case EServerColumns::eServerConnectedID:
             return userData->connectedID( serverName );
+        case EServerColumns::eServerConnectedIDType:
+            return userData->connectedIDType( serverName );
+        case EServerColumns::ePrefix:
+            return userData->prefix( serverName );
+        case EServerColumns::eEnableAutoLogin:
+            return userData->enableAutoLogin( serverName ) ? "Yes" : "No";
         case EServerColumns::eIconStatus:
             return std::get< 1 >( userData->getAvatarInfo( serverName ) );
         case EServerColumns::eDateCreated:
@@ -235,6 +250,12 @@ QVariant CUsersModel::headerData( int section, Qt::Orientation orientation, int 
         {
             case EServerColumns::eServerConnectedID:
                 return tr( "Connected ID" );
+            case EServerColumns::eServerConnectedIDType:
+                return tr( "Connected ID Type" );
+            case EServerColumns::ePrefix:
+                return tr( "Prefix" );
+            case EServerColumns::eEnableAutoLogin:
+                return tr( "Enable Auto Login" );
             case EServerColumns::eUserName:
                 return tr( "%2" ).arg( ( *pos ).second.second->displayName() );
             case EServerColumns::eIconStatus:
@@ -328,6 +349,15 @@ QVariant CUsersModel::getColor( const QModelIndex & index, bool background ) con
             break;
         case eServerConnectedID:
             dataSame = userData->allConnectIDTheSame();
+            break;
+        case eServerConnectedIDType:
+            dataSame = userData->allConnectIDTypeTheSame();
+            break;
+        case ePrefix:
+            dataSame = userData->allPrefixTheSame();
+            break;
+        case eEnableAutoLogin:
+            dataSame = userData->allEnableAutoLoginTheSame();
             break;
         case eIconStatus:
             dataSame = userData->allIconInfoTheSame();
@@ -435,13 +465,13 @@ std::shared_ptr< CUserData > CUsersModel::findUser( const QString & serverName, 
     return {};
 }
 
-void CUsersModel::updateUserConnectID( const QString & serverName, const QString & userID, const QString & connectID )
+void CUsersModel::updateUserConnectID( const QString & serverName, const QString & userID, const QString & idType, const QString & connectID )
 {
     auto user = findUser( serverName, userID );
     if ( !user )
         return;
 
-    user->setConnectedID( serverName, connectID );
+    user->setConnectedID( serverName, idType, connectID );
     emit dataChanged( indexForUser( user, 0 ), indexForUser( user, columnCount() - 1 ) );
 }
 
@@ -499,21 +529,17 @@ std::vector< std::shared_ptr< CUserData > > CUsersModel::getAllUsers( bool sorte
 
 std::shared_ptr< CUserData > CUsersModel::loadUser( const QString & serverName, const QJsonObject & userObj )
 {
-    qDebug().noquote().nospace() << QJsonDocument( userObj ).toJson();
-
-    auto currName = userObj[ "Name" ].toString();
-    auto userID = userObj[ "Id" ].toString();
-    if ( currName.isEmpty() || userID.isEmpty() )
-        return {};
-
-    auto linkType = userObj[ "ConnectLinkType" ].toString();
+    //qDebug().noquote().nospace() << QJsonDocument( userObj ).toJson();
+    QString name;
+    QString userID;
     QString connectedID;
-    if ( linkType == "LinkedUser" )
-        connectedID = userObj[ "ConnectUserName" ].toString();
+    std::tie( name, userID, connectedID ) = SUserServerData::getUserNames( userObj );
+    if ( name.isEmpty() || userID.isEmpty() )
+        return {};
 
     auto userData = getUserData( connectedID );
     if ( !userData )
-        userData = getUserData( currName, true );
+        userData = getUserData( name, true );
 
     if ( !userData )
     {

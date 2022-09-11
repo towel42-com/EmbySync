@@ -22,6 +22,8 @@
 
 #include "UserDataWidget.h"
 #include "Core/UserData.h"
+#include "Core/UserServerData.h"
+
 
 #include "ui_UserDataWidget.h"
 
@@ -51,12 +53,16 @@ CUserDataWidget::CUserDataWidget( QWidget * parentWidget /*= nullptr */ ) :
                  fImpl->creationDate->setDateTime( QDateTime::currentDateTimeUtc() );
              } );
 
-    connect( fImpl->setAvatarBtn, &QToolButton::clicked, this, &CUserDataWidget::slotSelectChangeAvatar );
     connect( fImpl->name, &QLineEdit::textChanged, this, &CUserDataWidget::slotChanged );
     connect( fImpl->avatarAspectRatio, &QDoubleSpinBox::textChanged, this, &CUserDataWidget::slotChanged );
     connect( fImpl->connectID, &QLineEdit::textChanged, this, &CUserDataWidget::slotChanged );
+    connect( fImpl->connectIDType, qOverload< int >( &QComboBox::currentIndexChanged ), this, &CUserDataWidget::slotChanged );
     connect( fImpl->lastLoginDate, &QDateTimeEdit::dateTimeChanged, this, &CUserDataWidget::slotChanged );
     connect( fImpl->lastActivityDate, &QDateTimeEdit::dateTimeChanged, this, &CUserDataWidget::slotChanged );
+    connect( fImpl->prefix, &QLineEdit::textChanged, this, &CUserDataWidget::slotChanged );
+    connect( fImpl->enableAutoLogin, &QCheckBox::clicked, this, &CUserDataWidget::slotChanged );
+
+    connect( fImpl->setAvatarBtn, &QToolButton::clicked, this, &CUserDataWidget::slotSelectChangeAvatar );
     connect( fImpl->apply, &QPushButton::clicked, this, &CUserDataWidget::slotApplyFromServer );
     connect( fImpl->process, &QPushButton::clicked, this, &CUserDataWidget::slotProcessToServer );
 }
@@ -108,8 +114,11 @@ void CUserDataWidget::load( std::shared_ptr< SUserServerData > userData )
         fAvatar = {};
         fImpl->avatar->setPixmap( QPixmap( ":/resources/missingAvatar.png" ).scaled( 32, 32 ) );
         fImpl->name->setText( QString() );
+        fImpl->prefix->setText( QString() );
+        fImpl->enableAutoLogin->setChecked( false );
         fImpl->avatarAspectRatio->setValue( 0.0 );
         fImpl->connectID->setText( QString() );
+        fImpl->connectIDType->setCurrentIndex( 1 );
         fImpl->creationDate->setDateTime( QDateTime() );
         fImpl->lastActivityDate->setDateTime( QDateTime() );
         fImpl->lastLoginDate->setDateTime( QDateTime() );
@@ -119,7 +128,12 @@ void CUserDataWidget::load( std::shared_ptr< SUserServerData > userData )
         setAvatar( std::get< 2 >( userData->fAvatarInfo ) );
         fImpl->avatarAspectRatio->setValue( std::get< 1 >( userData->fAvatarInfo ) );
         fImpl->name->setText( userData->fName );
-        fImpl->connectID->setText( userData->fConnectedIDOnServer );
+        fImpl->prefix->setText( userData->fPrefix );
+        fImpl->enableAutoLogin->setChecked( userData->fEnableAutoLogin );
+        fImpl->connectID->setText( userData->fConnectedID.second );
+        auto pos = fImpl->connectIDType->findText( userData->fConnectedID.first );
+        if ( pos != -1 )
+            fImpl->connectIDType->setCurrentIndex( pos );
         fImpl->creationDate->setDateTime( userData->fDateCreated );
         fImpl->lastActivityDate->setDateTime( userData->fLastActivityDate );
         fImpl->lastLoginDate->setDateTime( userData->fLastLoginDate );
@@ -140,9 +154,12 @@ std::shared_ptr< SUserServerData > CUserDataWidget::createUserData() const
     auto retVal = std::make_shared< SUserServerData >();
     retVal->fName = fImpl->name->text();
     retVal->fUserID = fUserData->fUserID;
+    retVal->fPrefix = fImpl->prefix->text();
+    retVal->fEnableAutoLogin = fImpl->enableAutoLogin->isChecked();
     std::get< 1 >( retVal->fAvatarInfo ) = fImpl->avatarAspectRatio->value();
     std::get< 2 >( retVal->fAvatarInfo ) = fAvatar;
-    retVal->fConnectedIDOnServer = fImpl->connectID->text();
+    retVal->fConnectedID.first = fImpl->connectIDType->currentText();
+    retVal->fConnectedID.second = fImpl->connectID->text();
     retVal->fDateCreated = fImpl->creationDate->dateTime();
     retVal->fLastActivityDate = fImpl->lastActivityDate->dateTime();
     retVal->fLastLoginDate = fImpl->lastLoginDate->dateTime();
@@ -158,8 +175,11 @@ void CUserDataWidget::setReadOnly( bool readOnly )
     fImpl->setCreatedDateToNow->setHidden( readOnly );
 
     fImpl->name->setEnabled( readOnly );
+    fImpl->prefix->setEnabled( readOnly );
+    fImpl->enableAutoLogin->setEnabled( readOnly );
     fImpl->avatarAspectRatio->setEnabled( readOnly );
     fImpl->connectID->setEnabled( readOnly );
+    fImpl->connectIDType->setEnabled( readOnly );
     fImpl->creationDate->setEnabled( readOnly );
     fImpl->lastActivityDate->setEnabled( readOnly );
     fImpl->lastLoginDate->setEnabled( readOnly );

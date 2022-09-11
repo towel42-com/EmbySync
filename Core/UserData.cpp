@@ -21,6 +21,8 @@
 // SOFTWARE.
 
 #include "UserData.h"
+#include "UserServerData.h"
+
 #include "Settings.h"
 #include "ServerInfo.h"
 #include "SABUtils/StringUtils.h"
@@ -53,27 +55,27 @@ std::shared_ptr< SUserServerData > CUserData::getServerInfo( const QString & ser
     return retVal;
 }
 
-void CUserData::setConnectedID( const QString & serverName, const QString & connectedID )
+void CUserData::setConnectedID( const QString & serverName, const QString & type, const QString & connectedID )
 {
     auto retVal = getServerInfo( serverName );
     if ( retVal )
-        retVal->fConnectedIDOnServer = connectedID;
+        retVal->fConnectedID = { type, connectedID };
 
     updateConnectedID();
 }
 
 void CUserData::updateConnectedID()
 {
-    auto tmp = allSame< QString >(
+    auto tmp = allSame< std::pair< QString, QString > >(
         []( std::shared_ptr< SUserServerData > rhs )
         {
-            return rhs->fConnectedIDOnServer;
+            return rhs->fConnectedID;
         } );
 
     if ( tmp.has_value() )
         fConnectedID = tmp.value();
     else
-        fConnectedID.clear();
+        fConnectedID = {};
 }
 
 bool CUserData::isValidForServer( const QString & serverName ) const
@@ -86,7 +88,7 @@ bool CUserData::isValidForServer( const QString & serverName ) const
 
 bool CUserData::isValid() const
 {
-    if ( !fConnectedID.isEmpty() )
+    if ( !fConnectedID.second.isEmpty() )
         return true;
     for ( auto && ii : fInfoForServer )
     {
@@ -101,7 +103,15 @@ QString CUserData::connectedID( const QString & serverName ) const
     auto serverInfo = getServerInfo( serverName );
     if ( !serverInfo )
         return {};
-    return serverInfo->fConnectedIDOnServer;
+    return serverInfo->fConnectedID.second;
+}
+
+QString CUserData::connectedIDType( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->fConnectedID.first;
 }
 
 QString CUserData::name( const QString & serverName ) const
@@ -155,8 +165,12 @@ QString CUserData::allNames() const
 
 QString CUserData::sortName( std::shared_ptr< CSettings > settings ) const
 {
+    if ( !fSortKey.isEmpty() )
+        return fSortKey;
+
     if ( !connectedID().isEmpty() )
         return connectedID();
+
     for ( int ii = 0; ii < settings->serverCnt(); ++ii )
     {
         auto serverInfo = settings->serverInfo( ii );
@@ -165,12 +179,31 @@ QString CUserData::sortName( std::shared_ptr< CSettings > settings ) const
         auto info = getServerInfo( serverInfo->keyName() );
         if ( !info )
             continue;
-        if ( info->fName.isEmpty() )
-            continue;
-        return info->fName;
+     
+        //if ( !info->fConnectedIDOnServer.isEmpty() )
+        //    return info->fConnectedIDOnServer;
+
+        if ( !info->fName.isEmpty() )
+            return fSortKey = info->fName;
     }
 
     return {};
+}
+
+QString CUserData::prefix( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->fPrefix;
+}
+
+bool CUserData::enableAutoLogin( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->fEnableAutoLogin;
 }
 
 QStringList CUserData::missingServers() const
@@ -190,7 +223,7 @@ bool CUserData::isUser( const QRegularExpression & regEx ) const
     if ( !regEx.isValid() || regEx.pattern().isEmpty() )
         return false;
 
-    if ( isMatch( regEx, fConnectedID ) )
+    if ( isMatch( regEx, fConnectedID.second ) )
         return true;
     for ( auto && ii : fInfoForServer )
     {
@@ -228,7 +261,7 @@ bool CUserData::isUser( const QString & serverName, const QString & userID ) con
 
 bool CUserData::connectedIDNeedsUpdate() const
 {
-    return !fConnectedID.isEmpty() && !NSABUtils::NStringUtils::isValidEmailAddress( fConnectedID );
+    return !fConnectedID.second.isEmpty() && !NSABUtils::NStringUtils::isValidEmailAddress( fConnectedID.second );
 }
 
 bool CUserData::isMatch( const QRegularExpression & regEx, const QString & value ) const
@@ -259,27 +292,6 @@ void CUserData::setUserID( const QString & serverName, const QString & id )
     auto serverInfo = getServerInfo( serverName, true );
     serverInfo->fUserID = id;
     updateCanBeSynced();
-}
-
-void CUserData::setDateCreated( const QString & serverName, const QDateTime & dateTS )
-{
-    auto retVal = getServerInfo( serverName );
-    if ( retVal )
-        retVal->fDateCreated = dateTS;
-}
-
-void CUserData::setLastActivityDate( const QString & serverName, const QDateTime & dateTS )
-{
-    auto retVal = getServerInfo( serverName );
-    if ( retVal )
-        retVal->fLastActivityDate = dateTS;
-}
-
-void CUserData::setLastLoginDate( const QString & serverName, const QDateTime & dateTS )
-{
-    auto retVal = getServerInfo( serverName );
-    if ( retVal )
-        retVal->fLastLoginDate = dateTS;
 }
 
 std::tuple< QString, double, QImage > CUserData::getAvatarInfo( const QString & serverName ) const
@@ -365,12 +377,39 @@ bool CUserData::allUserNamesTheSame() const
         } ).has_value();
 }
 
+bool CUserData::allPrefixTheSame() const
+{
+    return allSame< QString >(
+        []( std::shared_ptr< SUserServerData > rhs )
+        {
+            return rhs->fPrefix;
+        } ).has_value();
+}
+
+bool CUserData::allEnableAutoLoginTheSame() const
+{
+    return allSame< bool >(
+        []( std::shared_ptr< SUserServerData > rhs )
+        {
+            return rhs->fEnableAutoLogin;
+        } ).has_value();
+}
+
 bool CUserData::allConnectIDTheSame() const
 {
     return allSame< QString >(
         []( std::shared_ptr< SUserServerData > rhs )
         {
-            return rhs->fConnectedIDOnServer;
+            return rhs->fConnectedID.second;
+        } ).has_value();
+}
+
+bool CUserData::allConnectIDTypeTheSame() const
+{
+    return allSame< QString >(
+        []( std::shared_ptr< SUserServerData > rhs )
+        {
+            return rhs->fConnectedID.first;
         } ).has_value();
 }
 
@@ -515,105 +554,4 @@ QIcon CUserData::getDirectionIcon( const QString & serverName ) const
         retVal = sArrowUpIcon;
 
     return retVal;
-}
-
-//UserDto{
-//Name	string
-//ServerId	string
-//ServerName	string
-//Prefix	string
-//ConnectUserName	string
-//DateCreated	string( $date - time, nullable )
-//ConnectLinkType	string( $enum )( LinkedUser, Guest )
-//Id	string( $guid )
-//PrimaryImageTag	string
-//HasPassword	boolean
-//HasConfiguredPassword	boolean
-//HasConfiguredEasyPassword	boolean
-//EnableAutoLogin	boolean( nullable )
-//LastLoginDate	string( $date - time, nullable )
-//LastActivityDate	string( $date - time, nullable )
-//Configuration	Configuration.UserConfiguration{...}
-//Policy	Users.UserPolicy{...}
-//PrimaryImageAspectRatio	number( $double, nullable )
-//}
-
-QJsonObject SUserServerData::userDataJSON() const
-{
-    QJsonObject obj;
-    obj[ "Name" ] = fName;
-    if ( !fConnectedIDOnServer.isEmpty() )
-    {
-        obj[ "ConnectedUserName" ] = fConnectedIDOnServer;
-        obj[ "ConnectLinkType" ] = "LinkedUser";
-    }
-    if ( fDateCreated.isNull() )
-        obj[ "DateCreated" ] = QJsonValue::Null;
-    else
-        obj[ "DateCreated" ] = fDateCreated.toUTC().toString( Qt::ISODateWithMs );
-
-    if ( fLastLoginDate.isNull() )
-        obj[ "LastLoginDate" ] = QJsonValue::Null;
-    else
-        obj[ "LastLoginDate" ] = fLastLoginDate.toUTC().toString( Qt::ISODateWithMs );
-
-    if ( fLastActivityDate.isNull() )
-        obj[ "LastActivityDate" ] = QJsonValue::Null;
-    else
-        obj[ "LastActivityDate" ] = fLastActivityDate.toUTC().toString( Qt::ISODateWithMs );
-    obj[ "PrimaryImageAspectRatio" ] = std::get< 1 >( fAvatarInfo );
-    return obj;
-}
-
-void SUserServerData::loadFromJSON( const QJsonObject & userObj )
-{
-    fName = userObj[ "Name" ].toString();
-    fUserID = userObj[ "Id" ].toString();
-
-    auto linkType = userObj[ "ConnectLinkType" ].toString();
-    fConnectedIDOnServer.clear();
-    if ( linkType == "LinkedUser" )
-        fConnectedIDOnServer = userObj[ "ConnectUserName" ].toString();
-    auto dateCreated = userObj[ "DateCreated" ].toVariant().toDateTime();
-    if ( dateCreated == QDateTime::fromString( "0001-01-01T00:00:00.000Z", Qt::ISODateWithMs ) )
-        dateCreated = QDateTime();
-    fDateCreated = dateCreated;
-    fLastActivityDate = userObj[ "LastActivityDate" ].toVariant().toDateTime();
-    fLastLoginDate = userObj[ "LastLoginDate" ].toVariant().toDateTime();
-    std::get< 0 >( fAvatarInfo ) = userObj[ "PrimaryImageTag" ].toString();
-    std::get< 1 >( fAvatarInfo ) = userObj[ "PrimaryImageAspectRatio" ].toDouble();
-}
-
-bool SUserServerData::isValid() const
-{
-    return !fName.isEmpty() && !fUserID.isEmpty();
-}
-
-bool SUserServerData::userDataEqual( const SUserServerData & rhs ) const
-{
-    if ( isValid() != rhs.isValid() )
-        return false;
-
-    auto equal = true;
-    equal = equal && fName == rhs.fName;
-    equal = equal && fConnectedIDOnServer == rhs.fConnectedIDOnServer;
-    if ( !fDateCreated.isNull() && !rhs.fDateCreated.isNull() )
-        equal = equal && fDateCreated == rhs.fDateCreated;
-    if ( !fLastActivityDate.isNull() && !rhs.fLastActivityDate.isNull() )
-        equal = equal && fLastActivityDate == rhs.fLastActivityDate;
-    if ( !fLastLoginDate.isNull() && !rhs.fLastLoginDate.isNull() )
-        equal = equal && fLastLoginDate == rhs.fLastLoginDate;
-    equal = equal && std::get< 1 >( fAvatarInfo ) == std::get< 1 >( rhs.fAvatarInfo );
-    equal = equal && std::get< 2 >( fAvatarInfo ) == std::get< 2 >( rhs.fAvatarInfo );
-    return equal;
-}
-
-QDateTime SUserServerData::latestAccess() const
-{
-    return std::max( { fDateCreated, fLastLoginDate, fLastActivityDate } );
-}
-
-bool operator==( const SUserServerData & lhs, const SUserServerData & rhs )
-{
-    return lhs.userDataEqual( rhs );
 }

@@ -48,7 +48,7 @@ class QSslError;
 class QNetworkAccessManager;
 class CUserData;
 class CMediaData;
-struct SMediaUserData;
+struct SMediaServerData;
 class CSettings;
 class CProgressSystem;
 class QTimer;
@@ -99,6 +99,13 @@ struct SServerReplyInfo
     QString fExtraData;
 };
 
+struct SConnectIDInfo
+{
+    QString fServerName; // empty means apply to all servers
+    std::pair< QString, QString > fConnectID;
+    std::shared_ptr< CUserData > fUserData;
+};
+
 constexpr int kServerName = QNetworkRequest::User + 1; // QString
 constexpr int kRequestType = QNetworkRequest::User + 2; // ERequestType
 constexpr int kExtraData = QNetworkRequest::User + 3; // QVariant
@@ -140,11 +147,12 @@ public:
 
     void repairConnectIDs( const std::list< std::shared_ptr< CUserData > > & users );
     void setConnectedID( const QString & serverName, const QString & newID, std::shared_ptr< CUserData > & user );
+    void setConnectedID( const QString & serverName, const QString & idType, const QString & newID, std::shared_ptr< CUserData > & user );
 
     void requestGetUserAvatar( const QString & serverName, const QString & userID );
     void requestSetUserAvatar( const QString & serverName, const QString & userID, const QImage & image );
 
-    void updateUserDataForMedia( const QString & serverName, std::shared_ptr<CMediaData> mediaData, std::shared_ptr<SMediaUserData> newData );
+    void updateUserDataForMedia( const QString & serverName, std::shared_ptr<CMediaData> mediaData, std::shared_ptr<SMediaServerData> newData );
     void updateUserData( const QString & serverName, std::shared_ptr<CUserData> userData, std::shared_ptr<SUserServerData> newData );;
 
     void selectiveProcess( const QString & selectedServer );
@@ -222,10 +230,10 @@ private:
 
     void requestReloadMediaItemData( const QString & serverName, const QString & mediaID );
     void requestReloadMediaItemData( const QString & serverName, std::shared_ptr< CMediaData > mediaData );
-    void requestSetFavorite( const QString & serverName, std::shared_ptr< CMediaData > mediaData, std::shared_ptr< SMediaUserData > newData );
+    void requestSetFavorite( const QString & serverName, std::shared_ptr< CMediaData > mediaData, std::shared_ptr< SMediaServerData > newData );
     void handleSetFavorite( const QString & serverName, const QString & mediaID );
 
-    void requestUpdateUserDataForMedia( const QString & serverName, std::shared_ptr< CMediaData > mediaData, std::shared_ptr< SMediaUserData > newData );
+    void requestUpdateUserDataForMedia( const QString & serverName, std::shared_ptr< CMediaData > mediaData, std::shared_ptr< SMediaServerData > newData );
     void handleUpdateUserDataForMedia( const QString & serverName, const QString & mediaID );
          
     void handleReloadMediaResponse( const QString & serverName, const QByteArray & data, const QString & id );
@@ -262,7 +270,7 @@ private:
     std::unordered_map< QString, TOptionalBoolPair > fLeftAndRightFinished;
     std::shared_ptr< CUserData > fCurrUserData;
     std::unordered_map< QString, std::shared_ptr< const CServerInfo > > fTestServers;
-    std::list< std::tuple< QString, QString, std::shared_ptr< CUserData > > > fUsersNeedingConnectIDUpdates;
-    std::tuple< QString, QString, std::shared_ptr< CUserData > > fCurrUserConnectID;
+    std::list< SConnectIDInfo > fUsersNeedingConnectIDUpdates;
+    SConnectIDInfo fCurrUserConnectID;
 };
 #endif
