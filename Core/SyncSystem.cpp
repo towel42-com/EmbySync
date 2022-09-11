@@ -424,7 +424,7 @@ void CSyncSystem::requestUpdateUserData( const QString & serverName, std::shared
     //qDebug() << "userID" << userID;
     //qDebug() << "mediaID" << mediaID;
 
-    qDebug() << url;
+    //qDebug() << url;
 
     auto request = QNetworkRequest( url );
     auto reply = makeRequest( request, ENetworkRequestType::ePost, data );
@@ -803,7 +803,7 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
     }
     case ERequestType::eUpdateUserData:
     {
-        qDebug() << data;
+        //qDebug() << data;
         handleUpdateUserData( serverName, extraData.toString() );
         break;
     }
