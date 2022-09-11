@@ -28,10 +28,13 @@ public:
     {
         eUserName,
         eServerConnectedID,
+        eServerConnectedIDType,
+        ePrefix,
         eIconStatus,
         eDateCreated,
         eLastActivityDate,
         eLastLoginDate,
+        eEnableAutoLogin,
         eServerColCount
     };
 
@@ -72,7 +75,7 @@ public:
 
     void setUserAvatar( const QString & serverName, const QString & userID, const QByteArray & data );
 
-    void updateUserConnectID( const QString & serverName, const QString & userID, const QString & connectID );
+    void updateUserConnectID( const QString & serverName, const QString & userID, const QString & idType, const QString & connectID );
 
     void clear();
 

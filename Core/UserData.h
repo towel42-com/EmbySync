@@ -34,30 +34,7 @@
 class CMediaData;
 class CSettings;
 
-struct SUserServerData
-{
-    bool isValid() const;
-    bool userDataEqual( const SUserServerData & rhs ) const;
-
-    QDateTime latestAccess() const;
-    QJsonObject userDataJSON() const;
-    void loadFromJSON( const QJsonObject & userObj );
-
-    QString fName;
-    QString fUserID;
-    QString fConnectedIDOnServer;
-
-    std::tuple< QString, double, QImage > fAvatarInfo;
-    QDateTime fDateCreated;
-    QDateTime fLastLoginDate;
-    QDateTime fLastActivityDate;
-};
-bool operator==( const SUserServerData & lhs, const SUserServerData & rhs );
-inline bool operator!=( const SUserServerData & lhs, const SUserServerData & rhs )
-{
-    return !operator==( lhs, rhs );
-}
-
+struct SUserServerData;
 
 class CUserData
 {
@@ -65,9 +42,13 @@ public:
     CUserData( const QString & serverName, const QJsonObject & userObj );
     void loadFromJSON( const QString & serverName, const QJsonObject & userObj );
 
-    QString connectedID() const { return fConnectedID; }
+    QString connectedID() const { return fConnectedID.second; }
+    QString connectedIDType() const { return fConnectedID.first; }
+
     QString connectedID( const QString & serverName ) const;
-    void setConnectedID( const QString & serverName, const QString & connectedID );
+    QString connectedIDType( const QString & serverName ) const;
+
+    void setConnectedID( const QString & serverName, const QString & idType, const QString & connectedID );
 
     bool isValid() const;
     QString name( const QString & serverName ) const;
@@ -88,17 +69,16 @@ public:
     QString getUserID( const QString & serverName ) const;
     void setUserID( const QString & serverName, const QString & id );
 
-    void setDateCreated( const QString & serverName, const QDateTime & dateTS );
-    void setLastActivityDate( const QString & serverName, const QDateTime & dateTS );
-    void setLastLoginDate( const QString & serverName, const QDateTime & dateTS );
-
     bool hasAvatarInfo( const QString & serverName ) const;
 
     bool allUserNamesTheSame() const;
     bool allConnectIDTheSame() const;
+    bool allConnectIDTypeTheSame() const;
     bool allIconInfoTheSame() const;
     bool allLastActivityDateSame() const;
     bool allLastLoginDateSame() const;
+    bool allEnableAutoLoginTheSame() const;
+    bool allPrefixTheSame() const;
 
     bool needsUpdating( const QString & serverName ) const;
     std::shared_ptr<SUserServerData> newestServerInfo() const;
@@ -115,6 +95,8 @@ public:
     QDateTime getDateCreated( const QString & serverName ) const;
     QDateTime getLastActivityDate( const QString & serverName ) const;
     QDateTime getLastLoginDate( const QString & serverName ) const;
+    QString prefix( const QString & serverName ) const;
+    bool enableAutoLogin( const QString & serverName ) const;
 
     bool canBeSynced() const;
     bool onServer( const QString & serverName ) const;
@@ -148,7 +130,8 @@ private:
     std::shared_ptr< SUserServerData > getServerInfo( const QString & serverName, bool addIfMissing );
     bool isMatch( const QRegularExpression & regEx, const QString & value ) const;
 
-    QString fConnectedID;
+    mutable QString fSortKey;
+    std::pair< QString, QString > fConnectedID; // type, ID
     bool fCanBeSynced{ false };
 
     mutable std::optional< QImage > fGlobalImage; // when all avatars are the same on the server

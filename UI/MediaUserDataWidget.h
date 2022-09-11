@@ -32,19 +32,19 @@ namespace Ui
 }
 
 class CUserData;
-struct SMediaUserData;
+struct SMediaServerData;
 class CMediaUserDataWidget : public QGroupBox
 {
     Q_OBJECT
 public:
     CMediaUserDataWidget( QWidget * parentWidget = nullptr );
     CMediaUserDataWidget( const QString & title, QWidget * parentWidget = nullptr );
-    CMediaUserDataWidget( std::shared_ptr< SMediaUserData > mediaData, QWidget * parentWidget = nullptr );
+    CMediaUserDataWidget( std::shared_ptr< SMediaServerData > mediaData, QWidget * parentWidget = nullptr );
 
     virtual ~CMediaUserDataWidget() override;
 
-    void setMediaUserData( std::shared_ptr< SMediaUserData > mediaData );
-    void applyMediaUserData( std::shared_ptr< SMediaUserData > mediaData );  // mediaData is not owned, mediaID is NOT changed
+    void setMediaUserData( std::shared_ptr< SMediaServerData > mediaData );
+    void applyMediaUserData( std::shared_ptr< SMediaServerData > mediaData );  // mediaData is not owned, mediaID is NOT changed
 
     void setServerName( const QString & serverName ) { fServerName = serverName; }
     QString serverName() const { return fServerName; }
@@ -52,7 +52,7 @@ public:
     void setReadOnly( bool readOnly );
     bool readOnly() const { return fReadOnly; }
 
-    std::shared_ptr< SMediaUserData > createMediaUserData() const; // creates a new user data based on current settings
+    std::shared_ptr< SMediaServerData > createMediaUserData() const; // creates a new user data based on current settings
 
 public Q_SLOTS:
     void slotChanged();
@@ -63,10 +63,10 @@ Q_SIGNALS:
     void sigProcessToServer( CMediaUserDataWidget * which );
 
 private:
-    void load( std::shared_ptr< SMediaUserData > mediaData );
+    void load( std::shared_ptr< SMediaServerData > mediaData );
 
     std::unique_ptr< Ui::CMediaUserDataWidget > fImpl;
-    std::shared_ptr< SMediaUserData > fMediaUserData;
+    std::shared_ptr< SMediaServerData > fMediaUserData;
     QString fServerName;
     bool fReadOnly{ false };
 };

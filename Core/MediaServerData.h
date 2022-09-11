@@ -28,7 +28,7 @@
 #include <cstdint>
 #include <QJsonObject>
 
-struct SMediaUserData
+struct SMediaServerData
 {
     QString fMediaID;
     bool fIsFavorite{ false };
@@ -45,7 +45,7 @@ struct SMediaUserData
 
     QString playbackPosition() const;
 
-    bool userDataEqual( const SMediaUserData & rhs ) const;
+    bool userDataEqual( const SMediaServerData & rhs ) const;
 
     QJsonObject userDataJSON() const;
     void loadUserDataFromJSON( const QJsonObject & userDataObj );
@@ -54,8 +54,8 @@ struct SMediaUserData
     bool fBeenLoaded{ false };
 };
 
-bool operator==( const SMediaUserData & lhs, const SMediaUserData & rhs );
-inline bool operator!=( const SMediaUserData & lhs, const SMediaUserData & rhs )
+bool operator==( const SMediaServerData & lhs, const SMediaServerData & rhs );
+inline bool operator!=( const SMediaServerData & lhs, const SMediaServerData & rhs )
 {
     return !operator==( lhs, rhs );
 }
