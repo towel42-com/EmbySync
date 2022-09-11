@@ -49,7 +49,25 @@ struct SUserServerData
     QDateTime fDateCreated;
     QDateTime fLastLoginDate;
     QDateTime fLastActivityDate;
+
+    // configuration settings
+    QString fAudioLanguagePreference;
+    bool fPlayDefaultAudioTrack{ false };
+    QString fSubtitleLanguagePreference;
+    bool fDisplayMissingEpisodes{ false };
+    QString fSubtitleMode;
+    bool fEnableLocalPassword{ false };
+    QStringList fOrderedViews;
+    QStringList fLatestItemsExcludes;
+    QStringList fMyMediaExcludes;
+    bool fHidePlayedInLatest{ false };
+    bool fRememberAudioSelections{ false };
+    bool fRememberSubtitleSelections{ false };
+    bool fEnableNextEpisodeAutoPlay{ false };
+    int fResumeRewindSeconds{ 0 };
+    QString fIntroSkipMode;
 };
+
 bool operator==( const SUserServerData & lhs, const SUserServerData & rhs );
 inline bool operator!=( const SUserServerData & lhs, const SUserServerData & rhs )
 {

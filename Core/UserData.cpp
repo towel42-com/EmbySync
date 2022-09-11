@@ -206,6 +206,127 @@ bool CUserData::enableAutoLogin( const QString & serverName ) const
     return serverInfo->fEnableAutoLogin;
 }
 
+QString CUserData::audioLanguagePreference( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->fAudioLanguagePreference;
+}
+
+bool CUserData::playDefaultAudioTrack( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->fPlayDefaultAudioTrack;
+}
+
+QString CUserData::subtitleLanguagePreference( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->fSubtitleLanguagePreference;
+}
+
+bool CUserData::displayMissingEpisodes( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->fDisplayMissingEpisodes;
+}
+
+QString CUserData::subtitleMode( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->fSubtitleMode;
+}
+
+bool CUserData::enableLocalPassword( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->fEnableLocalPassword;
+}
+
+QStringList CUserData::orderedViews( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->fOrderedViews;
+}
+
+QStringList CUserData::latestItemsExcludes( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->fLatestItemsExcludes;
+}
+
+QStringList CUserData::myMediaExcludes( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->fMyMediaExcludes;
+}
+
+bool CUserData::hidePlayedInLatest( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->fHidePlayedInLatest;
+}
+
+bool CUserData::rememberAudioSelections( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->fRememberAudioSelections;
+}
+
+bool CUserData::rememberSubtitleSelections( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->fRememberAudioSelections;
+}
+
+bool CUserData::enableNextEpisodeAutoPlay( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->fEnableNextEpisodeAutoPlay;
+}
+
+int CUserData::resumeRewindSeconds( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->fResumeRewindSeconds;
+}
+
+QString CUserData::introSkipMode( const QString & serverName ) const
+{
+    auto serverInfo = getServerInfo( serverName );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->fIntroSkipMode;
+}
+
+
 QStringList CUserData::missingServers() const
 {
     QStringList retVal;
@@ -422,6 +543,15 @@ bool CUserData::allIconInfoTheSame() const
         } ).has_value();
 }
 
+bool CUserData::allDateCreatedSame() const
+{
+    return allSame< QDateTime >(
+        []( std::shared_ptr< SUserServerData > rhs )
+        {
+            return rhs->fDateCreated;
+        } ).has_value();
+}
+
 bool CUserData::allLastActivityDateSame() const
 {
     return allSame< QDateTime >(
@@ -439,6 +569,142 @@ bool CUserData::allLastLoginDateSame() const
             return rhs->fLastLoginDate;
         } ).has_value();
 }
+
+bool CUserData::allAudioLanguagePreferenceTheSame() const
+{
+    return allSame< QString >(
+        []( std::shared_ptr< SUserServerData > rhs )
+        {
+            return rhs->fAudioLanguagePreference;
+        } ).has_value();
+}
+
+bool CUserData::allPlayDefaultAudioTrackTheSame() const
+{
+    return allSame< bool >(
+        []( std::shared_ptr< SUserServerData > rhs )
+        {
+            return rhs->fPlayDefaultAudioTrack;
+        } ).has_value();
+}
+
+bool CUserData::allSubtitleLanguagePreferenceTheSame() const
+{
+    return allSame< QString >(
+        []( std::shared_ptr< SUserServerData > rhs )
+        {
+            return rhs->fSubtitleLanguagePreference;
+        } ).has_value();
+}
+
+bool CUserData::allDisplayMissingEpisodesTheSame() const
+{
+    return allSame< bool >(
+        []( std::shared_ptr< SUserServerData > rhs )
+        {
+            return rhs->fDisplayMissingEpisodes;
+        } ).has_value();
+}
+
+bool CUserData::allSubtitleModeTheSame() const
+{
+    return allSame< QString >(
+        []( std::shared_ptr< SUserServerData > rhs )
+        {
+            return rhs->fSubtitleMode;
+        } ).has_value();
+}
+
+bool CUserData::allEnableLocalPasswordTheSame() const
+{
+    return allSame< bool >(
+        []( std::shared_ptr< SUserServerData > rhs )
+        {
+            return rhs->fEnableLocalPassword;
+        } ).has_value();
+}
+
+bool CUserData::allOrderedViewsTheSame() const
+{
+    return allSame< QStringList >(
+        []( std::shared_ptr< SUserServerData > rhs )
+        {
+            return rhs->fOrderedViews;
+        } ).has_value();
+}
+
+bool CUserData::allLatestItemsExcludesTheSame() const
+{
+    return allSame< QStringList >(
+        []( std::shared_ptr< SUserServerData > rhs )
+        {
+            return rhs->fLatestItemsExcludes;
+        } ).has_value();
+}
+
+bool CUserData::allMyMediaExcludesTheSame() const
+{
+    return allSame< QStringList >(
+        []( std::shared_ptr< SUserServerData > rhs )
+        {
+            return rhs->fMyMediaExcludes;
+        } ).has_value();
+}
+
+bool CUserData::allHidePlayedInLatestTheSame() const
+{
+    return allSame< bool >(
+        []( std::shared_ptr< SUserServerData > rhs )
+        {
+            return rhs->fHidePlayedInLatest;
+        } ).has_value();
+}
+
+bool CUserData::allRememberAudioSelectionsTheSame() const
+{
+    return allSame< bool >(
+        []( std::shared_ptr< SUserServerData > rhs )
+        {
+            return rhs->fRememberAudioSelections;
+        } ).has_value();
+}
+
+bool CUserData::allRememberSubtitleSelectionsTheSame() const
+{
+    return allSame< bool >(
+        []( std::shared_ptr< SUserServerData > rhs )
+        {
+            return rhs->fRememberSubtitleSelections;
+        } ).has_value();
+}
+
+bool CUserData::allEnableNextEpisodeAutoPlayTheSame() const
+{
+    return allSame< bool >(
+        []( std::shared_ptr< SUserServerData > rhs )
+        {
+            return rhs->fEnableNextEpisodeAutoPlay;
+        } ).has_value();
+}
+
+bool CUserData::allResumeRewindSecondsTheSame() const
+{
+    return allSame< int >(
+        []( std::shared_ptr< SUserServerData > rhs )
+        {
+            return rhs->fResumeRewindSeconds;
+        } ).has_value();
+}
+
+bool CUserData::allIntroSkipModeTheSame() const
+{
+    return allSame< QString >(
+        []( std::shared_ptr< SUserServerData > rhs )
+        {
+            return rhs->fIntroSkipMode;
+        } ).has_value();
+}
+
 
 bool CUserData::needsUpdating( const QString & serverName ) const
 {

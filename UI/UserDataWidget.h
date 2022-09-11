@@ -48,15 +48,11 @@ public:
     void setUserData( std::shared_ptr< SUserServerData > userData );
     void applyUserData( std::shared_ptr< SUserServerData > userData );  
 
-    void setReadOnly( bool readOnly );
-    bool readOnly() const { return fReadOnly; }
-
     QImage avatar() const { return fAvatar; }
 
     std::shared_ptr< SUserServerData > createUserData() const; // creates a new user data based on current settings
 
 public Q_SLOTS:
-    void slotChanged();
     void slotApplyFromServer();
     void slotProcessToServer();
     void slotSelectChangeAvatar();
@@ -72,6 +68,5 @@ private:
     std::shared_ptr< SUserServerData > fUserData;
     QString fServerName;
     QImage fAvatar;
-    bool fReadOnly{ false };
 };
 #endif 

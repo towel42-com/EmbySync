@@ -162,12 +162,29 @@ QVariant CUsersModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
 
     if ( role == Qt::CheckStateRole )
     {
-        if ( columnNum == EServerColumns::eEnableAutoLogin )
+        switch ( columnNum )
         {
-            return userData->enableAutoLogin( serverName ) ? Qt::CheckState::Checked : Qt::CheckState::Unchecked;
-        }
+            case EServerColumns::eEnableAutoLogin:
+                return userData->enableAutoLogin( serverName ) ? Qt::CheckState::Checked : Qt::CheckState::Unchecked;
+            case EServerColumns::ePlayDefaultAudioTrack:
+                return userData->playDefaultAudioTrack( serverName ) ? Qt::CheckState::Checked : Qt::CheckState::Unchecked;
+            case EServerColumns::eDisplayMissingEpisodes:
+                return userData->displayMissingEpisodes( serverName ) ? Qt::CheckState::Checked : Qt::CheckState::Unchecked;
+            case EServerColumns::eEnableLocalPassword:
+                return userData->enableLocalPassword( serverName ) ? Qt::CheckState::Checked : Qt::CheckState::Unchecked;
+            case EServerColumns::eHidePlayedInLatest:
+                return userData->hidePlayedInLatest( serverName ) ? Qt::CheckState::Checked : Qt::CheckState::Unchecked;
+            case EServerColumns::eRememberAudioSelections:
+                return userData->rememberAudioSelections( serverName ) ? Qt::CheckState::Checked : Qt::CheckState::Unchecked;
+            case EServerColumns::eRememberSubtitleSelections:
+                return userData->rememberSubtitleSelections( serverName ) ? Qt::CheckState::Checked : Qt::CheckState::Unchecked;
+            case EServerColumns::eEnableNextEpisodeAutoPlay:
+                return userData->enableNextEpisodeAutoPlay( serverName ) ? Qt::CheckState::Checked : Qt::CheckState::Unchecked;
+            default:
+                break;
+        };
     }
-
+            
     if ( role != Qt::DisplayRole )
         return {};
 
@@ -188,6 +205,38 @@ QVariant CUsersModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
             return userData->prefix( serverName );
         case EServerColumns::eEnableAutoLogin:
             return userData->enableAutoLogin( serverName ) ? "Yes" : "No";
+
+        case EServerColumns::eAudioLanguagePreference:
+            return userData->audioLanguagePreference( serverName );
+        case EServerColumns::ePlayDefaultAudioTrack:
+            return userData->playDefaultAudioTrack( serverName ) ? "Yes" : "No";
+        case EServerColumns::eSubtitleLanguagePreference:
+            return userData->subtitleLanguagePreference( serverName );
+        case EServerColumns::eDisplayMissingEpisodes:
+            return userData->displayMissingEpisodes( serverName ) ? "Yes" : "No";
+        case EServerColumns::eSubtitleMode:
+            return userData->subtitleMode( serverName );
+        case EServerColumns::eEnableLocalPassword:
+            return userData->enableLocalPassword( serverName ) ? "Yes" : "No";
+        case EServerColumns::eOrderedViews:
+            return userData->orderedViews( serverName );
+        case EServerColumns::eLatestItemsExcludes:
+            return userData->latestItemsExcludes( serverName );
+        case EServerColumns::eMyMediaExcludes:
+            return userData->myMediaExcludes( serverName );
+        case EServerColumns::eHidePlayedInLatest:
+            return userData->hidePlayedInLatest( serverName ) ? "Yes" : "No";
+        case EServerColumns::eRememberAudioSelections:
+            return userData->rememberAudioSelections( serverName ) ? "Yes" : "No";
+        case EServerColumns::eRememberSubtitleSelections:
+            return userData->rememberSubtitleSelections( serverName ) ? "Yes" : "No";
+        case EServerColumns::eEnableNextEpisodeAutoPlay:
+            return userData->enableNextEpisodeAutoPlay( serverName ) ? "Yes" : "No";
+        case EServerColumns::eResumeRewindSeconds:
+            return userData->resumeRewindSeconds( serverName );
+        case EServerColumns::eIntroSkipMode:
+            return userData->introSkipMode( serverName );
+
         case EServerColumns::eIconStatus:
             return std::get< 1 >( userData->getAvatarInfo( serverName ) );
         case EServerColumns::eDateCreated:
@@ -256,6 +305,38 @@ QVariant CUsersModel::headerData( int section, Qt::Orientation orientation, int 
                 return tr( "Prefix" );
             case EServerColumns::eEnableAutoLogin:
                 return tr( "Enable Auto Login" );
+            
+            case EServerColumns::eAudioLanguagePreference:
+                return tr( "Audio Language Preference" );
+            case EServerColumns::ePlayDefaultAudioTrack:
+                return tr( "Play Default Audio Track" );
+            case EServerColumns::eSubtitleLanguagePreference:
+                return tr( "Subtitle Language Preference" );
+            case EServerColumns::eDisplayMissingEpisodes:
+                return tr( "Display Missing Episodes" );
+            case EServerColumns::eSubtitleMode:
+                return tr( "Subtitle Mode" );
+            case EServerColumns::eEnableLocalPassword:
+                return tr( "Enable Local Password" );
+            case EServerColumns::eOrderedViews:
+                return tr( "Ordered Views" );
+            case EServerColumns::eLatestItemsExcludes:
+                return tr( "Latest Items Excludes" );
+            case EServerColumns::eMyMediaExcludes:
+                return tr( "My Media Excludes" );
+            case EServerColumns::eHidePlayedInLatest:
+                return tr( "Hide Played InLatest" );
+            case EServerColumns::eRememberAudioSelections:
+                return tr( "Remember Audio Selections" );
+            case EServerColumns::eRememberSubtitleSelections:
+                return tr( "Remember Subtitle Selections" );
+            case EServerColumns::eEnableNextEpisodeAutoPlay:
+                return tr( "Enable Next Episode Auto Play" );
+            case EServerColumns::eResumeRewindSeconds:
+                return tr( "Resume Rewind Seconds" );
+            case EServerColumns::eIntroSkipMode:
+                return tr( "Intro Skip Mode" );
+
             case EServerColumns::eUserName:
                 return tr( "%2" ).arg( ( *pos ).second.second->displayName() );
             case EServerColumns::eIconStatus:
@@ -359,11 +440,42 @@ QVariant CUsersModel::getColor( const QModelIndex & index, bool background ) con
         case eEnableAutoLogin:
             dataSame = userData->allEnableAutoLoginTheSame();
             break;
+        case EServerColumns::eAudioLanguagePreference:
+            dataSame = userData->allAudioLanguagePreferenceTheSame();
+        case EServerColumns::ePlayDefaultAudioTrack:
+            dataSame = userData->allPlayDefaultAudioTrackTheSame();
+        case EServerColumns::eSubtitleLanguagePreference:
+            dataSame = userData->allSubtitleLanguagePreferenceTheSame();
+        case EServerColumns::eDisplayMissingEpisodes:
+            dataSame = userData->allDisplayMissingEpisodesTheSame();
+        case EServerColumns::eSubtitleMode:
+            dataSame = userData->allSubtitleModeTheSame();
+        case EServerColumns::eEnableLocalPassword:
+            dataSame = userData->allEnableLocalPasswordTheSame();
+        case EServerColumns::eOrderedViews:
+            dataSame = userData->allOrderedViewsTheSame();
+        case EServerColumns::eLatestItemsExcludes:
+            dataSame = userData->allLatestItemsExcludesTheSame();
+        case EServerColumns::eMyMediaExcludes:
+            dataSame = userData->allMyMediaExcludesTheSame();
+        case EServerColumns::eHidePlayedInLatest:
+            dataSame = userData->allHidePlayedInLatestTheSame();
+        case EServerColumns::eRememberAudioSelections:
+            dataSame = userData->allRememberAudioSelectionsTheSame();
+        case EServerColumns::eRememberSubtitleSelections:
+            dataSame = userData->allRememberSubtitleSelectionsTheSame();
+        case EServerColumns::eEnableNextEpisodeAutoPlay:
+            dataSame = userData->allEnableNextEpisodeAutoPlayTheSame();
+        case EServerColumns::eResumeRewindSeconds:
+            dataSame = userData->allResumeRewindSecondsTheSame();
+        case EServerColumns::eIntroSkipMode:
+            dataSame = userData->allIntroSkipModeTheSame();
+
         case eIconStatus:
             dataSame = userData->allIconInfoTheSame();
             break;
         case eDateCreated:
-            dataSame = true;
+            dataSame = userData->allDateCreatedSame();
             break;
         case eLastActivityDate:
             dataSame = userData->allLastActivityDateSame();

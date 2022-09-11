@@ -27,7 +27,7 @@
 class CMediaData;
 class CSyncSystem;
 class CSettings;
-class CMediaUserDataWidget;
+class CMediaDataWidget;
 namespace Ui
 {
     class CMediaWindow;
@@ -51,8 +51,8 @@ Q_SIGNALS:
 public Q_SLOTS:
 private Q_SLOTS:
     void slotUploadUserMediaData();
-    void slotApplyFromServer( CMediaUserDataWidget * which );
-    void slotProcessToServer( CMediaUserDataWidget * which );
+    void slotApplyFromServer( CMediaDataWidget * which );
+    void slotProcessToServer( CMediaDataWidget * which );
 private:
     void loadMedia( std::shared_ptr<CMediaData> & mediaInfo );
 
@@ -61,7 +61,7 @@ private:
     std::shared_ptr< CSyncSystem > fSyncSystem;
     std::shared_ptr< CSettings > fSettings;
 
-    std::map< QString, CMediaUserDataWidget * > fUserDataWidgets;
+    std::map< QString, CMediaDataWidget * > fUserDataWidgets;
     std::shared_ptr< CMediaData > fMediaInfo;
 };
 #endif 

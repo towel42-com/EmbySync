@@ -21,7 +21,7 @@
 // SOFTWARE.
 
 #include "MediaWindow.h"
-#include "MediaUserDataWidget.h"
+#include "MediaDataWidget.h"
 #include "ui_MediaWindow.h"
 #include "Core/SyncSystem.h"
 #include "Core/MediaData.h"
@@ -52,12 +52,12 @@ CMediaWindow::CMediaWindow( std::shared_ptr< CSettings> settings, std::shared_pt
         if ( !serverInfo->isEnabled() )
             continue;
 
-        auto userDataWidget = new CMediaUserDataWidget( this );
+        auto userDataWidget = new CMediaDataWidget( this );
         userDataWidget->setServerName( serverInfo->keyName() );
         horizontalLayout->addWidget( userDataWidget );
         fUserDataWidgets[ serverInfo->keyName() ] = userDataWidget;
-        connect( userDataWidget, &CMediaUserDataWidget::sigApplyFromServer, this, &CMediaWindow::slotApplyFromServer );
-        connect( userDataWidget, &CMediaUserDataWidget::sigProcessToServer, this, &CMediaWindow::slotProcessToServer );
+        connect( userDataWidget, &CMediaDataWidget::sigApplyFromServer, this, &CMediaWindow::slotApplyFromServer );
+        connect( userDataWidget, &CMediaDataWidget::sigProcessToServer, this, &CMediaWindow::slotProcessToServer );
     }
 
     NSABUtils::setupWidgetChanged( this, QMetaMethod::fromSignal( &CMediaWindow::sigChanged ), { fImpl->process } );
@@ -147,7 +147,7 @@ void CMediaWindow::slotUploadUserMediaData()
     fChanged = false;
 }
 
-void CMediaWindow::slotApplyFromServer( CMediaUserDataWidget * which )
+void CMediaWindow::slotApplyFromServer( CMediaDataWidget * which )
 {
     if ( !which )
         return;
@@ -161,7 +161,7 @@ void CMediaWindow::slotApplyFromServer( CMediaUserDataWidget * which )
     }
 }
 
-void CMediaWindow::slotProcessToServer( CMediaUserDataWidget * which )
+void CMediaWindow::slotProcessToServer( CMediaDataWidget * which )
 {
     if ( !which )
         return;

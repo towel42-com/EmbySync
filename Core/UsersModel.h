@@ -35,6 +35,23 @@ public:
         eLastActivityDate,
         eLastLoginDate,
         eEnableAutoLogin,
+
+        eAudioLanguagePreference,
+        ePlayDefaultAudioTrack,
+        eSubtitleLanguagePreference,
+        eDisplayMissingEpisodes,
+        eSubtitleMode,
+        eEnableLocalPassword,
+        eOrderedViews,
+        eLatestItemsExcludes,
+        eMyMediaExcludes,
+        eHidePlayedInLatest,
+        eRememberAudioSelections,
+        eRememberSubtitleSelections,
+        eEnableNextEpisodeAutoPlay,
+        eResumeRewindSeconds,
+        eIntroSkipMode,
+
         eServerColCount
     };
 
