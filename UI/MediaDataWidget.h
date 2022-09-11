@@ -28,20 +28,20 @@
 
 namespace Ui
 {
-    class CMediaUserDataWidget;
+    class CMediaDataWidget;
 }
 
 class CUserData;
 struct SMediaServerData;
-class CMediaUserDataWidget : public QGroupBox
+class CMediaDataWidget : public QGroupBox
 {
     Q_OBJECT
 public:
-    CMediaUserDataWidget( QWidget * parentWidget = nullptr );
-    CMediaUserDataWidget( const QString & title, QWidget * parentWidget = nullptr );
-    CMediaUserDataWidget( std::shared_ptr< SMediaServerData > mediaData, QWidget * parentWidget = nullptr );
+    CMediaDataWidget( QWidget * parentWidget = nullptr );
+    CMediaDataWidget( const QString & title, QWidget * parentWidget = nullptr );
+    CMediaDataWidget( std::shared_ptr< SMediaServerData > mediaData, QWidget * parentWidget = nullptr );
 
-    virtual ~CMediaUserDataWidget() override;
+    virtual ~CMediaDataWidget() override;
 
     void setMediaUserData( std::shared_ptr< SMediaServerData > mediaData );
     void applyMediaUserData( std::shared_ptr< SMediaServerData > mediaData );  // mediaData is not owned, mediaID is NOT changed
@@ -49,25 +49,20 @@ public:
     void setServerName( const QString & serverName ) { fServerName = serverName; }
     QString serverName() const { return fServerName; }
 
-    void setReadOnly( bool readOnly );
-    bool readOnly() const { return fReadOnly; }
-
     std::shared_ptr< SMediaServerData > createMediaUserData() const; // creates a new user data based on current settings
 
 public Q_SLOTS:
-    void slotChanged();
     void slotApplyFromServer();
     void slotProcessToServer();
 Q_SIGNALS:
-    void sigApplyFromServer( CMediaUserDataWidget * which );
-    void sigProcessToServer( CMediaUserDataWidget * which );
+    void sigApplyFromServer( CMediaDataWidget * which );
+    void sigProcessToServer( CMediaDataWidget * which );
 
 private:
     void load( std::shared_ptr< SMediaServerData > mediaData );
 
-    std::unique_ptr< Ui::CMediaUserDataWidget > fImpl;
+    std::unique_ptr< Ui::CMediaDataWidget > fImpl;
     std::shared_ptr< SMediaServerData > fMediaUserData;
     QString fServerName;
-    bool fReadOnly{ false };
 };
 #endif 

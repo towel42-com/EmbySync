@@ -21,6 +21,7 @@
 // SOFTWARE.
 
 #include "UserServerData.h"
+#include "SABUtils/JsonUtils.h"
 #include <QJsonDocument>
 
 //UserDto{
@@ -44,23 +45,6 @@
 //PrimaryImageAspectRatio	number( $double, nullable )
 //}
 
-//Configuration.UserConfiguration{
-//AudioLanguagePreference	string
-//PlayDefaultAudioTrack	boolean
-//SubtitleLanguagePreference	string
-//DisplayMissingEpisodes	boolean
-//SubtitleMode	string( $enum )( Default, Always, OnlyForced, None, Smart )
-//EnableLocalPassword	boolean
-//OrderedViews[ string ]
-//LatestItemsExcludes[ string ]
-//MyMediaExcludes[ string ]
-//HidePlayedInLatest	boolean
-//RememberAudioSelections	boolean
-//RememberSubtitleSelections	boolean
-//EnableNextEpisodeAutoPlay	boolean
-//ResumeRewindSeconds	integer( $int32 )
-//IntroSkipMode	string( $enum )( ShowButton, AutoSkip, None )
-//}
 QJsonObject SUserServerData::userDataJSON() const
 {
     QJsonObject obj;
@@ -88,6 +72,44 @@ QJsonObject SUserServerData::userDataJSON() const
     else
         obj[ "LastActivityDate" ] = fLastActivityDate.toUTC().toString( Qt::ISODateWithMs );
     obj[ "PrimaryImageAspectRatio" ] = std::get< 1 >( fAvatarInfo );
+
+//Configuration.UserConfiguration{
+//AudioLanguagePreference	string
+//PlayDefaultAudioTrack	boolean
+//SubtitleLanguagePreference	string
+//DisplayMissingEpisodes	boolean
+//SubtitleMode	string( $enum )( Default, Always, OnlyForced, None, Smart )
+//EnableLocalPassword	boolean
+//OrderedViews[ string ]
+//LatestItemsExcludes[ string ]
+//MyMediaExcludes[ string ]
+//HidePlayedInLatest	boolean
+//RememberAudioSelections	boolean
+//RememberSubtitleSelections	boolean
+//EnableNextEpisodeAutoPlay	boolean
+//ResumeRewindSeconds	integer( $int32 )
+//IntroSkipMode	string( $enum )( ShowButton, AutoSkip, None )
+//}
+    QJsonObject configObj;
+
+    configObj[ "AudioLanguagePreference" ] = fAudioLanguagePreference;
+    configObj[ "PlayDefaultAudioTrack" ] = fPlayDefaultAudioTrack;
+    configObj[ "SubtitleLanguagePreference" ] = fSubtitleLanguagePreference;
+    configObj[ "DisplayMissingEpisodes" ] = fDisplayMissingEpisodes;
+    configObj[ "SubtitleMode" ] = fSubtitleMode;
+    configObj[ "EnableLocalPassword" ] = fEnableLocalPassword;
+    NSABUtils::ToJson( fOrderedViews, configObj[ "OrderedViews" ] );
+    NSABUtils::ToJson( fLatestItemsExcludes, configObj[ "LatestItemsExcludes" ] );
+    NSABUtils::ToJson( fMyMediaExcludes, configObj[ "MyMediaExcludes" ] );
+    configObj[ "HidePlayedInLatest" ] = fHidePlayedInLatest;
+    configObj[ "RememberAudioSelections" ] = fRememberAudioSelections;
+    configObj[ "RememberSubtitleSelections" ] = fRememberSubtitleSelections;
+    configObj[ "EnableNextEpisodeAutoPlay" ] = fEnableNextEpisodeAutoPlay;
+    configObj[ "ResumeRewindSeconds" ] = fResumeRewindSeconds;
+    configObj[ "IntroSkipMode" ] = fIntroSkipMode;
+
+    obj[ "Configuration" ] = configObj;
+
     return obj;
 }
 
@@ -110,6 +132,42 @@ void SUserServerData::loadFromJSON( const QJsonObject & userObj )
     fLastLoginDate = userObj[ "LastLoginDate" ].toVariant().toDateTime();
     std::get< 0 >( fAvatarInfo ) = userObj[ "PrimaryImageTag" ].toString();
     std::get< 1 >( fAvatarInfo ) = userObj[ "PrimaryImageAspectRatio" ].toDouble();
+
+//Configuration.UserConfiguration{
+//AudioLanguagePreference	string
+//PlayDefaultAudioTrack	boolean
+//SubtitleLanguagePreference	string
+//DisplayMissingEpisodes	boolean
+//SubtitleMode	string( $enum )( Default, Always, OnlyForced, None, Smart )
+//EnableLocalPassword	boolean
+//OrderedViews[ string ]
+//LatestItemsExcludes[ string ]
+//MyMediaExcludes[ string ]
+//HidePlayedInLatest	boolean
+//RememberAudioSelections	boolean
+//RememberSubtitleSelections	boolean
+//EnableNextEpisodeAutoPlay	boolean
+//ResumeRewindSeconds	integer( $int32 )
+//IntroSkipMode	string( $enum )( ShowButton, AutoSkip, None )
+//}
+
+    auto config = userObj[ "Configuration" ].toObject();
+    qDebug().noquote().nospace() << QJsonDocument( config ).toJson();
+    fAudioLanguagePreference = config[ "AudioLanguagePreference" ].toString();
+    fPlayDefaultAudioTrack = config[ "PlayDefaultAudioTrack" ].toBool();
+    fSubtitleLanguagePreference = config[ "SubtitleLanguagePreference" ].toString();
+    fDisplayMissingEpisodes = config[ "DisplayMissingEpisodes" ].toBool();
+    fSubtitleMode = config[ "SubtitleMode" ].toString();
+    fEnableLocalPassword = config[ "EnableLocalPassword" ].toBool();
+    NSABUtils::FromJson( fOrderedViews, config[ "OrderedViews" ] );
+    NSABUtils::FromJson( fLatestItemsExcludes, config[ "LatestItemsExcludes" ] );
+    NSABUtils::FromJson( fMyMediaExcludes, config[ "MyMediaExcludes" ] );
+    fHidePlayedInLatest = config[ "HidePlayedInLatest" ].toBool();
+    fRememberAudioSelections = config[ "RememberAudioSelections" ].toBool();
+    fRememberSubtitleSelections = config[ "RememberSubtitleSelections" ].toBool();
+    fEnableNextEpisodeAutoPlay = config[ "EnableNextEpisodeAutoPlay" ].toBool();
+    fResumeRewindSeconds = config[ "ResumeRewindSeconds" ].toInt();
+    fIntroSkipMode = config[ "IntroSkipMode" ].toString();
 }
 
 bool SUserServerData::isValid() const
@@ -124,15 +182,38 @@ bool SUserServerData::userDataEqual( const SUserServerData & rhs ) const
 
     auto equal = true;
     equal = equal && fName == rhs.fName;
+    // user id is not checked
     equal = equal && fConnectedID == rhs.fConnectedID;
+    equal = equal && fPrefix == rhs.fPrefix;
+    equal = equal && fEnableAutoLogin == rhs.fEnableAutoLogin;
+    
+    // avatar infos image id is not checked
+    equal = equal && std::get< 1 >( fAvatarInfo ) == std::get< 1 >( rhs.fAvatarInfo );
+    equal = equal && std::get< 2 >( fAvatarInfo ) == std::get< 2 >( rhs.fAvatarInfo );
+
     if ( !fDateCreated.isNull() && !rhs.fDateCreated.isNull() )
         equal = equal && fDateCreated == rhs.fDateCreated;
     if ( !fLastActivityDate.isNull() && !rhs.fLastActivityDate.isNull() )
         equal = equal && fLastActivityDate == rhs.fLastActivityDate;
     if ( !fLastLoginDate.isNull() && !rhs.fLastLoginDate.isNull() )
         equal = equal && fLastLoginDate == rhs.fLastLoginDate;
-    equal = equal && std::get< 1 >( fAvatarInfo ) == std::get< 1 >( rhs.fAvatarInfo );
-    equal = equal && std::get< 2 >( fAvatarInfo ) == std::get< 2 >( rhs.fAvatarInfo );
+
+    equal = equal && fAudioLanguagePreference == rhs.fAudioLanguagePreference;
+    equal = equal && fPlayDefaultAudioTrack == rhs.fPlayDefaultAudioTrack;
+    equal = equal && fSubtitleLanguagePreference == rhs.fSubtitleLanguagePreference;
+    equal = equal && fDisplayMissingEpisodes == rhs.fDisplayMissingEpisodes;
+    equal = equal && fSubtitleMode == rhs.fSubtitleMode;
+    equal = equal && fEnableLocalPassword == rhs.fEnableLocalPassword;
+    equal = equal && fOrderedViews == rhs.fOrderedViews;
+    equal = equal && fLatestItemsExcludes == rhs.fLatestItemsExcludes;
+    equal = equal && fMyMediaExcludes == rhs.fMyMediaExcludes;
+    equal = equal && fHidePlayedInLatest == rhs.fHidePlayedInLatest;
+    equal = equal && fRememberAudioSelections == rhs.fRememberAudioSelections;
+    equal = equal && fRememberSubtitleSelections == rhs.fRememberSubtitleSelections;
+    equal = equal && fEnableNextEpisodeAutoPlay == rhs.fEnableNextEpisodeAutoPlay;
+    equal = equal && fResumeRewindSeconds == rhs.fResumeRewindSeconds;
+    equal = equal && fIntroSkipMode == rhs.fIntroSkipMode;
+
     return equal;
 }
 

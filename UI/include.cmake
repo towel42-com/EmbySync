@@ -3,7 +3,7 @@ set(qtproject_SRCS
     MainWindow.cpp
     SettingsDlg.cpp
     DataTree.cpp
-    MediaUserDataWidget.cpp
+    MediaDataWidget.cpp
     MediaWindow.cpp 
     PlayStateCompare.cpp
     UserInfoCompare.cpp
@@ -18,7 +18,7 @@ set(qtproject_H
     MainWindow.h
     SettingsDlg.h
     DataTree.h
-    MediaUserDataWidget.h
+    MediaDataWidget.h
     MediaWindow.h 
     PlayStateCompare.h
     UserInfoCompare.h
@@ -36,7 +36,7 @@ set(qtproject_UIS
     MainWindow.ui
     SettingsDlg.ui
     DataTree.ui
-    MediaUserDataWidget.ui
+    MediaDataWidget.ui
     MediaWindow.ui 
     PlayStateCompare.ui
     UserInfoCompare.ui

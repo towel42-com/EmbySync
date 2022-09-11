@@ -20,17 +20,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "MediaUserDataWidget.h"
+#include "MediaDataWidget.h"
 #include "Core/MediaServerData.h"
 
-#include "ui_MediaUserDataWidget.h"
+#include "ui_MediaDataWidget.h"
 
 #include <QDebug>
 
 
-CMediaUserDataWidget::CMediaUserDataWidget( QWidget * parentWidget /*= nullptr */ ) :
+CMediaDataWidget::CMediaDataWidget( QWidget * parentWidget /*= nullptr */ ) :
     QGroupBox( parentWidget ),
-    fImpl( new Ui::CMediaUserDataWidget )
+    fImpl( new Ui::CMediaDataWidget )
 
 {
     fImpl->setupUi( this );
@@ -47,48 +47,43 @@ CMediaUserDataWidget::CMediaUserDataWidget( QWidget * parentWidget /*= nullptr *
                      fImpl->lastPlayedDate->setDateTime( QDateTime::currentDateTimeUtc() );
              } );
 
-    connect( fImpl->isFavorite, &QCheckBox::toggled, this, &CMediaUserDataWidget::slotChanged );
-    connect( fImpl->hasBeenPlayed, &QCheckBox::toggled, this, &CMediaUserDataWidget::slotChanged );
-    connect( fImpl->lastPlayedDate, &QDateTimeEdit::dateTimeChanged, this, &CMediaUserDataWidget::slotChanged );
-    connect( fImpl->playbackPosition, &QTimeEdit::timeChanged, this, &CMediaUserDataWidget::slotChanged );
-    connect( fImpl->playCount, qOverload< int >( &QSpinBox::valueChanged ), this, &CMediaUserDataWidget::slotChanged );
-    connect( fImpl->apply, &QPushButton::clicked, this, &CMediaUserDataWidget::slotApplyFromServer );
-    connect( fImpl->process, &QPushButton::clicked, this, &CMediaUserDataWidget::slotProcessToServer );
+    connect( fImpl->apply, &QPushButton::clicked, this, &CMediaDataWidget::slotApplyFromServer );
+    connect( fImpl->process, &QPushButton::clicked, this, &CMediaDataWidget::slotProcessToServer );
 }
 
-void CMediaUserDataWidget::slotApplyFromServer()
+void CMediaDataWidget::slotApplyFromServer()
 {
     emit sigApplyFromServer( this );
 }
 
-void CMediaUserDataWidget::slotProcessToServer()
+void CMediaDataWidget::slotProcessToServer()
 {
     emit sigProcessToServer( this );
 }
 
-CMediaUserDataWidget::CMediaUserDataWidget( const QString & title, QWidget * parentWidget /*= nullptr */ ) :
-    CMediaUserDataWidget( parentWidget )
+CMediaDataWidget::CMediaDataWidget( const QString & title, QWidget * parentWidget /*= nullptr */ ) :
+    CMediaDataWidget( parentWidget )
 {
     setTitle( title );
 }
 
-CMediaUserDataWidget::CMediaUserDataWidget( std::shared_ptr< SMediaServerData > mediaData, QWidget * parentWidget /*= nullptr */ ) :
-    CMediaUserDataWidget( "User Data:", parentWidget )
+CMediaDataWidget::CMediaDataWidget( std::shared_ptr< SMediaServerData > mediaData, QWidget * parentWidget /*= nullptr */ ) :
+    CMediaDataWidget( "User Data:", parentWidget )
 {
     setMediaUserData( mediaData );
 }
 
-CMediaUserDataWidget::~CMediaUserDataWidget()
+CMediaDataWidget::~CMediaDataWidget()
 {
 }
 
-void CMediaUserDataWidget::setMediaUserData( std::shared_ptr< SMediaServerData > mediaData )
+void CMediaDataWidget::setMediaUserData( std::shared_ptr< SMediaServerData > mediaData )
 {
     fMediaUserData = mediaData;
     load( fMediaUserData );
 }
 
-void CMediaUserDataWidget::applyMediaUserData( std::shared_ptr< SMediaServerData > mediaData )
+void CMediaDataWidget::applyMediaUserData( std::shared_ptr< SMediaServerData > mediaData )
 {
     if ( !mediaData )
         return;
@@ -96,7 +91,7 @@ void CMediaUserDataWidget::applyMediaUserData( std::shared_ptr< SMediaServerData
     load( mediaData );
 }
 
-void CMediaUserDataWidget::load( std::shared_ptr< SMediaServerData > mediaData )
+void CMediaDataWidget::load( std::shared_ptr< SMediaServerData > mediaData )
 {
     if ( !mediaData )
     {
@@ -116,7 +111,7 @@ void CMediaUserDataWidget::load( std::shared_ptr< SMediaServerData > mediaData )
     }
 }
 
-std::shared_ptr< SMediaServerData > CMediaUserDataWidget::createMediaUserData() const
+std::shared_ptr< SMediaServerData > CMediaDataWidget::createMediaUserData() const
 {
     auto retVal = std::make_shared< SMediaServerData >();
     retVal->fIsFavorite = fImpl->isFavorite->isChecked();
@@ -127,17 +122,3 @@ std::shared_ptr< SMediaServerData > CMediaUserDataWidget::createMediaUserData() 
     return retVal;
 }
 
-void CMediaUserDataWidget::setReadOnly( bool readOnly )
-{
-    fReadOnly = readOnly;
-    fImpl->setTimeToNowBtn->setHidden( readOnly );
-    fImpl->isFavorite->setEnabled( readOnly );
-    fImpl->hasBeenPlayed->setEnabled( readOnly );
-    fImpl->lastPlayedDate->setEnabled( readOnly );
-    fImpl->playbackPosition->setEnabled( readOnly );
-    fImpl->playCount->setEnabled( readOnly );
-}
-
-void CMediaUserDataWidget::slotChanged()
-{
-}

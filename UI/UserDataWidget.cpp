@@ -53,18 +53,11 @@ CUserDataWidget::CUserDataWidget( QWidget * parentWidget /*= nullptr */ ) :
                  fImpl->creationDate->setDateTime( QDateTime::currentDateTimeUtc() );
              } );
 
-    connect( fImpl->name, &QLineEdit::textChanged, this, &CUserDataWidget::slotChanged );
-    connect( fImpl->avatarAspectRatio, &QDoubleSpinBox::textChanged, this, &CUserDataWidget::slotChanged );
-    connect( fImpl->connectID, &QLineEdit::textChanged, this, &CUserDataWidget::slotChanged );
-    connect( fImpl->connectIDType, qOverload< int >( &QComboBox::currentIndexChanged ), this, &CUserDataWidget::slotChanged );
-    connect( fImpl->lastLoginDate, &QDateTimeEdit::dateTimeChanged, this, &CUserDataWidget::slotChanged );
-    connect( fImpl->lastActivityDate, &QDateTimeEdit::dateTimeChanged, this, &CUserDataWidget::slotChanged );
-    connect( fImpl->prefix, &QLineEdit::textChanged, this, &CUserDataWidget::slotChanged );
-    connect( fImpl->enableAutoLogin, &QCheckBox::clicked, this, &CUserDataWidget::slotChanged );
-
     connect( fImpl->setAvatarBtn, &QToolButton::clicked, this, &CUserDataWidget::slotSelectChangeAvatar );
     connect( fImpl->apply, &QPushButton::clicked, this, &CUserDataWidget::slotApplyFromServer );
     connect( fImpl->process, &QPushButton::clicked, this, &CUserDataWidget::slotProcessToServer );
+
+    fImpl->tabWidget->setCurrentIndex( 0 );
 }
 
 void CUserDataWidget::slotApplyFromServer()
@@ -122,6 +115,22 @@ void CUserDataWidget::load( std::shared_ptr< SUserServerData > userData )
         fImpl->creationDate->setDateTime( QDateTime() );
         fImpl->lastActivityDate->setDateTime( QDateTime() );
         fImpl->lastLoginDate->setDateTime( QDateTime() );
+
+        fImpl->audioLanguagePreference->setText( QString() );
+        fImpl->playDefaultAudioTrack->setChecked( false );
+        fImpl->subtitleLanguagePreference->setText( QString() );
+        fImpl->displayMissingEpisodes->setChecked( false );
+        fImpl->subtitleMode->setCurrentIndex( 0 );
+        fImpl->enableLocalPassword->setChecked( false );
+        fImpl->orderedViews->clear();
+        fImpl->latestItemsExcludes->clear();
+        fImpl->myMediaExcludes->clear();
+        fImpl->hidePlayedInLatest->setChecked( false );
+        fImpl->rememberAudioSelections->setChecked( false );
+        fImpl->rememberSubtitleSelections->setChecked( false );
+        fImpl->enableNextEpisodeAutoPlay->setChecked( false );
+        fImpl->resumeRewindSeconds->setValue( 0 );
+        fImpl->introSkipMode->setCurrentIndex( 0 );
     }
     else
     {
@@ -134,9 +143,41 @@ void CUserDataWidget::load( std::shared_ptr< SUserServerData > userData )
         auto pos = fImpl->connectIDType->findText( userData->fConnectedID.first );
         if ( pos != -1 )
             fImpl->connectIDType->setCurrentIndex( pos );
+        else
+            fImpl->connectIDType->setCurrentIndex( 0 );
         fImpl->creationDate->setDateTime( userData->fDateCreated );
         fImpl->lastActivityDate->setDateTime( userData->fLastActivityDate );
         fImpl->lastLoginDate->setDateTime( userData->fLastLoginDate );
+
+        fImpl->audioLanguagePreference->setText( userData->fAudioLanguagePreference );
+        fImpl->playDefaultAudioTrack->setChecked( userData->fPlayDefaultAudioTrack );
+        fImpl->subtitleLanguagePreference->setText( userData->fSubtitleLanguagePreference );
+        fImpl->displayMissingEpisodes->setChecked( userData->fDisplayMissingEpisodes );
+        
+        pos = fImpl->subtitleMode->findText( userData->fSubtitleMode );
+        if ( pos != -1 )
+            fImpl->subtitleMode->setCurrentIndex( pos );
+        else
+            fImpl->subtitleMode->setCurrentIndex( 0 );
+        
+        fImpl->enableLocalPassword->setChecked( userData->fEnableLocalPassword );
+        fImpl->orderedViews->clear();
+        fImpl->orderedViews->addItems( userData->fOrderedViews );
+        fImpl->latestItemsExcludes->clear();
+        fImpl->latestItemsExcludes->addItems( userData->fLatestItemsExcludes );
+        fImpl->myMediaExcludes->clear();
+        fImpl->myMediaExcludes->addItems( userData->fMyMediaExcludes );
+        fImpl->hidePlayedInLatest->setChecked( userData->fHidePlayedInLatest );
+        fImpl->rememberAudioSelections->setChecked( userData->fRememberAudioSelections );
+        fImpl->rememberSubtitleSelections->setChecked( userData->fRememberSubtitleSelections );
+        fImpl->enableNextEpisodeAutoPlay->setChecked( userData->fEnableNextEpisodeAutoPlay );
+        fImpl->resumeRewindSeconds->setValue( userData->fResumeRewindSeconds );
+
+        pos = fImpl->introSkipMode->findText( userData->fIntroSkipMode );
+        if ( pos != -1 )
+            fImpl->introSkipMode->setCurrentIndex( pos );
+        else
+            fImpl->introSkipMode->setCurrentIndex( 0 );
     }
 }
 
@@ -145,6 +186,21 @@ void CUserDataWidget::setAvatar( const QImage & image )
     fAvatar = image;
     auto scaled = fAvatar.isNull() ? fAvatar: fAvatar.scaled( 32, 32 );
     fImpl->avatar->setPixmap( QPixmap::fromImage( scaled ) );
+}
+
+QStringList getStrings( QListWidget * listWidget )
+{
+    if ( !listWidget )
+        return {};
+    QStringList retVal;
+    for ( int ii = 0; ii < listWidget->count(); ++ii )
+    {
+        auto item = listWidget->item( ii );
+        if ( !item )
+            continue;
+        retVal << item->text();
+    }
+    return retVal;
 }
 
 std::shared_ptr< SUserServerData > CUserDataWidget::createUserData() const
@@ -163,30 +219,23 @@ std::shared_ptr< SUserServerData > CUserDataWidget::createUserData() const
     retVal->fDateCreated = fImpl->creationDate->dateTime();
     retVal->fLastActivityDate = fImpl->lastActivityDate->dateTime();
     retVal->fLastLoginDate = fImpl->lastLoginDate->dateTime();
+
+    retVal->fAudioLanguagePreference = fImpl->audioLanguagePreference->text();
+    retVal->fPlayDefaultAudioTrack = fImpl->playDefaultAudioTrack->isChecked();
+    retVal->fSubtitleLanguagePreference = fImpl->subtitleLanguagePreference->text();
+    retVal->fDisplayMissingEpisodes= fImpl->displayMissingEpisodes->isChecked();
+    retVal->fSubtitleMode = fImpl->subtitleMode->currentText();
+    retVal->fEnableLocalPassword = fImpl->enableLocalPassword->isChecked();
+    retVal->fOrderedViews = getStrings( fImpl->orderedViews );
+    retVal->fLatestItemsExcludes = getStrings( fImpl->latestItemsExcludes );;
+    retVal->fMyMediaExcludes = getStrings( fImpl->myMediaExcludes );
+    retVal->fHidePlayedInLatest = fImpl->hidePlayedInLatest->isChecked();
+    retVal->fRememberAudioSelections = fImpl->rememberAudioSelections->isChecked();
+    retVal->fRememberSubtitleSelections = fImpl->rememberSubtitleSelections->isChecked();
+    retVal->fEnableNextEpisodeAutoPlay = fImpl->enableNextEpisodeAutoPlay->isChecked();
+    retVal->fResumeRewindSeconds = fImpl->resumeRewindSeconds->value();
+    retVal->fIntroSkipMode = fImpl->introSkipMode->currentText();
     return retVal;
-}
-
-void CUserDataWidget::setReadOnly( bool readOnly )
-{
-    fReadOnly = readOnly;
-    fImpl->setAvatarBtn->setHidden( readOnly );
-    fImpl->setLastLoginDateToNow->setHidden( readOnly );
-    fImpl->setLastActivityDateToNow->setHidden( readOnly );
-    fImpl->setCreatedDateToNow->setHidden( readOnly );
-
-    fImpl->name->setEnabled( readOnly );
-    fImpl->prefix->setEnabled( readOnly );
-    fImpl->enableAutoLogin->setEnabled( readOnly );
-    fImpl->avatarAspectRatio->setEnabled( readOnly );
-    fImpl->connectID->setEnabled( readOnly );
-    fImpl->connectIDType->setEnabled( readOnly );
-    fImpl->creationDate->setEnabled( readOnly );
-    fImpl->lastActivityDate->setEnabled( readOnly );
-    fImpl->lastLoginDate->setEnabled( readOnly );
-}
-
-void CUserDataWidget::slotChanged()
-{
 }
 
 void CUserDataWidget::slotSelectChangeAvatar()

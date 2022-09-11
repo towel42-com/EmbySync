@@ -75,38 +75,28 @@ public:
     bool allConnectIDTheSame() const;
     bool allConnectIDTypeTheSame() const;
     bool allIconInfoTheSame() const;
+    bool allDateCreatedSame() const;
     bool allLastActivityDateSame() const;
     bool allLastLoginDateSame() const;
     bool allEnableAutoLoginTheSame() const;
     bool allPrefixTheSame() const;
+    bool allAudioLanguagePreferenceTheSame() const;
+    bool allPlayDefaultAudioTrackTheSame() const;
+    bool allSubtitleLanguagePreferenceTheSame() const;
+    bool allDisplayMissingEpisodesTheSame() const;
+    bool allSubtitleModeTheSame() const;
+    bool allEnableLocalPasswordTheSame() const;
+    bool allOrderedViewsTheSame() const;
+    bool allLatestItemsExcludesTheSame() const;
+    bool allMyMediaExcludesTheSame() const;
+    bool allHidePlayedInLatestTheSame() const;
+    bool allRememberAudioSelectionsTheSame() const;
+    bool allRememberSubtitleSelectionsTheSame() const;
+    bool allEnableNextEpisodeAutoPlayTheSame() const;
+    bool allResumeRewindSecondsTheSame() const;
+    bool allIntroSkipModeTheSame() const;
 
-    bool needsUpdating( const QString & serverName ) const;
-    std::shared_ptr<SUserServerData> newestServerInfo() const;
 
-    QImage globalAvatar() const; // when all servers use the same image
-
-    std::tuple< QString, double, QImage > getAvatarInfo( const QString & serverName ) const;
-    void setAvatarInfo( const QString & serverName, const QString & tag, double ratio );
-
-    QImage getAvatar( const QString & serverName, bool useUnsetIcon=false ) const;
-    void setAvatar( const QString & serverName, int serverCnt, const QImage & image );
-    QImage anyAvatar() const; // first avatar non-null
-
-    QDateTime getDateCreated( const QString & serverName ) const;
-    QDateTime getLastActivityDate( const QString & serverName ) const;
-    QDateTime getLastLoginDate( const QString & serverName ) const;
-    QString prefix( const QString & serverName ) const;
-    bool enableAutoLogin( const QString & serverName ) const;
-
-    bool canBeSynced() const;
-    bool onServer( const QString & serverName ) const;
-
-    QIcon getDirectionIcon( const QString & serverName ) const;
-    bool isValidForServer( const QString & serverName ) const;
-    bool validUserDataEqual() const;
-
-    std::shared_ptr< SUserServerData > getServerInfo( const QString & serverName ) const;
-private:
     template < typename T >
     std::optional< T > allSame( std::function < T( std::shared_ptr< SUserServerData > ) > getValue ) const
     {
@@ -123,6 +113,50 @@ private:
         }
         return prev;
     }
+
+    bool needsUpdating( const QString & serverName ) const;
+    std::shared_ptr<SUserServerData> newestServerInfo() const;
+
+    QImage globalAvatar() const; // when all servers use the same image
+
+    std::tuple< QString, double, QImage > getAvatarInfo( const QString & serverName ) const;
+    void setAvatarInfo( const QString & serverName, const QString & tag, double ratio );
+
+    QImage getAvatar( const QString & serverName, bool useUnsetIcon=false ) const;
+    void setAvatar( const QString & serverName, int serverCnt, const QImage & image );
+    QImage anyAvatar() const; // first avatar non-null
+
+    QDateTime getDateCreated( const QString & serverName ) const;
+    QDateTime getLastActivityDate( const QString & serverName ) const;
+    QDateTime getLastLoginDate( const QString & serverName ) const;
+    
+    QString prefix( const QString & serverName ) const;
+    bool enableAutoLogin( const QString & serverName ) const;
+    QString audioLanguagePreference( const QString & serverName ) const;
+    bool playDefaultAudioTrack( const QString & serverName ) const;
+    QString subtitleLanguagePreference( const QString & serverName ) const;
+    bool displayMissingEpisodes( const QString & serverName ) const;
+    QString subtitleMode( const QString & serverName ) const;
+    bool enableLocalPassword( const QString & serverName ) const;
+    QStringList orderedViews( const QString & serverName ) const;
+    QStringList latestItemsExcludes( const QString & serverName ) const;
+    QStringList myMediaExcludes( const QString & serverName ) const;
+    bool hidePlayedInLatest( const QString & serverName ) const;
+    bool rememberAudioSelections( const QString & serverName ) const;
+    bool rememberSubtitleSelections( const QString & serverName ) const;
+    bool enableNextEpisodeAutoPlay( const QString & serverName ) const;
+    int resumeRewindSeconds( const QString & serverName ) const;
+    QString introSkipMode( const QString & serverName ) const;
+
+    bool canBeSynced() const;
+    bool onServer( const QString & serverName ) const;
+
+    QIcon getDirectionIcon( const QString & serverName ) const;
+    bool isValidForServer( const QString & serverName ) const;
+    bool validUserDataEqual() const;
+
+    std::shared_ptr< SUserServerData > getServerInfo( const QString & serverName ) const;
+private:
     void updateCanBeSynced();
     void updateConnectedID();
     void checkAllAvatarsTheSame( int serverNum );
