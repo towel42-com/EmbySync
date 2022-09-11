@@ -42,7 +42,6 @@
 #include <QAction>
 #include <QApplication>
 #include <QIcon>
-#include <QInputDialog>
 #include <QCloseEvent>
 #include <QMenu>
 #include <QMessageBox>
@@ -164,8 +163,6 @@ void CPlayStateCompare::setupActions()
     fToolBar->addAction( fActionOnlyShowMediaWithDifferences );
     fToolBar->addAction( fActionShowMediaWithIssues );
     fToolBar->addSeparator();
-    fToolBar->addAction( fActionReloadCurrentUser );
-    fToolBar->addSeparator();
     fToolBar->addAction( fActionProcess );
     fToolBar->addAction( fActionSelectiveProcess );
 
@@ -267,11 +264,6 @@ void CPlayStateCompare::slotReloadCurrentUser()
     fSyncSystem->clearCurrUser();
     auto currIdx = fImpl->users->selectionModel()->currentIndex();
     slotCurrentUserChanged( currIdx );
-}
-
-void CPlayStateCompare::slotProcess()
-{
-    fSyncSystem->slotProcess();
 }
 
 void CPlayStateCompare::slotCurrentUserChanged( const QModelIndex & index )
@@ -387,8 +379,8 @@ std::shared_ptr< CTabUIInfo > CPlayStateCompare::getUIInfo() const
     retVal->fMenus = { fProcessMenu, fViewMenu };
     retVal->fToolBars = { fToolBar };
 
-    retVal->fMenuActions[ "Edit" ] = std::make_pair( true, QList< QPointer< QAction > >( { fActionOnlyShowSyncableUsers, fActionOnlyShowMediaWithDifferences, fActionShowMediaWithIssues } ) );
-    retVal->fMenuActions[ "Reload" ] = std::make_pair( false, QList< QPointer< QAction > >( { fActionReloadCurrentUser } ) );
+    retVal->fActions[ "Edit" ] = std::make_pair( true, QList< QPointer< QAction > >( { fActionOnlyShowSyncableUsers, fActionOnlyShowMediaWithDifferences, fActionShowMediaWithIssues } ) );
+    retVal->fActions[ "Reload" ] = std::make_pair( false, QList< QPointer< QAction > >( { fActionReloadCurrentUser } ) );
     return retVal;
 }
 
@@ -493,32 +485,16 @@ void CPlayStateCompare::slotUserMediaCompletelyLoaded()
     fMediaLoadedTimer->start();
 }
 
+void CPlayStateCompare::slotProcess()
+{
+    fSyncSystem->slotProcessMedia();
+}
+
 void CPlayStateCompare::slotSelectiveProcess()
 {
-    QStringList serverNames;
-    std::map< QString, QString > servers;
-    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
-    {
-        auto serverInfo = fSettings->serverInfo( ii );
-        if ( !serverInfo->isEnabled() )
-            continue;
-
-        auto name = serverInfo->displayName();
-        auto key = serverInfo->keyName();
-
-        servers[ name ] = key;
-        serverNames << name;
-    }
-
-    if ( serverNames.isEmpty() )
+    auto serverName = selectServer();
+    if ( serverName.isEmpty() )
         return;
 
-    bool aOK = false;
-    auto whichServer = QInputDialog::getItem( this, tr( "Select Source Server" ), tr( "Source Server:" ), serverNames, 0, false, &aOK );
-    if ( !aOK || whichServer.isEmpty() )
-        return;
-    auto pos = servers.find( whichServer );
-    if ( pos == servers.end() )
-        return;
-    fSyncSystem->selectiveProcess( (*pos).second );
+    fSyncSystem->selectiveProcessMedia( serverName );
 }

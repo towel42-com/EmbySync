@@ -87,7 +87,7 @@ void CUserWindow::loadUser( std::shared_ptr<CUserData> & userData )
     setEnabled( fUserData.get() != nullptr );
     for ( auto && ii : fUserDataWidgets )
     {
-        ii.second->setUserData( fUserData ? fUserData->getServerInfo( ii.first ) : std::shared_ptr< SUserServerData >() );
+        ii.second->setUserData( fUserData ? fUserData->userInfo( ii.first ) : std::shared_ptr< SUserServerData >() );
     }
 
     fChanged = false;

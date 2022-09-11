@@ -41,12 +41,17 @@ public:
     void cleanupUI( QMainWindow * mainWindow );
     void setupUI( QMainWindow * mainWindow, QMenu * inserBeforeMenu );
 
+    QAction * findInsertBefore( QWidget * container, bool insertBefore );
+
     QMenu * findMenu( QMainWindow * mainWindow, const QString & text );
-    QAction * findInsertBefore( QMenu * menu, bool insertBefore );
+    QToolBar * findToolBar( QMainWindow * mainWindow, const QString & text );
+
+    void removeFromContainer( QWidget * container, const std::pair< bool, QList< QPointer< QAction > > > & ii );
+    void addToContainer( QWidget * container, const std::pair< bool, QList< QPointer< QAction > > > & ii );
 
     QList< QPointer< QMenu > > fMenus;
-    QList< QPointer< QToolBar > > fToolBars;
-    std::map< QString, std::pair< bool, QList< QPointer< QAction > > > > fMenuActions;
+    QList< QPointer< QToolBar > > fToolBars; // do not include Reload actions on the tool bar, they are added to the main windows own toolbar
+    std::map< QString, std::pair< bool, QList< QPointer< QAction > > > > fActions;  // if there is a toolbar that matches the menu name, add the actiosn there as well
 };
 
 #endif

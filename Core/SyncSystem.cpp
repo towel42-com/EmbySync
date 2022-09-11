@@ -222,12 +222,12 @@ void CSyncSystem::clearCurrUser()
         fCurrUserData.reset();
 }
 
-void CSyncSystem::slotProcess()
+void CSyncSystem::slotProcessMedia()
 {
-    selectiveProcess( {} );
+    selectiveProcessMedia( {} );
 }
 
-void CSyncSystem::selectiveProcess( const QString & selectedServer )
+void CSyncSystem::selectiveProcessMedia( const QString & selectedServer )
 {
     auto title = QString( "Processing media for user '%1'" ).arg( fCurrUserData->userName( selectedServer ) );
     if ( !selectedServer.isEmpty() )
@@ -397,6 +397,76 @@ void CSyncSystem::handleSetFavorite( const QString & serverName, const QString &
     emit sigAddToLog( EMsgType::eInfo, tr( "Updated Favorite status for '%1' on Server '%2' successfully" ).arg( mediaID ).arg( serverName ) );
 }
 
+void CSyncSystem::slotProcessUsers()
+{
+    selectiveProcessUsers( {} );
+}
+
+void CSyncSystem::selectiveProcessUsers( const QString & selectedServer )
+{
+    auto title = QString( "Processing user data" );
+    if ( !selectedServer.isEmpty() )
+        title += QString( " From '%1'" ).arg( selectedServer );
+
+    emit sigAddToLog( EMsgType::eInfo, title );
+
+    fProgressSystem->setTitle( title );
+
+    auto allUsers = fUsersModel->getAllUsers( false );
+    int cnt = 0;
+    for ( auto && ii : allUsers )
+    {
+        if ( !ii || ii->validUserDataEqual() )
+            continue;
+        cnt++;
+    }
+
+    if ( cnt == 0 )
+    {
+        fProgressSystem->resetProgress();
+        emit sigProcessingFinished( fCurrUserData->userName( selectedServer ) );
+        return;
+    }
+
+    fProgressSystem->setMaximum( static_cast<int>( cnt ) );
+
+    for ( auto && ii : allUsers )
+    {
+        if ( !ii || ii->validUserDataEqual() )
+            continue;
+
+        fProgressSystem->incProgress();
+        bool dataProcessed = processUser( ii, selectedServer );
+        (void)dataProcessed;
+    }
+}
+
+bool CSyncSystem::processUser( std::shared_ptr< CUserData > userData, const QString & selectedServer )
+{
+    if ( !userData || userData->validUserDataEqual() )
+        return false;
+
+    if ( !fCurrUserData )
+        return false;
+
+    //qDebug() << "processing " << mediaData->name();
+    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    {
+        auto serverName = fSettings->serverInfo( ii )->keyName();
+        bool needsUpdating = userData->needsUpdating( serverName );
+        if ( !selectedServer.isEmpty() )
+        {
+            needsUpdating = ( serverName != selectedServer );
+        }
+        if ( !needsUpdating )
+            continue;
+
+        auto newData = selectedServer.isEmpty() ? userData->newestUserInfo() : userData->userInfo( selectedServer );
+        updateUserData( serverName, userData, newData );
+    }
+    return true;
+}
+
 void CSyncSystem::updateUserData( const QString & serverName, std::shared_ptr<CUserData> userData, std::shared_ptr<SUserServerData> newData )
 {
     requestUpdateUserData( serverName, userData, newData );
@@ -404,10 +474,10 @@ void CSyncSystem::updateUserData( const QString & serverName, std::shared_ptr<CU
 
 void CSyncSystem::requestUpdateUserData( const QString & serverName, std::shared_ptr<CUserData> userData, std::shared_ptr<SUserServerData> newData )
 {
-    if ( !userData || !userData->getServerInfo( serverName ) || !newData )
+    if ( !userData || !userData->userInfo( serverName ) || !newData )
         return;
 
-    if ( *userData->getServerInfo( serverName ) == *newData )
+    if ( *userData->userInfo( serverName ) == *newData )
         return;
 
     auto && userID = userData->getUserID( serverName );

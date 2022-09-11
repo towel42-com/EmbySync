@@ -84,7 +84,6 @@ private Q_SLOTS:
     void slotReloadCurrentUser();
 
     void slotProcess();
-
     void slotSelectiveProcess();
 
     void slotUserMediaCompletelyLoaded();

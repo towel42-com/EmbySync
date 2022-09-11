@@ -58,7 +58,7 @@ public Q_SLOTS:
     void slotProcessNextUser();
     void slotUserMediaCompletelyLoaded();
     void slotProcessingFinished( const QString & userName );
-    void slotProcess();
+    void slotProcessMedia();
 private:
     std::shared_ptr< CSettings > fSettings;
     std::shared_ptr< CSyncSystem > fSyncSystem;

@@ -98,6 +98,22 @@ QVariant CUsersModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
     if ( role == ECustomRoles::eConnectedIDValidRole )
         return !userData->connectedID().isEmpty() && !userData->connectedIDNeedsUpdate();
 
+    if ( role == eIsMissingOnServerBGColor )
+    {
+        auto color = getColor( index, true, true );
+        if ( !color.isValid() )
+            return {};
+        return color;
+    }
+
+    if ( role == eIsMissingOnServerBGColor )
+    {
+        auto color = getColor( index, false, true );
+        if ( !color.isValid() )
+            return {};
+        return color;
+    }
+
     //// reverse for black background
     if ( role == Qt::ForegroundRole )
     {
@@ -397,7 +413,7 @@ void CUsersModel::loadAvatars( std::shared_ptr< CSyncSystem > syncSystem ) const
     }
 }
 
-QVariant CUsersModel::getColor( const QModelIndex & index, bool background ) const
+QVariant CUsersModel::getColor( const QModelIndex & index, bool background, bool missingOnly /*=false*/ ) const
 {
     if ( !index.isValid() )
         return {};
@@ -409,24 +425,27 @@ QVariant CUsersModel::getColor( const QModelIndex & index, bool background ) con
             return fSettings->dataMissingColor( background );
     }
 
-    if ( index.column() <= eFirstServerColumn )
+    if ( index.column() < eFirstServerColumn )
         return {};
 
     auto pos = fColumnToServerInfo.find( index.column() );
     if ( pos == fColumnToServerInfo.end() )
         return {};
 
-    if ( !userData->onServer( (*pos).second.second->keyName() ) )
+    if ( !userData->onServer( ( *pos ).second.second->keyName() ) )
     {
         return fSettings->dataMissingColor( background );
     }
+
+    if ( missingOnly )
+        return {};
 
     // its on the server
     bool dataSame = false;
     switch ( perServerColumn( index.column() ) )
     {
         case eUserName:
-            dataSame = userData->allUserNamesTheSame();
+            dataSame = userData->allUserDataTheSame();
             break;
         case eServerConnectedID:
             dataSame = userData->allConnectIDTheSame();
@@ -742,6 +761,26 @@ QVariant CUsersFilterModel::data( const QModelIndex & index, int role /*= Qt::Di
         {
             if ( role == Qt::DecorationRole )
                 return index.data( CUsersModel::eSyncDirectionIconRole );
+        }
+    }
+    else if ( fForUserSelection && ( role != CUsersModel::eIsMissingOnServerFGColor ) && ( role != CUsersModel::eIsMissingOnServerBGColor ) )
+    {
+        if ( role == Qt::ForegroundRole )
+        {
+            auto isMissing = index.data( CUsersModel::eIsMissingOnServerFGColor ).value< QColor >();
+            if ( isMissing.isValid() )
+                return isMissing;
+            else
+                return {};
+        }
+
+        if ( role == Qt::BackgroundRole )
+        {
+            auto isMissing = index.data( CUsersModel::eIsMissingOnServerBGColor ).value< QColor >();
+            if ( isMissing.isValid() )
+                return isMissing;
+            else
+                return {};
         }
     }
     return retVal;

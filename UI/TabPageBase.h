@@ -82,6 +82,9 @@ public Q_SLOTS:
     virtual void slotSettingsChanged() {};
 
 protected:
+
+    QString selectServer() const;
+
     void loadServers( QAbstractItemModel * model );
     std::shared_ptr< CSettings > fSettings;
     std::shared_ptr< CUsersModel > fUsersModel;

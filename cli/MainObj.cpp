@@ -83,7 +83,7 @@ CMainObj::CMainObj( const QString & settingsFile, QObject * parent /*= nullptr*/
 
     connect( fSyncSystem.get(), &CSyncSystem::sigAddToLog, this, &CMainObj::slotAddToLog );
     connect( fSyncSystem.get(), &CSyncSystem::sigLoadingUsersFinished, this, &CMainObj::slotLoadingUsersFinished );
-    connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaLoaded, this, &CMainObj::slotProcess );
+    connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaLoaded, this, &CMainObj::slotProcessMedia );
 
     connect( fSyncSystem.get(), &CSyncSystem::sigProcessingFinished, this, &CMainObj::slotProcessingFinished );
     connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaLoaded, this, &CMainObj::slotUserMediaCompletelyLoaded );
@@ -219,7 +219,7 @@ void CMainObj::slotProcessingFinished( const QString & userName )
     QTimer::singleShot( 0, this, &CMainObj::slotProcessNextUser );
 }
 
-void CMainObj::slotProcess()
+void CMainObj::slotProcessMedia()
 {
-    fSyncSystem->selectiveProcess( fSelectedServerToProcess );
+    fSyncSystem->selectiveProcessMedia( fSelectedServerToProcess );
 }
