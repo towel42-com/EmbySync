@@ -497,19 +497,19 @@ std::vector< std::shared_ptr< CUserData > > CUsersModel::getAllUsers( bool sorte
     }
 }
 
-std::shared_ptr< CUserData > CUsersModel::loadUser( const QString & serverName, const QJsonObject & user )
+std::shared_ptr< CUserData > CUsersModel::loadUser( const QString & serverName, const QJsonObject & userObj )
 {
-    //qDebug().noquote().nospace() << QJsonDocument( user ).toJson();
+    qDebug().noquote().nospace() << QJsonDocument( userObj ).toJson();
 
-    auto currName = user[ "Name" ].toString();
-    auto userID = user[ "Id" ].toString();
+    auto currName = userObj[ "Name" ].toString();
+    auto userID = userObj[ "Id" ].toString();
     if ( currName.isEmpty() || userID.isEmpty() )
         return {};
 
-    auto linkType = user[ "ConnectLinkType" ].toString();
+    auto linkType = userObj[ "ConnectLinkType" ].toString();
     QString connectedID;
     if ( linkType == "LinkedUser" )
-        connectedID = user[ "ConnectUserName" ].toString();
+        connectedID = userObj[ "ConnectUserName" ].toString();
 
     auto userData = getUserData( connectedID );
     if ( !userData )
@@ -517,30 +517,19 @@ std::shared_ptr< CUserData > CUsersModel::loadUser( const QString & serverName, 
 
     if ( !userData )
     {
-        userData = std::make_shared< CUserData >( serverName, userID );
-        userData->setName( serverName, currName );
-        userData->setUserID( serverName, userID );
-        userData->setConnectedID( serverName, connectedID );
+        userData = std::make_shared< CUserData >( serverName, userObj );
 
         beginInsertRows( QModelIndex(), static_cast<int>( fUsers.size() ), static_cast<int>( fUsers.size() ) );
         fUsers.push_back( userData );
+        Q_ASSERT( !userData->sortName( fSettings ).isEmpty() );
         fUserMap[ userData->sortName( fSettings ) ] = userData;
         endInsertRows();
     }
-
-    userData->setName( serverName, currName );
-    userData->setUserID( serverName, userID );
-    userData->setConnectedID( serverName, connectedID );
-    auto dateCreated = user[ "DateCreated" ].toVariant().toDateTime();
-    if ( dateCreated == QDateTime::fromString( "0001-01-01T00:00:00.000Z", Qt::ISODateWithMs ) )
-        dateCreated = QDateTime();
-    userData->setDateCreated( serverName, dateCreated );
-    userData->setLastActivityDate( serverName, user[ "LastActivityDate" ].toVariant().toDateTime() );
-    userData->setLastLoginDate( serverName, user[ "LastLoginDate" ].toVariant().toDateTime() );
-    userData->setAvatarInfo( serverName, user[ "PrimaryImageTag" ].toString(), user[ "PrimaryImageAspectRatio" ].toDouble() );
-
-    emit dataChanged( indexForUser( userData, 0 ), indexForUser( userData, columnCount() - 1 ) );
-        
+    else
+    {
+        userData->loadFromJSON( serverName, userObj );
+        emit dataChanged( indexForUser( userData, 0 ), indexForUser( userData, columnCount() - 1 ) );
+    }
     return userData;
 }
 
