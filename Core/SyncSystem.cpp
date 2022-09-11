@@ -47,7 +47,7 @@
 #include <QJsonParseError>
 #include <QJsonArray>
 #include <QJsonObject>
-
+#include <QBuffer>
 #include <QUrlQuery>
 
 QString toString( ERequestType request )
@@ -60,7 +60,8 @@ QString toString( ERequestType request )
         case ERequestType::eGetServerIcon: return "GetServerIcon";
         case ERequestType::eGetUsers: return "GetUsers";
         case ERequestType::eGetUser: return "GetUser";
-        case ERequestType::eGetUserImage: return "GetUserImage";
+        case ERequestType::eGetUserAvatar: return "GetUserAvatar";
+        case ERequestType::eSetUserAvatar: return "SetUserAvatar";
         case ERequestType::eGetMediaList: return "GetMediaList";
         case ERequestType::eReloadMediaData: return "ReloadMediaData";
         case ERequestType::eUpdateUserMediaData: return "UpdateData";
@@ -423,7 +424,7 @@ void CSyncSystem::requestUpdateUserData( const QString & serverName, std::shared
     //qDebug() << "userID" << userID;
     //qDebug() << "mediaID" << mediaID;
 
-    //qDebug() << url;
+    qDebug() << url;
 
     auto request = QNetworkRequest( url );
     auto reply = makeRequest( request, ENetworkRequestType::ePost, data );
@@ -614,7 +615,7 @@ void CSyncSystem::slotSSlErrors( QNetworkReply * /*reply*/, const QList<QSslErro
     //qDebug() << "slotSSlErrors: 0x" << Qt::hex << reply << errors;
 }
 
-QNetworkReply * CSyncSystem::makeRequest( QNetworkRequest & request, ENetworkRequestType requestType, const QByteArray & data )
+QNetworkReply * CSyncSystem::makeRequest( QNetworkRequest & request, ENetworkRequestType requestType, const QByteArray & data, QString contentType )
 {
     if ( !fPendingRequestTimer )
     {
@@ -633,7 +634,9 @@ QNetworkReply * CSyncSystem::makeRequest( QNetworkRequest & request, ENetworkReq
             return fManager->deleteResource( request );
         case ENetworkRequestType::ePost:
         {
-            request.setHeader( QNetworkRequest::ContentTypeHeader, "application/json" );
+            if ( contentType.isEmpty() )
+                contentType = "application/json";
+            request.setHeader( QNetworkRequest::ContentTypeHeader, contentType );
             return fManager->post( request, data );
         }
         case ENetworkRequestType::eGet:
@@ -717,7 +720,8 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
                     emit sigLoadingUsersFinished();
                 break;
             case ERequestType::eGetUser:
-            case ERequestType::eGetUserImage:
+            case ERequestType::eGetUserAvatar:
+            case ERequestType::eSetUserAvatar:
                 break;
             case ERequestType::eGetMediaList:
                 emit sigUserMediaLoaded();
@@ -769,8 +773,11 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
     case ERequestType::eGetUser:
         handleGetUserResponse( serverName, data );
         break;
-    case ERequestType::eGetUserImage:
-        handleGetUserImageResponse( serverName, extraData.toString(), data );
+    case ERequestType::eGetUserAvatar:
+        handleGetUserAvatarResponse( serverName, extraData.toString(), data );
+        break;
+    case ERequestType::eSetUserAvatar:
+        handleSetUserAvatarResponse( serverName, extraData.toString() );
         break;
     case ERequestType::eGetMediaList:
         if ( !fProgressSystem->wasCanceled() )
@@ -796,6 +803,7 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
     }
     case ERequestType::eUpdateUserData:
     {
+        qDebug() << data;
         handleUpdateUserData( serverName, extraData.toString() );
         break;
     }
@@ -807,7 +815,6 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
     case ERequestType::eTestServer:
     {
         handleTestServer( serverName );
-
         break;
     }
     case ERequestType::eDeleteConnectedID:
@@ -1047,13 +1054,13 @@ void CSyncSystem::handleGetUserResponse( const QString & serverName, const QByte
 
     auto user = doc.object();
     auto userData = loadUser( serverName, user );
-    if ( userData->hasImageTagInfo( serverName ) )
+    if ( userData->hasAvatarInfo( serverName ) )
     {
-        requestGetUserImage( serverName, userData->getUserID( serverName ) );
+        requestGetUserAvatar( serverName, userData->getUserID( serverName ) );
     }
 }
 
-void CSyncSystem::requestGetUserImage( const QString & serverName, const QString & userID )
+void CSyncSystem::requestGetUserAvatar( const QString & serverName, const QString & userID )
 {
     emit sigAddToLog( EMsgType::eInfo, tr( "Loading user image from server '%1'" ).arg( serverName ) );
 
@@ -1065,18 +1072,44 @@ void CSyncSystem::requestGetUserImage( const QString & serverName, const QString
 
     auto reply = makeRequest( request );
     setServerName( reply, serverName );
-    setRequestType( reply, ERequestType::eGetUserImage );
+    setRequestType( reply, ERequestType::eGetUserAvatar );
     setExtraData( reply, userID );
 }
 
-void CSyncSystem::handleGetUserImageResponse( const QString & serverName, const QString & userID, const QByteArray & data )
+void CSyncSystem::handleGetUserAvatarResponse( const QString & serverName, const QString & userID, const QByteArray & data )
 {
     auto user = fUsersModel->findUser( serverName, userID );
     if ( !user )
         return;
 
     emit sigAddToLog( EMsgType::eInfo, tr( "Setting user image from server '%1' for '%2'" ).arg( serverName ).arg( user->name( serverName ) ) );
-    fUsersModel->setUserImage( serverName, userID, data );
+    fUsersModel->setUserAvatar( serverName, userID, data );
+}
+
+void CSyncSystem::requestSetUserAvatar( const QString & serverName, const QString & userID, const QImage & image )
+{
+    emit sigAddToLog( EMsgType::eInfo, tr( "Setting user image on server '%1'" ).arg( serverName ) );
+
+    // UserService
+    auto && url = fSettings->findServerInfo( serverName )->getUrl( QString( "/Users/%1/Images/Primary" ).arg( userID ), {} );
+    if ( !url.isValid() )
+        return;
+    auto request = QNetworkRequest( url );
+
+    QByteArray data;
+    QBuffer buffer( &data );
+    buffer.open( QIODevice::WriteOnly );
+    image.save( &buffer, "PNG" ); // writes image into ba in PNG format
+
+    auto reply = makeRequest( request, ENetworkRequestType::ePost, data.toBase64(), "image/png" );
+    setServerName( reply, serverName );
+    setRequestType( reply, ERequestType::eSetUserAvatar );
+    setExtraData( reply, userID );
+}
+
+void CSyncSystem::handleSetUserAvatarResponse( const QString & serverName, const QString & userID )
+{
+    requestGetUserAvatar( serverName, userID );
 }
 
 static QString kForceDelete = "<FORCE DELETE>";

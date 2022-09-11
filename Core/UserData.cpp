@@ -268,27 +268,24 @@ void CUserData::setLastLoginDate( const QString & serverName, const QDateTime & 
         retVal->fLastLoginDate = dateTS;
 }
 
-bool CUserData::hasImageTagInfo( const QString & serverName ) const
-{
-    auto serverInfo = getServerInfo( serverName );
-    if ( !serverInfo )
-        return false;
-    return !serverInfo->fImageTagInfo.first.isEmpty();
-}
-
-std::pair< QString, double > CUserData::getImageTagInfo( const QString & serverName ) const
+std::tuple< QString, double, QImage > CUserData::getAvatarInfo( const QString & serverName ) const
 {
     auto serverInfo = getServerInfo( serverName );
     if ( !serverInfo )
         return {};
 
-    return serverInfo->fImageTagInfo;
+    return serverInfo->fAvatarInfo;
 }
 
-void CUserData::setImageTagInfo( const QString & serverName, const QString & tag, double ratio )
+bool CUserData::hasAvatarInfo( const QString & serverName ) const
+{
+    return !std::get< 0 >( getAvatarInfo( serverName ) ).isEmpty();
+}
+
+void CUserData::setAvatarInfo( const QString & serverName, const QString & tag, double ratio )
 {
     auto serverInfo = getServerInfo( serverName, true );
-    serverInfo->fImageTagInfo = { tag, ratio };
+    serverInfo->fAvatarInfo = { tag, ratio, {} };
 }
 
 QImage CUserData::globalAvatar() const // when all servers use the same image
@@ -300,8 +297,8 @@ QImage CUserData::anyAvatar() const
 {
     for ( auto && ii : fInfoForServer )
     {
-        if ( !ii.second->fImage.isNull() )
-            return ii.second->fImage;
+        if ( !std::get< 2 >( ii.second->fAvatarInfo ).isNull() )
+            return std::get< 2 >( ii.second->fAvatarInfo );
     }
     return {};
 }
@@ -340,7 +337,7 @@ void CUserData::checkAllAvatarsTheSame( int serverNum )
     fGlobalImage = allSame< QImage >(
         []( std::shared_ptr< SUserServerData > rhs )
         {
-            return rhs->fImage;
+            return std::get< 2 >( rhs->fAvatarInfo );
         } );
 }
 
@@ -363,12 +360,12 @@ bool CUserData::allConnectIDTheSame() const
         } ).has_value();
 }
 
-bool CUserData::allIconsTheSame() const
+bool CUserData::allIconInfoTheSame() const
 {
-    return allSame< QImage >(
+    return allSame< std::pair< double, QImage > >(
         []( std::shared_ptr< SUserServerData > rhs )
         {
-            return rhs->fImage;
+            return std::make_pair( std::get< 1 >( rhs->fAvatarInfo ), std::get< 2 >( rhs->fAvatarInfo ) );
         } ).has_value();
 }
 
@@ -425,10 +422,10 @@ QImage CUserData::getAvatar( const QString & serverName, bool useUnset ) const
     else
     {
         auto serverInfo = getServerInfo( serverName );
-        if ( !serverInfo || serverInfo->fImage.isNull() )
+        if ( !serverInfo || std::get< 2 >( serverInfo->fAvatarInfo ).isNull() )
             retVal = useUnset ? QImage( ":/resources/missingAvatar.png" ) : QImage();
         else
-            retVal = serverInfo->fImage;
+            retVal = std::get< 2 >( serverInfo->fAvatarInfo );
     }
     if ( !retVal.isNull() )
         retVal = retVal.scaled( QSize( 32, 32 ) );
@@ -438,7 +435,7 @@ QImage CUserData::getAvatar( const QString & serverName, bool useUnset ) const
 void CUserData::setAvatar( const QString & serverName, int serverCnt, const QImage & image )
 {
     auto serverInfo = getServerInfo( serverName, true );
-    serverInfo->fImage = image;
+    std::get< 2 >( serverInfo->fAvatarInfo ) = image;
 
     checkAllAvatarsTheSame( serverCnt );
 }
@@ -550,7 +547,7 @@ QJsonObject SUserServerData::userDataJSON() const
         obj[ "LastActivityDate" ] = QJsonValue::Null;
     else
         obj[ "LastActivityDate" ] = fLastActivityDate.toUTC().toString( Qt::ISODateWithMs );
-
+    obj[ "PrimaryImageAspectRatio" ] = std::get< 1 >( fAvatarInfo );
     return obj;
 }
 bool SUserServerData::isValid() const
@@ -572,8 +569,8 @@ bool SUserServerData::userDataEqual( const SUserServerData & rhs ) const
         equal = equal && fLastActivityDate == rhs.fLastActivityDate;
     if ( !fLastLoginDate.isNull() && !rhs.fLastLoginDate.isNull() )
         equal = equal && fLastLoginDate == rhs.fLastLoginDate;
-    equal = equal && fImage == rhs.fImage;
-    equal = equal && fImageTagInfo == rhs.fImageTagInfo;
+    equal = equal && std::get< 1 >( fAvatarInfo ) == std::get< 1 >( rhs.fAvatarInfo );
+    equal = equal && std::get< 2 >( fAvatarInfo ) == std::get< 2 >( rhs.fAvatarInfo );
     return equal;
 }
 

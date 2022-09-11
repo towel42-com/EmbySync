@@ -42,6 +42,7 @@ public:
     virtual ~CMediaWindow() override;
 
     void setMedia( std::shared_ptr< CMediaData > media );
+    void reloadMedia();
 
     bool okToClose();
     virtual void closeEvent( QCloseEvent * event ) override;
@@ -51,7 +52,10 @@ public Q_SLOTS:
 private Q_SLOTS:
     void slotUploadUserMediaData();
     void slotApplyFromServer( CMediaUserDataWidget * which );
+    void slotProcessToServer( CMediaUserDataWidget * which );
 private:
+    void loadMedia( std::shared_ptr<CMediaData> & mediaInfo );
+
     bool fChanged{ false };
     std::unique_ptr< Ui::CMediaWindow > fImpl;
     std::shared_ptr< CSyncSystem > fSyncSystem;

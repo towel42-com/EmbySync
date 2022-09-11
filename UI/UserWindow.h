@@ -42,6 +42,7 @@ public:
     virtual ~CUserWindow() override;
 
     void setUser( std::shared_ptr< CUserData > userData );
+    void reloadUser();;
 
     bool okToClose();
     virtual void closeEvent( QCloseEvent * event ) override;
@@ -51,7 +52,10 @@ public Q_SLOTS:
 private Q_SLOTS:
     void slotUploadUserData();
     void slotApplyFromServer( CUserDataWidget * which );
+    void slotProcessToServer( CUserDataWidget * which );
 private:
+    void loadUser( std::shared_ptr<CUserData> & userData );
+
     bool fChanged{ false };
     std::unique_ptr< Ui::CUserWindow > fImpl;
     std::shared_ptr< CSyncSystem > fSyncSystem;

@@ -110,6 +110,17 @@
       </spacer>
      </item>
      <item>
+      <widget class="QPushButton" name="process">
+       <property name="text">
+        <string>&amp;Process</string>
+       </property>
+       <property name="icon">
+        <iconset resource="EmbySync.qrc">
+         <normaloff>:/resources/upload.png</normaloff>:/resources/upload.png</iconset>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="apply">
        <property name="text">
         <string>Apply From Here</string>

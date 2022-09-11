@@ -245,6 +245,9 @@ void CPlayStateCompare::slotModelDataChanged()
     fActionSelectiveProcess->setEnabled( hasDataToProcess );
 
     fActionViewMediaInformation->setEnabled( mediaLoaded );
+
+    if ( fMediaWindow )
+        fMediaWindow->reloadMedia();
 }
 
 void CPlayStateCompare::loadingUsersFinished()

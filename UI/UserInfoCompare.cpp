@@ -211,6 +211,9 @@ void CUserInfoCompare::slotModelDataChanged()
     fActionReloadCurrentUser->setEnabled( canSync && hasCurrentUser );
 
     fActionRepairUserConnectedIDs->setEnabled( hasUsersNeedingFixing );
+
+    if ( fUserWindow )
+        fUserWindow->reloadUser();
 }
 
 void CUserInfoCompare::loadingUsersFinished()

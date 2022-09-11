@@ -46,6 +46,9 @@ public:
     void setMediaUserData( std::shared_ptr< SMediaUserData > mediaData );
     void applyMediaUserData( std::shared_ptr< SMediaUserData > mediaData );  // mediaData is not owned, mediaID is NOT changed
 
+    void setServerName( const QString & serverName ) { fServerName = serverName; }
+    QString serverName() const { return fServerName; }
+
     void setReadOnly( bool readOnly );
     bool readOnly() const { return fReadOnly; }
 
@@ -54,14 +57,17 @@ public:
 public Q_SLOTS:
     void slotChanged();
     void slotApplyFromServer();
+    void slotProcessToServer();
 Q_SIGNALS:
     void sigApplyFromServer( CMediaUserDataWidget * which );
+    void sigProcessToServer( CMediaUserDataWidget * which );
 
 private:
     void load( std::shared_ptr< SMediaUserData > mediaData );
 
     std::unique_ptr< Ui::CMediaUserDataWidget > fImpl;
     std::shared_ptr< SMediaUserData > fMediaUserData;
+    QString fServerName;
     bool fReadOnly{ false };
 };
 #endif 

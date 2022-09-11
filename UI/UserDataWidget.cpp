@@ -53,15 +53,22 @@ CUserDataWidget::CUserDataWidget( QWidget * parentWidget /*= nullptr */ ) :
 
     connect( fImpl->setAvatarBtn, &QToolButton::clicked, this, &CUserDataWidget::slotSelectChangeAvatar );
     connect( fImpl->name, &QLineEdit::textChanged, this, &CUserDataWidget::slotChanged );
+    connect( fImpl->avatarAspectRatio, &QDoubleSpinBox::textChanged, this, &CUserDataWidget::slotChanged );
     connect( fImpl->connectID, &QLineEdit::textChanged, this, &CUserDataWidget::slotChanged );
     connect( fImpl->lastLoginDate, &QDateTimeEdit::dateTimeChanged, this, &CUserDataWidget::slotChanged );
     connect( fImpl->lastActivityDate, &QDateTimeEdit::dateTimeChanged, this, &CUserDataWidget::slotChanged );
     connect( fImpl->apply, &QPushButton::clicked, this, &CUserDataWidget::slotApplyFromServer );
+    connect( fImpl->process, &QPushButton::clicked, this, &CUserDataWidget::slotProcessToServer );
 }
 
 void CUserDataWidget::slotApplyFromServer()
 {
     emit sigApplyFromServer( this );
+}
+
+void CUserDataWidget::slotProcessToServer()
+{
+    emit sigProcessToServer( this );
 }
 
 CUserDataWidget::CUserDataWidget( const QString & title, QWidget * parentWidget /*= nullptr */ ) :
@@ -101,6 +108,7 @@ void CUserDataWidget::load( std::shared_ptr< SUserServerData > userData )
         fAvatar = {};
         fImpl->avatar->setPixmap( QPixmap( ":/resources/missingAvatar.png" ).scaled( 32, 32 ) );
         fImpl->name->setText( QString() );
+        fImpl->avatarAspectRatio->setValue( 0.0 );
         fImpl->connectID->setText( QString() );
         fImpl->creationDate->setDateTime( QDateTime() );
         fImpl->lastActivityDate->setDateTime( QDateTime() );
@@ -108,7 +116,8 @@ void CUserDataWidget::load( std::shared_ptr< SUserServerData > userData )
     }
     else
     {
-        setAvatar( userData->fImage );
+        setAvatar( std::get< 2 >( userData->fAvatarInfo ) );
+        fImpl->avatarAspectRatio->setValue( std::get< 1 >( userData->fAvatarInfo ) );
         fImpl->name->setText( userData->fName );
         fImpl->connectID->setText( userData->fConnectedIDOnServer );
         fImpl->creationDate->setDateTime( userData->fDateCreated );
@@ -131,7 +140,8 @@ std::shared_ptr< SUserServerData > CUserDataWidget::createUserData() const
     auto retVal = std::make_shared< SUserServerData >();
     retVal->fName = fImpl->name->text();
     retVal->fUserID = fUserData->fUserID;
-    retVal->fImage = fAvatar;
+    std::get< 1 >( retVal->fAvatarInfo ) = fImpl->avatarAspectRatio->value();
+    std::get< 2 >( retVal->fAvatarInfo ) = fAvatar;
     retVal->fConnectedIDOnServer = fImpl->connectID->text();
     retVal->fDateCreated = fImpl->creationDate->dateTime();
     retVal->fLastActivityDate = fImpl->lastActivityDate->dateTime();
@@ -148,6 +158,7 @@ void CUserDataWidget::setReadOnly( bool readOnly )
     fImpl->setCreatedDateToNow->setHidden( readOnly );
 
     fImpl->name->setEnabled( readOnly );
+    fImpl->avatarAspectRatio->setEnabled( readOnly );
     fImpl->connectID->setEnabled( readOnly );
     fImpl->creationDate->setEnabled( readOnly );
     fImpl->lastActivityDate->setEnabled( readOnly );

@@ -47,8 +47,7 @@ struct SUserServerData
     QString fUserID;
     QString fConnectedIDOnServer;
 
-    QImage fImage;
-    std::pair< QString, double > fImageTagInfo;
+    std::tuple< QString, double, QImage > fAvatarInfo;
     QDateTime fDateCreated;
     QDateTime fLastLoginDate;
     QDateTime fLastActivityDate;
@@ -92,14 +91,11 @@ public:
     void setLastActivityDate( const QString & serverName, const QDateTime & dateTS );
     void setLastLoginDate( const QString & serverName, const QDateTime & dateTS );
 
-    bool hasImageTagInfo( const QString & serverName ) const;
+    bool hasAvatarInfo( const QString & serverName ) const;
 
-    std::pair< QString, double > getImageTagInfo( const QString & serverName ) const;
-    void setImageTagInfo( const QString & serverName, const QString & tag, double ratio );
-    
     bool allUserNamesTheSame() const;
     bool allConnectIDTheSame() const;
-    bool allIconsTheSame() const;
+    bool allIconInfoTheSame() const;
     bool allLastActivityDateSame() const;
     bool allLastLoginDateSame() const;
 
@@ -107,6 +103,10 @@ public:
     std::shared_ptr<SUserServerData> newestServerInfo() const;
 
     QImage globalAvatar() const; // when all servers use the same image
+
+    std::tuple< QString, double, QImage > getAvatarInfo( const QString & serverName ) const;
+    void setAvatarInfo( const QString & serverName, const QString & tag, double ratio );
+
     QImage getAvatar( const QString & serverName, bool useUnsetIcon=false ) const;
     void setAvatar( const QString & serverName, int serverCnt, const QImage & image );
     QImage anyAvatar() const; // first avatar non-null
