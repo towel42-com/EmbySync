@@ -43,20 +43,26 @@ public:
 
     virtual ~CUserDataWidget() override;
 
+    void setServerName( const QString & serverName ) { fServerName = serverName; }
+    QString serverName() const { return fServerName; }
     void setUserData( std::shared_ptr< SUserServerData > userData );
     void applyUserData( std::shared_ptr< SUserServerData > userData );  
 
     void setReadOnly( bool readOnly );
     bool readOnly() const { return fReadOnly; }
 
+    QImage avatar() const { return fAvatar; }
+
     std::shared_ptr< SUserServerData > createUserData() const; // creates a new user data based on current settings
 
 public Q_SLOTS:
     void slotChanged();
     void slotApplyFromServer();
+    void slotProcessToServer();
     void slotSelectChangeAvatar();
 Q_SIGNALS:
     void sigApplyFromServer( CUserDataWidget * which );
+    void sigProcessToServer( CUserDataWidget * which );
 
 private:
     void load( std::shared_ptr< SUserServerData > userData );
@@ -64,6 +70,7 @@ private:
 
     std::unique_ptr< Ui::CUserDataWidget > fImpl;
     std::shared_ptr< SUserServerData > fUserData;
+    QString fServerName;
     QImage fAvatar;
     bool fReadOnly{ false };
 };

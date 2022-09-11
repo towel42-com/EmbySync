@@ -53,9 +53,11 @@ CMediaWindow::CMediaWindow( std::shared_ptr< CSettings> settings, std::shared_pt
             continue;
 
         auto userDataWidget = new CMediaUserDataWidget( this );
+        userDataWidget->setServerName( serverInfo->keyName() );
         horizontalLayout->addWidget( userDataWidget );
         fUserDataWidgets[ serverInfo->keyName() ] = userDataWidget;
         connect( userDataWidget, &CMediaUserDataWidget::sigApplyFromServer, this, &CMediaWindow::slotApplyFromServer );
+        connect( userDataWidget, &CMediaUserDataWidget::sigProcessToServer, this, &CMediaWindow::slotProcessToServer );
     }
 
     NSABUtils::setupWidgetChanged( this, QMetaMethod::fromSignal( &CMediaWindow::sigChanged ), { fImpl->process } );
@@ -75,20 +77,30 @@ CMediaWindow::~CMediaWindow()
 
 void CMediaWindow::setMedia( std::shared_ptr< CMediaData > mediaInfo )
 {
+    loadMedia( mediaInfo );
+}
+
+void CMediaWindow::loadMedia( std::shared_ptr<CMediaData> & mediaInfo )
+{
     fMediaInfo = mediaInfo;
 
-    setEnabled( mediaInfo.get() != nullptr );
-    fImpl->currMediaName->setText( mediaInfo ? mediaInfo->name() : QString() );
-    fImpl->currMediaType->setText( mediaInfo ? mediaInfo->mediaType() : QString() );
-    fImpl->externalUrls->setText( mediaInfo ? mediaInfo->externalUrlsText() : tr( "External Urls:" ) );
+    setEnabled( fMediaInfo.get() != nullptr );
+    fImpl->currMediaName->setText( fMediaInfo ? fMediaInfo->name() : QString() );
+    fImpl->currMediaType->setText( fMediaInfo ? fMediaInfo->mediaType() : QString() );
+    fImpl->externalUrls->setText( fMediaInfo ? fMediaInfo->externalUrlsText() : tr( "External Urls:" ) );
     fImpl->externalUrls->setTextFormat( Qt::RichText );
 
     for ( auto && ii : fUserDataWidgets )
     {
-        ii.second->setMediaUserData( mediaInfo ? mediaInfo->userMediaData( ii.first ) : std::shared_ptr< SMediaUserData >() );
+        ii.second->setMediaUserData( fMediaInfo ? fMediaInfo->userMediaData( ii.first ) : std::shared_ptr< SMediaUserData >() );
     }
 
     fChanged = false;
+}
+
+void CMediaWindow::reloadMedia()
+{
+    loadMedia( fMediaInfo );
 }
 
 void CMediaWindow::closeEvent( QCloseEvent * event )
@@ -147,5 +159,13 @@ void CMediaWindow::slotApplyFromServer( CMediaUserDataWidget * which )
             continue;
         ii.second->applyMediaUserData( newData );
     }
+}
+
+void CMediaWindow::slotProcessToServer( CMediaUserDataWidget * which )
+{
+    if ( !which )
+        return;
+
+    fSyncSystem->updateUserDataForMedia( which->serverName(), fMediaInfo, which->createMediaUserData() );
 }
 

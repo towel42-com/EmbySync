@@ -70,7 +70,7 @@ public:
     std::shared_ptr< CUserData > findUser( const QString & serverName, const QString & userID ) const;
     QModelIndex indexForUser( std::shared_ptr< CUserData > user, int column = 0 ) const;
 
-    void setUserImage( const QString & serverName, const QString & userID, const QByteArray & data );
+    void setUserAvatar( const QString & serverName, const QString & userID, const QByteArray & data );
 
     void updateUserConnectID( const QString & serverName, const QString & userID, const QString & connectID );
 

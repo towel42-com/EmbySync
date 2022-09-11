@@ -63,7 +63,8 @@ enum class ERequestType
     eGetServerIcon,
     eGetUsers,
     eGetUser,
-    eGetUserImage,
+    eGetUserAvatar,
+    eSetUserAvatar,
     eGetMediaList,
     eReloadMediaData,
     eUpdateUserMediaData,
@@ -140,7 +141,8 @@ public:
     void repairConnectIDs( const std::list< std::shared_ptr< CUserData > > & users );
     void setConnectedID( const QString & serverName, const QString & newID, std::shared_ptr< CUserData > & user );
 
-    void requestGetUserImage( const QString & serverName, const QString & userID );
+    void requestGetUserAvatar( const QString & serverName, const QString & userID );
+    void requestSetUserAvatar( const QString & serverName, const QString & userID, const QImage & image );
 
     void updateUserDataForMedia( const QString & serverName, std::shared_ptr<CMediaData> mediaData, std::shared_ptr<SMediaUserData> newData );
     void updateUserData( const QString & serverName, std::shared_ptr<CUserData> userData, std::shared_ptr<SUserServerData> newData );;
@@ -185,7 +187,7 @@ private Q_SLOTS:
     void slotRepairNextUser();
 
 private:
-    QNetworkReply * makeRequest( QNetworkRequest & request, ENetworkRequestType requestType = ENetworkRequestType::eGet, const QByteArray & data = {} );
+    QNetworkReply * makeRequest( QNetworkRequest & request, ENetworkRequestType requestType = ENetworkRequestType::eGet, const QByteArray & data = {}, QString contentType = QString() );
 
     std::shared_ptr<CUserData> loadUser( const QString & serverName, const QJsonObject & user );
     std::shared_ptr< CMediaData> loadMedia( const QString & serverName, const QJsonObject & media );
@@ -212,7 +214,8 @@ private:
     void requestGetUser( const QString & serverName, const QString & userID );
     void handleGetUserResponse( const QString & serverName, const QByteArray & data );
 
-    void handleGetUserImageResponse( const QString & serverName, const QString & userID, const QByteArray & data );
+    void handleGetUserAvatarResponse( const QString & serverName, const QString & userID, const QByteArray & data );
+    void handleSetUserAvatarResponse( const QString & serverName, const QString & userID );
 
     void requestGetMediaList( const QString & serverNameServer );
     void handleGetMediaListResponse( const QString & serverName, const QByteArray & data );
