@@ -72,7 +72,8 @@ enum class ERequestType
     eTestServer,
     eDeleteConnectedID,
     eSetConnectedID,
-    eUpdateUserData
+    eUpdateUserData,
+    eGetMissingEpisodes
 };
 
 enum class ENetworkRequestType
@@ -142,6 +143,9 @@ public:
 
     void loadUsers();
     void loadUsersMedia( std::shared_ptr< CUserData > user );
+    void loadMissingEpisodes( std::shared_ptr< CUserData > userData, const QDate & minPremiereDate, const QDate & maxPremiereDate );
+    void loadMissingEpisodes( std::shared_ptr< CUserData > userData, std::shared_ptr<const CServerInfo> serverInfo, const QDate & minPremiereDate, const QDate & maxPremiereDate );
+
     void clearCurrUser();
     std::shared_ptr< CUserData > currUser() const;
 
@@ -230,6 +234,9 @@ private:
 
     void requestGetMediaList( const QString & serverNameServer );
     void handleGetMediaListResponse( const QString & serverName, const QByteArray & data );
+
+    void requestMissingEpisodes( const QString & serverNameServer, const QDate & minPremiereDate, const QDate & maxPremiereDate );
+    void handleMissingEpisodesResponse( const QString & serverName, const QByteArray & data );
 
     void requestReloadMediaItemData( const QString & serverName, const QString & mediaID );
     void requestReloadMediaItemData( const QString & serverName, std::shared_ptr< CMediaData > mediaData );
