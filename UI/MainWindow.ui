@@ -22,7 +22,7 @@
       </property>
       <widget class="QTabWidget" name="tabWidget">
        <property name="currentIndex">
-        <number>1</number>
+        <number>2</number>
        </property>
        <widget class="CPlayStateCompare" name="playStateCompare">
         <attribute name="title">
@@ -32,6 +32,11 @@
        <widget class="CUserInfoCompare" name="userInfoCompare">
         <attribute name="title">
          <string>User Info</string>
+        </attribute>
+       </widget>
+       <widget class="CMissingEpisodes" name="missingEpisodes">
+        <attribute name="title">
+         <string>Missing Episodes</string>
         </attribute>
        </widget>
       </widget>
@@ -217,6 +222,12 @@
    <class>CUserInfoCompare</class>
    <extends>QWidget</extends>
    <header>UserInfoCompare.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>CMissingEpisodes</class>
+   <extends>QWidget</extends>
+   <header>MissingEpisodes.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
