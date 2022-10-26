@@ -49,6 +49,7 @@ set(project_H
     Settings.h
     UserData.h
     UserServerData.h
+    IServerForColumn.h
 )
 
 set(qtproject_UIS
