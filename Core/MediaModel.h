@@ -2,6 +2,7 @@
 #define __MEDIAMODEL_H
 
 #include "SABUtils/HashUtils.h"
+#include "IServerForColumn.h"
 
 #include <QAbstractTableModel>
 #include <QSortFilterProxyModel>
@@ -19,7 +20,7 @@ class CMergeMedia;
 
 using TMediaIDToMediaData = std::map< QString, std::shared_ptr< CMediaData > >;
 
-class CMediaModel : public QAbstractTableModel
+class CMediaModel : public QAbstractTableModel, public IServerForColumn
 {
     friend struct SMediaSummary;
     Q_OBJECT;
@@ -28,8 +29,7 @@ public:
     {
         eShowItemRole = Qt::UserRole + 1,
         eMediaNameRole,
-        eDirSortRole,
-        eServerNameForColumnRole = Qt::UserRole + 10000
+        eDirSortRole
     };
 
     enum EColumns
@@ -60,6 +60,8 @@ public:
 
     virtual QVariant headerData( int section, Qt::Orientation orientation, int role = Qt::DisplayRole ) const override;
 
+    virtual QString serverForColumn( int column ) const override;
+
     void clear();
 
     bool hasMediaToProcess() const;
@@ -82,7 +84,6 @@ Q_SIGNALS:
 private:
     int perServerColumn( int column ) const;
     int columnsPerServer( bool includeProviders = true ) const;
-    QString serverNameForColumn( int columnNum ) const;
 
     std::optional< std::pair< QString, QString > > getProviderInfoForColumn( int column ) const;
 

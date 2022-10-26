@@ -133,19 +133,6 @@ QVariant CUsersModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
 
     auto serverInfo = this->serverInfo( index );
     auto serverName = serverInfo ? serverInfo->keyName() : QString();
-
-    if ( role == ECustomRoles::eServerNameForColumnRole )
-    {
-        if ( index.column() == CUsersModel::eConnectedID )
-            return "<ALL>";
-#ifndef NDEBUG
-        if ( index.column() == CUsersModel::eAllNames )
-            return "<ALL>";
-#endif
-        //qDebug() << "Server for column: " << index.column() << serverName;
-        return serverName;
-    }
-
     auto columnNum = perServerColumn( index.column() );
 
     if ( role == ECustomRoles::eIsUserNameColumnRole )
@@ -275,7 +262,13 @@ int CUsersModel::serverNum( int columnNum ) const
 
 std::shared_ptr< const CServerInfo > CUsersModel::serverInfo( const QModelIndex & index ) const
 {
-    auto pos = fColumnToServerInfo.find( index.column() );
+    int column = index.column();
+    return serverInfo( column );
+}
+
+std::shared_ptr<const CServerInfo> CUsersModel::serverInfo( int column ) const
+{
+    auto pos = fColumnToServerInfo.find( column );
     if ( pos == fColumnToServerInfo.end() )
         return {};
     return ( *pos ).second.second;
@@ -618,6 +611,22 @@ void CUsersModel::clear()
     fUserMap.clear();
     setupColumns();
     endResetModel();
+}
+
+QString CUsersModel::serverForColumn( int column ) const
+{
+    if ( column == CUsersModel::eConnectedID )
+        return "<ALL>";
+#ifndef NDEBUG
+    if ( column == CUsersModel::eAllNames )
+        return "<ALL>";
+#endif
+
+    auto serverInfo = this->serverInfo( column );
+    auto serverName = serverInfo ? serverInfo->keyName() : QString();
+
+    //qDebug() << "Server for column: " << index.column() << serverName;
+    return serverName;
 }
 
 std::shared_ptr< CUserData > CUsersModel::getUserData( const QString & name, bool exhaustiveSearch ) const

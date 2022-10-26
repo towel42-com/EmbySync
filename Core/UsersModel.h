@@ -1,6 +1,7 @@
 #ifndef __USERSMODEL_H
 #define __USERSMODEL_H
 
+#include "IServerForColumn.h"
 #include <QAbstractTableModel>
 #include <QSortFilterProxyModel>
 #include <memory>
@@ -13,7 +14,7 @@ class CSettings;
 class CUserData;
 class CServerInfo;
 class CSyncSystem;
-class CUsersModel : public QAbstractTableModel
+class CUsersModel : public QAbstractTableModel, public IServerForColumn
 {
     Q_OBJECT;
 public:
@@ -63,8 +64,7 @@ public:
         eIsUserNameColumnRole,
         eSyncDirectionIconRole,
         eIsMissingOnServerFGColor,
-        eIsMissingOnServerBGColor,
-        eServerNameForColumnRole = Qt::UserRole + 10000
+        eIsMissingOnServerBGColor
     };
 
     CUsersModel( std::shared_ptr< CSettings > settings, QObject * parent=nullptr );
@@ -74,6 +74,8 @@ public:
     virtual QVariant data( const QModelIndex & index, int role = Qt::DisplayRole ) const override;
 
     std::shared_ptr< const CServerInfo > serverInfo( const QModelIndex & index ) const;
+
+    std::shared_ptr<const CServerInfo> serverInfo( int column ) const;
 
     virtual QVariant headerData( int section, Qt::Orientation orientation, int role = Qt::DisplayRole ) const override;
 
@@ -97,6 +99,8 @@ public:
     void updateUserConnectID( const QString & serverName, const QString & userID, const QString & idType, const QString & connectID );
 
     void clear();
+
+    virtual QString serverForColumn( int column ) const override;
 
     std::shared_ptr< CUserData > loadUser( const QString & serverName, const QJsonObject & user );
     std::vector< std::shared_ptr< CUserData > > getAllUsers( bool sorted ) const;
