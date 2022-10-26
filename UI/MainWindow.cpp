@@ -41,6 +41,7 @@
 #include <QMessageBox>
 #include <QProcess>
 #include <QProgressDialog>
+#include <QSettings>
 #include <QTimer>
 #include <QMetaMethod>
 
@@ -91,10 +92,13 @@ CMainWindow::CMainWindow( QWidget * parent )
     connect( fGitHubVersion.first, &NSABUtils::CGitHubGetVersions::sigLogMessage, this, &CMainWindow::slotAddInfoToLog );
 
     auto idx = fImpl->tabWidget->currentIndex();
-    if ( idx != 1 )
-        fImpl->tabWidget->setCurrentIndex( 1 );
+
+    QSettings settings;
+    auto lastPage = settings.value( "LastPage", 0 ).toInt();
+    if ( idx != lastPage )
+        fImpl->tabWidget->setCurrentIndex( lastPage );
     else
-        slotCurentTabChanged( 1 );
+        slotCurentTabChanged( lastPage );
 
     if ( CSettings::loadLastProject() )
         QTimer::singleShot( 0, this, &CMainWindow::slotLoadLastProject );
@@ -163,6 +167,10 @@ void CMainWindow::setupProgressSystem()
 
 CMainWindow::~CMainWindow()
 {
+    QSettings settings;
+    settings.setValue( "LastPage", fImpl->tabWidget->currentIndex() );
+    fCurrentTabUIInfo = nullptr;
+    disconnect( fImpl->tabWidget, &QTabWidget::currentChanged, this, &CMainWindow::slotCurentTabChanged );
 }
 
 void CMainWindow::showEvent( QShowEvent * /*event*/ )
