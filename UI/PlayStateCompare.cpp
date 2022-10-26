@@ -192,7 +192,6 @@ bool CPlayStateCompare::prepForClose()
         if ( !fMediaWindow->okToClose() )
             return false;
     }
-    close();
     return true;
 }
 
