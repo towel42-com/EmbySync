@@ -63,7 +63,6 @@ CMediaData::CMediaData( const QJsonObject & mediaObj, std::shared_ptr< CSettings
 {
     fName = computeName( mediaObj );
     fType = mediaObj[ "Type" ].toString();
-
     for ( int ii = 0; ii < settings->serverCnt(); ++ii )
     {
         auto serverInfo = settings->serverInfo( ii );
