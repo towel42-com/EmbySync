@@ -71,6 +71,7 @@ QString toString( ERequestType request )
         case ERequestType::eDeleteConnectedID: return "DeleteConnectedID";
         case ERequestType::eSetConnectedID: return "SetConnectedID";
         case ERequestType::eUpdateUserData: return "UpdateUserData";
+        case ERequestType::eGetMissingEpisodes: return "GetMissingEpisodes";
     }
     return {};
 }
@@ -214,6 +215,26 @@ void CSyncSystem::loadUsersMedia( std::shared_ptr< CUserData > userData )
         emit sigAddToLog( EMsgType::eInfo, QString( "Loading media for '%1' on server '%2'" ).arg( fCurrUserData->userName( serverInfo->keyName() ) ).arg( serverInfo->displayName() ) );
         requestGetMediaList( serverInfo->keyName() );
     }
+}
+
+void CSyncSystem::loadMissingEpisodes( std::shared_ptr< CUserData > userData, const QDate & minPremiereDate, const QDate & maxPremiereDate )
+{
+    fProgressSystem->setTitle( tr( "Loading Missing Episodes" ) );
+    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    {
+        auto serverInfo = fSettings->serverInfo( ii );
+        loadMissingEpisodes( userData, serverInfo, minPremiereDate, maxPremiereDate );
+    }
+}
+
+void CSyncSystem::loadMissingEpisodes( std::shared_ptr< CUserData > userData, std::shared_ptr<const CServerInfo> serverInfo, const QDate & minPremiereDate, const QDate & maxPremiereDate )
+{
+    if ( !serverInfo || !serverInfo->isEnabled() )
+        return;
+
+    fCurrUserData = userData;
+    emit sigAddToLog( EMsgType::eInfo, QString( "Loading Missing Episodes on server '%2'" ).arg( serverInfo->displayName() ) );
+    requestMissingEpisodes( serverInfo->keyName(), minPremiereDate, maxPremiereDate );
 }
 
 void CSyncSystem::clearCurrUser()
@@ -616,7 +637,7 @@ void CSyncSystem::slotCheckPendingRequests()
             }
         }
     }
-    emit sigAddToLog( EMsgType::eInfo, QString( "There are %1 total pending requests on all servers" ).arg( numRequestsTotal ) );
+    emit sigAddToLog( EMsgType::eInfo, QString( "There are %1 pending requests across all servers" ).arg( numRequestsTotal ) );
     for ( auto && ii : msgs )
         emit sigAddToLog( EMsgType::eInfo, ii );
 }
@@ -798,6 +819,9 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
             case ERequestType::eGetMediaList:
                 emit sigUserMediaLoaded();
                 break;
+            case ERequestType::eGetMissingEpisodes:
+                emit sigUserMediaLoaded();
+                break;
             case ERequestType::eNone:
             case ERequestType::eReloadMediaData:
             case ERequestType::eUpdateUserMediaData:
@@ -822,85 +846,99 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
 
     switch ( requestType )
     {
-    case ERequestType::eNone:
-        break;
-    case ERequestType::eGetServerInfo:
-        handleGetServerInfoResponse( serverName, data );
-        break;
-    case ERequestType::eGetServerHomePage:
-        handleGetServerHomePageResponse( serverName, data );
-        break;
-    case ERequestType::eGetServerIcon:
-        handleGetServerIconResponse( serverName, data, extraData.toString() );
-        break;
-    case ERequestType::eGetUsers:
-        if ( !fProgressSystem->wasCanceled() )
-        {
-            handleGetUsersResponse( serverName, data );
-
-            if ( isLastRequestOfType( ERequestType::eGetUsers ) )
-                emit sigLoadingUsersFinished();
-        }
-        break;
-    case ERequestType::eGetUser:
-        handleGetUserResponse( serverName, data );
-        break;
-    case ERequestType::eGetUserAvatar:
-        handleGetUserAvatarResponse( serverName, extraData.toString(), data );
-        break;
-    case ERequestType::eSetUserAvatar:
-        handleSetUserAvatarResponse( serverName, extraData.toString() );
-        break;
-    case ERequestType::eGetMediaList:
-        if ( !fProgressSystem->wasCanceled() )
-        {
-            handleGetMediaListResponse( serverName, data );
-
-            if ( isLastRequestOfType( ERequestType::eGetMediaList ) )
+        case ERequestType::eNone:
+            break;
+        case ERequestType::eGetServerInfo:
+            handleGetServerInfoResponse( serverName, data );
+            break;
+        case ERequestType::eGetServerHomePage:
+            handleGetServerHomePageResponse( serverName, data );
+            break;
+        case ERequestType::eGetServerIcon:
+            handleGetServerIconResponse( serverName, data, extraData.toString() );
+            break;
+        case ERequestType::eGetUsers:
+            if ( !fProgressSystem->wasCanceled() )
             {
-                fProgressSystem->resetProgress();
-                slotMergeMedia();
-            }
-        }
-        break;
-    case ERequestType::eReloadMediaData:
-    {
-        handleReloadMediaResponse( serverName, data, extraData.toString() );
-        break;
-    }
-    case ERequestType::eUpdateUserMediaData:
-    {
-        handleUpdateUserDataForMedia( serverName, extraData.toString() );
-        break;
-    }
-    case ERequestType::eUpdateUserData:
-    {
-        //qDebug() << data;
-        handleUpdateUserData( serverName, extraData.toString() );
-        break;
-    }
-    case ERequestType::eUpdateFavorite:
-    {
-        handleSetFavorite( serverName, extraData.toString() );
-        break;
-    }
-    case ERequestType::eTestServer:
-    {
-        handleTestServer( serverName );
-        break;
-    }
-    case ERequestType::eDeleteConnectedID:
-    {
-        handleDeleteConnectedID( serverName );
-        break;
-    }
-    case ERequestType::eSetConnectedID:
-    {
-        handleSetConnectedID( serverName );
-        break;
-    }
-    }
+                handleGetUsersResponse( serverName, data );
 
+                if ( isLastRequestOfType( ERequestType::eGetUsers ) )
+                    emit sigLoadingUsersFinished();
+            }
+            break;
+        case ERequestType::eGetUser:
+            handleGetUserResponse( serverName, data );
+            break;
+        case ERequestType::eGetUserAvatar:
+            handleGetUserAvatarResponse( serverName, extraData.toString(), data );
+            break;
+        case ERequestType::eSetUserAvatar:
+            handleSetUserAvatarResponse( serverName, extraData.toString() );
+            break;
+        case ERequestType::eGetMediaList:
+            if ( !fProgressSystem->wasCanceled() )
+            {
+                handleGetMediaListResponse( serverName, data );
+
+                if ( isLastRequestOfType( ERequestType::eGetMediaList ) )
+                {
+                    fProgressSystem->resetProgress();
+                    slotMergeMedia();
+                }
+            }
+            break;
+        case ERequestType::eGetMissingEpisodes:
+        {
+            if ( !fProgressSystem->wasCanceled() )
+            {
+                handleMissingEpisodesResponse( serverName, data );
+
+                if ( isLastRequestOfType( ERequestType::eGetMissingEpisodes ) )
+                {
+                    fProgressSystem->resetProgress();
+                    slotMergeMedia();
+                }
+            }
+            break;
+        }
+
+        case ERequestType::eReloadMediaData:
+        {
+            handleReloadMediaResponse( serverName, data, extraData.toString() );
+            break;
+        }
+        case ERequestType::eUpdateUserMediaData:
+        {
+            handleUpdateUserDataForMedia( serverName, extraData.toString() );
+            break;
+        }
+        case ERequestType::eUpdateUserData:
+        {
+            //qDebug() << data;
+            handleUpdateUserData( serverName, extraData.toString() );
+            break;
+        }
+        case ERequestType::eUpdateFavorite:
+        {
+            handleSetFavorite( serverName, extraData.toString() );
+            break;
+        }
+        case ERequestType::eTestServer:
+        {
+            handleTestServer( serverName );
+            break;
+        }
+        case ERequestType::eDeleteConnectedID:
+        {
+            handleDeleteConnectedID( serverName );
+            break;
+        }
+        case ERequestType::eSetConnectedID:
+        {
+            handleSetConnectedID( serverName );
+            break;
+        }
+    }
     postHandleRequest( reply, serverName, requestType );
 }
 
@@ -1342,7 +1380,7 @@ void CSyncSystem::requestGetMediaList( const QString & serverName )
         std::make_pair( "SortBy", "Type,SortName" ),
         std::make_pair( "SortOrder", "Ascending" ),
         std::make_pair( "Recursive", "True" ),
-        std::make_pair( "IsMissing", "False" ),
+        std::make_pair( "IsMissing", "False"  ),
         std::make_pair( "Fields", "ProviderIds,ExternalUrls,Missing" )
     };
 
@@ -1392,6 +1430,94 @@ void CSyncSystem::handleGetMediaListResponse( const QString & serverName, const 
     emit sigAddToLog( EMsgType::eInfo, QString( "%1 has %2 media items on server '%3'" ).arg( fCurrUserData->userName( serverName ) ).arg( mediaList.count() ).arg( serverName ) );
     if ( fSettings->maxItems() > 0 )
         emit sigAddToLog( EMsgType::eInfo, QString( "Loading %2 media items" ).arg( fSettings->maxItems() ) );
+
+    int curr = 0;
+    for ( auto && ii : mediaList )
+    {
+        if ( fSettings->maxItems() > 0 )
+        {
+            if ( curr >= fSettings->maxItems() )
+                break;
+        }
+        curr++;
+
+        if ( fProgressSystem->wasCanceled() )
+            break;
+        fProgressSystem->incProgress();
+
+        auto media = ii.toObject();
+
+        loadMedia( serverName, media );
+    }
+    fProgressSystem->resetProgress();
+    fProgressSystem->popState();
+    fProgressSystem->incProgress();
+}
+
+void CSyncSystem::requestMissingEpisodes( const QString & serverName, const QDate & minPremiereDate, const QDate & maxPremiereDate )
+{
+    std::list< std::pair< QString, QString > > queryItems =
+    {
+        std::make_pair( "IncludeItemTypes", "Episode" ),
+        std::make_pair( "SortBy", "Type,SortName" ),
+        std::make_pair( "SortOrder", "Ascending" ),
+        std::make_pair( "Recursive", "True" ),
+        std::make_pair( "IsMissing", "True" ),
+        std::make_pair( "Fields", "ProviderIds,ExternalUrls,Missing" )
+    };
+    if ( minPremiereDate.isValid() )
+    {
+        queryItems.emplace_back( std::make_pair( "MinPremiereDate", minPremiereDate.toString( Qt::ISODate ) ) );
+    }
+    if ( maxPremiereDate.isValid() )
+    {
+        queryItems.emplace_back( std::make_pair( "MaxPremiereDate", maxPremiereDate.toString( Qt::ISODate ) ) );
+    }
+
+    // ItemsService
+    auto && url = fSettings->findServerInfo( serverName )->getUrl( QString( "Users/%1/Items" ).arg( fCurrUserData->getUserID( serverName ) ), queryItems );
+    //auto && url = fSettings->findServerInfo( serverName )->getUrl( QString( "Items" ), queryItems );
+    if ( !url.isValid() )
+        return;
+
+    qDebug() << url;
+    auto request = QNetworkRequest( url );
+
+    emit sigAddToLog( EMsgType::eInfo, QString( "Requesting missing episodes from server '%2'" ).arg( serverName ) );
+
+    auto reply = makeRequest( request );
+    setServerName( reply, serverName );
+    setRequestType( reply, ERequestType::eGetMissingEpisodes );
+}
+
+void CSyncSystem::handleMissingEpisodesResponse( const QString & serverName, const QByteArray & data )
+{
+    QJsonParseError error;
+    auto doc = QJsonDocument::fromJson( data, &error );
+    if ( error.error != QJsonParseError::NoError )
+    {
+        if ( fUserMsgFunc )
+            fUserMsgFunc( tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ), true );
+        return;
+    }
+
+    //qDebug() << doc.toJson();
+    if ( !doc[ "Items" ].isArray() )
+    {
+        loadMedia( serverName, doc.object() );
+        return;
+    }
+
+    auto mediaList = doc[ "Items" ].toArray();
+    fProgressSystem->pushState();
+
+    fProgressSystem->resetProgress();
+    fProgressSystem->setTitle( tr( "Loading Users Media Data" ) );
+    fProgressSystem->setMaximum( mediaList.count() );
+
+    emit sigAddToLog( EMsgType::eInfo, QString( "Server '%1' has %2 missing episodes'" ).arg( serverName ).arg( mediaList.count() ) );
+    if ( fSettings->maxItems() > 0 )
+        emit sigAddToLog( EMsgType::eInfo, QString( "Loading %2 missing episodes" ).arg( fSettings->maxItems() ) );
 
     int curr = 0;
     for ( auto && ii : mediaList )
