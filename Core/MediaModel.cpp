@@ -42,7 +42,7 @@ int CMediaModel::columnCount( const QModelIndex & parent /* = QModelIndex() */ )
     return retVal;
 }
 
-QString CMediaModel::serverNameForColumn( int column ) const
+QString CMediaModel::serverForColumn( int column ) const
 {
     auto providerInfo = getProviderInfoForColumn( column );
     if ( providerInfo )
@@ -101,7 +101,7 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
     }
 
     int column = index.column();
-    auto serverName = this->serverNameForColumn( column );
+    auto serverName = this->serverForColumn( column );
 
     // reverse for black background
     if ( role == Qt::ForegroundRole )
@@ -123,11 +123,6 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
     if ( ( role == Qt::DecorationRole ) && ( perServerColumn( column ) == eName ) )
     {
         return mediaData->getDirectionIcon( serverName );
-    }
-
-    if ( role == ECustomRoles::eServerNameForColumnRole )
-    {
-        return serverName;
     }
 
     if ( role != Qt::DisplayRole )
@@ -447,7 +442,7 @@ QVariant CMediaModel::getColor( const QModelIndex & index, const QString & serve
 
         auto older = fSettings->mediaDestColor( background );
         auto newer = fSettings->mediaSourceColor( background );
-        auto serverName = this->serverNameForColumn( index.column() );
+        auto serverName = this->serverForColumn( index.column() );
 
         auto isOlder = mediaData->needsUpdating( serverName );
 
