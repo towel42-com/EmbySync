@@ -25,6 +25,7 @@
 #include "SABUtils/QtUtils.h"
 #include "Core/Settings.h"
 #include "Core/ServerInfo.h"
+#include "Core/IServerForColumn.h"
 
 #include <QSortFilterProxyModel>
 #include <QScrollBar>
@@ -138,16 +139,20 @@ void CDataTree::slotServerInfoChanged()
 void CDataTree::hideColumns()
 {
     auto model = fImpl->data->model();
-    if ( !model )
+    if ( !model /*|| ( model->rowCount() == 0 )*/ )
         return;
 
     auto numColumns = model->columnCount();
-    
     for ( int ii = 0; ii < numColumns; ++ii )
     {
-        auto idx = model->index( 0, ii );
-        Q_ASSERT( idx.isValid() );
-        auto server = model->data( idx, Qt::UserRole + 10000 ).toString();
+        auto proxyModel = dynamic_cast<QAbstractProxyModel *>( model );
+        if ( proxyModel )
+            model = proxyModel->sourceModel();
+
+        auto serverModel = dynamic_cast<IServerForColumn *>( model );
+        if ( !serverModel )
+            continue;
+        auto server = serverModel->serverForColumn( ii );
         bool hide = ( server != "<ALL>" ) && server != fServerInfo->keyName();
         fImpl->data->setColumnHidden( ii, hide );
     }
