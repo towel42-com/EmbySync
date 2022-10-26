@@ -28,6 +28,7 @@
 #include <utility>
 #include <QObject>
 #include <QIcon>
+#include <optional>
 
 class QJsonObject;
 
@@ -66,7 +67,7 @@ public:
     QJsonObject toJson() const;
     static std::shared_ptr< CServerInfo > fromJson( const QJsonObject & obj, QString & errorMsg );
 
-    bool isEnabled() const { return canSync() && fIsEnabled; }
+    bool isEnabled() const { return fIsEnabled && canSync(); }
     bool setIsEnabled( bool isEnabled );
 
     void update( const QJsonObject & serverData );
@@ -77,6 +78,8 @@ public:
 Q_SIGNALS:
     void sigServerInfoChanged();
 private:
+    mutable std::optional< QUrl > fDefaultURL;
+
     std::pair< QString, bool > fName; // may be automatically generated or not
     mutable QString fKeyName;
     QString fURL;

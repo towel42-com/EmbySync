@@ -79,6 +79,14 @@ QUrl CServerInfo::getUrl() const
 
 QUrl CServerInfo::getUrl( const QString & extraPath, const std::list< std::pair< QString, QString > > & queryItems ) const
 {
+    if ( extraPath.isEmpty() && queryItems.empty() )
+    {
+        if ( fDefaultURL.has_value() )
+            return fDefaultURL.value();
+        auto path = url( true );
+        fDefaultURL = QUrl( path );
+        return fDefaultURL.value();
+    }
     auto path = url( true );
 
     if ( !extraPath.isEmpty() )
@@ -98,7 +106,7 @@ QUrl CServerInfo::getUrl( const QString & extraPath, const std::list< std::pair<
     }
     retVal.setQuery( query );
 
-    //qDebug() << url;
+    //qDebug() << retVal;
 
     return retVal;
 }
