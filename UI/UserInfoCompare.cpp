@@ -176,7 +176,6 @@ bool CUserInfoCompare::prepForClose()
         if ( !fUserWindow->okToClose() )
             return false;
     }
-    deleteLater();
     return true;
 }
 
