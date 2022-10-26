@@ -61,7 +61,7 @@ public:
     virtual void loadSettings() override;
 
     virtual std::shared_ptr< CTabUIInfo > getUIInfo() const override;
-    virtual void loadingUsersFinished();
+    virtual void loadingUsersFinished() override;
 
     virtual QSplitter * getDataSplitter() const override;
 
@@ -77,9 +77,9 @@ Q_SIGNALS:
     void sigAddInfoToLog( const QString & msg );
 
 public Q_SLOTS:
-    void slotCanceled();
-    void slotModelDataChanged();
-    void slotSettingsChanged();
+    void slotCanceled() override;
+    void slotModelDataChanged() override;
+    void slotSettingsChanged() override;
     void slotViewUser( const QModelIndex & current );
     void slotSetCurrentUser( const QModelIndex & current );
     void slotViewUserInfo();
