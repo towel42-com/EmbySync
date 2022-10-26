@@ -24,6 +24,7 @@
 #define _MAINWINDOW_H
 
 #include <QMainWindow>
+#include <unordered_map>
 #include <memory>
 namespace Ui
 {

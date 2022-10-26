@@ -30,6 +30,7 @@
 #include <QDateTime>
 #include <memory>
 #include <map>
+#include <functional>
 
 class CMediaData;
 class CSettings;
