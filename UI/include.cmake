@@ -5,6 +5,7 @@ set(qtproject_SRCS
     DataTree.cpp
     MediaDataWidget.cpp
     MediaWindow.cpp 
+    MissingEpisodes.cpp
     PlayStateCompare.cpp
     UserInfoCompare.cpp
     UserDataWidget.cpp
@@ -20,6 +21,7 @@ set(qtproject_H
     DataTree.h
     MediaDataWidget.h
     MediaWindow.h 
+    MissingEpisodes.h
     PlayStateCompare.h
     UserInfoCompare.h
     UserWindow.h
@@ -38,6 +40,7 @@ set(qtproject_UIS
     DataTree.ui
     MediaDataWidget.ui
     MediaWindow.ui 
+    MissingEpisodes.ui
     PlayStateCompare.ui
     UserInfoCompare.ui
     UserDataWidget.ui
