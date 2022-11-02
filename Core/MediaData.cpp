@@ -24,6 +24,7 @@
 #include "MediaServerData.h"
 #include "Settings.h"
 #include "ServerInfo.h"
+#include "ServerModel.h"
 
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -34,6 +35,7 @@
 
 #include <chrono>
 #include <optional>
+#include <QDebug>
 
 QStringList CMediaData::getHeaderLabels()
 {
@@ -59,13 +61,15 @@ std::function< QString( uint64_t ) > CMediaData::mecsToStringFunc()
     return sMSecsToStringFunc;
 }
 
-CMediaData::CMediaData( const QJsonObject & mediaObj, std::shared_ptr< CSettings > settings )
+CMediaData::CMediaData( const QJsonObject & mediaObj, std::shared_ptr< CServerModel > serverModel )
 {
     fName = computeName( mediaObj );
+    fSeriesName = mediaObj[ "SeriesName" ].toString();
     fType = mediaObj[ "Type" ].toString();
-    for ( int ii = 0; ii < settings->serverCnt(); ++ii )
+
+    for ( int ii = 0; ii < serverModel->serverCnt(); ++ii )
     {
-        auto serverInfo = settings->serverInfo( ii );
+        auto serverInfo = serverModel->getServerInfo( ii );
         if ( !serverInfo->isEnabled() )
             continue;
         fInfoForServer[ serverInfo->keyName() ] = std::make_shared< SMediaServerData >();
@@ -83,6 +87,11 @@ std::shared_ptr<SMediaServerData> CMediaData::userMediaData( const QString & ser
 QString CMediaData::name() const
 {
     return fName;
+}
+
+QString CMediaData::seriesName() const
+{
+    return fSeriesName;
 }
 
 QString CMediaData::mediaType() const
@@ -121,10 +130,9 @@ QString CMediaData::computeName( const QJsonObject & media )
     return retVal;
 }
 
-void CMediaData::loadUserDataFromJSON( const QString & serverName, const QJsonObject & media )
+void CMediaData::loadData( const QString & serverName, const QJsonObject & media )
 {
-    //auto tmp = QJsonDocument( media );
-    //qDebug() << tmp.toJson();
+    qDebug().noquote().nospace() << QJsonDocument( media ).toJson( QJsonDocument::Indented );
 
     auto externalUrls = media[ "ExternalUrls" ].toArray();
     for ( auto && ii : externalUrls )
@@ -150,6 +158,8 @@ void CMediaData::loadUserDataFromJSON( const QString & serverName, const QJsonOb
         auto providerID = ii.value().toString();
         addProvider( providerName, providerID );
     }
+
+    fPremiereDate = media[ "PremiereDate" ].toVariant().toDateTime();
 }
 
 QString CMediaData::externalUrlsText() const

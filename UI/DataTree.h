@@ -41,9 +41,12 @@ class CDataTree : public QWidget
     Q_OBJECT
 public:
     CDataTree( const std::shared_ptr< const CServerInfo > & serverInfo, QWidget * parent = nullptr );
+
     virtual ~CDataTree() override;
 
     void setModel( QAbstractItemModel * model );
+    
+    void setServer( const std::shared_ptr< const CServerInfo > & serverInfo, bool hideColumns );
     void hideColumns();
 
     void addPeerDataTree( CDataTree * peer );
@@ -56,7 +59,7 @@ public:
     bool hasCurrentItem() const;
 
     QWidget * dataTree() const;
-    const std::shared_ptr< const CServerInfo > serverInfo() const { return fServerInfo; }
+    std::shared_ptr< const CServerInfo > serverInfo() const { return fServerInfo; }
 Q_SIGNALS:
     void sigCurrChanged( const QModelIndex & idx );
     void sigViewData( const QModelIndex & idx );
@@ -78,6 +81,6 @@ private:
     std::unique_ptr< Ui::CDataTree > fImpl;
     std::vector< CDataTree * > fPeers;
 
-    const std::shared_ptr< const CServerInfo > fServerInfo;
+    std::shared_ptr< const CServerInfo > fServerInfo;
 };
 #endif 

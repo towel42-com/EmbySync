@@ -22,10 +22,11 @@
 
 #include "MediaWindow.h"
 #include "MediaDataWidget.h"
+
 #include "ui_MediaWindow.h"
 #include "Core/SyncSystem.h"
 #include "Core/MediaData.h"
-#include "Core/Settings.h"
+#include "Core/ServerModel.h"
 #include "Core/ServerInfo.h"
 #include "SABUtils/WidgetChanged.h"
 
@@ -35,20 +36,19 @@
 
 #include <QCloseEvent>
 
-CMediaWindow::CMediaWindow( std::shared_ptr< CSettings> settings, std::shared_ptr< CSyncSystem > syncSystem, QWidget * parent )
+CMediaWindow::CMediaWindow( std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CSyncSystem > syncSystem, QWidget * parent )
     : QWidget( parent ),
     fImpl( new Ui::CMediaWindow ),
-    fSyncSystem( syncSystem ),
-    fSettings( settings )
+    fSyncSystem( syncSystem )
 {
     fImpl->setupUi( this );
     connect( fImpl->process, &QPushButton::clicked, this, &CMediaWindow::slotUploadUserMediaData );
 
     auto horizontalLayout = new QHBoxLayout( fImpl->userDataWidgets );
     
-    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    for ( int ii = 0; ii < serverModel->serverCnt(); ++ii )
     {
-        auto serverInfo = settings->serverInfo( ii );
+        auto serverInfo = serverModel->getServerInfo( ii );
         if ( !serverInfo->isEnabled() )
             continue;
 

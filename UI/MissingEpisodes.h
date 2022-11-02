@@ -38,13 +38,12 @@ class CMediaData;
 class CUserData;
 class CSettings;
 class CSyncSystem;
-class CMediaFilterModel;
 class CUsersModel;
-class CUsersFilterModel;
-class CMediaWindow;
 class CDataTree;
 class CProgressSystem;
 class CTabUIInfo;
+class CServerFilterModel;
+class CMediaMissingFilterModel;
 
 class CMissingEpisodes : public CTabPageBase
 {
@@ -53,7 +52,7 @@ public:
     CMissingEpisodes( QWidget * parent = nullptr );
     virtual ~CMissingEpisodes() override;
 
-    virtual void setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CProgressSystem > progressSystem ) override;
+    virtual void setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem ) override;
     virtual void setupActions();
 
     virtual bool okToClose() override;
@@ -67,10 +66,6 @@ public:
 
     virtual QSplitter * getDataSplitter() const override;
 
-    void onlyShowSyncableUsers();
-    void onlyShowMediaWithDifferences();
-    void showMediaWithIssues();
-
     virtual bool prepForClose() override;
 Q_SIGNALS:
     void sigModelDataChanged();
@@ -80,62 +75,27 @@ public Q_SLOTS:
     virtual void slotModelDataChanged() override;
     virtual void slotSettingsChanged() override;
 
+    virtual void slotSetCurrentServer( const QModelIndex & index );
 private Q_SLOTS:
-    void slotReloadCurrentUser();
-
-    void slotProcess();
-    void slotSelectiveProcess();
-
-    void slotUserMediaCompletelyLoaded();
-    void slotPendingMediaUpdate();
-
     void slotCurrentUserChanged( const QModelIndex & index );
-
-    void slotToggleOnlyShowSyncableUsers();
-    void slotToggleOnlyShowMediaWithDifferences();
-    void slotToggleShowMediaWithIssues();
-
-
     void slotUserMediaLoaded();
-
-    void slotSetCurrentMediaItem( const QModelIndex & current );
-    void slotViewMedia( const QModelIndex & current );
-
-    void slotViewMediaInfo();
+    void slotToggleShowEnabledServers();
 private:
-    std::shared_ptr< CMediaData > getMediaData( QModelIndex idx ) const;
-
-    std::shared_ptr< CUserData > getCurrUserData() const;
-    std::shared_ptr< CUserData > getUserData( QModelIndex idx ) const;
+    void showEnabledServers();
+    std::shared_ptr< CServerInfo > getCurrentServerInfo() const;
+    std::shared_ptr< CServerInfo > getServerInfo( QModelIndex idx ) const;
 
     void reset();
 
     void loadServers();
+    virtual void createServerTrees( QAbstractItemModel * model ) override;
 
     std::unique_ptr< Ui::CMissingEpisodes > fImpl;
 
-    CUsersFilterModel * fUsersFilterModel{ nullptr };
-    CMediaFilterModel * fMediaFilterModel{ nullptr };
-
-    QTimer * fPendingMediaUpdateTimer{ nullptr };
-    QTimer * fMediaLoadedTimer{ nullptr };
-
-    QPointer< CMediaWindow > fMediaWindow;
-
-    QPointer< QAction > fActionReloadCurrentUser{ nullptr };
-
-    QPointer< QMenu > fProcessMenu{ nullptr };
-    QPointer< QAction > fActionProcess{ nullptr };
-    QPointer< QAction > fActionSelectiveProcess{ nullptr };
-
-    QPointer< QMenu > fViewMenu{ nullptr };
-    QPointer< QAction > fActionViewMediaInformation{ nullptr };
-
-    QPointer< QAction > fActionOnlyShowSyncableUsers{ nullptr };
-    QPointer< QAction > fActionOnlyShowMediaWithDifferences{ nullptr };
-    QPointer< QAction > fActionShowMediaWithIssues{ nullptr };
-
-    std::list< QPointer< QAction > > fEditActions;
+    QPointer< QAction > fActionOnlyShowEnabledServers;
     QPointer< QToolBar > fToolBar{ nullptr };
+
+    CServerFilterModel * fServerFilterModel { nullptr };
+    CMediaMissingFilterModel * fMissingMediaModel{ nullptr };
 };
 #endif

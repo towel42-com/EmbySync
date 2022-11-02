@@ -26,7 +26,7 @@
 #include <QWidget>
 class CUserData;
 class CSyncSystem;
-class CSettings;
+class CServerModel;
 class CUserDataWidget;
 namespace Ui
 {
@@ -38,7 +38,7 @@ class CUserWindow : public QWidget
 {
     Q_OBJECT
 public:
-    CUserWindow( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, QWidget * parent = nullptr );
+    CUserWindow( std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CSyncSystem > syncSystem, QWidget * parent = nullptr );
     virtual ~CUserWindow() override;
 
     void setUser( std::shared_ptr< CUserData > userData );
@@ -59,7 +59,7 @@ private:
     bool fChanged{ false };
     std::unique_ptr< Ui::CUserWindow > fImpl;
     std::shared_ptr< CSyncSystem > fSyncSystem;
-    std::shared_ptr< CSettings > fSettings;
+    //std::shared_ptr< CSettings > fSettings;
 
     std::map< QString, CUserDataWidget * > fUserDataWidgets;
     std::shared_ptr< CUserData > fUserData;

@@ -4,6 +4,7 @@
 #include "Settings.h"
 #include "ServerInfo.h"
 #include "SyncSystem.h"
+#include "ServerModel.h"
 
 #include <QColor>
 #include <set>
@@ -11,9 +12,10 @@
 #include <QJsonDocument>
 #include <QImage>
 
-CUsersModel::CUsersModel( std::shared_ptr< CSettings > settings, QObject * parent ) :
+CUsersModel::CUsersModel( std::shared_ptr< CSettings > settings, std::shared_ptr< CServerModel > serverModel, QObject * parent ) :
     QAbstractTableModel( parent ),
-    fSettings( settings )
+    fSettings( settings ),
+    fServerModel( serverModel )
 {
     setupColumns();
 }
@@ -25,9 +27,9 @@ void CUsersModel::setupColumns()
     fServerNumToColumn.clear();
     int columnNum = static_cast<int>( eFirstServerColumn );
     auto colsPerServer = this->columnsPerServer();
-    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    for ( int ii = 0; ii < fServerModel->serverCnt(); ++ii )
     {
-        auto serverInfo = fSettings->serverInfo( ii );
+        auto serverInfo = fServerModel->getServerInfo( ii );
         if ( !serverInfo->isEnabled() )
             continue;
         for ( int jj = 0; jj < colsPerServer; ++jj )
@@ -56,6 +58,11 @@ void CUsersModel::slotServerInfoChanged()
     emit headerDataChanged( Qt::Orientation::Horizontal, colMin, colMax );
 }
 
+int CUsersModel::userCnt() const
+{
+    return rowCount();
+}
+
 int CUsersModel::rowCount( const QModelIndex & parent /* = QModelIndex() */ ) const
 {
     if ( parent.isValid() )
@@ -74,7 +81,7 @@ int CUsersModel::columnCount( const QModelIndex & parent /* = QModelIndex() */ )
     if ( parent.isValid() )
         return 0;
     auto retVal = static_cast<int>( eFirstServerColumn );
-    retVal += fSettings->enabledServerCnt() * columnsPerServer();
+    retVal += fServerModel->enabledServerCnt() * columnsPerServer();
     return retVal;
 }
 
@@ -394,9 +401,9 @@ void CUsersModel::loadAvatars( std::shared_ptr< CSyncSystem > syncSystem ) const
 {
     for ( auto && user : fUsers )
     {
-        for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+        for ( int ii = 0; ii < fServerModel->serverCnt(); ++ii )
         {
-            auto server = fSettings->serverInfo( ii );
+            auto server = fServerModel->getServerInfo( ii );
             if ( !server->isEnabled() )
                 continue;
             auto serverName = server->keyName();
@@ -531,25 +538,6 @@ CUsersModel::SUsersSummary CUsersModel::getMediaSummary() const
     return retVal;
 }
 
-std::shared_ptr< CUserData > CUsersModel::userDataForName( const QString & name ) const
-{
-    for ( auto && ii : fUsers )
-    {
-        if ( ii->isUser( name ) )
-            return ii;
-    }
-    return {};
-}
-
-std::shared_ptr< CUserData > CUsersModel::userData( const QModelIndex & idx ) const
-{
-    if ( !idx.isValid() )
-        return {};
-    if ( ( idx.row() < 0 ) || ( idx.row() >= fUsers.size() ) )
-        return {};
-    return fUsers[ idx.row() ];
-}
-
 QModelIndex CUsersModel::indexForUser( std::shared_ptr< CUserData > user, int column ) const
 {
     if ( !user )
@@ -569,29 +557,19 @@ void CUsersModel::setUserAvatar( const QString & serverName, const QString & use
     auto image = QImage::fromData( data );
     if ( !image.isNull() )
     {
-        auto user = findUser( serverName, userID );
+        auto user = userDataOnServer( serverName, userID );
         if ( !user )
             return;
 
-        user->setAvatar( serverName, fSettings->serverCnt(), image );
+        user->setAvatar( serverName, fServerModel->serverCnt(), image );
         emit dataChanged( indexForUser( user, 0 ), indexForUser( user, columnCount() - 1 ) );
     }
 
 }
 
-std::shared_ptr< CUserData > CUsersModel::findUser( const QString & serverName, const QString & userID ) const
-{
-    for ( auto && ii : fUsers )
-    {
-        if ( ii->isUser( serverName, userID ) )
-            return ii;
-    }
-    return {};
-}
-
 void CUsersModel::updateUserConnectID( const QString & serverName, const QString & userID, const QString & idType, const QString & connectID )
 {
-    auto user = findUser( serverName, userID );
+    auto user = userDataOnServer( serverName, userID );
     if ( !user )
         return;
 
@@ -629,7 +607,55 @@ QString CUsersModel::serverForColumn( int column ) const
     return serverName;
 }
 
-std::shared_ptr< CUserData > CUsersModel::getUserData( const QString & name, bool exhaustiveSearch ) const
+std::list< int > CUsersModel::columnsForBaseColumn( int baseColumn ) const
+{
+    std::list< int > retVal;
+
+    auto curr = baseColumn;
+    while ( curr <= columnCount() )
+    {
+        retVal.push_back( curr );
+        curr += columnsPerServer();
+    }
+
+    return retVal;
+}
+
+std::shared_ptr< CUserData > CUsersModel::userData( const QModelIndex & idx ) const
+{
+    if ( !idx.isValid() )
+        return {};
+    return userData( idx.row() );
+}
+
+std::shared_ptr< CUserData > CUsersModel::userData( int userNum ) const
+{
+    if ( ( userNum < 0 ) || ( userNum >= fUsers.size() ) )
+        return {};
+    return fUsers[ userNum ];
+}
+
+std::shared_ptr< CUserData > CUsersModel::userDataOnServer( const QString & serverName, const QString & userID ) const
+{
+    for ( auto && ii : fUsers )
+    {
+        if ( ii->isUser( serverName, userID ) )
+            return ii;
+    }
+    return {};
+}
+
+std::shared_ptr< CUserData > CUsersModel::userDataExhaustive( const QString & name ) const
+{
+    for ( auto && ii : fUsers )
+    {
+        if ( ii->isUser( name ) )
+            return ii;
+    }
+    return {};
+}
+
+std::shared_ptr< CUserData > CUsersModel::userData( const QString & name, bool exhaustiveSearch ) const
 {
     if ( name.isEmpty() )
         return {};
@@ -639,11 +665,7 @@ std::shared_ptr< CUserData > CUsersModel::getUserData( const QString & name, boo
         return ( *pos ).second;
     if ( exhaustiveSearch )
     {
-        for ( auto && ii : fUsers )
-        {
-            if ( ii->isUser( name ) )
-                return ii;
-        }
+        return userDataExhaustive( name );
     }
 
     return {};
@@ -677,9 +699,9 @@ std::shared_ptr< CUserData > CUsersModel::loadUser( const QString & serverName, 
     if ( name.isEmpty() || userID.isEmpty() )
         return {};
 
-    auto userData = getUserData( connectedID );
+    auto userData = this->userData( connectedID, false );
     if ( !userData )
-        userData = getUserData( name, true );
+        userData = this->userData( name, true );
 
     if ( !userData )
     {
@@ -687,8 +709,8 @@ std::shared_ptr< CUserData > CUsersModel::loadUser( const QString & serverName, 
 
         beginInsertRows( QModelIndex(), static_cast<int>( fUsers.size() ), static_cast<int>( fUsers.size() ) );
         fUsers.push_back( userData );
-        Q_ASSERT( !userData->sortName( fSettings ).isEmpty() );
-        fUserMap[ userData->sortName( fSettings ) ] = userData;
+        Q_ASSERT( !userData->sortName( fServerModel ).isEmpty() );
+        fUserMap[ userData->sortName( fServerModel ) ] = userData;
         endInsertRows();
     }
     else

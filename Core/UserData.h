@@ -31,9 +31,8 @@
 #include <memory>
 #include <map>
 #include <functional>
-
 class CMediaData;
-class CSettings;
+class CServerModel;
 
 struct SUserServerData;
 
@@ -57,7 +56,7 @@ public:
 
     QString userName( const QString & serverName ) const;
     QString allNames() const;
-    QString sortName( std::shared_ptr< CSettings > settings ) const;
+    QString sortName( std::shared_ptr< CServerModel > serverModel ) const;
 
     QStringList missingServers() const;
 
@@ -152,6 +151,7 @@ public:
     int resumeRewindSeconds( const QString & serverName ) const;
     QString introSkipMode( const QString & serverName ) const;
 
+    bool isAdmin( const QString & serverName ) const;
     bool canBeSynced() const;
     bool onServer( const QString & serverName ) const;
 

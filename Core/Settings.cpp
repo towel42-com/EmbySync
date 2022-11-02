@@ -21,7 +21,8 @@
 // SOFTWARE.
 
 #include "Settings.h"
-#include "ServerInfo.h"
+#include "ServerModel.h"
+
 #include <QJsonDocument>
 #include <QFile>
 #include <QJsonParseError>
@@ -35,9 +36,11 @@
 
 #include <map>
 
-CSettings::CSettings()
+CSettings::CSettings( std::shared_ptr< CServerModel > serverModel ) :
+    fServerModel( serverModel )
 {
     fSyncUserList = QStringList() << ".*";
+    fServerModel->setSettings( this );
 }
 
 CSettings::~CSettings()
@@ -69,6 +72,14 @@ void CSettings::setLoadLastProject( bool value )
     settings.setValue( "LoadLastProject", value );
 }
 
+QVariant CSettings::getValue( const QJsonObject  & json, const QString & fieldName, const QVariant & defaultValue ) const
+{
+    if ( json.find( fieldName ) == json.end() )
+        return defaultValue;
+    else
+        return json[ fieldName ].toVariant();
+}
+
 bool CSettings::load( const QString & fileName, std::function<void( const QString & title, const QString & msg )> errorFunc, bool addToRecentFileList )
 {
     fFileName = fileName;
@@ -95,7 +106,7 @@ bool CSettings::load( const QString & fileName, std::function<void( const QStrin
     if ( json.object().contains( "lhs" ) )
     {
         QString errorMsg;
-        if ( !loadServer( json[ "lhs" ].toObject(), errorMsg ) )
+        if ( !fServerModel->loadServer( json[ "lhs" ].toObject(), errorMsg, false ) )
         {
             if ( errorFunc )
                 errorFunc( QObject::tr( "Could not read" ), QObject::tr( "Could not read file '%1' - '%2' for lhs server" ).arg( fFileName ).arg( errorMsg ) );
@@ -107,7 +118,7 @@ bool CSettings::load( const QString & fileName, std::function<void( const QStrin
     if ( json.object().contains( "rhs" ) )
     {
         QString errorMsg;
-        if ( !loadServer( json[ "rhs" ].toObject(), errorMsg ) )
+        if ( !fServerModel->loadServer( json[ "rhs" ].toObject(), errorMsg, true ) )
         {
             if ( errorFunc )
                 errorFunc( QObject::tr( "Could not read" ), QObject::tr( "Could not read file '%1' - '%2' for rhs server" ).arg( fFileName ).arg( errorMsg ) );
@@ -121,7 +132,7 @@ bool CSettings::load( const QString & fileName, std::function<void( const QStrin
     for ( int ii = 0; ii < servers.count(); ++ii )
     {
         QString errorMsg;
-        if ( !loadServer( servers[ ii ].toObject(), errorMsg ) )
+        if ( !fServerModel->loadServer( servers[ ii ].toObject(), errorMsg, ( ii == ( servers.count() - 1 ) ) ) )
         {
             if ( errorFunc )
                 errorFunc( QObject::tr( "Could not read" ), QObject::tr( "Could not read file '%1' - '%2' for server[%3]" ).arg( fFileName ).arg( errorMsg ).arg( ii ) );
@@ -130,101 +141,26 @@ bool CSettings::load( const QString & fileName, std::function<void( const QStrin
         }
     }
     
-    if ( json.object().find( "OnlyShowSyncableUsers" ) == json.object().end() )
-        setOnlyShowSyncableUsers( true );
-    else
-        setOnlyShowSyncableUsers( json[ "OnlyShowSyncableUsers" ].toBool() );
-
-    if ( json.object().find( "OnlyShowMediaWithDifferences" ) == json.object().end() )
-        setOnlyShowMediaWithDifferences( true );
-    else
-        setOnlyShowMediaWithDifferences( json[ "OnlyShowSyncableUsers" ].toBool() );
-
-    if ( json.object().find( "ShowMediaWithIssues" ) == json.object().end() )
-        setShowMediaWithIssues( false );
-    else
-        setShowMediaWithIssues( json[ "ShowMediaWithIssues" ].toBool() );
-    
-    if ( json.object().find( "OnlyShowUsersWithDifferences" ) == json.object().end() )
-        setOnlyShowUsersWithDifferences( true );
-    else
-        setOnlyShowUsersWithDifferences( json[ "OnlyShowSyncableUsers" ].toBool() );
-
-    if ( json.object().find( "ShowUsersWithIssues" ) == json.object().end() )
-        setShowUsersWithIssues( false );
-    else
-        setShowUsersWithIssues( json[ "ShowUsersWithIssues" ].toBool() );
-
-    if ( json.object().find( "MediaSourceColor" ) == json.object().end() )
-        setMediaSourceColor( "yellow" );
-    else
-        setMediaSourceColor( json[ "MediaSourceColor" ].toString() );
-
-    if ( json.object().find( "MediaDestColor" ) == json.object().end() )
-        setMediaDestColor( "yellow" );
-    else
-        setMediaDestColor( json[ "MediaDestColor" ].toString() );
-
-    if ( json.object().find( "MaxItems" ) == json.object().end() )
-        setMaxItems( -1 );
-    else
-        setMaxItems( json[ "MaxItems" ].toInt() );
-
-    if ( json.object().find( "SyncAudio" ) == json.object().end() )
-        setSyncAudio( true );
-    else
-        setSyncAudio( json[ "SyncAudio" ].toBool() );
-
-    if ( json.object().find( "SyncVideo" ) == json.object().end() )
-        setSyncVideo( true );
-    else
-        setSyncVideo( json[ "SyncVideo" ].toBool() );
-
-    if ( json.object().find( "SyncEpisode" ) == json.object().end() )
-        setSyncEpisode( true );
-    else
-        setSyncEpisode( json[ "SyncEpisode" ].toBool() );
-
-    if ( json.object().find( "SyncMovie" ) == json.object().end() )
-        setSyncMovie( true );
-    else
-        setSyncMovie( json[ "SyncMovie" ].toBool() );
-
-    if ( json.object().find( "SyncTrailer" ) == json.object().end() )
-        setSyncTrailer( true );
-    else
-        setSyncTrailer( json[ "SyncTrailer" ].toBool() );
-
-    if ( json.object().find( "SyncAdultVideo" ) == json.object().end() )
-        setSyncAdultVideo( true );
-    else
-        setSyncAdultVideo( json[ "SyncAdultVideo" ].toBool() );
-
-    if ( json.object().find( "SyncMusicVideo" ) == json.object().end() )
-        setSyncMusicVideo( true );
-    else
-        setSyncMusicVideo( json[ "SyncMusicVideo" ].toBool() );
-
-    if ( json.object().find( "SyncGame" ) == json.object().end() )
-        setSyncGame( true );
-    else
-        setSyncGame( json[ "SyncGame" ].toBool() );
-
-    if ( json.object().find( "SyncBook" ) == json.object().end() )
-        setSyncBook( true );
-    else
-        setSyncBook( json[ "SyncBook" ].toBool() );
-
-    if ( json.object().find( "SyncUserList" ) == json.object().end() )
-        setSyncUserList( QStringList() << ".*" );
-    else
-    {
-        QStringList userList;
-        auto tmp = json[ "SyncUserList" ].toArray();
-        for ( auto && ii : tmp )
-            userList << ii.toString();
-        setSyncUserList( userList );
-    }
+    setOnlyShowSyncableUsers( getValue( json.object(), "OnlyShowSyncableUsers", true ).toBool() );
+    setOnlyShowMediaWithDifferences( getValue( json.object(), "OnlyShowSyncableUsers", true ).toBool() );
+    setShowMediaWithIssues( getValue( json.object(), "ShowMediaWithIssues", false ).toBool() );
+    setOnlyShowEnabledServers( getValue( json.object(), "OnlyShowEnabledServers", true ).toBool() );
+    setOnlyShowUsersWithDifferences( getValue( json.object(), "OnlyShowUsersWithDifferences", true ).toBool() );
+    setShowUsersWithIssues( getValue( json.object(), "ShowUsersWithIssues", false ).toBool() );
+    setMediaSourceColor( getValue( json.object(), "MediaSourceColor", "yellow" ).toString() );
+    setMediaDestColor( getValue( json.object(), "MediaDestColor", "yellow" ).toString() );
+    setMaxItems( getValue( json.object(), "MaxItems", -1 ).toInt() );
+    setSyncAudio( getValue( json.object(), "SyncAudio", true ).toBool() );
+    setSyncVideo( getValue( json.object(), "SyncVideo", true ).toBool() );
+    setSyncEpisode( getValue( json.object(), "SyncEpisode", true ).toBool() );
+    setSyncMovie( getValue( json.object(), "SyncMovie", true ).toBool() );
+    setSyncTrailer( getValue( json.object(), "SyncTrailer", true ).toBool() );
+    setSyncAdultVideo( getValue( json.object(), "SyncAdultVideo", true ).toBool() );
+    setSyncMusicVideo( getValue( json.object(), "SyncMusicVideo", true ).toBool() );
+    setSyncGame( getValue( json.object(), "SyncGame", true ).toBool() );
+    setSyncBook( getValue( json.object(), "SyncBook", true ).toBool() );
+    setSyncUserList( getValue( json.object(), "SyncUserList", QStringList() << ".*" ).toStringList() );
+    setIgnoreShowList( getValue( json.object(), "IgnoreShowList", QStringList() ).toStringList() );
 
     fChanged = false;
 
@@ -267,7 +203,8 @@ bool CSettings::save( std::function<void( const QString & title, const QString &
     root[ "OnlyShowSyncableUsers" ] = onlyShowSyncableUsers();
     root[ "OnlyShowMediaWithDifferences" ] = onlyShowMediaWithDifferences();
     root[ "ShowMediaWithIssues" ] = showMediaWithIssues();
-    
+    root[ "OnlyShowEnabledServers" ] = onlyShowEnabledServers();
+
 
     root[ "MediaSourceColor" ] = mediaSourceColor().name();
     root[ "MediaDestColor" ] = mediaDestColor().name();
@@ -288,14 +225,12 @@ bool CSettings::save( std::function<void( const QString & title, const QString &
         userList.push_back( ii );
     root[ "SyncUserList" ] = userList;
     
-    auto servers = json.array();
+    auto showList = QJsonArray();
+    for ( auto && ii : fIgnoreShowList )
+        showList.push_back( ii );
+    root[ "IgnoreShowList" ] = showList;
 
-    for ( int ii = 0; ii < serverCnt(); ++ii )
-    {
-        servers.push_back( serverInfo( ii )->toJson() );
-    }
-
-    root[ "servers" ] = servers;
+    fServerModel->save( root );
 
     json = QJsonDocument( root );
 
@@ -316,26 +251,6 @@ bool CSettings::save( std::function<void( const QString & title, const QString &
     return true;
 }
 
-bool CSettings::canAllServersSync() const
-{
-    for ( auto && ii : fServers )
-    {
-        if ( !ii->canSync() )
-            return false;
-    }
-    return true;
-}
-
-bool CSettings::canAnyServerSync() const
-{
-    for ( auto && ii : fServers )
-    {
-        if ( ii->canSync() )
-            return true;
-    }
-    return false;
-}
-
 QColor CSettings::getColor( const QColor & clr, bool forBackground /*= true */ ) const
 {
     if (clr == Qt::black )
@@ -351,8 +266,7 @@ QColor CSettings::getColor( const QColor & clr, bool forBackground /*= true */ )
 
 void CSettings::reset()
 {
-    fServers.clear();
-    fServerMap.clear();
+    fServerModel->clear();
     fChanged = false;
     fFileName.clear();
 }
@@ -487,206 +401,46 @@ void CSettings::setShowUsersWithIssues( bool value )
     fShowUsersWithIssues = value;
 }
 
+void CSettings::setOnlyShowEnabledServers( bool value )
+{
+    fOnlyShowEnabledServers = value;
+}
+
 void CSettings::setSyncUserList( const QStringList & value )
 {
     updateValue( fSyncUserList, value );
 }
 
-void CSettings::setServers( const std::vector < std::shared_ptr< CServerInfo > > & servers )
+QRegularExpression CSettings::ignoreShowRegEx() const
 {
-    fChanged = fChanged || serversChanged( servers, fServers );
-    fChanged = fChanged || serversChanged( fServers, servers );
-
-    if ( !fChanged )
-        return;
-
-    fServers = servers;
-    fServerMap.clear();
-    updateServerMap();
-    updateFriendlyServerNames();
-}
-
-
-int CSettings::enabledServerCnt() const
-{
-    int retVal = 0;
-    for ( int ii = 0; ii < serverCnt(); ++ii )
+    QStringList regExList;
+    for ( auto && ii : fIgnoreShowList )
     {
-        if ( fServers[ ii ]->isEnabled() )
-            retVal++;
+        if ( ii.isEmpty() )
+            continue;
+        if ( !QRegularExpression( ii ).isValid() )
+            continue;
+        regExList << "(" + ii + ")";
     }
-    return retVal;
+    auto regExpStr = regExList.join( "|" );
+    QRegularExpression regExp;
+    if ( !regExpStr.isEmpty() )
+        regExp = QRegularExpression( regExpStr );
+    return regExp;
 }
 
-bool CSettings::serversChanged( const std::vector< std::shared_ptr< CServerInfo > > & lhs, const std::vector< std::shared_ptr< CServerInfo > > & rhs ) const
+void CSettings::setIgnoreShowList( const QStringList & value )
 {
-    if ( lhs.size() != rhs.size() )
-        return true;
-
-    bool retVal = false;
-    for ( auto && ii : lhs )
-    {
-        std::shared_ptr< CServerInfo > found;
-        for ( auto && jj : rhs )
-        {
-            if ( ii->keyName() == jj->keyName() )
-            {
-                found = jj;
-                break;
-            }
-        }
-        if ( found )
-        {
-            if ( *ii != *found )
-            {
-                retVal = true;
-                break;
-            }
-        }
-        else
-        {
-            retVal = true;
-            break;
-        }
-    }        
-    return retVal;
+    std::set< QString > tmp = { value.begin(), value.end() };
+    updateValue( fIgnoreShowList, tmp );
 }
 
-void CSettings::updateServerMap()
-{
-    for ( size_t ii = 0; ii < fServers.size(); ++ii )
-    {
-        auto server = fServers[ ii ];
-        fServerMap[ server->keyName() ] = { server, ii };
-    }
-}
 
-bool CSettings::loadServer( const QJsonObject & obj, QString & errorMsg )
-{
-    auto serverInfo = CServerInfo::fromJson( obj, errorMsg );
-    if ( !serverInfo )
-        return false;
 
-    if ( this->findServerInfo( serverInfo->keyName() ) )
-    {
-        errorMsg = QString( "Server %1(%2)' already exists" ).arg( serverInfo->displayName() ).arg( serverInfo->keyName() );
-        return false;
-    }
 
-    fServers.push_back( serverInfo );
-    fServerMap[ serverInfo->keyName() ] = { serverInfo, fServers.size() - 1 };
 
-    updateFriendlyServerNames();
-    return true;
-}
 
-int CSettings::getServerPos( const QString & serverName ) const
-{
-    auto pos = fServerMap.find( serverName );
-    if ( pos != fServerMap.end() )
-        return static_cast<int>( ( *pos ).second.second );
-    return -1;
-}
 
-std::shared_ptr< const CServerInfo > CSettings::serverInfo( int serverNum ) const
-{
-    if ( serverNum < 0 )
-        return {};
-    if ( serverNum >= serverCnt() )
-        return {};
 
-    return fServers[ serverNum ];
-}
 
-std::shared_ptr< const CServerInfo > CSettings::findServerInfo( const QString & serverName ) const
-{
-    auto pos = fServerMap.find( serverName );
-    if ( pos != fServerMap.end() )
-        return ( *pos ).second.first;
-    return {};
-}
 
-std::shared_ptr< const CServerInfo > CSettings::findServerInfo( const QString & serverName )
-{
-    auto pos = fServerMap.find( serverName );
-    if ( pos != fServerMap.end() )
-        return ( *pos ).second.first;
-    return {};
-}
-
-void CSettings::updateServerInfo( const QString & serverName, const QJsonObject & serverData )
-{
-    auto serverInfo = findServerInfoInternal( serverName );
-    if ( !serverInfo )
-        return;
-
-    serverInfo->update( serverData );
-}
-
-void CSettings::setServerIcon( const QString & serverName, const QByteArray & data, const QString & type )
-{
-    auto serverInfo = findServerInfoInternal( serverName );
-    if ( !serverInfo )
-        return;
-
-    serverInfo->setIcon( data, type );
-}
-
-std::shared_ptr< CServerInfo > CSettings::findServerInfoInternal( const QString & serverName )
-{
-    auto pos = fServerMap.find( serverName );
-    if ( pos != fServerMap.end() )
-        return ( *pos ).second.first;
-    return {};
-}
-
-int CSettings::serverCnt() const
-{
-    return static_cast<int>( fServers.size() );
-}
-
-void CSettings::setAPIKey( const QString & serverName, const QString & apiKey )
-{
-    auto serverInfo = this->findServerInfoInternal( serverName );
-    if ( serverInfo->setAPIKey( apiKey ) )
-        fChanged = true;
-}
-
-void CSettings::changeServerDisplayName( const QString & newServerName, const QString & oldServerName )
-{
-    auto serverInfo = this->findServerInfoInternal( oldServerName );
-    if ( serverInfo )
-    {
-        if ( serverInfo->setDisplayName( newServerName, false ) )
-            fChanged = true;
-
-        auto pos = fServerMap.find( oldServerName );
-        if ( pos != fServerMap.end() )
-            fServerMap.erase( pos );
-    }
-}
-
-void CSettings::setURL( const QString & serverName, const QString & url )
-{
-    auto serverInfo = this->findServerInfoInternal( serverName );
-    if ( serverInfo->setUrl( url ) )
-        fChanged = true;
-}
-
-void CSettings::updateFriendlyServerNames()
-{
-    std::multimap< QString, std::shared_ptr< CServerInfo > > servers;
-    for ( int ii = 0; ii < serverCnt(); ++ii )
-    {
-        auto serverInfo = fServers[ ii ];
-        if ( serverInfo->displayNameGenerated() ) // generatedName
-            servers.insert( { serverInfo->displayName(), serverInfo } );
-    }
-
-    for ( auto && ii : servers )
-    {
-        auto cnt = servers.count( ii.first );
-        ii.second->autoSetDisplayName( cnt > 1 );
-    }
-    updateServerMap();
-}

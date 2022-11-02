@@ -52,6 +52,8 @@ public:
     QList< QPointer< QMenu > > fMenus;
     QList< QPointer< QToolBar > > fToolBars; // do not include Reload actions on the tool bar, they are added to the main windows own toolbar
     std::map< QString, std::pair< bool, QList< QPointer< QAction > > > > fActions;  // if there is a toolbar that matches the menu name, add the actiosn there as well
+private:
+    QList< QPointer< QMenu > > fCreatedMenus;
 };
 
 #endif

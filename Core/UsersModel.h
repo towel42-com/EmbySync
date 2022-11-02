@@ -13,6 +13,7 @@
 class CSettings;
 class CUserData;
 class CServerInfo;
+class CServerModel;
 class CSyncSystem;
 class CUsersModel : public QAbstractTableModel, public IServerForColumn
 {
@@ -67,8 +68,9 @@ public:
         eIsMissingOnServerBGColor
     };
 
-    CUsersModel( std::shared_ptr< CSettings > settings, QObject * parent=nullptr );
+    CUsersModel( std::shared_ptr< CSettings > settings, std::shared_ptr< CServerModel > serverModel, QObject * parent=nullptr );
 
+    int userCnt() const;
     virtual int rowCount( const QModelIndex & parent = QModelIndex() ) const override;
     virtual int columnCount( const QModelIndex & parent = QModelIndex() ) const override;
     virtual QVariant data( const QModelIndex & index, int role = Qt::DisplayRole ) const override;
@@ -89,9 +91,6 @@ public:
     SUsersSummary settingsChanged();
     SUsersSummary getMediaSummary() const;
 
-    std::shared_ptr< CUserData > userDataForName( const QString & name ) const;
-    std::shared_ptr< CUserData > userData( const QModelIndex & idx ) const;
-    std::shared_ptr< CUserData > findUser( const QString & serverName, const QString & userID ) const;
     QModelIndex indexForUser( std::shared_ptr< CUserData > user, int column = 0 ) const;
 
     void setUserAvatar( const QString & serverName, const QString & userID, const QByteArray & data );
@@ -101,6 +100,7 @@ public:
     void clear();
 
     virtual QString serverForColumn( int column ) const override;
+    virtual std::list< int > columnsForBaseColumn( int baseColumn ) const override;
 
     std::shared_ptr< CUserData > loadUser( const QString & serverName, const QJsonObject & user );
     std::vector< std::shared_ptr< CUserData > > getAllUsers( bool sorted ) const;
@@ -109,23 +109,30 @@ public:
     std::list< std::shared_ptr< CUserData > > usersWithConnectedIDNeedingUpdate() const;
 
     void loadAvatars( std::shared_ptr< CSyncSystem > syncSystem ) const;
+
+    std::shared_ptr< CUserData > userData( int userNum ) const;
+    std::shared_ptr< CUserData > userData( const QModelIndex & idx ) const;
+    std::shared_ptr< CUserData > userData( const QString & name, bool exhaustiveSearch ) const;
+    std::shared_ptr< CUserData > userDataOnServer( const QString & serverName, const QString & userID ) const;
 public Q_SLOTS:
     void slotSettingsChanged();
     void slotServerInfoChanged();
 
 private:
+    std::shared_ptr< CUserData > userDataExhaustive( const QString & name ) const;
+
     int columnsPerServer() const;
     int perServerColumn( int column ) const;
 
     void setupColumns();
     int serverNum( int columnNum ) const;
-    std::shared_ptr< CUserData > getUserData( const QString & name, bool exhaustiveSearch=false ) const;
 
     QVariant getColor( const QModelIndex & index, bool background, bool missingOnly=false ) const;
         
     std::map< QString, std::shared_ptr< CUserData > > fUserMap;
     std::vector< std::shared_ptr< CUserData > > fUsers;
     std::shared_ptr< CSettings > fSettings;
+    std::shared_ptr< CServerModel > fServerModel;
 
     std::unordered_map< int, std::pair< int, std::shared_ptr< const CServerInfo > > > fColumnToServerInfo;
     std::map< int, int > fServerNumToColumn;

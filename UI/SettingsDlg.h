@@ -27,7 +27,10 @@
 #include <QColor>
 #include <memory>
 #include <vector>
+#include <unordered_set>
+#include <QRegularExpression>
 
+class QListWidget;
 class QTreeWidgetItem;
 
 namespace Ui
@@ -42,16 +45,26 @@ class CSettings;
 class CUserData;
 class CSyncSystem;
 class CServerInfo;
+class CServerModel;
+class CMediaData;
 
 class CSettingsDlg : public QDialog
 {
     Q_OBJECT
 public:
-    CSettingsDlg( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, const std::vector< std::shared_ptr< CUserData > > & knownUsers, QWidget * parent = nullptr );
+    CSettingsDlg( std::shared_ptr< CSettings > settings, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CSyncSystem > syncSystem, QWidget * parent = nullptr );
 
     virtual ~CSettingsDlg() override;
-
     virtual void accept() override;
+
+    void setKnownUsers( const std::vector< std::shared_ptr< CUserData > > & knownUsers )
+    {
+        loadKnownUsers( knownUsers );
+    }
+    void setKnownShows( const std::unordered_set< QString > & knownShows )
+    {
+        loadKnownShows( knownShows );
+    }
 
 public Q_SLOTS:
     void slotTestServers();
@@ -61,6 +74,7 @@ public Q_SLOTS:
     void slotCurrServerChanged();
 private:
     void loadKnownUsers( const std::vector< std::shared_ptr< CUserData > > & knownUsers );
+    void loadKnownShows( const std::unordered_set< QString > & knownShows );
     void moveCurrServer( bool up );
     void load();
     void save();
@@ -70,18 +84,29 @@ private:
 
     void editServer( QTreeWidgetItem * item );
     void editUser( QListWidgetItem * item );
+    void editShow( QListWidgetItem * item );
     void updateColors();
     void updateColor( QLabel * label, const QColor & color );
     void updateKnownUsers();
+
+    QRegularExpression validateRegExes( QListWidget * list ) const;
+
+    void updateKnownShows();
+
+    void setIsMatch( QTreeWidgetItem * item, bool isMatch, bool negMatch );
+
     QStringList syncUserStrings() const;
+    QStringList ignoreShowStrings() const;
 
     std::unique_ptr< Ui::CSettingsDlg > fImpl;
     std::shared_ptr< CSettings > fSettings;
+    std::shared_ptr< CServerModel > fServerModel;
     std::shared_ptr< CSyncSystem > fSyncSystem;
     QColor fMediaSourceColor;
     QColor fMediaDestColor;
     QColor fDataMissingColor;
     std::vector< std::pair< std::shared_ptr< CUserData >, QTreeWidgetItem * > > fKnownUsers;
+    std::vector< std::pair< QString, QTreeWidgetItem * > > fKnownShows;
     QPushButton * fTestButton{ nullptr };
 };
 #endif 

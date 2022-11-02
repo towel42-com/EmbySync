@@ -34,6 +34,7 @@
 #include "Core/SyncSystem.h"
 #include "Core/UserData.h"
 #include "Core/UsersModel.h"
+#include "Core/ServerModel.h"
 
 #include "SABUtils/AutoWaitCursor.h"
 #include "SABUtils/QtUtils.h"
@@ -64,9 +65,9 @@ CUserInfoCompare::CUserInfoCompare( QWidget * parent )
     connect( this, &CTabPageBase::sigViewData, this, &CUserInfoCompare::slotViewUser );
 }
 
-void CUserInfoCompare::setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CProgressSystem > progressSystem )
+void CUserInfoCompare::setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem )
 {
-    CTabPageBase::setupPage( settings, syncSystem, mediaModel, userModel, progressSystem );
+    CTabPageBase::setupPage( settings, syncSystem, mediaModel, userModel, serverModel, progressSystem );
 
     fUsersFilterModel = new CUsersFilterModel( false, fUsersModel.get() );
     fUsersFilterModel->setSourceModel( fUsersModel.get() );
@@ -143,7 +144,6 @@ void CUserInfoCompare::setupActions()
     fActionShowUsersWithIssues->setText( QCoreApplication::translate( "CUserInfoCompare", "Show Users with Issues?", nullptr ) );
     fActionShowUsersWithIssues->setToolTip( QCoreApplication::translate( "CUserInfoCompare", "Show Users with Issues?", nullptr ) );
 
-    fEditActions = { fActionOnlyShowSyncableUsers, fActionOnlyShowUsersWithDifferences, fActionShowUsersWithIssues };
     fToolBar = new QToolBar( this );
     fToolBar->setObjectName( QString::fromUtf8( "fToolBar" ) );
 
@@ -214,7 +214,7 @@ void CUserInfoCompare::slotSettingsChanged()
 void CUserInfoCompare::slotModelDataChanged()
 {
     bool hasCurrentUser = currentDataIndex().isValid();
-    bool canSync = fSettings->canAnyServerSync();
+    bool canSync = fServerModel->canAnyServerSync();
     bool hasDataToProcess = canSync && fMediaModel->hasMediaToProcess();
     bool mediaLoaded = canSync && fMediaModel->rowCount();
     bool hasUsersNeedingFixing = fUsersModel->hasUsersWithConnectedIDNeedingUpdate();
@@ -332,7 +332,7 @@ std::shared_ptr< CTabUIInfo > CUserInfoCompare::getUIInfo() const
     retVal->fMenus = { fProcessMenu, fViewMenu };
     retVal->fToolBars = { fToolBar };
 
-    retVal->fActions[ "Edit" ] = std::make_pair( true, QList< QPointer< QAction > >( { fActionOnlyShowSyncableUsers, fActionOnlyShowUsersWithDifferences, fActionShowUsersWithIssues } ) );
+    retVal->fActions[ "Filter" ] = std::make_pair( false, QList< QPointer< QAction > >( { fActionOnlyShowSyncableUsers, fActionOnlyShowUsersWithDifferences, fActionShowUsersWithIssues } ) );
     return retVal;
 }
 
@@ -432,7 +432,7 @@ void CUserInfoCompare::slotSetCurrentUser( const QModelIndex & current )
 void CUserInfoCompare::slotViewUserInfo()
 {
     if ( !fUserWindow )
-        fUserWindow = new CUserWindow( fSettings, fSyncSystem, nullptr );
+        fUserWindow = new CUserWindow( fServerModel, fSyncSystem, nullptr );
 
     auto idx = currentDataIndex();
     if ( idx.isValid() )

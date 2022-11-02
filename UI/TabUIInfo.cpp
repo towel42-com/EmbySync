@@ -23,12 +23,14 @@
 #include "TabUIInfo.h"
 #include <QMainWindow>
 #include <QMenuBar>
+#include <QDebug>
 
 void CTabUIInfo::clear()
 {
     fMenus.clear();
     fActions.clear();
     fToolBars.clear();
+    fCreatedMenus.clear();
 }
 
 void CTabUIInfo::cleanupUI( QMainWindow * mainWindow )
@@ -53,6 +55,9 @@ void CTabUIInfo::cleanupUI( QMainWindow * mainWindow )
         if ( ii )
             mainWindow->removeToolBar( ii );
     }
+
+    for ( auto && ii : fCreatedMenus )
+        delete ii.data();
 
     clear();
 }
@@ -85,7 +90,8 @@ QAction * CTabUIInfo::findInsertBefore( QWidget * container, bool insertBefore )
             break;
         }
     }
-    Q_ASSERT( retVal );
+
+    //Q_ASSERT( retVal );
     return retVal;
 }
 
@@ -133,6 +139,17 @@ void CTabUIInfo::setupUI( QMainWindow * mainWindow, QMenu * insertBeforeMenu )
     {
         if ( ii )
             mainWindow->menuBar()->insertAction( insertBeforeMenu->menuAction(), ii->menuAction() );
+    }
+    for ( auto && ii : fActions )
+    {
+        if ( !findMenu( mainWindow, ii.first ) )
+        {
+            auto menu = new QMenu( mainWindow );
+            menu->setObjectName( ii.first );
+            menu->setTitle( ii.first );
+            fCreatedMenus << menu;
+            mainWindow->menuBar()->insertAction( insertBeforeMenu->menuAction(), menu->menuAction() );
+        }
     }
     for ( auto && ii : fToolBars )
     {

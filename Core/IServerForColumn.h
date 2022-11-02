@@ -24,11 +24,12 @@
 #define __ISERVERFORCOLUMN_H
 
 #include <QString>
-
+#include <list>
 class IServerForColumn
 {
 public:
     virtual QString serverForColumn( int column ) const = 0;
+    virtual std::list< int > columnsForBaseColumn( int baseColumn ) const = 0;
 };
 
 ;

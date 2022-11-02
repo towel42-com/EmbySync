@@ -34,6 +34,7 @@
 #include "Core/SyncSystem.h"
 #include "Core/UserData.h"
 #include "Core/UsersModel.h"
+#include "Core/ServerModel.h"
 
 #include "SABUtils/AutoWaitCursor.h"
 #include "SABUtils/QtUtils.h"
@@ -62,9 +63,9 @@ CPlayStateCompare::CPlayStateCompare( QWidget * parent )
     connect( this, &CTabPageBase::sigViewData, this, &CPlayStateCompare::slotViewMedia );
 }
 
-void CPlayStateCompare::setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CProgressSystem > progressSystem )
+void CPlayStateCompare::setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem )
 {
-    CTabPageBase::setupPage( settings, syncSystem, mediaModel, userModel, progressSystem );
+    CTabPageBase::setupPage( settings, syncSystem, mediaModel, userModel, serverModel, progressSystem );
 
     fUsersFilterModel = new CUsersFilterModel( true, fUsersModel.get() );
     fUsersFilterModel->setSourceModel( fUsersModel.get() );
@@ -155,7 +156,6 @@ void CPlayStateCompare::setupActions()
     fActionShowMediaWithIssues->setText( QCoreApplication::translate( "CPlayStateCompare", "Show Media with Issues?", nullptr ) );
     fActionShowMediaWithIssues->setToolTip( QCoreApplication::translate( "CPlayStateCompare", "Show Media with Issues?", nullptr ) );
 
-    fEditActions = { fActionOnlyShowSyncableUsers, fActionOnlyShowMediaWithDifferences, fActionShowMediaWithIssues };
     fToolBar = new QToolBar( this );
     fToolBar->setObjectName( QString::fromUtf8( "fToolBar" ) );
 
@@ -230,7 +230,7 @@ void CPlayStateCompare::slotSettingsChanged()
 void CPlayStateCompare::slotModelDataChanged()
 {
     bool hasCurrentUser = fImpl->users->selectionModel()->currentIndex().isValid();
-    bool canSync = fSettings->canAnyServerSync();
+    bool canSync = fServerModel->canAnyServerSync();
     bool hasDataToProcess = canSync && fMediaModel->hasMediaToProcess();
     bool mediaLoaded = canSync && fMediaModel->rowCount();
     bool hasUsersNeedingFixing = fUsersModel->hasUsersWithConnectedIDNeedingUpdate();
@@ -378,7 +378,7 @@ std::shared_ptr< CTabUIInfo > CPlayStateCompare::getUIInfo() const
     retVal->fMenus = { fProcessMenu, fViewMenu };
     retVal->fToolBars = { fToolBar };
 
-    retVal->fActions[ "Edit" ] = std::make_pair( true, QList< QPointer< QAction > >( { fActionOnlyShowSyncableUsers, fActionOnlyShowMediaWithDifferences, fActionShowMediaWithIssues } ) );
+    retVal->fActions[ "Filter" ] = std::make_pair( true, QList< QPointer< QAction > >( { fActionOnlyShowSyncableUsers, fActionOnlyShowMediaWithDifferences, fActionShowMediaWithIssues } ) );
     retVal->fActions[ "Reload" ] = std::make_pair( false, QList< QPointer< QAction > >( { fActionReloadCurrentUser } ) );
     return retVal;
 }
@@ -437,7 +437,7 @@ void CPlayStateCompare::slotSetCurrentMediaItem( const QModelIndex & current )
 void CPlayStateCompare::slotViewMediaInfo()
 {
     if ( !fMediaWindow )
-        fMediaWindow = new CMediaWindow( fSettings, fSyncSystem, nullptr );
+        fMediaWindow = new CMediaWindow( fServerModel, fSyncSystem, nullptr );
 
     auto idx = currentDataIndex();
     if ( idx.isValid() )

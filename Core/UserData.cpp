@@ -25,6 +25,7 @@
 
 #include "Settings.h"
 #include "ServerInfo.h"
+#include "ServerModel.h"
 #include "SABUtils/StringUtils.h"
 
 #include <QRegularExpression>
@@ -163,7 +164,7 @@ QString CUserData::allNames() const
     return retVal;
 }
 
-QString CUserData::sortName( std::shared_ptr< CSettings > settings ) const
+QString CUserData::sortName( std::shared_ptr< CServerModel > serverModel ) const
 {
     if ( !fSortKey.isEmpty() )
         return fSortKey;
@@ -171,9 +172,9 @@ QString CUserData::sortName( std::shared_ptr< CSettings > settings ) const
     if ( !connectedID().isEmpty() )
         return connectedID();
 
-    for ( int ii = 0; ii < settings->serverCnt(); ++ii )
+    for ( int ii = 0; ii < serverModel->serverCnt(); ++ii )
     {
-        auto serverInfo = settings->serverInfo( ii );
+        auto serverInfo = serverModel->getServerInfo( ii );
         if ( !serverInfo->isEnabled() )
             continue;
         auto info = userInfo( serverInfo->keyName() );
@@ -326,6 +327,14 @@ QString CUserData::introSkipMode( const QString & serverName ) const
     return serverInfo->fIntroSkipMode;
 }
 
+
+bool CUserData::isAdmin( const QString & serverName ) const
+{
+    auto serverInfo = userInfo( serverName );
+    if ( !serverInfo )
+        return {};
+    return serverInfo->fIsAdmin;
+}
 
 QStringList CUserData::missingServers() const
 {

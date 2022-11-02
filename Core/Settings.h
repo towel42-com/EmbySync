@@ -26,6 +26,7 @@
 #include <QString>
 #include <QColor>
 #include <QUrl>
+#include <QRegularExpression>
 
 #include <memory>
 #include <tuple>
@@ -33,20 +34,20 @@
 #include <vector>
 #include <map>
 #include <optional>
+#include <set>
 
 class QWidget;
 class QJsonObject;
+class CServerModel;
 namespace Ui
 {
     class CSettings;
 }
 
-class CServerInfo;
-
 class CSettings
 {
 public:
-    CSettings();
+    CSettings( std::shared_ptr< CServerModel > serverModel );
     virtual ~CSettings();
 
     // global settings store in the registry
@@ -57,7 +58,6 @@ public:
     static void setLoadLastProject( bool value );
 
     // settings stored in the json settings file
-
     QString fileName() const { return fFileName; }
 
     bool load( bool addToRecentFileList, QWidget * parent );
@@ -65,21 +65,6 @@ public:
     bool load( const QString & fileName, std::function<void( const QString & title, const QString & msg )> errorFunc, bool addToRecentFileList );
 
     bool save();
-
-    void setServers( const std::vector < std::shared_ptr< CServerInfo > > & servers );
-
-    int enabledServerCnt() const;
-    int serverCnt() const;
-    int getServerPos( const QString & serverName ) const;
-    std::shared_ptr< const CServerInfo > serverInfo( int serverNum ) const;
-    std::shared_ptr< const CServerInfo > findServerInfo( const QString & serverName ) const;
-    std::shared_ptr< const CServerInfo > findServerInfo( const QString & serverName );
-
-    void updateServerInfo( const QString & serverName, const QJsonObject & serverData );
-    void setServerIcon( const QString & serverName, const QByteArray & data, const QString & type );
-
-    bool canAllServersSync() const;
-    bool canAnyServerSync() const;
 
     bool save( QWidget * parent );
     bool saveAs( QWidget * parent );
@@ -89,11 +74,6 @@ public:
 
     bool changed() const { return fChanged; }
     void reset();
-
-    // Setting up of servers
-    void setURL( const QString & serverName, const QString & url );
-    void setAPIKey( const QString & serverName, const QString & apiKey );
-    void changeServerDisplayName( const QString & serverName, const QString & oldServerName );
 
     // other settings
     QColor mediaSourceColor( bool forBackground = true ) const;
@@ -151,18 +131,22 @@ public:
     bool showUsersWithIssues() { return fShowUsersWithIssues; };
     void setShowUsersWithIssues( bool value );
 
+    bool onlyShowEnabledServers() { return fOnlyShowEnabledServers; };
+    void setOnlyShowEnabledServers( bool value );
+
     QStringList syncUserList() const { return fSyncUserList; }
     void setSyncUserList( const QStringList & value );
+
+    std::set< QString > ignoreShowList() const { return fIgnoreShowList; }
+    QRegularExpression ignoreShowRegEx() const;
+
+    void setIgnoreShowList( const QStringList & value );
 
     void addRecentProject( const QString & fileName );
     QStringList recentProjectList() const;
 private:
-    bool serversChanged( const std::vector< std::shared_ptr< CServerInfo > > & lhs, const std::vector< std::shared_ptr< CServerInfo > > & rhs ) const;
-    bool loadServer( const QJsonObject & obj, QString & errorMsg );
-    void updateServerMap();
+    QVariant getValue( const QJsonObject  & data, const QString & fieldName, const QVariant & defaultValue ) const;
 
-    std::shared_ptr< CServerInfo > findServerInfoInternal( const QString & serverName );
-    void updateFriendlyServerNames();
     QColor getColor( const QColor & clr, bool forBackground /*= true */ ) const;
     bool maybeSave( QWidget * parent, std::function<QString()> selectFileFunc, std::function<void( const QString & title, const QString & msg )> errorFunc );
 
@@ -176,10 +160,7 @@ private:
         }
     }
 
-
     QString fFileName;
-    std::vector< std::shared_ptr< CServerInfo > > fServers;
-    std::map< QString, std::pair< std::shared_ptr< CServerInfo >, size_t > > fServerMap;
 
     QColor fMediaSourceColor{ "yellow" };
     QColor fMediaDestColor{ "yellow" };
@@ -193,6 +174,7 @@ private:
 
     bool fOnlyShowUsersWithDifferences{ true };
     bool fShowUsersWithIssues{ false };
+    bool fOnlyShowEnabledServers{ true };
 
     bool fSyncAudio{ true };
     bool fSyncVideo{ true };
@@ -205,7 +187,9 @@ private:
     bool fSyncBook{ true };
 
     QStringList fSyncUserList;
+    std::set< QString > fIgnoreShowList;
 
+    std::shared_ptr< CServerModel > fServerModel;
     bool fChanged{ false };
 };
 

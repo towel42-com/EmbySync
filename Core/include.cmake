@@ -28,6 +28,7 @@ set(qtproject_SRCS
     ProgressSystem.cpp
     SyncSystem.cpp
     ServerInfo.cpp
+    ServerModel.cpp
     Settings.cpp
     UserData.cpp
     UserServerData.cpp
@@ -39,6 +40,7 @@ set(qtproject_H
     ServerInfo.h
     SyncSystem.h
     UsersModel.h
+    ServerModel.h
 )
 
 set(project_H

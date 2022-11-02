@@ -25,7 +25,7 @@
 #include "ui_UserWindow.h"
 #include "Core/SyncSystem.h"
 #include "Core/UserData.h"
-#include "Core/Settings.h"
+#include "Core/ServerModel.h"
 #include "Core/ServerInfo.h"
 #include "SABUtils/WidgetChanged.h"
 
@@ -35,20 +35,19 @@
 
 #include <QCloseEvent>
 
-CUserWindow::CUserWindow( std::shared_ptr< CSettings> settings, std::shared_ptr< CSyncSystem > syncSystem, QWidget * parent )
+CUserWindow::CUserWindow( std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CSyncSystem > syncSystem, QWidget * parent )
     : QWidget( parent ),
     fImpl( new Ui::CUserWindow ),
-    fSyncSystem( syncSystem ),
-    fSettings( settings )
+    fSyncSystem( syncSystem )
 {
     fImpl->setupUi( this );
     connect( fImpl->process, &QPushButton::clicked, this, &CUserWindow::slotUploadUserData );
 
     auto horizontalLayout = new QHBoxLayout( fImpl->userDataWidgets );
     
-    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    for ( int ii = 0; ii < serverModel->serverCnt(); ++ii )
     {
-        auto serverInfo = settings->serverInfo( ii );
+        auto serverInfo = serverModel->getServerInfo( ii );
         if ( !serverInfo->isEnabled() )
             continue;
 
