@@ -67,6 +67,7 @@ public:
     virtual QSplitter * getDataSplitter() const override;
 
     virtual bool prepForClose() override;
+    std::shared_ptr< CMediaData > getMediaData( QModelIndex idx ) const;
 Q_SIGNALS:
     void sigModelDataChanged();
 
@@ -74,7 +75,7 @@ public Q_SLOTS:
     virtual void slotCanceled() override;
     virtual void slotModelDataChanged() override;
     virtual void slotSettingsChanged() override;
-
+    void slotUsersContextMenu( CDataTree * dataTree, const QPoint & pos );
     virtual void slotSetCurrentServer( const QModelIndex & index );
 private Q_SLOTS:
     void slotCurrentUserChanged( const QModelIndex & index );
