@@ -25,11 +25,13 @@
 
 #include <QString>
 #include <QMap>
+#include <QUrl>
 #include <QUrlQuery>
 #include <QDateTime>
 #include <QIcon>
 
 #include <memory>
+#include <optional>
 
 class QVariant;
 class QListWidgetItem;
@@ -54,7 +56,6 @@ public:
     static QStringList getHeaderLabels();
     static void setMSecsToStringFunc( std::function< QString( uint64_t ) > func );
     static std::function< QString( uint64_t ) > mecsToStringFunc();
-    static QString computeName( const QJsonObject & media );
 
     CMediaData( const QJsonObject & mediaObj, std::shared_ptr< CServerModel > serverModel );
     bool hasProviderIDs() const;
@@ -116,7 +117,10 @@ public:
     std::shared_ptr<SMediaServerData> newestMediaData() const;
 
     QIcon getDirectionIcon( const QString & serverName ) const;
+
+    QUrl getSearchURL() const;;
 private:
+    void computeName( const QJsonObject & media );
     template< typename T >
     bool allEqual( std::function< T( std::shared_ptr< SMediaServerData > ) > func ) const
     {
@@ -138,6 +142,8 @@ private:
     QString fType;
     QString fName;
     QString fSeriesName; // only valid for EpisodeTypes
+    std::optional< int > fSeason; // only valid for EpisodeTypes
+    std::optional< int > fEpisode; // only valid for EpisodeTypes
     std::map< QString, QString > fProviders;
     std::map< QString, QString > fExternalUrls;
     QDateTime fPremiereDate;
