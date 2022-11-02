@@ -169,6 +169,12 @@ void SUserServerData::loadFromJSON( const QJsonObject & userObj )
     fEnableNextEpisodeAutoPlay = config[ "EnableNextEpisodeAutoPlay" ].toBool();
     fResumeRewindSeconds = config[ "ResumeRewindSeconds" ].toInt();
     fIntroSkipMode = config[ "IntroSkipMode" ].toString();
+
+    auto policy = userObj[ "Policy" ].toObject();
+    qDebug().noquote().nospace() << QJsonDocument( policy ).toJson();
+    fIsAdmin = policy[ "IsAdministrator" ].toBool();
+    fIsDisabled = policy[ "IsDisabled" ].toBool();
+    fIsHidden = policy[ "IsHidden" ].toBool();
 }
 
 bool SUserServerData::isValid() const
@@ -214,6 +220,10 @@ bool SUserServerData::userDataEqual( const SUserServerData & rhs ) const
     equal = equal && fEnableNextEpisodeAutoPlay == rhs.fEnableNextEpisodeAutoPlay;
     equal = equal && fResumeRewindSeconds == rhs.fResumeRewindSeconds;
     equal = equal && fIntroSkipMode == rhs.fIntroSkipMode;
+
+    equal = equal && fIsAdmin == rhs.fIsAdmin;
+    equal = equal && fIsDisabled == rhs.fIsDisabled;
+    equal = equal && fIsHidden == rhs.fIsHidden;
 
     return equal;
 }

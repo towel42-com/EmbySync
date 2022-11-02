@@ -17,6 +17,7 @@ class CSettings;
 class CMediaData;
 class CProgressSystem;
 class CMergeMedia;
+class CServerModel;
 
 using TMediaIDToMediaData = std::map< QString, std::shared_ptr< CMediaData > >;
 
@@ -29,12 +30,16 @@ public:
     {
         eShowItemRole = Qt::UserRole + 1,
         eMediaNameRole,
-        eDirSortRole
+        eDirSortRole,
+        ePremiereDateRole,
+        eIsProviderColumnRole,
+        eSeriesNameRole
     };
 
     enum EColumns
     {
         eName,
+        ePremiereDate,
         eType,
         eMediaID,
         eFavorite,
@@ -52,7 +57,7 @@ public:
         eEqual=2,
         eRightToLeft=3
     };
-    CMediaModel( std::shared_ptr< CSettings > settings, QObject * parent = nullptr );
+    CMediaModel( std::shared_ptr< CSettings > settings, std::shared_ptr< CServerModel > serverModel, QObject * parent = nullptr );
 
     virtual int rowCount( const QModelIndex & parent = QModelIndex() ) const override;
     virtual int columnCount( const QModelIndex & parent = QModelIndex() ) const override;
@@ -61,6 +66,8 @@ public:
     virtual QVariant headerData( int section, Qt::Orientation orientation, int role = Qt::DisplayRole ) const override;
 
     virtual QString serverForColumn( int column ) const override;
+    virtual std::list< int > columnsForBaseColumn( int baseColumn ) const override;
+    virtual std::list< int > providerColumns() const;
 
     void clear();
 
@@ -79,8 +86,10 @@ public:
     void loadMergedMedia( std::shared_ptr<CProgressSystem> progressSystem );
 
     std::unordered_set< std::shared_ptr< CMediaData > > getAllMedia() const { return fAllMedia; }
+    std::unordered_set< QString > getKnownShows() const;
 Q_SIGNALS:
     void sigPendingMediaUpdate();
+    void sigSettingsChanged();
 private:
     int perServerColumn( int column ) const;
     int columnsPerServer( bool includeProviders = true ) const;
@@ -99,6 +108,7 @@ private:
 
     std::vector< std::shared_ptr< CMediaData > > fData;
     std::shared_ptr< CSettings > fSettings;
+    std::shared_ptr< CServerModel > fServerModel;
     std::unordered_map< std::shared_ptr< CMediaData >, size_t > fMediaToPos;
     std::unordered_set< QString > fProviderNames;
     std::unordered_map< int, std::pair< QString, QString > > fProviderColumnsByColumn;
@@ -126,5 +136,22 @@ public:
     virtual void sort( int column, Qt::SortOrder order = Qt::AscendingOrder ) override;
     virtual bool lessThan( const QModelIndex & source_left, const QModelIndex & source_right ) const override;
 
+};
+
+class CMediaMissingFilterModel : public QSortFilterProxyModel
+{
+    Q_OBJECT;
+public:
+    CMediaMissingFilterModel( std::shared_ptr< CSettings > settings, QObject * parent );
+
+    virtual bool filterAcceptsRow( int source_row, const QModelIndex & source_parent ) const override;
+    virtual bool filterAcceptsColumn( int source_column, const QModelIndex & source_parent ) const override;
+    virtual void sort( int column, Qt::SortOrder order = Qt::AscendingOrder ) override;
+    virtual bool lessThan( const QModelIndex & source_left, const QModelIndex & source_right ) const override;
+
+    virtual QVariant data( const QModelIndex & index, int role /*= Qt::DisplayRole */ ) const override;
+private:
+    std::shared_ptr< CSettings > fSettings;
+    QRegularExpression fRegEx;
 };
 #endif

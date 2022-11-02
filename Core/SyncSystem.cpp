@@ -27,6 +27,7 @@
 #include "Settings.h"
 #include "UsersModel.h"
 #include "MediaModel.h"
+#include "ServerModel.h"
 
 #include "ServerInfo.h"
 #include "MediaData.h"
@@ -96,11 +97,12 @@ QString createMessage( EMsgType msgType, const QString & msg )
     return fullMsg;
 }
 
-CSyncSystem::CSyncSystem( std::shared_ptr< CSettings > settings, std::shared_ptr< CUsersModel > usersModel, std::shared_ptr< CMediaModel > mediaModel, QObject * parent ) :
+CSyncSystem::CSyncSystem( std::shared_ptr< CSettings > settings, std::shared_ptr< CUsersModel > usersModel, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CServerModel > serverModel, QObject * parent ) :
     QObject( parent ),
     fSettings( settings ),
     fUsersModel( usersModel ),
     fMediaModel( mediaModel ),
+    fServerModel( serverModel ),
     fProgressSystem( new CProgressSystem )
 {
     fManager = new QNetworkAccessManager( this );
@@ -136,9 +138,9 @@ void CSyncSystem::reset()
     fAttributes.clear();
 }
 
-void CSyncSystem::loadServers()
+void CSyncSystem::loadServerInfo()
 {
-    if ( !fSettings->canAnyServerSync() )
+    if ( !fServerModel->canAnyServerSync() )
     {
         if ( fUserMsgFunc )
             fUserMsgFunc( tr( "Server Settings are not Setup" ), tr( "Server Settings are not setup.  Please fix and try again" ), true );
@@ -147,28 +149,28 @@ void CSyncSystem::loadServers()
 
     fProgressSystem->setTitle( tr( "Loading Server Information" ) );
     int enabledServers = 0;
-    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    for ( int ii = 0; ii < fServerModel->serverCnt(); ++ii )
     {
-        auto serverInfo = fSettings->serverInfo( ii );
+        auto serverInfo = fServerModel->getServerInfo( ii );
         if ( !serverInfo->isEnabled() )
             continue;
         enabledServers++;
     }
     fProgressSystem->setMaximum( enabledServers );
 
-    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    for ( int ii = 0; ii < fServerModel->serverCnt(); ++ii )
     {
-        auto serverInfo = fSettings->serverInfo( ii );
+        auto serverInfo = fServerModel->getServerInfo( ii );
         if ( !serverInfo->isEnabled() )
             continue;
-        requestGetServerInfo( fSettings->serverInfo( ii )->keyName() );
-        requestGetServerHomePage( fSettings->serverInfo( ii )->keyName() );
+        requestGetServerInfo( fServerModel->getServerInfo( ii )->keyName() );
+        requestGetServerHomePage( fServerModel->getServerInfo( ii )->keyName() );
     }
 }
 
 void CSyncSystem::loadUsers()
 {
-    if ( !fSettings->canAnyServerSync() )
+    if ( !fServerModel->canAnyServerSync() )
     {
         if ( fUserMsgFunc )
             fUserMsgFunc( tr( "Server Settings are not Setup" ), tr( "Server Settings are not setup.  Please fix and try again" ), true );
@@ -177,21 +179,21 @@ void CSyncSystem::loadUsers()
 
     fProgressSystem->setTitle( tr( "Loading Users" ) );
     int enabledServers = 0;
-    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    for ( int ii = 0; ii < fServerModel->serverCnt(); ++ii )
     {
-        auto serverInfo = fSettings->serverInfo( ii );
+        auto serverInfo = fServerModel->getServerInfo( ii );
         if ( !serverInfo->isEnabled() )
             continue;
         enabledServers++;
     }
     fProgressSystem->setMaximum( enabledServers );
 
-    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    for ( int ii = 0; ii < fServerModel->serverCnt(); ++ii )
     {
-        auto serverInfo = fSettings->serverInfo( ii );
+        auto serverInfo = fServerModel->getServerInfo( ii );
         if ( !serverInfo->isEnabled() )
             continue;
-        requestGetUsers( fSettings->serverInfo( ii )->keyName() );
+        requestGetUsers( fServerModel->getServerInfo( ii )->keyName() );
     }
 }
 
@@ -200,31 +202,43 @@ void CSyncSystem::loadUsersMedia( std::shared_ptr< CUserData > userData )
     if ( !userData )
         return;
 
-    fCurrUserData = userData;
-
-    if ( !fCurrUserData->canBeSynced() )
+    if ( !setCurrentUser( userData ) )
         return;
 
     fProgressSystem->setTitle( tr( "Loading Users Media" ) );
-    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    for ( int ii = 0; ii < fServerModel->serverCnt(); ++ii )
     {
-        auto serverInfo = fSettings->serverInfo( ii );
+        auto serverInfo = fServerModel->getServerInfo( ii );
         if ( !serverInfo->isEnabled() )
             continue;
 
-        emit sigAddToLog( EMsgType::eInfo, QString( "Loading media for '%1' on server '%2'" ).arg( fCurrUserData->userName( serverInfo->keyName() ) ).arg( serverInfo->displayName() ) );
+        emit sigAddToLog( EMsgType::eInfo, QString( "Loading media for '%1' on server '%2'" ).arg( currUser()->userName( serverInfo->keyName() ) ).arg( serverInfo->displayName() ) );
         requestGetMediaList( serverInfo->keyName() );
     }
 }
 
-void CSyncSystem::loadMissingEpisodes( std::shared_ptr< CUserData > userData, const QDate & minPremiereDate, const QDate & maxPremiereDate )
+bool CSyncSystem::setCurrentUser( std::shared_ptr<CUserData> userData )
 {
-    fProgressSystem->setTitle( tr( "Loading Missing Episodes" ) );
-    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    if ( !userData || !userData->canBeSynced() )
+        return false;
+    fCurrUserData = userData;
+    return true;
+}
+
+bool CSyncSystem::loadMissingEpisodes( std::shared_ptr<const CServerInfo> serverInfo, const QDate & minPremiereDate, const QDate & maxPremiereDate )
+{
+    bool adminFound = false;
+    for ( int ii = 0; ii < fUsersModel->userCnt(); ++ii )
     {
-        auto serverInfo = fSettings->serverInfo( ii );
-        loadMissingEpisodes( userData, serverInfo, minPremiereDate, maxPremiereDate );
+        auto userInfo = fUsersModel->userData( ii );
+        if ( userInfo->isAdmin( serverInfo->keyName() ) )
+        {
+            adminFound = true;
+            loadMissingEpisodes( userInfo, serverInfo, minPremiereDate, maxPremiereDate );
+            break;
+        }
     }
+    return adminFound;
 }
 
 void CSyncSystem::loadMissingEpisodes( std::shared_ptr< CUserData > userData, std::shared_ptr<const CServerInfo> serverInfo, const QDate & minPremiereDate, const QDate & maxPremiereDate )
@@ -232,15 +246,14 @@ void CSyncSystem::loadMissingEpisodes( std::shared_ptr< CUserData > userData, st
     if ( !serverInfo || !serverInfo->isEnabled() )
         return;
 
-    fCurrUserData = userData;
-    emit sigAddToLog( EMsgType::eInfo, QString( "Loading Missing Episodes on server '%2'" ).arg( serverInfo->displayName() ) );
-    requestMissingEpisodes( serverInfo->keyName(), minPremiereDate, maxPremiereDate );
-}
+    if ( !userData->isAdmin( serverInfo->keyName() ) )
+        return;
 
-void CSyncSystem::clearCurrUser()
-{
-    if ( fCurrUserData )
-        fCurrUserData.reset();
+    if ( !setCurrentUser( userData ) )
+        return;
+
+    emit sigAddToLog( EMsgType::eInfo, QString( "Loading Missing Episodes on server '%1' using admin user '%2'" ).arg( serverInfo->displayName() ).arg( userData->userName( serverInfo->keyName() ) ) );
+    requestMissingEpisodes( serverInfo->keyName(), minPremiereDate, maxPremiereDate );
 }
 
 void CSyncSystem::slotProcessMedia()
@@ -250,7 +263,7 @@ void CSyncSystem::slotProcessMedia()
 
 void CSyncSystem::selectiveProcessMedia( const QString & selectedServer )
 {
-    auto title = QString( "Processing media for user '%1'" ).arg( fCurrUserData->userName( selectedServer ) );
+    auto title = QString( "Processing media for user '%1'" ).arg( currUser()->userName( selectedServer ) );
     if ( !selectedServer.isEmpty() )
         title += QString( " From '%1'" ).arg( selectedServer );
     
@@ -273,7 +286,7 @@ void CSyncSystem::selectiveProcessMedia( const QString & selectedServer )
     if ( cnt == 0 )
     {
         fProgressSystem->resetProgress();
-        emit sigProcessingFinished( fCurrUserData->userName( selectedServer ) );
+        emit sigProcessingFinished( currUser()->userName( selectedServer ) );
         return;
     }
 
@@ -297,7 +310,7 @@ bool CSyncSystem::processMedia( std::shared_ptr< CMediaData > mediaData, const Q
     if ( !mediaData || mediaData->validUserDataEqual() )
         return false;
 
-    if ( !fCurrUserData )
+    if ( !currUser() )
         return false;
 
     /*
@@ -311,9 +324,9 @@ bool CSyncSystem::processMedia( std::shared_ptr< CMediaData > mediaData, const Q
     */
 
     //qDebug() << "processing " << mediaData->name();
-    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    for ( int ii = 0; ii < fServerModel->serverCnt(); ++ii )
     {
-        auto serverName = fSettings->serverInfo( ii )->keyName();
+        auto serverName = fServerModel->getServerInfo( ii )->keyName();
         bool needsUpdating = mediaData->needsUpdating( serverName );
         if ( !selectedServer.isEmpty() )
         {
@@ -346,12 +359,12 @@ void CSyncSystem::requestUpdateUserDataForMedia( const QString & serverName, std
         return;
 
     auto && mediaID = mediaData->getMediaID( serverName );
-    auto && userID = fCurrUserData->getUserID( serverName );
+    auto && userID = currUser()->getUserID( serverName );
     if ( userID.isEmpty() || mediaID.isEmpty() )
         return;
 
     // PlaystateService
-    auto && url = fSettings->findServerInfo( serverName )->getUrl( QString( "Users/%1/Items/%2/UserData" ).arg( userID ).arg( mediaID ), {} );
+    auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Users/%1/Items/%2/UserData" ).arg( userID ).arg( mediaID ), {} );
     if ( !url.isValid() )
         return;
 
@@ -385,12 +398,12 @@ void CSyncSystem::requestSetFavorite( const QString & serverName, std::shared_pt
         return;
 
     auto && mediaID = mediaData->getMediaID( serverName );
-    auto && userID = fCurrUserData->getUserID( serverName );
+    auto && userID = currUser()->getUserID( serverName );
     if ( userID.isEmpty() || mediaID.isEmpty() )
         return;
 
     // UserLibraryService
-    auto && url = fSettings->findServerInfo( serverName )->getUrl( QString( "Users/%1/FavoriteItems/%3" ).arg( userID ).arg( mediaID ), {} );
+    auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Users/%1/FavoriteItems/%3" ).arg( userID ).arg( mediaID ), {} );
     if ( !url.isValid() )
         return;
 
@@ -445,7 +458,7 @@ void CSyncSystem::selectiveProcessUsers( const QString & selectedServer )
     if ( cnt == 0 )
     {
         fProgressSystem->resetProgress();
-        emit sigProcessingFinished( fCurrUserData->userName( selectedServer ) );
+        emit sigProcessingFinished( currUser()->userName( selectedServer ) );
         return;
     }
 
@@ -467,13 +480,13 @@ bool CSyncSystem::processUser( std::shared_ptr< CUserData > userData, const QStr
     if ( !userData || userData->validUserDataEqual() )
         return false;
 
-    if ( !fCurrUserData )
+    if ( !currUser() )
         return false;
 
     //qDebug() << "processing " << mediaData->name();
-    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    for ( int ii = 0; ii < fServerModel->serverCnt(); ++ii )
     {
-        auto serverName = fSettings->serverInfo( ii )->keyName();
+        auto serverName = fServerModel->getServerInfo( ii )->keyName();
         bool needsUpdating = userData->needsUpdating( serverName );
         if ( !selectedServer.isEmpty() )
         {
@@ -507,7 +520,7 @@ void CSyncSystem::requestUpdateUserData( const QString & serverName, std::shared
 
     emit sigAddToLog( EMsgType::eInfo, tr( "Setting user information on server '%1'" ).arg( serverName ) );
     // UserService
-    auto && url = fSettings->findServerInfo( serverName )->getUrl( QString( "Users/%1" ).arg( userID ), {} );
+    auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Users/%1" ).arg( userID ), {} );
     if ( !url.isValid() )
         return;
 
@@ -612,7 +625,7 @@ void CSyncSystem::postHandleRequest( QNetworkReply * reply, const QString & serv
     {
         fProgressSystem->resetProgress();
         if ( ( requestType == ERequestType::eReloadMediaData ) || ( requestType == ERequestType::eUpdateUserMediaData ) )
-            emit sigProcessingFinished( fCurrUserData->userName( serverName ) );
+            emit sigProcessingFinished( currUser()->userName( serverName ) );
     }
 }
 
@@ -644,7 +657,7 @@ void CSyncSystem::slotCheckPendingRequests()
 
 void CSyncSystem::testServer( const QString & serverName )
 {
-    auto serverInfo = fSettings->findServerInfo( serverName );
+    auto serverInfo = fServerModel->findServerInfo( serverName );
     if ( !serverInfo )
         return;
     testServer( serverInfo );
@@ -678,7 +691,7 @@ void CSyncSystem::slotMergeMedia()
     }
 
     if ( !fMediaModel->mergeMedia( fProgressSystem ) )
-        fCurrUserData.reset();
+        clearCurrUser();
 
     emit sigUserMediaLoaded();
 }
@@ -984,7 +997,7 @@ void CSyncSystem::requestGetServerInfo( const QString & serverName )
     emit sigAddToLog( EMsgType::eInfo, tr( "Loading server information from server '%1'" ).arg( serverName ) );
 
     // SystemService 
-    auto && url = fSettings->findServerInfo( serverName )->getUrl( "/System/Info/Public", {} );
+    auto && url = fServerModel->findServerInfo( serverName )->getUrl( "/System/Info/Public", {} );
     if ( !url.isValid() )
         return;
 
@@ -1009,7 +1022,7 @@ void CSyncSystem::handleGetServerInfoResponse( const QString & serverName, const
     //qDebug() << doc.toJson();
     auto serverInfo = doc.object();
 
-    fSettings->updateServerInfo( serverName, serverInfo );
+    fServerModel->updateServerInfo( serverName, serverInfo );
 }
 
 void CSyncSystem::requestGetServerHomePage( const QString & serverName )
@@ -1017,7 +1030,7 @@ void CSyncSystem::requestGetServerHomePage( const QString & serverName )
     emit sigAddToLog( EMsgType::eInfo, tr( "Loading server homepage from server '%1'" ).arg( serverName ) );
 
     // SystemService 
-    auto && url = QUrl( fSettings->findServerInfo( serverName )->url( true ) );
+    auto && url = QUrl( fServerModel->findServerInfo( serverName )->url( true ) );
     if ( !url.isValid() )
         return;
 
@@ -1060,7 +1073,7 @@ void CSyncSystem::requestGetServerIcon( const QString & serverName, const QStrin
     emit sigAddToLog( EMsgType::eInfo, tr( "Loading server icon from server '%1'" ).arg( serverName ) );
 
     // SystemService 
-    auto && url = QUrl( fSettings->findServerInfo( serverName )->url( true ) + "/" + iconRelPath );
+    auto && url = QUrl( fServerModel->findServerInfo( serverName )->url( true ) + "/" + iconRelPath );
     if ( !url.isValid() )
         return;
 
@@ -1076,7 +1089,7 @@ void CSyncSystem::requestGetServerIcon( const QString & serverName, const QStrin
 
 void CSyncSystem::handleGetServerIconResponse( const QString & serverName, const QByteArray & data, const QString & type )
 {
-    fSettings->setServerIcon( serverName, data, type );
+    fServerModel->setServerIcon( serverName, data, type );
 }
 
 void CSyncSystem::requestGetUsers( const QString & serverName )
@@ -1084,7 +1097,7 @@ void CSyncSystem::requestGetUsers( const QString & serverName )
     emit sigAddToLog( EMsgType::eInfo, tr( "Loading users from server '%1'" ).arg( serverName ) );
 
     // UserService
-    auto && url = fSettings->findServerInfo( serverName )->getUrl( "Users/Query", {} );
+    auto && url = fServerModel->findServerInfo( serverName )->getUrl( "Users/Query", {} );
     if ( !url.isValid() )
         return;
 
@@ -1134,7 +1147,7 @@ void CSyncSystem::requestGetUser( const QString & serverName, const QString & us
     emit sigAddToLog( EMsgType::eInfo, tr( "Loading users from server '%1'" ).arg( serverName ) );
     
     // UserService
-    auto && url = fSettings->findServerInfo( serverName )->getUrl( QString( "Users/%1" ).arg( userID ), {} );
+    auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Users/%1" ).arg( userID ), {} );
     if ( !url.isValid() )
         return;
 
@@ -1175,7 +1188,7 @@ void CSyncSystem::requestGetUserAvatar( const QString & serverName, const QStrin
     emit sigAddToLog( EMsgType::eInfo, tr( "Loading user image from server '%1'" ).arg( serverName ) );
 
     // UserService
-    auto && url = fSettings->findServerInfo( serverName )->getUrl( QString( "/Users/%1/Images/Primary" ).arg( userID ), {} );
+    auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "/Users/%1/Images/Primary" ).arg( userID ), {} );
     if ( !url.isValid() )
         return;
     auto request = QNetworkRequest( url );
@@ -1188,7 +1201,7 @@ void CSyncSystem::requestGetUserAvatar( const QString & serverName, const QStrin
 
 void CSyncSystem::handleGetUserAvatarResponse( const QString & serverName, const QString & userID, const QByteArray & data )
 {
-    auto user = fUsersModel->findUser( serverName, userID );
+    auto user = fUsersModel->userDataOnServer( serverName, userID );
     if ( !user )
         return;
 
@@ -1201,7 +1214,7 @@ void CSyncSystem::requestSetUserAvatar( const QString & serverName, const QStrin
     emit sigAddToLog( EMsgType::eInfo, tr( "Setting user image on server '%1'" ).arg( serverName ) );
 
     // UserService
-    auto && url = fSettings->findServerInfo( serverName )->getUrl( QString( "/Users/%1/Images/Primary" ).arg( userID ), {} );
+    auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "/Users/%1/Images/Primary" ).arg( userID ), {} );
     if ( !url.isValid() )
         return;
     auto request = QNetworkRequest( url );
@@ -1268,13 +1281,13 @@ void CSyncSystem::slotRepairNextUser()
     if ( fCurrUserConnectID.fServerName.isEmpty() )
     {
         // do this for all servers
-        for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+        for ( int ii = 0; ii < fServerModel->serverCnt(); ++ii )
         {
-            auto serverInfo = fSettings->serverInfo( ii );
+            auto serverInfo = fServerModel->getServerInfo( ii );
             if ( !serverInfo->isEnabled() )
                 continue;;
 
-            updateConnectID( fSettings->serverInfo( ii )->keyName() );
+            updateConnectID( fServerModel->getServerInfo( ii )->keyName() );
         }
     }
     else
@@ -1306,7 +1319,7 @@ void CSyncSystem::requestDeleteConnectedID( const QString & serverName )
         return;
 
     // ConnectService
-    auto && url = fSettings->findServerInfo( serverName )->getUrl( QString( "Users/%1/Connect/Link" ).arg( fCurrUserConnectID.fUserData->getUserID( serverName ) ), {} );
+    auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Users/%1/Connect/Link" ).arg( fCurrUserConnectID.fUserData->getUserID( serverName ) ), {} );
     if ( !url.isValid() )
         return;
 
@@ -1345,7 +1358,7 @@ void CSyncSystem::requestSetConnectedID( const QString & serverName  )
     };
 
     // ConnectService
-    auto && url = fSettings->findServerInfo( serverName )->getUrl( QString( "Users/%1/Connect/Link" ).arg( fCurrUserConnectID.fUserData->getUserID( serverName ) ), queryItems );
+    auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Users/%1/Connect/Link" ).arg( fCurrUserConnectID.fUserData->getUserID( serverName ) ), queryItems );
     if ( !url.isValid() )
         return;
 
@@ -1371,28 +1384,28 @@ void CSyncSystem::handleSetConnectedID( const QString & serverName )
 
 void CSyncSystem::requestGetMediaList( const QString & serverName )
 {
-    if ( !fCurrUserData )
+    if ( !currUser() )
         return;
 
     std::list< std::pair< QString, QString > > queryItems =
     {
         std::make_pair( "IncludeItemTypes", fSettings->getSyncItemTypes() ),
-        std::make_pair( "SortBy", "Type,SortName" ),
+        std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SortName" ),
         std::make_pair( "SortOrder", "Ascending" ),
         std::make_pair( "Recursive", "True" ),
         std::make_pair( "IsMissing", "False"  ),
-        std::make_pair( "Fields", "ProviderIds,ExternalUrls,Missing" )
+        std::make_pair( "Fields", "ProviderIds,ExternalUrls,ProductionYear,PremiereDate,DateCreated,PremierDate,EndDate,StartDate,Missing" )
     };
 
     // ItemsService
-    auto && url = fSettings->findServerInfo( serverName )->getUrl( QString( "Users/%1/Items" ).arg( fCurrUserData->getUserID( serverName ) ), queryItems );
+    auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Users/%1/Items" ).arg( currUser()->getUserID( serverName ) ), queryItems );
     if ( !url.isValid() )
         return;
 
-    //qDebug() << url;
+    qDebug() << url;
     auto request = QNetworkRequest( url );
 
-    emit sigAddToLog( EMsgType::eInfo, QString( "Requesting media for '%1' from server '%2'" ).arg( fCurrUserData->userName( serverName ) ).arg( serverName ) );
+    emit sigAddToLog( EMsgType::eInfo, QString( "Requesting media for '%1' from server '%2'" ).arg( currUser()->userName( serverName ) ).arg( serverName ) );
 
     auto reply = makeRequest( request );
     setServerName( reply, serverName );
@@ -1410,7 +1423,7 @@ void CSyncSystem::handleGetMediaListResponse( const QString & serverName, const 
         return;
     }
 
-    if ( !fCurrUserData )
+    if ( !currUser() )
         return;
 
     //qDebug() << doc.toJson();
@@ -1427,7 +1440,7 @@ void CSyncSystem::handleGetMediaListResponse( const QString & serverName, const 
     fProgressSystem->setTitle( tr( "Loading Users Media Data" ) );
     fProgressSystem->setMaximum( mediaList.count() );
 
-    emit sigAddToLog( EMsgType::eInfo, QString( "%1 has %2 media items on server '%3'" ).arg( fCurrUserData->userName( serverName ) ).arg( mediaList.count() ).arg( serverName ) );
+    emit sigAddToLog( EMsgType::eInfo, QString( "%1 has %2 media items on server '%3'" ).arg( currUser()->userName( serverName ) ).arg( mediaList.count() ).arg( serverName ) );
     if ( fSettings->maxItems() > 0 )
         emit sigAddToLog( EMsgType::eInfo, QString( "Loading %2 media items" ).arg( fSettings->maxItems() ) );
 
@@ -1459,11 +1472,11 @@ void CSyncSystem::requestMissingEpisodes( const QString & serverName, const QDat
     std::list< std::pair< QString, QString > > queryItems =
     {
         std::make_pair( "IncludeItemTypes", "Episode" ),
-        std::make_pair( "SortBy", "Type,SortName" ),
+        std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SortName" ),
         std::make_pair( "SortOrder", "Ascending" ),
         std::make_pair( "Recursive", "True" ),
         std::make_pair( "IsMissing", "True" ),
-        std::make_pair( "Fields", "ProviderIds,ExternalUrls,Missing" )
+        std::make_pair( "Fields", "ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,PremierDate,EndDate,StartDate" )
     };
     if ( minPremiereDate.isValid() )
     {
@@ -1475,8 +1488,8 @@ void CSyncSystem::requestMissingEpisodes( const QString & serverName, const QDat
     }
 
     // ItemsService
-    auto && url = fSettings->findServerInfo( serverName )->getUrl( QString( "Users/%1/Items" ).arg( fCurrUserData->getUserID( serverName ) ), queryItems );
-    //auto && url = fSettings->findServerInfo( serverName )->getUrl( QString( "Items" ), queryItems );
+    auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Users/%1/Items" ).arg( currUser()->getUserID( serverName ) ), queryItems );
+    //auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Items" ), queryItems );
     if ( !url.isValid() )
         return;
 
@@ -1554,7 +1567,7 @@ void CSyncSystem::requestReloadMediaItemData( const QString & serverName, const 
 void CSyncSystem::requestReloadMediaItemData( const QString & serverName, std::shared_ptr< CMediaData > mediaData )
 {
     // UserLibraryService
-    auto && url = fSettings->findServerInfo( serverName )->getUrl( QString( "Users/%1/Items/%2" ).arg( fCurrUserData->getUserID( serverName ) ).arg( mediaData->getMediaID( serverName ) ), {} );
+    auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Users/%1/Items/%2" ).arg( currUser()->getUserID( serverName ) ).arg( mediaData->getMediaID( serverName ) ), {} );
     if ( !url.isValid() )
         return;
 
@@ -1591,10 +1604,17 @@ void CSyncSystem::slotCanceled()
     {
         ii.first->abort();
     }
-    fCurrUserData.reset();
+    clearCurrUser();
 }
 
 std::shared_ptr< CUserData > CSyncSystem::currUser() const
 {
     return fCurrUserData;
+}
+
+
+void CSyncSystem::clearCurrUser()
+{
+    if ( fCurrUserData )
+        fCurrUserData.reset();
 }

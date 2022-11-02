@@ -28,6 +28,7 @@
 #include "Core/ProgressSystem.h"
 #include "Core/UsersModel.h"
 #include "Core/MediaModel.h"
+#include "Core/ServerModel.h"
 
 #include "Version.h"
 #include <iostream>
@@ -40,7 +41,8 @@ CMainObj::CMainObj( const QString & settingsFile, QObject * parent /*= nullptr*/
     QObject( parent ),
     fSettingsFile( settingsFile )
 {
-    fSettings = std::make_shared< CSettings >();
+    fServerModel = std::make_shared< CServerModel >();
+    fSettings = std::make_shared< CSettings >( fServerModel );
     if ( !fSettings->load( settingsFile,
          [settingsFile]( const QString & /*title*/, const QString & msg )
          {
@@ -76,10 +78,10 @@ CMainObj::CMainObj( const QString & settingsFile, QObject * parent /*= nullptr*/
         return;
     }
 
-    fUsersModel = std::make_shared< CUsersModel >( fSettings );
-    fMediaModel = std::make_shared< CMediaModel >( fSettings );
+    fUsersModel = std::make_shared< CUsersModel >( fSettings, fServerModel );
+    fMediaModel = std::make_shared< CMediaModel >( fSettings, fServerModel );
 
-    fSyncSystem = std::make_shared< CSyncSystem >( fSettings, fUsersModel, fMediaModel );
+    fSyncSystem = std::make_shared< CSyncSystem >( fSettings, fUsersModel, fMediaModel, fServerModel );
 
     connect( fSyncSystem.get(), &CSyncSystem::sigAddToLog, this, &CMainObj::slotAddToLog );
     connect( fSyncSystem.get(), &CSyncSystem::sigLoadingUsersFinished, this, &CMainObj::slotLoadingUsersFinished );

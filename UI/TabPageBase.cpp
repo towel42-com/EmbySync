@@ -25,6 +25,7 @@
 #include "Core/SyncSystem.h"
 #include "Core/Settings.h"
 #include "Core/ServerInfo.h"
+#include "Core/ServerModel.h"
 
 #include <QSplitter>
 #include <QModelIndex>
@@ -76,9 +77,9 @@ QString CTabPageBase::selectServer() const
 {
     QStringList serverNames;
     std::map< QString, QString > servers;
-    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    for ( int ii = 0; ii < fServerModel->serverCnt(); ++ii )
     {
-        auto serverInfo = fSettings->serverInfo( ii );
+        auto serverInfo = fServerModel->getServerInfo( ii );
         if ( !serverInfo->isEnabled() )
             continue;
 
@@ -104,28 +105,13 @@ QString CTabPageBase::selectServer() const
 
 void CTabPageBase::loadServers( QAbstractItemModel * model )
 {
-    for ( auto && ii : fDataTrees )
-        delete ii;
-    fDataTrees.clear();
+    clearServers();
+    createServerTrees( model );
+    setupDataTreePeers();
+}
 
-    fSyncSystem->loadServers();
-
-    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
-    {
-        auto serverInfo = fSettings->serverInfo( ii );
-        if ( !serverInfo->isEnabled() )
-            continue;
-
-        auto dataTree = new CDataTree( fSettings->serverInfo( ii ), getDataSplitter() );
-        getDataSplitter()->addWidget( dataTree );
-        dataTree->setModel( model );
-        connect( dataTree, &CDataTree::sigCurrChanged, this, &CTabPageBase::sigSetCurrentDataItem );
-        connect( dataTree, &CDataTree::sigViewData, this, &CTabPageBase::sigViewData );
-        connect( dataTree, &CDataTree::sigDataContextMenuRequested, this, &CTabPageBase::sigDataContextMenuRequested );
-
-        fDataTrees.push_back( dataTree );
-    }
-
+void CTabPageBase::setupDataTreePeers()
+{
     for ( size_t ii = 0; ii < fDataTrees.size(); ++ii )
     {
         for ( size_t jj = 0; jj < fDataTrees.size(); ++jj )
@@ -135,4 +121,36 @@ void CTabPageBase::loadServers( QAbstractItemModel * model )
             fDataTrees[ ii ]->addPeerDataTree( fDataTrees[ jj ] );
         }
     }
+}
+
+void CTabPageBase::createServerTrees( QAbstractItemModel * model )
+{
+    for ( int ii = 0; ii < fServerModel->serverCnt(); ++ii )
+    {
+        auto serverInfo = fServerModel->getServerInfo( ii );
+        if ( !serverInfo->isEnabled() )
+            continue;
+
+        addDataTreeForServer( fServerModel->getServerInfo( ii ), model );
+    }
+}
+
+void CTabPageBase::addDataTreeForServer( std::shared_ptr<const CServerInfo> server, QAbstractItemModel * model )
+{
+    auto dataTree = new CDataTree( server, getDataSplitter() );
+
+    getDataSplitter()->addWidget( dataTree );
+    dataTree->setModel( model );
+    connect( dataTree, &CDataTree::sigCurrChanged, this, &CTabPageBase::sigSetCurrentDataItem );
+    connect( dataTree, &CDataTree::sigViewData, this, &CTabPageBase::sigViewData );
+    connect( dataTree, &CDataTree::sigDataContextMenuRequested, this, &CTabPageBase::sigDataContextMenuRequested );
+
+    fDataTrees.push_back( dataTree );
+}
+
+void CTabPageBase::clearServers()
+{
+    for ( auto && ii : fDataTrees )
+        delete ii;
+    fDataTrees.clear();
 }

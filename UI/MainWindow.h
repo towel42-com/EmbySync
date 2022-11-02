@@ -40,6 +40,7 @@ class CUsersFilterModel;
 class CTabPageBase;
 class CMediaModel;
 class CTabUIInfo;
+class CServerModel;
 
 class CMainWindow : public QMainWindow
 {
@@ -83,7 +84,7 @@ private Q_SLOTS:
     void slotAddInfoToLog( const QString & msg );
     void slotVersionsDownloaded();
     void slotCurentTabChanged( int idx );
-
+    void slotServersLoaded();
 private:
     bool okToClosePages();
     bool prepForClosePages();
@@ -115,6 +116,7 @@ private:
     std::shared_ptr< CSyncSystem > fSyncSystem;
     std::shared_ptr< CUsersModel > fUsersModel;
     std::shared_ptr< CMediaModel > fMediaModel;
+    std::shared_ptr< CServerModel > fServerModel;
     std::shared_ptr< CProgressSystem > fProgressSystem;
 
 

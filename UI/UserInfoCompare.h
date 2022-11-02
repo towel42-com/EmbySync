@@ -53,7 +53,7 @@ public:
     CUserInfoCompare( QWidget * parent = nullptr );
     virtual ~CUserInfoCompare() override;
 
-    virtual void setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CProgressSystem > progressSystem ) override;
+    virtual void setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem ) override;
     virtual void setupActions();
 
     virtual bool okToClose() override;
@@ -125,7 +125,6 @@ private:
     QPointer< QAction > fActionOnlyShowUsersWithDifferences{ nullptr };
     QPointer< QAction > fActionShowUsersWithIssues{ nullptr };
 
-    std::list< QPointer< QAction > > fEditActions;
     QToolBar * fToolBar{ nullptr };
     CDataTree * fContextTree{ nullptr };
 };

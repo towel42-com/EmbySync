@@ -31,6 +31,7 @@
 #include "Core/SyncSystem.h"
 #include "Core/UsersModel.h"
 #include "Core/MediaModel.h"
+#include "Core/ServerModel.h"
 
 #include "SABUtils/DownloadFile.h"
 #include "SABUtils/GitHubGetVersions.h"
@@ -50,18 +51,21 @@ CMainWindow::CMainWindow( QWidget * parent )
     fImpl( new Ui::CMainWindow )
 {
     fImpl->setupUi( this );
-    fSettings = std::make_shared< CSettings >();
 
-    fUsersModel = std::make_shared< CUsersModel >( fSettings );
+    fServerModel = std::make_shared< CServerModel >();
+    connect( fServerModel.get(), &CServerModel::sigServersLoaded, this, &CMainWindow::slotServersLoaded );
+    fSettings = std::make_shared< CSettings >( fServerModel );
+
+    fUsersModel = std::make_shared< CUsersModel >( fSettings, fServerModel );
     NSABUtils::setupModelChanged( fUsersModel.get(), this, QMetaMethod::fromSignal( &CMainWindow::sigModelDataChanged ) );
     connect( this, &CMainWindow::sigSettingsLoaded, fUsersModel.get(), &CUsersModel::slotSettingsChanged );
     connect( this, &CMainWindow::sigSettingsLoaded, this, &CMainWindow::slotSettingsChanged );
     connect( this, &CMainWindow::sigSettingsChanged, this, &CMainWindow::slotSettingsChanged );
 
-    fMediaModel = std::make_shared< CMediaModel >( fSettings, this );
+    fMediaModel = std::make_shared< CMediaModel >( fSettings, fServerModel );
     NSABUtils::setupModelChanged( fMediaModel.get(), this, QMetaMethod::fromSignal( &CMainWindow::sigModelDataChanged ) );
 
-    fSyncSystem = std::make_shared< CSyncSystem >( fSettings, fUsersModel, fMediaModel, this );
+    fSyncSystem = std::make_shared< CSyncSystem >( fSettings, fUsersModel, fMediaModel, fServerModel );
     connect( fSyncSystem.get(), &CSyncSystem::sigAddToLog, this, &CMainWindow::slotAddToLog );
     connect( fSyncSystem.get(), &CSyncSystem::sigAddInfoToLog, this, &CMainWindow::slotAddInfoToLog );
     connect( fSyncSystem.get(), &CSyncSystem::sigLoadingUsersFinished, this, &CMainWindow::slotLoadingUsersFinished );
@@ -203,13 +207,15 @@ void CMainWindow::slotSettingsChanged()
 void CMainWindow::slotReloadServers()
 {
     resetPages();
-    fSyncSystem->loadServers();
+    fSyncSystem->loadServerInfo();
     fSyncSystem->loadUsers();
 }
 
 void CMainWindow::slotSettings()
 {
-    CSettingsDlg settings( fSettings, fSyncSystem, fUsersModel->getAllUsers( true ), this );
+    CSettingsDlg settings( fSettings, fServerModel, fSyncSystem, this );
+    settings.setKnownUsers( fUsersModel->getAllUsers( true ) );
+    settings.setKnownShows( fMediaModel->getKnownShows() );
     settings.exec();
     if ( fSettings->changed() )
     {
@@ -375,7 +381,7 @@ void CMainWindow::loadSettings()
 
 void CMainWindow::slotUpdateActions()
 {
-    bool canSync = fSettings->canAnyServerSync();
+    bool canSync = fServerModel->canAnyServerSync();
     fImpl->actionReloadServers->setEnabled( canSync );
 }
 
@@ -395,8 +401,10 @@ void CMainWindow::slotAddInfoToLog( const QString & msg )
 void CMainWindow::progressReset()
 {
     if ( fProgressDlg )
-        fProgressDlg->deleteLater();
-    fProgressDlg = nullptr;
+    {
+        //fProgressDlg->close();
+        fProgressDlg->reset();
+    }
 }
 
 void CMainWindow::progressSetup( const QString & title )
@@ -465,6 +473,11 @@ void CMainWindow::slotCurentTabChanged( int /*idx*/ )
     fCurrentTabUIInfo->setupUI( this, fImpl->menuEdit );
 }
 
+void CMainWindow::slotServersLoaded()
+{
+    fSyncSystem->loadServerInfo();
+}
+
 CTabPageBase * CMainWindow::getCurrentPage() const
 {
     auto currIndex = fImpl->tabWidget->currentIndex();
@@ -483,7 +496,7 @@ void CMainWindow::setupPage( int index )
 
     fPages[ index ] = page;
     
-    page->setupPage( fSettings, fSyncSystem, fMediaModel, fUsersModel, fProgressSystem );
+    page->setupPage( fSettings, fSyncSystem, fMediaModel, fUsersModel, fServerModel, fProgressSystem );
     connect( page, &CTabPageBase::sigAddToLog, this, &CMainWindow::slotAddToLog );
     connect( page, &CTabPageBase::sigAddInfoToLog, this, &CMainWindow::slotAddInfoToLog );
 

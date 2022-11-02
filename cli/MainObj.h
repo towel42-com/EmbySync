@@ -35,6 +35,7 @@ class CSyncSystem;
 class CUserData;
 class CMediaModel;
 class CUsersModel;
+class CServerModel;
 class CMainObj : public QObject
 {
     Q_OBJECT;
@@ -63,6 +64,7 @@ private:
     std::shared_ptr< CSettings > fSettings;
     std::shared_ptr< CSyncSystem > fSyncSystem;
 
+    std::shared_ptr< CServerModel > fServerModel;
     std::shared_ptr< CMediaModel > fMediaModel;
     std::shared_ptr< CUsersModel > fUsersModel;
 

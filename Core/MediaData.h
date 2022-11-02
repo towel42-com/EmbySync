@@ -37,7 +37,7 @@ class QJsonObject;
 class QTreeWidget;
 class QListWidget;
 class QColor;
-class CSettings;
+class CServerModel;
 struct SMediaServerData;
 
 enum class EMediaSyncStatus
@@ -56,15 +56,16 @@ public:
     static std::function< QString( uint64_t ) > mecsToStringFunc();
     static QString computeName( const QJsonObject & media );
 
-    CMediaData( const QJsonObject & mediaObj, std::shared_ptr< CSettings > settings );
+    CMediaData( const QJsonObject & mediaObj, std::shared_ptr< CServerModel > serverModel );
     bool hasProviderIDs() const;
     void addProvider( const QString & providerName, const QString & providerID );
 
     QString name() const;
+    QString seriesName() const;
     QString mediaType() const;
     bool beenLoaded( const QString & serverName ) const;
 
-    void loadUserDataFromJSON( const QString & serverName, const QJsonObject & object );
+    void loadData( const QString & serverName, const QJsonObject & object );
     void updateFromOther( const QString & otherServerName, std::shared_ptr< CMediaData > other );
 
     QUrlQuery getSearchForMediaQuery() const;
@@ -86,7 +87,7 @@ public:
     bool validUserDataEqual() const;
     EMediaSyncStatus syncStatus() const;
 
-     bool needsUpdating( const QString & serverName ) const;
+    bool needsUpdating( const QString & serverName ) const;
     template <class T>
     void needsUpdating( T ) const = delete;
 
@@ -108,6 +109,8 @@ public:
 
     uint64_t playCount( const QString & serverName ) const;
     bool allPlayCountEqual() const;
+
+    QDateTime premiereDate() const { return fPremiereDate; }
 
     std::shared_ptr<SMediaServerData> userMediaData( const QString & serverName ) const;
     std::shared_ptr<SMediaServerData> newestMediaData() const;
@@ -134,8 +137,10 @@ private:
 
     QString fType;
     QString fName;
+    QString fSeriesName; // only valid for EpisodeTypes
     std::map< QString, QString > fProviders;
     std::map< QString, QString > fExternalUrls;
+    QDateTime fPremiereDate;
 
     bool fCanBeSynced{ false };
     std::map< QString, std::shared_ptr< SMediaServerData > > fInfoForServer;

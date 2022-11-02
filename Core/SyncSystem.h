@@ -39,6 +39,7 @@
 
 class CUsersModel;
 class CMediaModel;
+class CServerModel;
 
 class QNetworkReply;
 class QAuthenticator;
@@ -126,7 +127,7 @@ class CSyncSystem : public QObject
 {
     Q_OBJECT
 public:
-    CSyncSystem( std::shared_ptr< CSettings > settings, std::shared_ptr< CUsersModel > usersModel, std::shared_ptr< CMediaModel > mediaModel, QObject * parent = nullptr );
+    CSyncSystem( std::shared_ptr< CSettings > settings, std::shared_ptr< CUsersModel > usersModel, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CServerModel > serverModel, QObject * parent = nullptr );
 
     void setProcessNewMediaFunc( std::function< void( std::shared_ptr< CMediaData > userData ) > processMediaFunc );
     void setUserMsgFunc( std::function< void( const QString & title, const QString & msg, bool isCritical ) > userMsgFunc );
@@ -139,13 +140,14 @@ public:
     bool isRunning() const;
     void reset();
 
-    void loadServers();
+    void loadServerInfo();
 
     void loadUsers();
     void loadUsersMedia( std::shared_ptr< CUserData > user );
-    void loadMissingEpisodes( std::shared_ptr< CUserData > userData, const QDate & minPremiereDate, const QDate & maxPremiereDate );
-    void loadMissingEpisodes( std::shared_ptr< CUserData > userData, std::shared_ptr<const CServerInfo> serverInfo, const QDate & minPremiereDate, const QDate & maxPremiereDate );
 
+    bool loadMissingEpisodes( std::shared_ptr< const CServerInfo > serverInfo, const QDate & minPremiereDate, const QDate & maxPremiereDate ); // return false if no admin user found on server
+
+    bool setCurrentUser( std::shared_ptr<CUserData> userData );
     void clearCurrUser();
     std::shared_ptr< CUserData > currUser() const;
 
@@ -202,6 +204,8 @@ private Q_SLOTS:
     void slotRepairNextUser();
 
 private:
+    void loadMissingEpisodes( std::shared_ptr< CUserData > userData, std::shared_ptr<const CServerInfo> serverInfo, const QDate & minPremiereDate, const QDate & maxPremiereDate );
+
     QNetworkReply * makeRequest( QNetworkRequest & request, ENetworkRequestType requestType = ENetworkRequestType::eGet, const QByteArray & data = {}, QString contentType = QString() );
 
     std::shared_ptr<CUserData> loadUser( const QString & serverName, const QJsonObject & user );
@@ -265,6 +269,7 @@ private:
     std::shared_ptr< CSettings > fSettings;
     std::shared_ptr< CUsersModel > fUsersModel;
     std::shared_ptr< CMediaModel > fMediaModel;
+    std::shared_ptr< CServerModel > fServerModel;
     QNetworkAccessManager * fManager{ nullptr };
 
     QTimer * fPendingRequestTimer{ nullptr };
@@ -278,9 +283,9 @@ private:
 
     using TOptionalBoolPair = std::pair< std::optional< bool >, std::optional< bool > >;
     std::unordered_map< QString, TOptionalBoolPair > fLeftAndRightFinished;
-    std::shared_ptr< CUserData > fCurrUserData;
     std::unordered_map< QString, std::shared_ptr< const CServerInfo > > fTestServers;
     std::list< SConnectIDInfo > fUsersNeedingConnectIDUpdates;
+    std::shared_ptr< CUserData > fCurrUserData;
     SConnectIDInfo fCurrUserConnectID;
 };
 #endif

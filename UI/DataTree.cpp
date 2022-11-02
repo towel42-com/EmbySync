@@ -32,17 +32,15 @@
 
 CDataTree::CDataTree( const std::shared_ptr< const CServerInfo > & serverInfo, QWidget * parentWidget )
     : QWidget( parentWidget ),
-    fImpl( new Ui::CDataTree ),
-    fServerInfo( serverInfo )
+    fImpl( new Ui::CDataTree )
 {
     fImpl->setupUi( this );
     fImpl->data->setExpandsOnDoubleClick( false );
-    slotServerInfoChanged();
     installEventFilter( this );
-
-    connect( serverInfo.get(), &CServerInfo::sigServerInfoChanged, this, &CDataTree::slotServerInfoChanged );
-    connect( fImpl->data, &QTreeView::customContextMenuRequested, this, &CDataTree::slotContextMenuRequested );
     fImpl->data->setContextMenuPolicy( Qt::ContextMenuPolicy::CustomContextMenu );
+    connect( fImpl->data, &QTreeView::customContextMenuRequested, this, &CDataTree::slotContextMenuRequested );
+
+    setServer( serverInfo, false );
 }
 
 CDataTree::~CDataTree()
@@ -59,6 +57,18 @@ void CDataTree::setModel( QAbstractItemModel * model )
     connect( fImpl->data->horizontalScrollBar(), &QScrollBar::actionTriggered, this, &CDataTree::slotUpdateHorizontalScroll );
     connect( fImpl->data->selectionModel(), &QItemSelectionModel::currentChanged, this, &CDataTree::sigCurrChanged );
     connect( fImpl->data, &QTreeView::doubleClicked, this, &CDataTree::sigViewData );
+}
+
+void CDataTree::setServer( const std::shared_ptr< const CServerInfo > & serverInfo, bool hideColumns )
+{
+    if ( fServerInfo )
+        disconnect( fServerInfo.get(), &CServerInfo::sigServerInfoChanged, this, &CDataTree::slotServerInfoChanged );
+
+    fServerInfo = serverInfo;
+    connect( fServerInfo.get(), &CServerInfo::sigServerInfoChanged, this, &CDataTree::slotServerInfoChanged );
+    slotServerInfoChanged();
+    if ( hideColumns )
+        this->hideColumns();
 }
 
 void CDataTree::addPeerDataTree( CDataTree * peer )
@@ -131,6 +141,12 @@ void CDataTree::slotVActionTriggered( int action )
 
 void CDataTree::slotServerInfoChanged()
 {
+    if ( !fServerInfo )
+    {
+        fImpl->serverLabel->setText( tr( "Server:" ) );
+        return;
+    }
+
     fImpl->serverImage->setHidden( fServerInfo->icon().isNull() );
     fImpl->serverImage->setPixmap( fServerInfo->icon().pixmap( fImpl->serverLabel->height() ) );
     fImpl->serverLabel->setText( tr( "Server: <a href=\"%1\">%2</a>" ).arg( fServerInfo->getUrl().toString( QUrl::RemoveQuery ) ).arg( fServerInfo->displayName( true ) ) );
@@ -142,16 +158,23 @@ void CDataTree::hideColumns()
     if ( !model /*|| ( model->rowCount() == 0 )*/ )
         return;
 
+    if ( !fServerInfo )
+        return;
+
+    auto proxyModel = dynamic_cast<QAbstractProxyModel *>( model );
+    if ( proxyModel )
+        model = proxyModel->sourceModel();
+
+    if ( !model )
+        return;
+
+    auto serverModel = dynamic_cast<IServerForColumn *>( model );
+    if ( !serverModel )
+        return;
+
     auto numColumns = model->columnCount();
     for ( int ii = 0; ii < numColumns; ++ii )
     {
-        auto proxyModel = dynamic_cast<QAbstractProxyModel *>( model );
-        if ( proxyModel )
-            model = proxyModel->sourceModel();
-
-        auto serverModel = dynamic_cast<IServerForColumn *>( model );
-        if ( !serverModel )
-            continue;
         auto server = serverModel->serverForColumn( ii );
         bool hide = ( server != "<ALL>" ) && server != fServerInfo->keyName();
         fImpl->data->setColumnHidden( ii, hide );

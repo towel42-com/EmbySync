@@ -66,6 +66,10 @@ struct SUserServerData
     bool fEnableNextEpisodeAutoPlay{ false };
     int fResumeRewindSeconds{ 0 };
     QString fIntroSkipMode;
+
+    bool fIsAdmin{ false };
+    bool fIsDisabled{ false };
+    bool fIsHidden{ false };
 };
 
 bool operator==( const SUserServerData & lhs, const SUserServerData & rhs );

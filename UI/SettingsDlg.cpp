@@ -26,6 +26,7 @@
 #include "Core/ServerInfo.h"
 #include "Core/UserData.h"
 #include "Core/SyncSystem.h"
+#include "Core/ServerModel.h"
 #include "SABUtils/ButtonEnabler.h"
 
 #include <QFileDialog>
@@ -37,10 +38,11 @@
 
 #include "ui_SettingsDlg.h"
 
-CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, const std::vector< std::shared_ptr< CUserData > > & knownUsers, QWidget * parentWidget )
+CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CSyncSystem > syncSystem, QWidget * parentWidget )
     : QDialog( parentWidget ),
     fImpl( new Ui::CSettingsDlg ),
     fSettings( settings ),
+    fServerModel( serverModel ),
     fSyncSystem( syncSystem )
 {
     fImpl->setupUi( this );
@@ -48,8 +50,9 @@ CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, std::shared_p
     new NSABUtils::CButtonEnabler( fImpl->usersList, fImpl->editUser );
     new NSABUtils::CButtonEnabler( fImpl->servers, fImpl->delServer );
     new NSABUtils::CButtonEnabler( fImpl->servers, fImpl->editServer );
+    new NSABUtils::CButtonEnabler( fImpl->showsList, fImpl->delShow );
+    new NSABUtils::CButtonEnabler( fImpl->showsList, fImpl->editShow );
 
-    loadKnownUsers( knownUsers );
 
     fTestButton = fImpl->testButtonBox->addButton( tr( "Test" ), QDialogButtonBox::ButtonRole::ActionRole );
     fTestButton->setObjectName( "Test Button" );
@@ -115,6 +118,33 @@ CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, std::shared_p
             return editUser( item );
         } );
 
+    connect( fImpl->addShow, &QToolButton::clicked,
+        [ this ]()
+        {
+            editShow( nullptr );
+        } );
+    connect( fImpl->delShow, &QToolButton::clicked,
+        [ this ]()
+        {
+            auto curr = fImpl->showsList->currentItem();
+            if ( !curr )
+                return;
+            delete curr;
+            updateKnownShows();
+        } );
+    connect( fImpl->editShow, &QToolButton::clicked,
+        [ this ]()
+        {
+            auto curr = fImpl->showsList->currentItem();
+            editShow( curr );
+        } );
+
+    connect( fImpl->showsList, &QListWidget::itemDoubleClicked,
+        [ this ]( QListWidgetItem *item )
+        {
+            return editShow( item );
+        } );
+
     connect( fImpl->addServer, &QToolButton::clicked,
              [this]()
              {
@@ -134,7 +164,6 @@ CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, std::shared_p
                  auto curr = fImpl->servers->currentItem();
                  editServer( curr );
              } );
-
     connect( fImpl->servers, &QTreeWidget::itemDoubleClicked,
              [this]( QTreeWidgetItem * item )
              {
@@ -202,22 +231,39 @@ void CSettingsDlg::moveCurrServer( bool up )
 void CSettingsDlg::loadKnownUsers( const std::vector< std::shared_ptr< CUserData > > & knownUsers )
 {
     auto headerLabels = QStringList() << tr( "Connected ID" );
-    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
-        headerLabels << fSettings->serverInfo( ii )->displayName();
+    for ( int ii = 0; ii < fServerModel->serverCnt(); ++ii )
+        headerLabels << fServerModel->getServerInfo( ii )->displayName();
     fImpl->knownUsers->setColumnCount( headerLabels.count() );
     fImpl->knownUsers->setHeaderLabels( headerLabels );
 
     for ( auto && ii : knownUsers )
     {
         auto data = QStringList() << ii->connectedID();
-        for ( int jj = 0; jj < fSettings->serverCnt(); ++jj )
-            data << ii->name( fSettings->serverInfo( jj )->keyName() );
+        for ( int jj = 0; jj < fServerModel->serverCnt(); ++jj )
+            data << ii->name( fServerModel->getServerInfo( jj )->keyName() );
 
         auto item = new QTreeWidgetItem( fImpl->knownUsers, data );
         item->setIcon( 0, QIcon( QPixmap::fromImage( ii->anyAvatar() ) ) );
 
         fKnownUsers.push_back( std::make_pair( ii, item ) );
     }
+    updateKnownUsers();
+}
+
+void CSettingsDlg::loadKnownShows( const std::unordered_set< QString > & knownShows )
+{
+    std::set< QString > orderedShows = { knownShows.begin(), knownShows.end() };
+
+    auto headerLabels = QStringList() << tr( "Show Name" );
+    fImpl->knownShows->setColumnCount( headerLabels.count() );
+    fImpl->knownShows->setHeaderLabels( headerLabels );
+
+    for ( auto && ii : orderedShows )
+    {
+        auto item = new QTreeWidgetItem( fImpl->knownShows, QStringList() << ii );
+        fKnownShows.push_back( std::make_pair( ii, item ) );
+    }
+    updateKnownShows();
 }
 
 void CSettingsDlg::editUser( QListWidgetItem * item )
@@ -225,10 +271,31 @@ void CSettingsDlg::editUser( QListWidgetItem * item )
     auto curr = item ? item->text() : QString();
 
     auto newUserName = QInputDialog::getText( this, tr( "Regular Expression" ), tr( "Regular Expression matching User names to sync:" ), QLineEdit::EchoMode::Normal, curr );
-    if ( newUserName.isEmpty() || ( newUserName == item->text() ) )
+    if ( newUserName.isEmpty() || ( item && ( newUserName == item->text() ) ) )
         return;
-    item->setText( newUserName );
+
+    if ( !item )
+        item = new QListWidgetItem( newUserName, fImpl->usersList );
+    else
+        item->setText( newUserName );
+
     updateKnownUsers();
+}
+
+void CSettingsDlg::editShow( QListWidgetItem * item )
+{
+    auto curr = item ? item->text() : QString();
+
+    auto newShowName = QInputDialog::getText( this, tr( "Regular Expression" ), tr( "Regular Expression matching Show Series name to ignore:" ), QLineEdit::EchoMode::Normal, curr );
+    if ( newShowName.isEmpty() || ( item && ( newShowName == item->text() ) ) )
+        return;
+
+    if ( !item )
+        item = new QListWidgetItem( newShowName, fImpl->showsList );
+    else
+        item->setText( newShowName );
+
+    updateKnownShows();
 }
 
 void CSettingsDlg::editServer( QTreeWidgetItem * item )
@@ -265,9 +332,9 @@ void CSettingsDlg::accept()
 void CSettingsDlg::load()
 {
     fImpl->servers->setColumnCount( 3 );
-    for ( int ii = 0; ii < fSettings->serverCnt(); ++ii )
+    for ( int ii = 0; ii < fServerModel->serverCnt(); ++ii )
     {
-        auto serverInfo = fSettings->serverInfo( ii );
+        auto serverInfo = fServerModel->getServerInfo( ii );
         auto name = serverInfo->displayName();
         auto url = serverInfo->url();
         auto apiKey = serverInfo->apiKey();
@@ -304,8 +371,6 @@ void CSettingsDlg::load()
         new QListWidgetItem( ii, fImpl->usersList );
     }
 
-    updateKnownUsers();
-
     fImpl->checkForLatest->setChecked( CSettings::checkForLatest() );
     fImpl->loadLastProject->setChecked( CSettings::loadLastProject() );
 }
@@ -313,7 +378,7 @@ void CSettingsDlg::load()
 void CSettingsDlg::save()
 {
     auto servers = getServerInfos( false );
-    fSettings->setServers( servers );
+    fServerModel->setServers( servers );
 
     fSettings->setMediaSourceColor( fMediaSourceColor );
     fSettings->setMediaDestColor( fMediaDestColor );
@@ -330,6 +395,7 @@ void CSettingsDlg::save()
     fSettings->setSyncGame( fImpl->syncGame->isChecked() );
     fSettings->setSyncBook( fImpl->syncBook->isChecked() );
     fSettings->setSyncUserList( syncUserStrings() );
+    fSettings->setIgnoreShowList( ignoreShowStrings() );
 
     CSettings::setCheckForLatest( fImpl->checkForLatest->isChecked() );
     CSettings::setLoadLastProject( fImpl->loadLastProject->isChecked() );
@@ -372,12 +438,28 @@ QStringList CSettingsDlg::syncUserStrings() const
     return syncUsers;
 }
 
-void CSettingsDlg::updateKnownUsers()
+QStringList CSettingsDlg::ignoreShowStrings() const
 {
-    QStringList syncUsers;
-    for ( int ii = 0; ii < fImpl->usersList->count(); ++ii )
+    QStringList retVal;
+    for ( int ii = 0; ii < fImpl->showsList->count(); ++ii )
     {
-        auto curr = fImpl->usersList->item( ii );
+        auto curr = fImpl->showsList->item( ii );
+        if ( !curr )
+            continue;
+        retVal << curr->text();
+    }
+    return retVal;
+}
+
+QRegularExpression CSettingsDlg::validateRegExes( QListWidget * list ) const
+{
+    if ( !list )
+        return {};
+
+    QStringList regExList;
+    for ( int ii = 0; ii < list->count(); ++ii )
+    {
+        auto curr = list->item( ii );
         if ( !curr )
             continue;
         if ( !QRegularExpression( curr->text() ).isValid() )
@@ -388,23 +470,59 @@ void CSettingsDlg::updateKnownUsers()
         else
             curr->setBackground( QBrush() );
 
-        syncUsers << "(" + curr->text() + ")";
+        regExList << "(" + curr->text() + ")";
     }
+    auto regExpStr = regExList.join( "|" );
 
-    auto regExpStr = syncUsers.join( "|" );
     QRegularExpression regExp;
     if ( !regExpStr.isEmpty() )
         regExp = QRegularExpression( regExpStr );
     qDebug() << regExp << regExp.isValid() << regExp.pattern();
+    return regExp;
+}
+
+void CSettingsDlg::updateKnownUsers()
+{
+    auto regExp = validateRegExes( fImpl->usersList );
     for ( auto && ii : fKnownUsers )
     {
         bool isMatch = ii.first->isUser( regExp );
-        for ( int column = 0; column < ii.second->columnCount(); ++column )
+        setIsMatch( ii.second, isMatch, false );
+    }
+}
+
+
+void CSettingsDlg::updateKnownShows()
+{
+    auto regExp = validateRegExes( fImpl->showsList );
+
+    for ( auto && ii : fKnownShows )
+    {
+        auto match = regExp.match( ii.first );
+        bool isMatch = ( match.hasMatch() && ( match.captured( 0 ).length() == ii.first.length() ) );
+        setIsMatch( ii.second, isMatch, true );
+    }
+}
+
+void CSettingsDlg::setIsMatch( QTreeWidgetItem * item, bool isMatch, bool negMatch )
+{
+    if ( !item )
+        return;
+    for ( int column = 0; column < item->columnCount(); ++column )
+    {
+        if ( negMatch )
         {
             if ( isMatch )
-                ii.second->setBackground( column, Qt::green );
+                item->setBackground( column, Qt::red );
             else
-                ii.second->setBackground( column, QBrush() );
+                item->setBackground( column, QBrush() );
+        }
+        else
+        {
+            if ( isMatch )
+                item->setBackground( column, Qt::green );
+            else
+                item->setBackground( column, QBrush() );
         }
     }
 }

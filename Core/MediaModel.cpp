@@ -4,15 +4,18 @@
 
 #include "Settings.h"
 #include "ServerInfo.h"
+#include "ServerModel.h"
+
 #include "ProgressSystem.h"
 
 #include <QJsonObject>
 #include <QColor>
 
 #include <optional>
-CMediaModel::CMediaModel( std::shared_ptr< CSettings > settings, QObject * parent ) :
+CMediaModel::CMediaModel( std::shared_ptr< CSettings > settings, std::shared_ptr< CServerModel > serverModel, QObject * parent ) :
     QAbstractTableModel( parent ),
     fSettings( settings ),
+    fServerModel( serverModel ),
     fMergeSystem( new CMergeMedia )
 {
 
@@ -38,7 +41,24 @@ int CMediaModel::columnCount( const QModelIndex & parent /* = QModelIndex() */ )
 {
     if ( parent.isValid() )
         return 0;
-    auto retVal = fSettings->serverCnt() * columnsPerServer();
+    auto retVal = fServerModel->serverCnt() * columnsPerServer();
+    return retVal;
+}
+
+std::list< int > CMediaModel::columnsForBaseColumn( int baseColumn ) const 
+{
+    std::list< int > retVal;
+
+    auto providerInfo = getProviderInfoForColumn( baseColumn );
+    if ( providerInfo )
+        return { baseColumn };
+
+    auto curr = baseColumn;
+    while ( curr <= columnCount() )
+    {
+        retVal.push_back( curr );
+        curr += columnsPerServer( false );
+    }
     return retVal;
 }
 
@@ -49,8 +69,18 @@ QString CMediaModel::serverForColumn( int column ) const
         return providerInfo.value().first;
 
     auto serverNum = column / columnsPerServer( false );
-    return fSettings->serverInfo( serverNum )->keyName();
+    return fServerModel->getServerInfo( serverNum )->keyName();
 }
+
+std::list< int > CMediaModel::providerColumns() const
+{
+    std::list< int > retVal;
+    for ( auto && ii : fProviderColumnsByColumn )
+        retVal.push_back( ii.first );
+    return retVal;
+}
+
+
 
 std::optional< std::pair< QString, QString > > CMediaModel::getProviderInfoForColumn( int column ) const
 {
@@ -85,6 +115,13 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
         return mediaData->name();
     if ( role == ECustomRoles::eDirSortRole )
         return static_cast<int>( fDirSort );
+    if ( role == ECustomRoles::ePremiereDateRole )
+        return mediaData->premiereDate().date();
+    if ( role == ECustomRoles::eIsProviderColumnRole )
+    {
+        auto providerInfo = getProviderInfoForColumn( index.column() );
+        return providerInfo.operator bool();
+    }
     if ( role == ECustomRoles::eShowItemRole )
     {
         if ( !mediaData )
@@ -99,6 +136,11 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
             return true;
         return false;
     }
+    if ( role == ECustomRoles::eSeriesNameRole )
+    {
+        return mediaData->seriesName();
+    }
+
 
     int column = index.column();
     auto serverName = this->serverForColumn( column );
@@ -140,6 +182,7 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
     {
         case eName: return isValid ? mediaData->name() : tr( "%1 - <Missing from Server>" ).arg( mediaData->name() );
         case eType: return mediaData->mediaType();
+        case ePremiereDate: return mediaData->premiereDate().date();
         case eMediaID: return isValid ? mediaData->getMediaID( serverName ) : QString();
         case eFavorite: return isValid ? ( mediaData->isFavorite( serverName ) ? "Yes" : "No" )  : QString();
         case ePlayed: return isValid ? ( mediaData->isPlayed( serverName ) ? "Yes" : "No" )  : QString();
@@ -163,7 +206,7 @@ int CMediaModel::perServerColumn( int column ) const
 
 void CMediaModel::addMediaInfo( const QString & serverName, std::shared_ptr<CMediaData> mediaData, const QJsonObject & mediaInfo )
 {
-    mediaData->loadUserDataFromJSON( serverName, mediaInfo );
+    mediaData->loadData( serverName, mediaInfo );
 
     fMediaMap[ serverName ][ mediaData->getMediaID( serverName ) ] = mediaData;
 
@@ -180,25 +223,30 @@ QVariant CMediaModel::headerData( int section, Qt::Orientation orientation, int 
     if ( role != Qt::DisplayRole )
         return QAbstractTableModel::headerData( section, orientation, role );
 
+    QString retVal;
+    int columnNum = -1;
     auto providerInfo = getProviderInfoForColumn( section );
     if ( providerInfo )
-        return providerInfo.value().second;
-
-    auto columnNum = perServerColumn( section );
-
-    switch ( columnNum )
+        retVal = providerInfo.value().second;
+    else 
     {
-        case eName: return "Name";
-        case eType: return "Media Type";
-        case eMediaID: return "ID on Server";
-        case eFavorite: return "Is Favorite?";
-        case ePlayed: return "Played?";
-        case eLastPlayed: return "Last Played";
-        case ePlayCount: return "Play Count";
-        case ePlaybackPosition: return "Play Position";
-    };
+        columnNum = perServerColumn( section );
 
-    return {};
+        switch ( columnNum )
+        {
+        case eName: retVal = "Name"; break;
+        case eType: retVal = "Media Type"; break;
+        case ePremiereDate: retVal = "Premiere Date"; break;
+        case eMediaID: retVal = "ID on Server"; break;
+        case eFavorite: retVal = "Is Favorite?"; break;
+        case ePlayed: retVal = "Played?"; break;
+        case eLastPlayed: retVal = "Last Played"; break;
+        case ePlayCount: retVal = "Play Count"; break;
+        case ePlaybackPosition: retVal = "Play Position"; break;
+        };
+    }
+    //retVal = QString( "%1 - %2 - %3" ).arg( retVal ).arg( columnNum ).arg( section );
+    return retVal;
 }
 
 void CMediaModel::clear()
@@ -223,11 +271,12 @@ void CMediaModel::updateProviderColumns( std::shared_ptr< CMediaData > mediaData
         auto pos = fProviderNames.find( ii.first );
         if ( pos == fProviderNames.end() )
         {
-            beginInsertColumns( QModelIndex(), colCount, colCount + fSettings->serverCnt() - 1 );
+            auto serverModel = fServerModel;
+            beginInsertColumns( QModelIndex(), colCount, colCount + serverModel->serverCnt() - 1 );
             fProviderNames.insert( ii.first );
-            for ( int jj = 0; jj < fSettings->serverCnt(); ++jj )
+            for ( int jj = 0; jj < serverModel->serverCnt(); ++jj )
             {
-                fProviderColumnsByColumn[ colCount + jj ] = { fSettings->serverInfo( jj )->keyName(), ii.first }; // gets duplicated lhs vs rhs
+                fProviderColumnsByColumn[ colCount + jj ] = { serverModel->getServerInfo( jj )->keyName(), ii.first }; // gets duplicated lhs vs rhs
             }
             endInsertColumns();
         }
@@ -238,6 +287,7 @@ void CMediaModel::settingsChanged()
 {
     beginResetModel();
     endResetModel();
+    emit sigSettingsChanged();
 }
 
 
@@ -273,30 +323,6 @@ std::shared_ptr< CMediaData > CMediaModel::getMediaDataForID( const QString & se
     return {};
 }
 
-CMediaFilterModel::CMediaFilterModel( QObject * parent ) :
-    QSortFilterProxyModel( parent )
-{
-    setDynamicSortFilter( false );
-}
-
-bool CMediaFilterModel::filterAcceptsRow( int source_row, const QModelIndex & source_parent ) const
-{
-    if ( !sourceModel() )
-        return true;
-    auto childIdx = sourceModel()->index( source_row, 0, source_parent );
-    return childIdx.data( CMediaModel::eShowItemRole ).toBool();
-}
-
-void CMediaFilterModel::sort( int column, Qt::SortOrder order /*= Qt::AscendingOrder */ )
-{
-    QSortFilterProxyModel::sort( column, order );
-}
-
-bool CMediaFilterModel::lessThan( const QModelIndex & source_left, const QModelIndex & source_right ) const
-{
-    return QSortFilterProxyModel::lessThan( source_left, source_right );
-}
-
 std::shared_ptr< CMediaData > CMediaModel::loadMedia( const QString & serverName, const QJsonObject & media )
 {
     auto id = media[ "Id" ].toString();
@@ -308,7 +334,7 @@ std::shared_ptr< CMediaData > CMediaModel::loadMedia( const QString & serverName
 
     auto pos2 = ( *pos ).second.find( id );
     if ( pos2 == (*pos).second.end() )
-        mediaData = std::make_shared< CMediaData >( media, fSettings );
+        mediaData = std::make_shared< CMediaData >( media, fServerModel );
     else
         mediaData = ( *pos2 ).second;
     //qDebug() << isLHSServer << mediaData->name();
@@ -378,12 +404,24 @@ void CMediaModel::loadMergedMedia( std::shared_ptr<CProgressSystem> progressSyst
     progressSystem->popState();
 }
 
+std::unordered_set< QString >  CMediaModel::getKnownShows() const
+{
+    std::unordered_set< QString > knownShows;
+    for ( auto && ii : fAllMedia )
+    {
+        if ( ii->mediaType() != "Episode" )
+            continue;;
+        knownShows.insert( ii->seriesName() );
+    }
+    return knownShows;
+}
+
 QVariant CMediaModel::getColor( const QModelIndex & index, const QString & serverName, bool background ) const
 {
     if ( !index.isValid() )
         return {};
 
-    if ( index.column() > fSettings->serverCnt() * columnsPerServer( false ) )
+    if ( index.column() > fServerModel->serverCnt() * columnsPerServer( false ) )
         return {};
     auto mediaData = fData[ index.row() ];
 
@@ -453,12 +491,13 @@ QVariant CMediaModel::getColor( const QModelIndex & index, const QString & serve
 
 SMediaSummary::SMediaSummary( std::shared_ptr< CMediaModel > model )
 {
+    auto serverModel = model->fServerModel;
     for ( auto && ii : model->fData )
     {
         fTotalMedia++;
-        for ( int jj = 0; jj < model->fSettings->serverCnt(); ++jj )
+        for ( int jj = 0; jj < serverModel->serverCnt(); ++jj )
         {
-            auto serverInfo = model->fSettings->serverInfo( jj );
+            auto serverInfo = serverModel->getServerInfo( jj );
             if ( !serverInfo->isEnabled() )
                 continue;
 
@@ -505,3 +544,107 @@ QString SMediaSummary::getSummaryText() const
 
     return retVal;
 }
+
+CMediaFilterModel::CMediaFilterModel( QObject * parent ) :
+    QSortFilterProxyModel( parent )
+{
+    setDynamicSortFilter( false );
+}
+
+bool CMediaFilterModel::filterAcceptsRow( int source_row, const QModelIndex & source_parent ) const
+{
+    if ( !sourceModel() )
+        return true;
+    auto childIdx = sourceModel()->index( source_row, 0, source_parent );
+    return childIdx.data( CMediaModel::eShowItemRole ).toBool();
+}
+
+void CMediaFilterModel::sort( int column, Qt::SortOrder order /*= Qt::AscendingOrder */ )
+{
+    QSortFilterProxyModel::sort( column, order );
+}
+
+bool CMediaFilterModel::lessThan( const QModelIndex & source_left, const QModelIndex & source_right ) const
+{
+    return QSortFilterProxyModel::lessThan( source_left, source_right );
+}
+
+CMediaMissingFilterModel::CMediaMissingFilterModel( std::shared_ptr< CSettings > settings, QObject * parent ) :
+    QSortFilterProxyModel( parent ),
+    fSettings( settings )
+{
+    fRegEx = fSettings->ignoreShowRegEx();
+    setDynamicSortFilter( false );
+    connect( this, &QSortFilterProxyModel::sourceModelChanged,
+        [ this ]()
+        {
+            connect( dynamic_cast< CMediaModel * >( sourceModel() ), &CMediaModel::sigSettingsChanged, 
+                [ this ]()
+                {
+                    fRegEx = fSettings->ignoreShowRegEx();
+                    invalidateFilter();
+                } );
+        } );
+}
+
+bool CMediaMissingFilterModel::filterAcceptsRow( int source_row, const QModelIndex & source_parent ) const
+{
+    if ( !fRegEx.isValid() )
+        return true;
+
+    if ( !sourceModel() )
+        return true;
+    auto childIdx = sourceModel()->index( source_row, 0, source_parent );
+    auto seriesName = childIdx.data( CMediaModel::eSeriesNameRole ).toString();
+    if ( seriesName.isEmpty() )
+        return false;
+
+    auto match = fRegEx.match( seriesName );
+    bool isMatch = ( match.hasMatch() && ( match.captured( 0 ).length() == seriesName.length() ) );
+    return !isMatch;
+}
+
+bool CMediaMissingFilterModel::filterAcceptsColumn( int source_column, const QModelIndex & source_parent ) const
+{
+    auto idx = sourceModel()->index( 0, source_column, source_parent );
+    return !idx.data( CMediaModel::ECustomRoles::eIsProviderColumnRole ).toBool();
+}
+
+void CMediaMissingFilterModel::sort( int column, Qt::SortOrder order /*= Qt::AscendingOrder */ )
+{
+    QSortFilterProxyModel::sort( column, order );
+}
+
+bool CMediaMissingFilterModel::lessThan( const QModelIndex & source_left, const QModelIndex & source_right ) const
+{
+    return QSortFilterProxyModel::lessThan( source_left, source_right );
+}
+
+QVariant CMediaMissingFilterModel::data( const QModelIndex & index, int role /*= Qt::DisplayRole */ ) const
+{
+    if ( ( role != Qt::ForegroundRole ) && ( role != Qt::BackgroundRole ) )
+        return QSortFilterProxyModel::data( index, role );
+
+    auto premierDate = index.data( CMediaModel::ECustomRoles::ePremiereDateRole );
+    if ( premierDate > QDate::currentDate() )
+        return {};
+
+    // reverse for black background
+    if ( role == Qt::ForegroundRole )
+    {
+        auto color = fSettings->dataMissingColor( false ); 
+        if ( !color.isValid() )
+            return {};
+        return color;
+    }
+
+    if ( role == Qt::BackgroundRole )
+    {
+        auto color = fSettings->dataMissingColor( true );
+        if ( !color.isValid() )
+            return {};
+        return color;
+    }
+    return {};
+}
+
