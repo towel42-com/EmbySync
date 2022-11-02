@@ -63,8 +63,7 @@ std::function< QString( uint64_t ) > CMediaData::mecsToStringFunc()
 
 CMediaData::CMediaData( const QJsonObject & mediaObj, std::shared_ptr< CServerModel > serverModel )
 {
-    fName = computeName( mediaObj );
-    fSeriesName = mediaObj[ "SeriesName" ].toString();
+    computeName( mediaObj );
     fType = mediaObj[ "Type" ].toString();
 
     for ( int ii = 0; ii < serverModel->serverCnt(); ++ii )
@@ -99,35 +98,42 @@ QString CMediaData::mediaType() const
     return fType;
 }
 
-QString CMediaData::computeName( const QJsonObject & media )
+void CMediaData::computeName( const QJsonObject & media )
 {
-    auto name = media[ "Name" ].toString();
-    QString retVal = name;
+    auto name = fName = media[ "Name" ].toString();
     if ( media[ "Type" ] == "Episode" )
     {
         //auto tmp = QJsonDocument( media );
         //qDebug() << tmp.toJson();
 
-        auto series = media[ "SeriesName" ].toString();
+        fSeriesName = media[ "SeriesName" ].toString();
         auto season = media[ "SeasonName" ].toString();
         auto pos = season.lastIndexOf( ' ' );
+        bool aOK = false;
         if ( pos != -1 )
         {
-            bool aOK;
-            auto seasonNum = season.mid( pos + 1 ).toInt( &aOK );
+            fSeason = season.mid( pos + 1 ).toInt( &aOK );
             if ( aOK )
-                season = QString( "S%1" ).arg( seasonNum, 2, 10, QChar( '0' ) );
+                season = QString( "S%1" ).arg( fSeason.value(), 2, 10, QChar( '0' ) );
+        }
+        if ( !aOK )
+        {
+            season.clear();
+            fSeason.reset();
         }
 
-        auto episodeNum = media[ "IndexNumber" ].toInt();
-        retVal = QString( "%1 - %2E%3" ).arg( series ).arg( season ).arg( episodeNum, 2, 10, QChar( '0' ) );
+        fEpisode = media[ "IndexNumber" ].toInt();
+        if ( fEpisode.value() == 0 )
+            fEpisode.reset();
+
+        auto episode = fEpisode.has_value() ? QString( "E%1" ).arg( fEpisode.value(), 2, 10, QChar( '0' ) ) : QString();
+        fName = QString( "%1 - %2%3" ).arg( fSeriesName ).arg( season ).arg( episode );
         auto episodeName = media[ "EpisodeTitle" ].toString();
         if ( !episodeName.isEmpty() )
-            retVal += QString( " - %1" ).arg( episodeName );
+            fName += QString( " - %1" ).arg( episodeName );
         if ( !name.isEmpty() )
-            retVal += QString( " - %1" ).arg( name );
+            fName += QString( " - %1" ).arg( name );
     }
-    return retVal;
 }
 
 void CMediaData::loadData( const QString & serverName, const QJsonObject & media )
@@ -388,6 +394,34 @@ QIcon CMediaData::getDirectionIcon( const QString & serverName ) const
     else 
         retVal = sArrowUpIcon;
 
+    return retVal;
+}
+
+QUrl CMediaData::getSearchURL() const
+{
+    QUrl retVal( "https://rarbg.to/torrents.php" );
+    QString searchKey;
+
+    auto pos = fProviders.find( "imdb" );
+    if ( pos != fProviders.end() )
+    {
+        searchKey = ( *pos ).second;
+    }
+    if ( searchKey.isEmpty() )
+        searchKey = fName;
+
+    if ( this->mediaType() == "Episode" )
+    {
+        searchKey = fSeriesName;
+        if ( fSeason.has_value() )
+            searchKey += " " + QString( "S%1" ).arg( fSeason.value(), 2, 10, QChar( '0' ) );
+
+        if ( fEpisode.has_value() )
+            searchKey += +" " + QString( "E%1" ).arg( fEpisode.value(), 2, 10, QChar( '0' ) );
+    }
+    QUrlQuery query;
+    query.addQueryItem( "search", searchKey.replace( " ", "+" ) );
+    retVal.setQuery( query );
     return retVal;
 }
 
