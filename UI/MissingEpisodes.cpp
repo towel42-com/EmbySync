@@ -28,6 +28,7 @@
 #include "TabUIInfo.h"
 
 #include "Core/MediaModel.h"
+#include "Core/MediaData.h"
 #include "Core/ProgressSystem.h"
 #include "Core/ServerInfo.h"
 #include "Core/Settings.h"
@@ -49,6 +50,7 @@
 #include <QTimer>
 #include <QToolBar>
 #include <QSettings>
+#include <QDesktopServices>
 
 CMissingEpisodes::CMissingEpisodes( QWidget * parent )
     : CTabPageBase( parent ),
@@ -58,7 +60,8 @@ CMissingEpisodes::CMissingEpisodes( QWidget * parent )
     setupActions();
     
     connect( this, &CMissingEpisodes::sigModelDataChanged, this, &CMissingEpisodes::slotModelDataChanged );
-    
+    connect( this, &CMissingEpisodes::sigDataContextMenuRequested, this, &CMissingEpisodes::slotUsersContextMenu );
+
     QSettings settings;
     fImpl->minPremiereDate->setDate( QDate::currentDate().addDays( -7 ) );
     fImpl->maxPremiereDate->setDate( QDate::currentDate().addDays( 7 ) );
@@ -255,4 +258,40 @@ void CMissingEpisodes::showEnabledServers()
 {
     NSABUtils::CAutoWaitCursor awc;
     fServerFilterModel->setOnlyShowEnabledServers( fSettings->onlyShowEnabledServers() );
+}
+
+std::shared_ptr< CMediaData > CMissingEpisodes::getMediaData( QModelIndex idx ) const
+{
+    if ( idx.model() != fMediaModel.get() )
+        idx = fMissingMediaModel->mapToSource( idx );
+
+    auto retVal = fMediaModel->getMediaData( idx );
+    return retVal;
+}
+
+void CMissingEpisodes::slotUsersContextMenu( CDataTree * dataTree, const QPoint & pos )
+{
+    if ( !dataTree )
+        return;
+
+    auto idx = dataTree->indexAt( pos );
+    if ( !idx.isValid() )
+        return;
+
+    auto mediaData = getMediaData( idx );
+    if ( !mediaData )
+        return;
+
+    QMenu menu( tr( "Context Menu" ) );
+
+    QAction action( "Search for Torrent" );
+    menu.addAction( &action );
+    connect( &action, &QAction::triggered, 
+             [mediaData]()
+             {
+                 auto url = mediaData->getSearchURL();
+                 QDesktopServices::openUrl( url );
+             } );
+
+    menu.exec( dataTree->dataTree()->mapToGlobal( pos ) );
 }
