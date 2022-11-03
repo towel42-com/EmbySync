@@ -37,7 +37,7 @@ find_package(Deploy REQUIRED)
 find_package(CheckOpenSSL REQUIRED)
 find_package(AddUnitTest REQUIRED)
 
-include( VersionInfo.cmake )
+include( ${CMAKE_SOURCE_DIR}/VersionInfo.cmake )
 
 CheckOpenSSL()
 
@@ -56,7 +56,7 @@ add_subdirectory( cli )
 INSTALL( FILES License.txt DESTINATION . )
 INSTALL( FILES ReleaseNotes.txt DESTINATION . )
 
-include( InstallerInfo.cmake )
+include( ${CMAKE_SOURCE_DIR}/InstallerInfo.cmake )
 include( CPack )
 
 
