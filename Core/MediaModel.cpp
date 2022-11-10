@@ -18,7 +18,8 @@ CMediaModel::CMediaModel( std::shared_ptr< CSettings > settings, std::shared_ptr
     fServerModel( serverModel ),
     fMergeSystem( new CMergeMedia )
 {
-
+    connect( this, &CMediaModel::dataChanged, this, &CMediaModel::sigMediaChanged );
+    connect( this, &CMediaModel::modelReset, this, &CMediaModel::sigMediaChanged );
 }
 
 int CMediaModel::rowCount( const QModelIndex & parent /* = QModelIndex() */ ) const
@@ -211,6 +212,27 @@ void CMediaModel::addMediaInfo( const QString & serverName, std::shared_ptr<CMed
     fMediaMap[ serverName ][ mediaData->getMediaID( serverName ) ] = mediaData;
 
     fMergeSystem->addMediaInfo( serverName, mediaData );
+    updateMediaData( mediaData );
+}
+
+void CMediaModel::updateMediaData( std::shared_ptr< CMediaData > mediaData )
+{
+    auto pos = fMediaToPos.find( mediaData );
+    if ( pos == fMediaToPos.end() )
+        return;
+
+    int row = static_cast<int>( ( *pos ).second );
+    emit dataChanged( index( row, 0 ), index( row, columnCount() - 1 ) );
+}
+
+void CMediaModel::beginBatchLoad()
+{
+    beginResetModel();
+}
+
+void CMediaModel::endBatchLoad()
+{
+    endResetModel();
 }
 
 QVariant CMediaModel::headerData( int section, Qt::Orientation orientation, int role /*= Qt::DisplayRole */ ) const
@@ -301,16 +323,6 @@ std::shared_ptr< CMediaData > CMediaModel::getMediaData( const QModelIndex & idx
     return fData[ idx.row() ];
 }
 
-void CMediaModel::updateMediaData( std::shared_ptr< CMediaData > mediaData )
-{
-    auto pos = fMediaToPos.find( mediaData );
-    if ( pos == fMediaToPos.end() )
-        return;
-
-    int row = static_cast<int>( ( *pos ).second );
-    emit dataChanged( index( row, 0 ), index( row, columnCount() - 1 ) );
-}
-
 std::shared_ptr< CMediaData > CMediaModel::getMediaDataForID( const QString & serverName, const QString & mediaID ) const
 {
     auto pos = fMediaMap.find( serverName );
@@ -366,7 +378,6 @@ std::shared_ptr< CMediaData > CMediaModel::reloadMedia( const QString & serverNa
 
 
     addMediaInfo( serverName, mediaData, media );
-    updateMediaData( mediaData );
     emit sigPendingMediaUpdate();
     return mediaData;
 }
@@ -587,6 +598,12 @@ CMediaMissingFilterModel::CMediaMissingFilterModel( std::shared_ptr< CSettings >
         } );
 }
 
+void CMediaMissingFilterModel::setShowFilter( const QString & filter )
+{
+    fShowFilter = filter;
+    invalidateFilter();
+}
+
 bool CMediaMissingFilterModel::filterAcceptsRow( int source_row, const QModelIndex & source_parent ) const
 {
     if ( !fRegEx.isValid() )
@@ -598,6 +615,9 @@ bool CMediaMissingFilterModel::filterAcceptsRow( int source_row, const QModelInd
     auto seriesName = childIdx.data( CMediaModel::eSeriesNameRole ).toString();
     if ( seriesName.isEmpty() )
         return false;
+
+    if ( !fShowFilter.isEmpty() )
+        return seriesName == fShowFilter;
 
     auto match = fRegEx.match( seriesName );
     bool isMatch = ( match.hasMatch() && ( match.captured( 0 ).length() == seriesName.length() ) );

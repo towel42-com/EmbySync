@@ -168,6 +168,7 @@ Q_SIGNALS:
     void sigAddInfoToLog( const QString & msg );
     void sigLoadingUsersFinished();
     void sigUserMediaLoaded();
+    void sigMissingEpisodesLoaded();
     void sigProcessingFinished( const QString & name );
     void sigTestServerResults( const QString & serverName, bool results, const QString & msg );
 public Q_SLOTS:
@@ -191,8 +192,7 @@ private:
 
 private Q_SLOTS:
     void slotRequestFinished( QNetworkReply * reply );
-
-    void slotMergeMedia();
+    void slotMergeMedia( ERequestType requestType );
 
     void slotAuthenticationRequired( QNetworkReply * reply, QAuthenticator * authenticator );
     void slotEncrypted( QNetworkReply * reply );
@@ -209,7 +209,6 @@ private:
     QNetworkReply * makeRequest( QNetworkRequest & request, ENetworkRequestType requestType = ENetworkRequestType::eGet, const QByteArray & data = {}, QString contentType = QString() );
 
     std::shared_ptr<CUserData> loadUser( const QString & serverName, const QJsonObject & user );
-    std::shared_ptr< CMediaData> loadMedia( const QString & serverName, const QJsonObject & media );
 
     void postHandleRequest( QNetworkReply * reply, const QString & serverName, ERequestType requestType );
     void decRequestCount( QNetworkReply * reply, ERequestType requestType );
@@ -217,6 +216,7 @@ private:
     bool isLastRequestOfType( ERequestType type ) const;
 
     bool handleError( QNetworkReply * reply, const QString & serverName, QString & errorMsg, bool reportMsg );
+    void handleGetMediaListResponse( const QString & serverName, const QByteArray & data, const QString & progressTitle, const QString & logMsg, const QString & partialLogMsg );
 
     void requestGetServerInfo( const QString & serverName );
     void handleGetServerInfoResponse( const QString & serverName, const QByteArray & data );
