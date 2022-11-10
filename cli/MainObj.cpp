@@ -207,7 +207,7 @@ void CMainObj::slotProcessNextUser()
     fUsersToSync.pop_front();
     slotAddToLog( EMsgType::eInfo, "Processing user: " + currUser->allNames() );
 
-    fSyncSystem->loadUsersMedia( currUser );
+    fSyncSystem->loadUsersMedia( ETool::ePlayState, currUser );
 }
 
 void CMainObj::slotUserMediaCompletelyLoaded()

@@ -197,12 +197,12 @@ void CSyncSystem::loadUsers()
     }
 }
 
-void CSyncSystem::loadUsersMedia( std::shared_ptr< CUserData > userData )
+void CSyncSystem::loadUsersMedia( ETool tool, std::shared_ptr< CUserData > userData )
 {
     if ( !userData )
         return;
 
-    if ( !setCurrentUser( userData ) )
+    if ( !setCurrentUser( tool, userData ) )
         return;
 
     fProgressSystem->setTitle( tr( "Loading Users Media" ) );
@@ -212,16 +212,16 @@ void CSyncSystem::loadUsersMedia( std::shared_ptr< CUserData > userData )
         if ( !serverInfo->isEnabled() )
             continue;
 
-        emit sigAddToLog( EMsgType::eInfo, QString( "Loading media for '%1' on server '%2'" ).arg( currUser()->userName( serverInfo->keyName() ) ).arg( serverInfo->displayName() ) );
+        emit sigAddToLog( EMsgType::eInfo, QString( "Loading media for '%1' on server '%2'" ).arg( currUser().second->userName( serverInfo->keyName() ) ).arg( serverInfo->displayName() ) );
         requestGetMediaList( serverInfo->keyName() );
     }
 }
 
-bool CSyncSystem::setCurrentUser( std::shared_ptr<CUserData> userData )
+bool CSyncSystem::setCurrentUser( ETool tool, std::shared_ptr<CUserData> userData )
 {
     if ( !userData || !userData->canBeSynced() )
         return false;
-    fCurrUserData = userData;
+    fCurrUserData = { tool, userData };
     return true;
 }
 
@@ -249,7 +249,7 @@ void CSyncSystem::loadMissingEpisodes( std::shared_ptr< CUserData > userData, st
     if ( !userData->isAdmin( serverInfo->keyName() ) )
         return;
 
-    if ( !setCurrentUser( userData ) )
+    if ( !setCurrentUser( ETool::eMissingEpisodes, userData ) )
         return;
 
     emit sigAddToLog( EMsgType::eInfo, QString( "Loading Missing Episodes on server '%1' using admin user '%2'" ).arg( serverInfo->displayName() ).arg( userData->userName( serverInfo->keyName() ) ) );
@@ -263,7 +263,7 @@ void CSyncSystem::slotProcessMedia()
 
 void CSyncSystem::selectiveProcessMedia( const QString & selectedServer )
 {
-    auto title = QString( "Processing media for user '%1'" ).arg( currUser()->userName( selectedServer ) );
+    auto title = QString( "Processing media for user '%1'" ).arg( currUser().second->userName( selectedServer ) );
     if ( !selectedServer.isEmpty() )
         title += QString( " From '%1'" ).arg( selectedServer );
 
@@ -286,7 +286,7 @@ void CSyncSystem::selectiveProcessMedia( const QString & selectedServer )
     if ( cnt == 0 )
     {
         fProgressSystem->resetProgress();
-        emit sigProcessingFinished( currUser()->userName( selectedServer ) );
+        emit sigProcessingFinished( currUser().second->userName( selectedServer ) );
         return;
     }
 
@@ -310,7 +310,7 @@ bool CSyncSystem::processMedia( std::shared_ptr< CMediaData > mediaData, const Q
     if ( !mediaData || mediaData->validUserDataEqual() )
         return false;
 
-    if ( !currUser() )
+    if ( !currUser().second )
         return false;
 
     /*
@@ -359,7 +359,7 @@ void CSyncSystem::requestUpdateUserDataForMedia( const QString & serverName, std
         return;
 
     auto && mediaID = mediaData->getMediaID( serverName );
-    auto && userID = currUser()->getUserID( serverName );
+    auto && userID = currUser().second->getUserID( serverName );
     if ( userID.isEmpty() || mediaID.isEmpty() )
         return;
 
@@ -398,7 +398,7 @@ void CSyncSystem::requestSetFavorite( const QString & serverName, std::shared_pt
         return;
 
     auto && mediaID = mediaData->getMediaID( serverName );
-    auto && userID = currUser()->getUserID( serverName );
+    auto && userID = currUser().second->getUserID( serverName );
     if ( userID.isEmpty() || mediaID.isEmpty() )
         return;
 
@@ -458,7 +458,7 @@ void CSyncSystem::selectiveProcessUsers( const QString & selectedServer )
     if ( cnt == 0 )
     {
         fProgressSystem->resetProgress();
-        emit sigProcessingFinished( currUser()->userName( selectedServer ) );
+        emit sigProcessingFinished( currUser().second->userName( selectedServer ) );
         return;
     }
 
@@ -480,7 +480,7 @@ bool CSyncSystem::processUser( std::shared_ptr< CUserData > userData, const QStr
     if ( !userData || userData->validUserDataEqual() )
         return false;
 
-    if ( !currUser() )
+    if ( !currUser().second )
         return false;
 
     //qDebug() << "processing " << mediaData->name();
@@ -625,7 +625,7 @@ void CSyncSystem::postHandleRequest( QNetworkReply * reply, const QString & serv
     {
         fProgressSystem->resetProgress();
         if ( ( requestType == ERequestType::eReloadMediaData ) || ( requestType == ERequestType::eUpdateUserMediaData ) )
-            emit sigProcessingFinished( currUser()->userName( serverName ) );
+            emit sigProcessingFinished( currUser().second->userName( serverName ) );
     }
 }
 
@@ -1390,7 +1390,7 @@ void CSyncSystem::handleSetConnectedID( const QString & serverName )
 
 void CSyncSystem::requestGetMediaList( const QString & serverName )
 {
-    if ( !currUser() )
+    if ( !currUser().second )
         return;
 
     std::list< std::pair< QString, QString > > queryItems =
@@ -1404,14 +1404,14 @@ void CSyncSystem::requestGetMediaList( const QString & serverName )
     };
 
     // ItemsService
-    auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Users/%1/Items" ).arg( currUser()->getUserID( serverName ) ), queryItems );
+    auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Users/%1/Items" ).arg( currUser().second->getUserID( serverName ) ), queryItems );
     if ( !url.isValid() )
         return;
 
     qDebug() << url;
     auto request = QNetworkRequest( url );
 
-    emit sigAddToLog( EMsgType::eInfo, QString( "Requesting media for '%1' from server '%2'" ).arg( currUser()->userName( serverName ) ).arg( serverName ) );
+    emit sigAddToLog( EMsgType::eInfo, QString( "Requesting media for '%1' from server '%2'" ).arg( currUser().second->userName( serverName ) ).arg( serverName ) );
 
     auto reply = makeRequest( request );
     setServerName( reply, serverName );
@@ -1498,7 +1498,7 @@ void CSyncSystem::requestMissingEpisodes( const QString & serverName, const QDat
     }
 
     // ItemsService
-    auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Users/%1/Items" ).arg( currUser()->getUserID( serverName ) ), queryItems );
+    auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Users/%1/Items" ).arg( currUser().second->getUserID( serverName ) ), queryItems );
     //auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Items" ), queryItems );
     if ( !url.isValid() )
         return;
@@ -1530,7 +1530,7 @@ void CSyncSystem::requestReloadMediaItemData( const QString & serverName, const 
 void CSyncSystem::requestReloadMediaItemData( const QString & serverName, std::shared_ptr< CMediaData > mediaData )
 {
     // UserLibraryService
-    auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Users/%1/Items/%2" ).arg( currUser()->getUserID( serverName ) ).arg( mediaData->getMediaID( serverName ) ), {} );
+    auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Users/%1/Items/%2" ).arg( currUser().second->getUserID( serverName ) ).arg( mediaData->getMediaID( serverName ) ), {} );
     if ( !url.isValid() )
         return;
 
@@ -1570,7 +1570,7 @@ void CSyncSystem::slotCanceled()
     clearCurrUser();
 }
 
-std::shared_ptr< CUserData > CSyncSystem::currUser() const
+std::pair< ETool, std::shared_ptr< CUserData > > CSyncSystem::currUser() const
 {
     return fCurrUserData;
 }
@@ -1578,6 +1578,7 @@ std::shared_ptr< CUserData > CSyncSystem::currUser() const
 
 void CSyncSystem::clearCurrUser()
 {
-    if ( fCurrUserData )
-        fCurrUserData.reset();
+    fCurrUserData.first = ETool::eNone;
+    if ( fCurrUserData.second )
+        fCurrUserData.second.reset();
 }
