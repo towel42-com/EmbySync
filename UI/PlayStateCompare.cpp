@@ -285,12 +285,12 @@ void CPlayStateCompare::slotCurrentUserChanged( const QModelIndex & index )
     if ( !userData )
         return;
 
-    if ( fSyncSystem->currUser() == userData )
+    if ( fSyncSystem->currUser() == std::make_pair( ETool::ePlayState, userData ) )
         return;
 
     fMediaModel->clear();
 
-    fSyncSystem->loadUsersMedia( userData );
+    fSyncSystem->loadUsersMedia( ETool::ePlayState, userData );
 }
 
 

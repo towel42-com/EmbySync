@@ -56,6 +56,14 @@ class QTimer;
 class CServerInfo;
 struct SUserServerData;
 
+enum class ETool
+{
+    eNone,
+    ePlayState,
+    eUserInfo,
+    eMissingEpisodes
+};
+
 enum class ERequestType
 {
     eNone,
@@ -143,13 +151,13 @@ public:
     void loadServerInfo();
 
     void loadUsers();
-    void loadUsersMedia( std::shared_ptr< CUserData > user );
+    void loadUsersMedia( ETool tool, std::shared_ptr< CUserData > user );
 
     bool loadMissingEpisodes( std::shared_ptr< const CServerInfo > serverInfo, const QDate & minPremiereDate, const QDate & maxPremiereDate ); // return false if no admin user found on server
 
-    bool setCurrentUser( std::shared_ptr<CUserData> userData );
+    bool setCurrentUser( ETool tool, std::shared_ptr<CUserData> userData );
     void clearCurrUser();
-    std::shared_ptr< CUserData > currUser() const;
+    std::pair< ETool, std::shared_ptr< CUserData > > currUser() const;
 
     void repairConnectIDs( const std::list< std::shared_ptr< CUserData > > & users );
     void setConnectedID( const QString & serverName, const QString & newID, std::shared_ptr< CUserData > & user );
@@ -285,7 +293,7 @@ private:
     std::unordered_map< QString, TOptionalBoolPair > fLeftAndRightFinished;
     std::unordered_map< QString, std::shared_ptr< const CServerInfo > > fTestServers;
     std::list< SConnectIDInfo > fUsersNeedingConnectIDUpdates;
-    std::shared_ptr< CUserData > fCurrUserData;
+    std::pair< ETool, std::shared_ptr< CUserData > > fCurrUserData{ ETool::eNone, {} };
     SConnectIDInfo fCurrUserConnectID;
 };
 #endif
