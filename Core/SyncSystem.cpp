@@ -81,12 +81,12 @@ QString toString( EMsgType type )
 {
     switch ( type )
     {
-    case EMsgType::eError: return "ERROR";
-    case EMsgType::eWarning: return "WARNING";
-    case EMsgType::eInfo: return "INFO";
-    default:
-        return {};
-        break;
+        case EMsgType::eError: return "ERROR";
+        case EMsgType::eWarning: return "WARNING";
+        case EMsgType::eInfo: return "INFO";
+        default:
+            return {};
+            break;
     }
 }
 
@@ -266,7 +266,7 @@ void CSyncSystem::selectiveProcessMedia( const QString & selectedServer )
     auto title = QString( "Processing media for user '%1'" ).arg( currUser()->userName( selectedServer ) );
     if ( !selectedServer.isEmpty() )
         title += QString( " From '%1'" ).arg( selectedServer );
-    
+
     emit sigAddToLog( EMsgType::eInfo, title );
 
     fProgressSystem->setTitle( title );
@@ -347,7 +347,7 @@ void CSyncSystem::updateUserDataForMedia( const QString & serverName, std::share
 
     // TODO: Emby currently doesnt support updating favorite status from the "Users/<>/Items/<>/UserData" API
     //       When it does, remove the requestSetFavorite 
-    requestSetFavorite( serverName , mediaData, newData);
+    requestSetFavorite( serverName, mediaData, newData );
 }
 
 void CSyncSystem::requestUpdateUserDataForMedia( const QString & serverName, std::shared_ptr< CMediaData > mediaData, std::shared_ptr< SMediaServerData > newData )
@@ -601,15 +601,15 @@ void CSyncSystem::decRequestCount( QNetworkReply * reply, ERequestType requestTy
     auto pos = fRequests.find( requestType );
     if ( pos == fRequests.end() )
         return;
-    
+
     auto pos2 = ( *pos ).second.find( hostName( reply ) );
-    if ( pos2 == (*pos).second.end() )
+    if ( pos2 == ( *pos ).second.end() )
         return;
 
     if ( ( *pos2 ).second > 0 )
         ( *pos2 ).second--;
 
-    if ( (*pos2).second == 0 )
+    if ( ( *pos2 ).second == 0 )
     {
         ( *pos ).second.erase( pos2 );
     }
@@ -673,7 +673,7 @@ void CSyncSystem::testServer( std::shared_ptr< const CServerInfo > serverInfo )
 
 void CSyncSystem::testServers( const std::vector< std::shared_ptr< const CServerInfo > > & servers )
 {
-    for( auto && ii : servers )
+    for ( auto && ii : servers )
         requestTestServer( ii );
 }
 
@@ -682,18 +682,29 @@ bool CSyncSystem::isRunning() const
     return !fAttributes.empty() && !fRequests.empty();
 }
 
-void CSyncSystem::slotMergeMedia()
+void CSyncSystem::slotMergeMedia( ERequestType requestType )
 {
     if ( !fAttributes.empty() )
     {
-        QTimer::singleShot( 500, this, &CSyncSystem::slotMergeMedia );
+        QTimer::singleShot( 500,
+                            [this, requestType]()
+                            {
+                                slotMergeMedia( requestType );
+                            }
+        );
         return;
     }
 
     if ( !fMediaModel->mergeMedia( fProgressSystem ) )
         clearCurrUser();
 
-    emit sigUserMediaLoaded();
+    switch ( requestType )
+    {
+        case ERequestType::eGetMissingEpisodes:
+            emit sigMissingEpisodesLoaded();
+        default:
+            emit sigUserMediaLoaded();
+    }
 }
 
 void CSyncSystem::slotAuthenticationRequired( QNetworkReply * /*reply*/, QAuthenticator * /*authenticator*/ )
@@ -750,11 +761,6 @@ QNetworkReply * CSyncSystem::makeRequest( QNetworkRequest & request, ENetworkReq
         default:
             return nullptr;
     }
-}
-
-std::shared_ptr< CMediaData > CSyncSystem::loadMedia( const QString & serverName, const QJsonObject & mediaData )
-{
-    return fMediaModel->loadMedia( serverName, mediaData );
 }
 
 std::shared_ptr<CUserData> CSyncSystem::loadUser( const QString & serverName, const QJsonObject & userData )
@@ -833,7 +839,7 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
                 emit sigUserMediaLoaded();
                 break;
             case ERequestType::eGetMissingEpisodes:
-                emit sigUserMediaLoaded();
+                emit sigMissingEpisodesLoaded();
                 break;
             case ERequestType::eNone:
             case ERequestType::eReloadMediaData:
@@ -896,7 +902,7 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
                 if ( isLastRequestOfType( ERequestType::eGetMediaList ) )
                 {
                     fProgressSystem->resetProgress();
-                    slotMergeMedia();
+                    slotMergeMedia( requestType );
                 }
             }
             break;
@@ -909,7 +915,7 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
                 if ( isLastRequestOfType( ERequestType::eGetMissingEpisodes ) )
                 {
                     fProgressSystem->resetProgress();
-                    slotMergeMedia();
+                    slotMergeMedia( requestType );
                 }
             }
             break;
@@ -1145,7 +1151,7 @@ void CSyncSystem::handleGetUsersResponse( const QString & serverName, const QByt
 void CSyncSystem::requestGetUser( const QString & serverName, const QString & userID )
 {
     emit sigAddToLog( EMsgType::eInfo, tr( "Loading users from server '%1'" ).arg( serverName ) );
-    
+
     // UserService
     auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Users/%1" ).arg( userID ), {} );
     if ( !url.isValid() )
@@ -1347,7 +1353,7 @@ void CSyncSystem::handleDeleteConnectedID( const QString & serverName )
 
 }
 
-void CSyncSystem::requestSetConnectedID( const QString & serverName  )
+void CSyncSystem::requestSetConnectedID( const QString & serverName )
 {
     if ( !fCurrUserConnectID.fUserData )
         return;
@@ -1393,7 +1399,7 @@ void CSyncSystem::requestGetMediaList( const QString & serverName )
         std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SortName" ),
         std::make_pair( "SortOrder", "Ascending" ),
         std::make_pair( "Recursive", "True" ),
-        std::make_pair( "IsMissing", "False"  ),
+        std::make_pair( "IsMissing", "False" ),
         std::make_pair( "Fields", "ProviderIds,ExternalUrls,ProductionYear,PremiereDate,DateCreated,PremierDate,EndDate,StartDate,Missing" )
     };
 
@@ -1412,7 +1418,7 @@ void CSyncSystem::requestGetMediaList( const QString & serverName )
     setRequestType( reply, ERequestType::eGetMediaList );
 }
 
-void CSyncSystem::handleGetMediaListResponse( const QString & serverName, const QByteArray & data )
+void CSyncSystem::handleGetMediaListResponse( const QString & serverName, const QByteArray & data, const QString & progressTitle, const QString & logMsg, const QString & partialLogMsg )
 {
     QJsonParseError error;
     auto doc = QJsonDocument::fromJson( data, &error );
@@ -1423,13 +1429,10 @@ void CSyncSystem::handleGetMediaListResponse( const QString & serverName, const 
         return;
     }
 
-    if ( !currUser() )
-        return;
-
     //qDebug() << doc.toJson();
     if ( !doc[ "Items" ].isArray() )
     {
-        loadMedia( serverName, doc.object() );
+        fMediaModel->loadMedia( serverName, doc.object() );
         return;
     }
 
@@ -1437,14 +1440,15 @@ void CSyncSystem::handleGetMediaListResponse( const QString & serverName, const 
     fProgressSystem->pushState();
 
     fProgressSystem->resetProgress();
-    fProgressSystem->setTitle( tr( "Loading Users Media Data" ) );
+    fProgressSystem->setTitle( progressTitle );
     fProgressSystem->setMaximum( mediaList.count() );
 
-    emit sigAddToLog( EMsgType::eInfo, QString( "%1 has %2 media items on server '%3'" ).arg( currUser()->userName( serverName ) ).arg( mediaList.count() ).arg( serverName ) );
+    emit sigAddToLog( EMsgType::eInfo, logMsg.arg( serverName ).arg( mediaList.count() ) );
     if ( fSettings->maxItems() > 0 )
-        emit sigAddToLog( EMsgType::eInfo, QString( "Loading %2 media items" ).arg( fSettings->maxItems() ) );
+        emit sigAddToLog( EMsgType::eInfo, partialLogMsg.arg( fSettings->maxItems() ) );
 
     int curr = 0;
+    //fMediaModel->beginBatchLoad();
     for ( auto && ii : mediaList )
     {
         if ( fSettings->maxItems() > 0 )
@@ -1460,11 +1464,17 @@ void CSyncSystem::handleGetMediaListResponse( const QString & serverName, const 
 
         auto media = ii.toObject();
 
-        loadMedia( serverName, media );
+        fMediaModel->loadMedia( serverName, media );
     }
+    //fMediaModel->endBatchLoad();
     fProgressSystem->resetProgress();
     fProgressSystem->popState();
     fProgressSystem->incProgress();
+}
+
+void CSyncSystem::handleGetMediaListResponse( const QString & serverName, const QByteArray & data )
+{
+    handleGetMediaListResponse( serverName, data, tr( "Loading Users Media Data" ), tr( "%1 has %2 media items on server '%3'" ), tr( "Loading %2 media items" ) );
 }
 
 void CSyncSystem::requestMissingEpisodes( const QString & serverName, const QDate & minPremiereDate, const QDate & maxPremiereDate )
@@ -1505,54 +1515,7 @@ void CSyncSystem::requestMissingEpisodes( const QString & serverName, const QDat
 
 void CSyncSystem::handleMissingEpisodesResponse( const QString & serverName, const QByteArray & data )
 {
-    QJsonParseError error;
-    auto doc = QJsonDocument::fromJson( data, &error );
-    if ( error.error != QJsonParseError::NoError )
-    {
-        if ( fUserMsgFunc )
-            fUserMsgFunc( tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ), true );
-        return;
-    }
-
-    //qDebug() << doc.toJson();
-    if ( !doc[ "Items" ].isArray() )
-    {
-        loadMedia( serverName, doc.object() );
-        return;
-    }
-
-    auto mediaList = doc[ "Items" ].toArray();
-    fProgressSystem->pushState();
-
-    fProgressSystem->resetProgress();
-    fProgressSystem->setTitle( tr( "Loading Users Media Data" ) );
-    fProgressSystem->setMaximum( mediaList.count() );
-
-    emit sigAddToLog( EMsgType::eInfo, QString( "Server '%1' has %2 missing episodes'" ).arg( serverName ).arg( mediaList.count() ) );
-    if ( fSettings->maxItems() > 0 )
-        emit sigAddToLog( EMsgType::eInfo, QString( "Loading %2 missing episodes" ).arg( fSettings->maxItems() ) );
-
-    int curr = 0;
-    for ( auto && ii : mediaList )
-    {
-        if ( fSettings->maxItems() > 0 )
-        {
-            if ( curr >= fSettings->maxItems() )
-                break;
-        }
-        curr++;
-
-        if ( fProgressSystem->wasCanceled() )
-            break;
-        fProgressSystem->incProgress();
-
-        auto media = ii.toObject();
-
-        loadMedia( serverName, media );
-    }
-    fProgressSystem->resetProgress();
-    fProgressSystem->popState();
-    fProgressSystem->incProgress();
+    handleGetMediaListResponse( serverName, data, tr( "Loading Users Missing Media Data" ), tr( "Server '%1' has %2 missing episodes'" ), tr( "Loading %2 missing episodes" ) );
 }
 
 void CSyncSystem::requestReloadMediaItemData( const QString & serverName, const QString & mediaID )

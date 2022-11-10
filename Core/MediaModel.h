@@ -76,10 +76,12 @@ public:
     void settingsChanged();
 
     std::shared_ptr< CMediaData > getMediaData( const QModelIndex & idx ) const;
-    void updateMediaData( std::shared_ptr< CMediaData > mediaData );
     std::shared_ptr< CMediaData > getMediaDataForID( const QString & serverName, const QString & mediaID ) const;
     std::shared_ptr< CMediaData > loadMedia( const QString & serverName, const QJsonObject & media );
     std::shared_ptr< CMediaData > reloadMedia( const QString & serverName, const QJsonObject & media, const QString & mediaID );
+
+    void beginBatchLoad();
+    void endBatchLoad();
 
     bool mergeMedia( std::shared_ptr< CProgressSystem > progressSystem );
 
@@ -90,6 +92,7 @@ public:
 Q_SIGNALS:
     void sigPendingMediaUpdate();
     void sigSettingsChanged();
+    void sigMediaChanged();
 private:
     int perServerColumn( int column ) const;
     int columnsPerServer( bool includeProviders = true ) const;
@@ -97,6 +100,7 @@ private:
     std::optional< std::pair< QString, QString > > getProviderInfoForColumn( int column ) const;
 
     void addMediaInfo( const QString & serverName, std::shared_ptr<CMediaData> mediaData, const QJsonObject & mediaInfo );
+    void updateMediaData( std::shared_ptr< CMediaData > mediaData );
 
     QVariant getColor( const QModelIndex & index, const QString & serverName, bool background ) const;
     void updateProviderColumns( std::shared_ptr< CMediaData > ii );
@@ -144,6 +148,8 @@ class CMediaMissingFilterModel : public QSortFilterProxyModel
 public:
     CMediaMissingFilterModel( std::shared_ptr< CSettings > settings, QObject * parent );
 
+    void setShowFilter( const QString & filter );
+
     virtual bool filterAcceptsRow( int source_row, const QModelIndex & source_parent ) const override;
     virtual bool filterAcceptsColumn( int source_column, const QModelIndex & source_parent ) const override;
     virtual void sort( int column, Qt::SortOrder order = Qt::AscendingOrder ) override;
@@ -153,5 +159,6 @@ public:
 private:
     std::shared_ptr< CSettings > fSettings;
     QRegularExpression fRegEx;
+    QString fShowFilter;
 };
 #endif
