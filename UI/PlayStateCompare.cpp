@@ -461,6 +461,7 @@ void CPlayStateCompare::slotUserMediaLoaded()
         return;
 
     hideDataTreeColumns();
+    sortDataTrees();
 }
 
 

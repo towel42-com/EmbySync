@@ -73,6 +73,12 @@ void CTabPageBase::hideDataTreeColumns()
         ii->hideColumns();
 }
 
+void CTabPageBase::sortDataTrees()
+{
+    for ( auto && ii : fDataTrees )
+        ii->sort( defaultSortColumn(), defaultSortOrder() );
+}
+
 QString CTabPageBase::selectServer() const
 {
     QStringList serverNames;
@@ -141,6 +147,7 @@ void CTabPageBase::addDataTreeForServer( std::shared_ptr<const CServerInfo> serv
 
     getDataSplitter()->addWidget( dataTree );
     dataTree->setModel( model );
+    dataTree->sort( defaultSortColumn(), defaultSortOrder() );
     connect( dataTree, &CDataTree::sigCurrChanged, this, &CTabPageBase::sigSetCurrentDataItem );
     connect( dataTree, &CDataTree::sigViewData, this, &CTabPageBase::sigViewData );
     connect( dataTree, &CDataTree::sigDataContextMenuRequested, this, &CTabPageBase::sigDataContextMenuRequested );

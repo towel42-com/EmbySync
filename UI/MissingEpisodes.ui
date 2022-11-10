@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>343</width>
-    <height>276</height>
+    <width>611</width>
+    <height>267</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -21,21 +21,14 @@
      </property>
      <widget class="QWidget" name="layoutWidget">
       <layout class="QGridLayout" name="gridLayout">
-       <item row="0" column="1" colspan="2">
+       <item row="0" column="2" colspan="2">
         <widget class="QDateEdit" name="minPremiereDate">
          <property name="calendarPopup">
           <bool>true</bool>
          </property>
         </widget>
        </item>
-       <item row="1" column="0" colspan="5">
-        <widget class="QLabel" name="serversLabel">
-         <property name="text">
-          <string>Servers:</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0" colspan="5">
+       <item row="2" column="0" colspan="8">
         <widget class="QTreeView" name="servers">
          <property name="alternatingRowColors">
           <bool>true</bool>
@@ -45,14 +38,21 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="0">
-        <widget class="QLabel" name="label">
+       <item row="0" column="5">
+        <widget class="QCheckBox" name="searchByShowName">
          <property name="text">
-          <string>Premier Date Range:</string>
+          <string>Show Name</string>
          </property>
         </widget>
        </item>
        <item row="0" column="4">
+        <widget class="QDateEdit" name="maxPremiereDate">
+         <property name="calendarPopup">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="7">
         <spacer name="horizontalSpacer">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -65,7 +65,14 @@
          </property>
         </spacer>
        </item>
-       <item row="3" column="0" colspan="5">
+       <item row="0" column="1">
+        <widget class="QCheckBox" name="searchByDate">
+         <property name="text">
+          <string>Premier Date Range:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0" colspan="8">
         <widget class="QLabel" name="mediaSummaryLabel">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
@@ -78,10 +85,20 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="3">
-        <widget class="QDateEdit" name="maxPremiereDate">
-         <property name="calendarPopup">
-          <bool>true</bool>
+       <item row="1" column="0" colspan="8">
+        <widget class="QLabel" name="serversLabel">
+         <property name="text">
+          <string>Servers:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="6">
+        <widget class="QComboBox" name="shows">
+         <property name="sizeAdjustPolicy">
+          <enum>QComboBox::AdjustToContents</enum>
+         </property>
+         <property name="placeholderText">
+          <string>Shows Must Be Loaded</string>
          </property>
         </widget>
        </item>

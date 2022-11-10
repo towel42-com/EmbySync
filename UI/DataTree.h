@@ -48,6 +48,7 @@ public:
     
     void setServer( const std::shared_ptr< const CServerInfo > & serverInfo, bool hideColumns );
     void hideColumns();
+    void sort( int column, Qt::SortOrder order ); // if the user hasnt changed the sort, use column and order, otherwise use existing settings
 
     void addPeerDataTree( CDataTree * peer );
     QModelIndex currentIndex() const;
@@ -76,11 +77,13 @@ private Q_SLOTS:
     void slotVActionTriggered( int action );
     void slotServerInfoChanged();
     void slotContextMenuRequested( const QPoint & pos );
+    void slotHeaderClicked();
 
 private:
     std::unique_ptr< Ui::CDataTree > fImpl;
     std::vector< CDataTree * > fPeers;
 
+    bool fUserSort{ false };
     std::shared_ptr< const CServerInfo > fServerInfo;
 };
 #endif 
