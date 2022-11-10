@@ -58,20 +58,56 @@ CMissingEpisodes::CMissingEpisodes( QWidget * parent )
 {
     fImpl->setupUi( this );
     setupActions();
-    
+
     connect( this, &CMissingEpisodes::sigModelDataChanged, this, &CMissingEpisodes::slotModelDataChanged );
     connect( this, &CMissingEpisodes::sigDataContextMenuRequested, this, &CMissingEpisodes::slotUsersContextMenu );
+
+    connect( fImpl->searchByDate, &QCheckBox::toggled, this, &CMissingEpisodes::slotSearchByDateChanged );
+    connect( fImpl->searchByShowName, &QCheckBox::toggled, this, &CMissingEpisodes::slotSearchByShowNameChanged );
+
+    connect( fImpl->shows, qOverload< int >( &QComboBox::currentIndexChanged ),
+             [this]()
+             {
+                 if ( !fMissingMediaModel )
+                     return;
+                 auto currText = fImpl->shows->currentText();
+                 fMissingMediaModel->setShowFilter( currText );
+             } );
 
     QSettings settings;
     fImpl->minPremiereDate->setDate( QDate::currentDate().addDays( -7 ) );
     fImpl->maxPremiereDate->setDate( QDate::currentDate().addDays( 7 ) );
+
+    settings.beginGroup( "MissingEpisodes" );
+    fImpl->searchByDate->setChecked( settings.value( "SearchByDate", true ).toBool() );
+    fImpl->searchByShowName->setChecked( settings.value( "SearchByShowName", false ).toBool() );
+
+    NSABUtils::autoSize( fImpl->shows );
+    slotSearchByDateChanged();
+    slotSearchByShowNameChanged();
+
+}
+
+void CMissingEpisodes::slotSearchByShowNameChanged()
+{
+    bool hasShows = fImpl->shows->count() != 0;
+    bool enabled = hasShows && fImpl->searchByShowName->isChecked();
+    fImpl->shows->setEnabled( enabled );
+    fImpl->searchByShowName->setEnabled( hasShows );
+}
+
+void CMissingEpisodes::slotSearchByDateChanged()
+{
+    fImpl->minPremiereDate->setEnabled( fImpl->searchByDate->isChecked() );
+    fImpl->maxPremiereDate->setEnabled( fImpl->searchByDate->isChecked() );
 }
 
 CMissingEpisodes::~CMissingEpisodes()
 {
     QSettings settings;
-    settings.setValue( "maxPremiereDate", fImpl->minPremiereDate->date() );
-    settings.setValue( "minPremiereDate", fImpl->maxPremiereDate->date() );
+    settings.beginGroup( "MissingEpisodes" );
+    settings.setValue( "SearchByDate", fImpl->searchByDate->isChecked() );
+    settings.setValue( "SearchByShowName", fImpl->searchByShowName->isChecked() );
 }
 
 void CMissingEpisodes::setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem )
@@ -80,19 +116,49 @@ void CMissingEpisodes::setupPage( std::shared_ptr< CSettings > settings, std::sh
 
     fServerFilterModel = new CServerFilterModel( fServerModel.get() );
     fServerFilterModel->setSourceModel( fServerModel.get() );
-    fServerFilterModel->sort( -1, Qt::SortOrder::AscendingOrder );
+    fServerFilterModel->sort( 0, Qt::SortOrder::AscendingOrder );
     NSABUtils::setupModelChanged( fMediaModel.get(), this, QMetaMethod::fromSignal( &CMissingEpisodes::sigModelDataChanged ) );
 
     fImpl->servers->setModel( fServerFilterModel );
     fImpl->servers->setContextMenuPolicy( Qt::ContextMenuPolicy::CustomContextMenu );
     connect( fImpl->servers, &QTreeView::clicked, this, &CMissingEpisodes::slotCurrentUserChanged );
 
+    slotMediaChanged();
+
+    connect( fMediaModel.get(), &CMediaModel::sigMediaChanged, this, &CMissingEpisodes::slotMediaChanged );
+
     fMissingMediaModel = new CMediaMissingFilterModel( settings, fMediaModel.get() );
     fMissingMediaModel->setSourceModel( fMediaModel.get() );
     //connect( fMediaModel.get(), &CMediaModel::sigPendingMediaUpdate, this, &CPlayStateCompare::slotPendingMediaUpdate );
+    connect( fSyncSystem.get(), &CSyncSystem::sigMissingEpisodesLoaded, this, &CMissingEpisodes::slotMissingEpisodesLoaded );
 
     slotSetCurrentServer( QModelIndex() );
     slotToggleShowEnabledServers();
+}
+
+void CMissingEpisodes::slotMediaChanged()
+{
+    auto tmp = fMediaModel->getKnownShows();
+    QStringList showNames;
+    for ( auto && ii : tmp )
+    {
+        showNames.push_back( ii );
+    }
+    showNames.sort();
+    showNames.removeAll( QString() );
+    if ( !showNames.isEmpty() )
+        showNames.push_front( QString() );
+    auto curr = fImpl->shows->currentText();
+    fImpl->shows->clear();
+    fImpl->shows->addItems( showNames );
+    if ( !showNames.isEmpty() )
+    {
+        auto pos = fImpl->shows->findText( curr );
+        if ( pos != -1 )
+            fImpl->shows->setCurrentIndex( pos );
+    }
+    NSABUtils::autoSize( fImpl->shows );
+    slotSearchByShowNameChanged();
 }
 
 void CMissingEpisodes::setupActions()
@@ -187,7 +253,9 @@ void CMissingEpisodes::slotCurrentUserChanged( const QModelIndex & index )
     
     fMediaModel->clear();
 
-    if ( !fSyncSystem->loadMissingEpisodes( serverInfo, fImpl->minPremiereDate->date(), fImpl->maxPremiereDate->date() ) )
+    auto minDate = fImpl->searchByDate->isChecked() ? fImpl->minPremiereDate->date() : QDate();
+    auto maxDate = fImpl->searchByDate->isChecked() ? fImpl->maxPremiereDate->date() : QDate();
+    if ( !fSyncSystem->loadMissingEpisodes( serverInfo, minDate, maxDate ) )
     {
         QMessageBox::critical( this, tr( "No Admin User Found" ), tr( "No user found with Administrator Privileges on server '%1'" ).arg( serverInfo->displayName() ) );
     }
@@ -239,13 +307,14 @@ void CMissingEpisodes::slotSetCurrentServer( const QModelIndex & current )
     slotModelDataChanged();
 }
 
-void CMissingEpisodes::slotUserMediaLoaded()
+void CMissingEpisodes::slotMissingEpisodesLoaded()
 {
     auto currUser = getCurrentServerInfo();
     if ( !currUser )
         return;
 
     hideDataTreeColumns();
+    sortDataTrees();
 }
 
 void CMissingEpisodes::slotToggleShowEnabledServers()

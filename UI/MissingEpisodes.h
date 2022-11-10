@@ -50,9 +50,11 @@ class CMissingEpisodes : public CTabPageBase
     Q_OBJECT
 public:
     CMissingEpisodes( QWidget * parent = nullptr );
+
     virtual ~CMissingEpisodes() override;
 
     virtual void setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem ) override;
+
     virtual void setupActions();
 
     virtual bool okToClose() override;
@@ -68,6 +70,10 @@ public:
 
     virtual bool prepForClose() override;
     std::shared_ptr< CMediaData > getMediaData( QModelIndex idx ) const;
+
+    virtual int defaultSortColumn() const override { return 1; }
+    virtual Qt::SortOrder defaultSortOrder() const override { return Qt::SortOrder::AscendingOrder; }
+
 Q_SIGNALS:
     void sigModelDataChanged();
 
@@ -78,9 +84,12 @@ public Q_SLOTS:
     void slotUsersContextMenu( CDataTree * dataTree, const QPoint & pos );
     virtual void slotSetCurrentServer( const QModelIndex & index );
 private Q_SLOTS:
+    void slotSearchByShowNameChanged();
+    void slotSearchByDateChanged();
     void slotCurrentUserChanged( const QModelIndex & index );
-    void slotUserMediaLoaded();
+    void slotMissingEpisodesLoaded();
     void slotToggleShowEnabledServers();
+    void slotMediaChanged();
 private:
     void showEnabledServers();
     std::shared_ptr< CServerInfo > getCurrentServerInfo() const;

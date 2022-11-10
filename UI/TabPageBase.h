@@ -70,6 +70,11 @@ public:
 
     void autoSizeDataTrees();
     void hideDataTreeColumns();
+    void sortDataTrees();
+
+    virtual int defaultSortColumn() const { return 0; }
+    virtual Qt::SortOrder defaultSortOrder() const { return Qt::SortOrder::AscendingOrder; }
+
     virtual bool prepForClose() = 0;
 Q_SIGNALS:
     void sigAddToLog( int msgType, const QString & msg );

@@ -454,6 +454,7 @@ void CMainWindow::progressIncValue()
         return;
 
     fProgressDlg->setValue( progressValue() + 1 );
+    qApp->processEvents();
 }
 
 void CMainWindow::slotCurentTabChanged( int /*idx*/ )
