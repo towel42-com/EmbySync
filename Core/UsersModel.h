@@ -102,8 +102,10 @@ public:
     virtual QString serverForColumn( int column ) const override;
     virtual std::list< int > columnsForBaseColumn( int baseColumn ) const override;
 
+    using TUserDataVector = std::vector< std::shared_ptr< CUserData > >;
+
     std::shared_ptr< CUserData > loadUser( const QString & serverName, const QJsonObject & user );
-    std::vector< std::shared_ptr< CUserData > > getAllUsers( bool sorted ) const;
+    TUserDataVector getAllUsers( bool sorted ) const;
 
     bool hasUsersWithConnectedIDNeedingUpdate() const;
     std::list< std::shared_ptr< CUserData > > usersWithConnectedIDNeedingUpdate() const;
@@ -114,6 +116,14 @@ public:
     std::shared_ptr< CUserData > userData( const QModelIndex & idx ) const;
     std::shared_ptr< CUserData > userData( const QString & name, bool exhaustiveSearch ) const;
     std::shared_ptr< CUserData > userDataOnServer( const QString & serverName, const QString & userID ) const;
+
+    using iterator = typename TUserDataVector::iterator;
+    using const_iterator = typename TUserDataVector::const_iterator;
+
+    iterator begin() { return fUsers.begin(); }
+    iterator end() { return fUsers.end(); }
+    const_iterator begin() const { return fUsers.cbegin(); }
+    const_iterator end() const { return fUsers.cend(); }
 public Q_SLOTS:
     void slotSettingsChanged();
     void slotServerInfoChanged();
@@ -130,7 +140,7 @@ private:
     QVariant getColor( const QModelIndex & index, bool background, bool missingOnly=false ) const;
         
     std::map< QString, std::shared_ptr< CUserData > > fUserMap;
-    std::vector< std::shared_ptr< CUserData > > fUsers;
+    TUserDataVector fUsers;
     std::shared_ptr< CSettings > fSettings;
     std::shared_ptr< CServerModel > fServerModel;
 

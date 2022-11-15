@@ -87,8 +87,19 @@ public:
 
     void loadMergedMedia( std::shared_ptr<CProgressSystem> progressSystem );
 
-    std::unordered_set< std::shared_ptr< CMediaData > > getAllMedia() const { return fAllMedia; }
+    using TMediaSet = std::unordered_set< std::shared_ptr< CMediaData > >;
+
+    TMediaSet getAllMedia() const { return fAllMedia; }
     std::unordered_set< QString > getKnownShows() const;
+
+    using iterator = typename TMediaSet::iterator;
+    using const_iterator = typename TMediaSet::const_iterator;
+
+    iterator begin() { return fAllMedia.begin(); }
+    iterator end() { return fAllMedia.end(); }
+    const_iterator begin() const { return fAllMedia.cbegin(); }
+    const_iterator end() const { return fAllMedia.cend(); }
+
 Q_SIGNALS:
     void sigPendingMediaUpdate();
     void sigSettingsChanged();
@@ -107,7 +118,7 @@ private:
 
     std::unique_ptr< CMergeMedia > fMergeSystem;
 
-    std::unordered_set< std::shared_ptr< CMediaData > > fAllMedia;
+    TMediaSet fAllMedia;
     std::map< QString, TMediaIDToMediaData > fMediaMap; // serverName -> mediaID -> mediaData
 
     std::vector< std::shared_ptr< CMediaData > > fData;
