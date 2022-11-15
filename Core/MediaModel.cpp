@@ -117,7 +117,7 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
     if ( role == ECustomRoles::eDirSortRole )
         return static_cast<int>( fDirSort );
     if ( role == ECustomRoles::ePremiereDateRole )
-        return mediaData->premiereDate().date();
+        return mediaData->premiereDate();
     if ( role == ECustomRoles::eIsProviderColumnRole )
     {
         auto providerInfo = getProviderInfoForColumn( index.column() );
@@ -183,7 +183,7 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
     {
         case eName: return isValid ? mediaData->name() : tr( "%1 - <Missing from Server>" ).arg( mediaData->name() );
         case eType: return mediaData->mediaType();
-        case ePremiereDate: return mediaData->premiereDate().date();
+        case ePremiereDate: return mediaData->premiereDate();
         case eMediaID: return isValid ? mediaData->getMediaID( serverName ) : QString();
         case eFavorite: return isValid ? ( mediaData->isFavorite( serverName ) ? "Yes" : "No" )  : QString();
         case ePlayed: return isValid ? ( mediaData->isPlayed( serverName ) ? "Yes" : "No" )  : QString();
@@ -506,9 +506,8 @@ SMediaSummary::SMediaSummary( std::shared_ptr< CMediaModel > model )
     for ( auto && ii : model->fData )
     {
         fTotalMedia++;
-        for ( int jj = 0; jj < serverModel->serverCnt(); ++jj )
+        for ( auto && serverInfo : *serverModel )
         {
-            auto serverInfo = serverModel->getServerInfo( jj );
             if ( !serverInfo->isEnabled() )
                 continue;
 

@@ -210,7 +210,7 @@ int CServerModel::enabledServerCnt() const
     return retVal;
 }
 
-bool CServerModel::serversChanged( const std::vector< std::shared_ptr< CServerInfo > > & lhs, const std::vector< std::shared_ptr< CServerInfo > > & rhs ) const
+bool CServerModel::serversChanged( const TServerVector & lhs, const TServerVector & rhs ) const
 {
     if ( lhs.size() != rhs.size() )
         return true;
@@ -308,6 +308,29 @@ std::shared_ptr< const CServerInfo > CServerModel::findServerInfo( const QString
     if ( pos != fServerMap.end() )
         return ( *pos ).second.first;
     return {};
+}
+
+std::shared_ptr< CServerInfo > CServerModel::enableServer( const QString & serverName, bool disableOthers, QString & msg )
+{
+    std::shared_ptr< CServerInfo > retVal;
+    for ( auto && ii : fServers )
+    {
+        auto isServer = ii->isServer( serverName );
+        if ( isServer )
+        {
+            ii->setIsEnabled( true );
+        }
+        else if ( disableOthers )
+            ii->setIsEnabled( false );
+        if ( isServer && retVal )
+        {
+            msg = QString( "Multiple servers match '%1'." ).arg( serverName );
+            return false;
+        }
+        if ( isServer )
+            retVal = ii;
+    }
+    return retVal;
 }
 
 void CServerModel::updateServerInfo( const QString & serverName, const QJsonObject & serverData )
