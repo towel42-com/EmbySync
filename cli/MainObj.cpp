@@ -27,26 +27,34 @@
 #include "Core/UserData.h"
 #include "Core/ProgressSystem.h"
 #include "Core/UsersModel.h"
+#include "Core/ServerInfo.h"
 #include "Core/MediaModel.h"
 #include "Core/ServerModel.h"
+#include "Core/MediaData.h"
 
+#include "SABUtils/QtUtils.h"
 #include "Version.h"
 #include <iostream>
 
 #include <QTimer>
 #include <QDateTime>
 #include <QJsonObject>
+#include <QJsonArray>
+#include <QJsonDocument>
 
-CMainObj::CMainObj( const QString & settingsFile, QObject * parent /*= nullptr*/ ) :
+CMainObj::CMainObj( const QString & settingsFile, const QString & mode, QObject * parent /*= nullptr*/ ) :
     QObject( parent ),
     fSettingsFile( settingsFile )
 {
+    if ( !setMode( mode ) )
+         return;
+
     fServerModel = std::make_shared< CServerModel >();
-    fSettings = std::make_shared< CSettings >( fServerModel );
+    fSettings = std::make_shared< CSettings >( false, fServerModel );
     if ( !fSettings->load( settingsFile,
-         [settingsFile]( const QString & /*title*/, const QString & msg )
+         [this, settingsFile]( const QString & /*title*/, const QString & msg )
          {
-             std::cerr << "--settings file '" << settingsFile.toStdString() << "' could not be loaded: " << msg.toStdString() << "\n";
+             fErrorString = QString( "--settings file '%1' could not be loaded: %2" ).arg( settingsFile ).arg( msg );
          }, false ) )
     {
         fSettings.reset();
@@ -59,7 +67,7 @@ CMainObj::CMainObj( const QString & settingsFile, QObject * parent /*= nullptr*/
     {
         if ( !QRegularExpression( ii ).isValid() )
         {
-            std::cerr << "SyncUserList contains invalid regular expression: '" << ii.toStdString() << "'.\n";
+            fErrorString = QString( "SyncUserList contains invalid regular expression: '%1'." ).arg( ii );
             return;
         }
         syncUsers << "(" + ii + ")";
@@ -68,13 +76,13 @@ CMainObj::CMainObj( const QString & settingsFile, QObject * parent /*= nullptr*/
     fUserRegExp = QRegularExpression( regExStr );
     if ( !fUserRegExp.isValid() )
     {
-        std::cerr << "SyncUserList creates an invalid regular expression: '" << regExStr.toStdString() << "'.\n";
+        fErrorString = QString( "SyncUserList creates an invalid regular expression: '%1'." ).arg( regExStr );
         return;
     }
 
     if ( regExStr.isEmpty() )
     {
-        std::cerr << "SyncUserList is not set in the settings file.\n";
+        fErrorString = QString( "SyncUserList is not set in the settings file." );
         return;
     }
 
@@ -86,15 +94,16 @@ CMainObj::CMainObj( const QString & settingsFile, QObject * parent /*= nullptr*/
     connect( fSyncSystem.get(), &CSyncSystem::sigAddToLog, this, &CMainObj::slotAddToLog );
     connect( fSyncSystem.get(), &CSyncSystem::sigLoadingUsersFinished, this, &CMainObj::slotLoadingUsersFinished );
     connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaLoaded, this, &CMainObj::slotProcessMedia );
+    connect( fSyncSystem.get(), &CSyncSystem::sigMissingEpisodesLoaded, this, &CMainObj::slotMissingEpisodesLoaded );
 
     connect( fSyncSystem.get(), &CSyncSystem::sigProcessingFinished, this, &CMainObj::slotProcessingFinished );
     connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaLoaded, this, &CMainObj::slotUserMediaCompletelyLoaded );
     
     auto progressSystem = std::make_shared< CProgressSystem >();
-    progressSystem->setSetTitleFunc( [ this ]( const QString & title )
+    progressSystem->setSetTitleFunc( [this]( const QString & title )
     {
         fCurrentProgress = { 0, title, QString() };
-        std::cout << "\r" << std::get< 1 >( fCurrentProgress ).toStdString() << std::endl;
+        addToLog( EMsgType::eInfo, std::get< 1 >( fCurrentProgress ) );
     } );
     progressSystem->setIncFunc( [this]()
     {
@@ -104,32 +113,60 @@ CMainObj::CMainObj( const QString & settingsFile, QObject * parent /*= nullptr*/
         auto value = std::get< 0 >( fCurrentProgress ) % cnt;
         std::cout << chars[ value ] << '\b';
     } );
-    progressSystem->setResetFunc( [this]()
+    progressSystem->setResetFunc( [ this ]()
     {
         if ( std::get< 1 >( fCurrentProgress ) != std::get< 2 >( fCurrentProgress ) )
         {
-            std::cout << '\r' << "Finished " << std::get< 1 >( fCurrentProgress ).toStdString() << std::endl;
+            addToLog( EMsgType::eInfo, QString( "Finished '%1'" ).arg( std::get< 1 >( fCurrentProgress ) ) );
             std::get< 2 >( fCurrentProgress ) = std::get< 1 >( fCurrentProgress );
         }
     } );
 
 
     fSyncSystem->setProgressSystem( progressSystem );
-    fSyncSystem->setUserMsgFunc(
-        []( const QString & /*title*/, const QString & msg, bool isCritical )
+    fSyncSystem->setUserMsgFunc( 
+        [this]( EMsgType msgType, const QString & title, QString msg )
         {
-            if ( isCritical )
-                std::cerr << "\r" << "ERROR: " << msg.toStdString() << std::endl;
-            else 
-                std::cout << "\r" << "INFO: " << msg.toStdString() << std::endl;
-        } );
+            addToLog( msgType, title, msg );
+        }
+    );
 
     fAOK = true;
 }
 
+bool CMainObj::aOK() const
+{
+    if ( ( fMode == EMode::eCheckMissing ) && fSelectedServerToProcess.isEmpty() )
+    {
+        fErrorString = "Selected server must be set to check for missing.";
+        fAOK = false;
+    }
+    return fAOK;
+}
+
 void CMainObj::slotAddToLog( int msgType, const QString & msg )
 {
+    addToLog( msgType, QString(), msg );
+}
+
+void CMainObj::addToLog( int msgType, const QString & msg )
+{
+    addToLog( msgType, QString(), msg );
+}
+
+void CMainObj::addToLog( int msgType, const QString & title, const QString & msg )
+{
+    if ( fQuiet )
+        return;
+
+    auto tmp = QStringList() << title.trimmed() << msg.trimmed();
+    tmp.removeAll( QString() );
+    auto fullMsg = tmp.join( " - " ).trimmed();
+    if ( msg.isEmpty() )
+        return;
+
     auto stream = ( msgType != EMsgType::eInfo ) ? &std::cerr : &std::cout;
+
     ( *stream ) << "\r" << createMessage( static_cast< EMsgType >( msgType ), msg ).toStdString() << "\n";
 }
 
@@ -138,7 +175,37 @@ void CMainObj::run()
     if ( !fSettings || !fSyncSystem )
         return;
 
+    if ( fMode == EMode::eCheckMissing )
+    {
+        fSelectedServer = fServerModel->enableServer( fSelectedServerToProcess, true, fErrorString );
+        if ( !fSelectedServer )
+        {
+            fAOK = false;
+            return;
+        }
+    }
+
     fSyncSystem->loadUsers();
+}
+
+void CMainObj::setMinimumDate( const QString & minDate )
+{
+    fMinDate = NSABUtils::getDate( minDate );
+    if ( !fMinDate.isValid() )
+    {
+        fAOK = false;
+        fErrorString = tr( "Invalid Minimum date '%1'." ).arg( minDate );
+    }
+}
+
+void CMainObj::setMaximumDate( const QString & maxDate )
+{
+    fMaxDate = NSABUtils::getDate( maxDate );
+    if ( !fMaxDate.isValid() )
+    {
+        fAOK = false;
+        fErrorString = tr( "Invalid Maximum date '%1'." ).arg( maxDate );
+    }
 }
 
 void CMainObj::slotLoadingUsersFinished()
@@ -151,41 +218,55 @@ void CMainObj::slotLoadingUsersFinished()
     for ( auto && ii : users )
     {
         if ( ii->isUser( fUserRegExp ) )
+        {
+            if ( fMode == EMode::eCheckMissing )
+            {
+                if ( !ii->isAdmin( fSelectedServer->keyName() ) )
+                    continue;
+            }
             fUsersToSync.push_back( ii );
+            if ( fMode == EMode::eCheckMissing )
+                break;
+        }
     }
     if ( fUsersToSync.empty() )
     {
-        std::cerr << "No users matched '" << fUserRegExp.pattern().toStdString() << "'" << std::endl;
+        std::cerr << "No users matched '" << fUserRegExp.pattern().toStdString() << "'";
+        if ( fMode == EMode::eCheckMissing )
+            std::cerr << " or were administrators.";
+        std::cerr << std::endl;
 
         emit sigExit( -1 );
         return;
     }
 
-    std::map< QString, std::shared_ptr< CUserData > > unsyncable;
-    for ( auto && ii = fUsersToSync.begin(); ii != fUsersToSync.end(); )
+    if ( fMode == EMode::eSync )
     {
-        if ( !( *ii )->canBeSynced() )
+        std::map< QString, std::shared_ptr< CUserData > > unsyncable;
+        for ( auto && ii = fUsersToSync.begin(); ii != fUsersToSync.end(); )
         {
-            unsyncable[ (*ii)->allNames() ] = *ii;
-            ii = fUsersToSync.erase( ii );
+            if ( !( *ii )->canBeSynced() )
+            {
+                unsyncable[ ( *ii )->allNames() ] = *ii;
+                ii = fUsersToSync.erase( ii );
+            }
+            else
+                ++ii;
         }
-        else
-            ++ii;
+
+
+        QString unsyncableMsg;
+        if ( !unsyncable.empty() )
+            unsyncableMsg = "The following users matched but can not be synced\n";
+        for ( auto && ii : unsyncable )
+        {
+            auto missingServerList = ii.second->missingServers();
+            for ( auto && jj : missingServerList )
+                unsyncableMsg += "\t" + ii.second->allNames() + " - Missing from '" + jj + "\n";
+        }
+        if ( !unsyncableMsg.isEmpty() )
+            slotAddToLog( EMsgType::eWarning, unsyncableMsg );
     }
-
-
-    QString unsyncableMsg;
-    if ( !unsyncable.empty() )
-        unsyncableMsg = "The following users matched but can not be synced\n";
-    for ( auto && ii : unsyncable )
-    {
-        auto missingServerList = ii.second->missingServers();
-        for ( auto && jj : missingServerList )
-            unsyncableMsg += "\t" + ii.second->allNames() + " - Missing from '" + jj + "\n";
-    }
-    if ( !unsyncableMsg.isEmpty() )
-        slotAddToLog( EMsgType::eWarning, unsyncableMsg );
-
     if ( fUsersToSync.empty() )
     {
         emit sigExit( 0 );
@@ -205,14 +286,24 @@ void CMainObj::slotProcessNextUser()
 
     auto currUser = fUsersToSync.front();
     fUsersToSync.pop_front();
-    slotAddToLog( EMsgType::eInfo, "Processing user: " + currUser->allNames() );
-
-    fSyncSystem->loadUsersMedia( ETool::ePlayState, currUser );
+    if ( fMode == EMode::eSync )
+    {
+        slotAddToLog( EMsgType::eInfo, "Processing user: " + currUser->allNames() );
+        fSyncSystem->loadUsersMedia( ETool::ePlayState, currUser );
+    }
+    else if ( fMode == EMode::eCheckMissing )
+    {
+        if ( !fSyncSystem->loadMissingEpisodes( currUser, fSelectedServer, fMinDate, fMaxDate ) )
+        {
+            fErrorString = tr( "No user found with Administrator Privileges on server '%1'" ).arg( fSelectedServer->displayName() );
+        }
+    }
 }
 
 void CMainObj::slotUserMediaCompletelyLoaded()
 {
-    slotAddToLog( EMsgType::eInfo, "Finished loading media information" );
+    if ( fMode == EMode::eSync )
+        slotAddToLog( EMsgType::eInfo, "Finished loading media information" );
 }
 
 void CMainObj::slotProcessingFinished( const QString & userName )
@@ -223,5 +314,35 @@ void CMainObj::slotProcessingFinished( const QString & userName )
 
 void CMainObj::slotProcessMedia()
 {
-    fSyncSystem->selectiveProcessMedia( fSelectedServerToProcess );
+    if ( fMode == EMode::eSync )
+        fSyncSystem->selectiveProcessMedia( fSelectedServerToProcess );
+}
+
+void CMainObj::slotMissingEpisodesLoaded()
+{
+    slotAddToLog( EMsgType::eInfo, "Finished loading missing episodes" );
+    QJsonArray shows;
+
+    for ( auto && mediaInfo : *fMediaModel )
+    {
+        shows.push_back( mediaInfo->toJson( true ) );
+    }
+    QJsonDocument doc( shows );
+    std::cout << doc.toJson( QJsonDocument::JsonFormat::Indented ).toStdString() << "\n";
+    QTimer::singleShot( 0, this, &CMainObj::slotProcessNextUser );
+}
+
+bool CMainObj::setMode( const QString & mode )
+{
+    if ( mode == "check_missing" )
+        fMode = EMode::eCheckMissing;
+    else if ( mode == "sync" )
+        fMode = EMode::eSync;
+    else
+    {
+        fErrorString = QString( "Invalid mode '%1'" ).arg( mode );
+        fAOK = false;
+        return false;
+    }
+    return true;
 }

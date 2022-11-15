@@ -66,9 +66,8 @@ CMediaData::CMediaData( const QJsonObject & mediaObj, std::shared_ptr< CServerMo
     computeName( mediaObj );
     fType = mediaObj[ "Type" ].toString();
 
-    for ( int ii = 0; ii < serverModel->serverCnt(); ++ii )
+    for ( auto && serverInfo : *serverModel )
     {
-        auto serverInfo = serverModel->getServerInfo( ii );
         if ( !serverInfo->isEnabled() )
             continue;
         fInfoForServer[ serverInfo->keyName() ] = std::make_shared< SMediaServerData >();
@@ -138,7 +137,7 @@ void CMediaData::computeName( const QJsonObject & media )
 
 void CMediaData::loadData( const QString & serverName, const QJsonObject & media )
 {
-    qDebug().noquote().nospace() << QJsonDocument( media ).toJson( QJsonDocument::Indented );
+    //qDebug().noquote().nospace() << QJsonDocument( media ).toJson( QJsonDocument::Indented );
 
     auto externalUrls = media[ "ExternalUrls" ].toArray();
     for ( auto && ii : externalUrls )
@@ -165,7 +164,7 @@ void CMediaData::loadData( const QString & serverName, const QJsonObject & media
         addProvider( providerName, providerID );
     }
 
-    fPremiereDate = media[ "PremiereDate" ].toVariant().toDateTime();
+    fPremiereDate = media[ "PremiereDate" ].toVariant().toDate();
 }
 
 QString CMediaData::externalUrlsText() const
@@ -422,6 +421,37 @@ QUrl CMediaData::getSearchURL() const
     QUrlQuery query;
     query.addQueryItem( "search", searchKey.replace( " ", "+" ) );
     retVal.setQuery( query );
+    return retVal;
+}
+
+QJsonObject CMediaData::toJson( bool includeSearchURL )
+{
+    QJsonObject retVal;
+
+    retVal[ "type" ] = fType;
+    retVal[ "name" ] = fName;
+    if ( !fSeriesName.isEmpty() )
+        retVal[ "seriesname" ] = fSeriesName;
+    if ( fSeason.has_value() )
+        retVal[ "season" ] = fSeason.value();
+    if ( fEpisode.has_value() )
+        retVal[ "season" ] = fEpisode.value();
+    retVal[ "premiere_date" ] = fPremiereDate.toString( "MM/dd/yyyy" );
+
+    QJsonArray serverInfos;
+    for ( auto && ii : fInfoForServer )
+    {
+        if ( !ii.second->isValid() )
+            continue;;
+        auto serverInfo = ii.second->toJson();
+        serverInfo[ "server_url" ] = ii.first;
+        serverInfos.push_back( serverInfo );
+    }
+    retVal[ "server_infos" ] = serverInfos;
+
+    if ( includeSearchURL )
+        retVal[ "searchurl" ] = getSearchURL().toString();
+
     return retVal;
 }
 

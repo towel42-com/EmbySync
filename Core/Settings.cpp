@@ -37,7 +37,13 @@
 #include <map>
 
 CSettings::CSettings( std::shared_ptr< CServerModel > serverModel ) :
-    fServerModel( serverModel )
+    CSettings( true, serverModel )
+{
+}
+
+CSettings::CSettings( bool saveOnDelete, std::shared_ptr< CServerModel > serverModel ) :
+    fServerModel( serverModel ),
+    fSaveOnDelete( saveOnDelete )
 {
     fSyncUserList = QStringList() << ".*";
     fServerModel->setSettings( this );
@@ -45,7 +51,8 @@ CSettings::CSettings( std::shared_ptr< CServerModel > serverModel ) :
 
 CSettings::~CSettings()
 {
-    save();
+    if ( fSaveOnDelete )
+        save();
 }
 
 bool CSettings::checkForLatest()

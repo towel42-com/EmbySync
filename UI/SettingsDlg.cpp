@@ -231,16 +231,16 @@ void CSettingsDlg::moveCurrServer( bool up )
 void CSettingsDlg::loadKnownUsers( const std::vector< std::shared_ptr< CUserData > > & knownUsers )
 {
     auto headerLabels = QStringList() << tr( "Connected ID" );
-    for ( int ii = 0; ii < fServerModel->serverCnt(); ++ii )
-        headerLabels << fServerModel->getServerInfo( ii )->displayName();
+    for ( auto && serverInfo : *fServerModel )
+        headerLabels << serverInfo->displayName();
     fImpl->knownUsers->setColumnCount( headerLabels.count() );
     fImpl->knownUsers->setHeaderLabels( headerLabels );
 
     for ( auto && ii : knownUsers )
     {
         auto data = QStringList() << ii->connectedID();
-        for ( int jj = 0; jj < fServerModel->serverCnt(); ++jj )
-            data << ii->name( fServerModel->getServerInfo( jj )->keyName() );
+        for ( auto && serverInfo : *fServerModel )
+            data << ii->name( serverInfo->keyName() );
 
         auto item = new QTreeWidgetItem( fImpl->knownUsers, data );
         item->setIcon( 0, QIcon( QPixmap::fromImage( ii->anyAvatar() ) ) );
@@ -332,9 +332,8 @@ void CSettingsDlg::accept()
 void CSettingsDlg::load()
 {
     fImpl->servers->setColumnCount( 3 );
-    for ( int ii = 0; ii < fServerModel->serverCnt(); ++ii )
+    for ( auto && serverInfo : *fServerModel )
     {
-        auto serverInfo = fServerModel->getServerInfo( ii );
         auto name = serverInfo->displayName();
         auto url = serverInfo->url();
         auto apiKey = serverInfo->apiKey();

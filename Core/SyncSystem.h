@@ -138,7 +138,7 @@ public:
     CSyncSystem( std::shared_ptr< CSettings > settings, std::shared_ptr< CUsersModel > usersModel, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CServerModel > serverModel, QObject * parent = nullptr );
 
     void setProcessNewMediaFunc( std::function< void( std::shared_ptr< CMediaData > userData ) > processMediaFunc );
-    void setUserMsgFunc( std::function< void( const QString & title, const QString & msg, bool isCritical ) > userMsgFunc );
+    void setUserMsgFunc( std::function< void( EMsgType msgType, const QString & title, const QString & msg ) > userMsgFunc );
     void setProgressSystem( std::shared_ptr< CProgressSystem > funcs );
 
     void testServers( const std::vector< std::shared_ptr< const CServerInfo > > & serverInfo );
@@ -154,8 +154,9 @@ public:
     void loadUsersMedia( ETool tool, std::shared_ptr< CUserData > user );
 
     bool loadMissingEpisodes( std::shared_ptr< const CServerInfo > serverInfo, const QDate & minPremiereDate, const QDate & maxPremiereDate ); // return false if no admin user found on server
+    bool loadMissingEpisodes( std::shared_ptr< CUserData > userData, std::shared_ptr<const CServerInfo> serverInfo, const QDate & minPremiereDate, const QDate & maxPremiereDate );
 
-    bool setCurrentUser( ETool tool, std::shared_ptr<CUserData> userData );
+    bool setCurrentUser( ETool tool, std::shared_ptr<CUserData> userData, bool forSync = true );
     void clearCurrUser();
     std::pair< ETool, std::shared_ptr< CUserData > > currUser() const;
 
@@ -212,8 +213,6 @@ private Q_SLOTS:
     void slotRepairNextUser();
 
 private:
-    void loadMissingEpisodes( std::shared_ptr< CUserData > userData, std::shared_ptr<const CServerInfo> serverInfo, const QDate & minPremiereDate, const QDate & maxPremiereDate );
-
     QNetworkReply * makeRequest( QNetworkRequest & request, ENetworkRequestType requestType = ENetworkRequestType::eGet, const QByteArray & data = {}, QString contentType = QString() );
 
     std::shared_ptr<CUserData> loadUser( const QString & serverName, const QJsonObject & user );
@@ -286,7 +285,7 @@ private:
     std::unordered_map< QNetworkReply *, std::unordered_map< int, QVariant > > fAttributes;
 
     std::function< void( std::shared_ptr< CMediaData > mediaData ) > fProcessNewMediaFunc;
-    std::function< void( const QString & title, const QString & msg, bool isCritical ) > fUserMsgFunc;
+    std::function< void( EMsgType type, const QString & title, const QString & msg ) > fUserMsgFunc;
     std::shared_ptr< CProgressSystem > fProgressSystem;
 
     using TOptionalBoolPair = std::pair< std::optional< bool >, std::optional< bool > >;
