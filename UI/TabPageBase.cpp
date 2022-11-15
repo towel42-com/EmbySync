@@ -83,9 +83,8 @@ QString CTabPageBase::selectServer() const
 {
     QStringList serverNames;
     std::map< QString, QString > servers;
-    for ( int ii = 0; ii < fServerModel->serverCnt(); ++ii )
+    for ( auto && serverInfo : *fServerModel )
     {
-        auto serverInfo = fServerModel->getServerInfo( ii );
         if ( !serverInfo->isEnabled() )
             continue;
 
@@ -131,13 +130,12 @@ void CTabPageBase::setupDataTreePeers()
 
 void CTabPageBase::createServerTrees( QAbstractItemModel * model )
 {
-    for ( int ii = 0; ii < fServerModel->serverCnt(); ++ii )
+    for ( auto && serverInfo : *fServerModel )
     {
-        auto serverInfo = fServerModel->getServerInfo( ii );
         if ( !serverInfo->isEnabled() )
             continue;
 
-        addDataTreeForServer( fServerModel->getServerInfo( ii ), model );
+        addDataTreeForServer( serverInfo, model );
     }
 }
 

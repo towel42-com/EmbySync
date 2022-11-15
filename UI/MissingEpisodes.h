@@ -81,12 +81,12 @@ public Q_SLOTS:
     virtual void slotCanceled() override;
     virtual void slotModelDataChanged() override;
     virtual void slotSettingsChanged() override;
-    void slotUsersContextMenu( CDataTree * dataTree, const QPoint & pos );
+    void slotMediaContextMenu( CDataTree * dataTree, const QPoint & pos );
     virtual void slotSetCurrentServer( const QModelIndex & index );
 private Q_SLOTS:
     void slotSearchByShowNameChanged();
     void slotSearchByDateChanged();
-    void slotCurrentUserChanged( const QModelIndex & index );
+    void slotCurrentServerChanged( const QModelIndex & index );
     void slotMissingEpisodesLoaded();
     void slotToggleShowEnabledServers();
     void slotMediaChanged();

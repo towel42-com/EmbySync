@@ -47,7 +47,7 @@ struct SMediaServerData
 
     bool userDataEqual( const SMediaServerData & rhs ) const;
 
-    QJsonObject userDataJSON() const;
+    QJsonObject toJson() const;
     void loadUserDataFromJSON( const QJsonObject & userDataObj );
 
     bool isValid() const;

@@ -116,7 +116,7 @@ QJsonObject SUserServerData::userDataJSON() const
 
 void SUserServerData::loadFromJSON( const QJsonObject & userObj )
 {
-    qDebug().noquote().nospace() << QJsonDocument( userObj ).toJson();
+    //qDebug().noquote().nospace() << QJsonDocument( userObj ).toJson();
 
     fName = userObj[ "Name" ].toString();
     fUserID = userObj[ "Id" ].toString();
@@ -153,7 +153,7 @@ void SUserServerData::loadFromJSON( const QJsonObject & userObj )
 //}
 
     auto config = userObj[ "Configuration" ].toObject();
-    qDebug().noquote().nospace() << QJsonDocument( config ).toJson();
+    //qDebug().noquote().nospace() << QJsonDocument( config ).toJson();
     fAudioLanguagePreference = config[ "AudioLanguagePreference" ].toString();
     fPlayDefaultAudioTrack = config[ "PlayDefaultAudioTrack" ].toBool();
     fSubtitleLanguagePreference = config[ "SubtitleLanguagePreference" ].toString();
@@ -171,7 +171,7 @@ void SUserServerData::loadFromJSON( const QJsonObject & userObj )
     fIntroSkipMode = config[ "IntroSkipMode" ].toString();
 
     auto policy = userObj[ "Policy" ].toObject();
-    qDebug().noquote().nospace() << QJsonDocument( policy ).toJson();
+    //qDebug().noquote().nospace() << QJsonDocument( policy ).toJson();
     fIsAdmin = policy[ "IsAdministrator" ].toBool();
     fIsDisabled = policy[ "IsDisabled" ].toBool();
     fIsHidden = policy[ "IsHidden" ].toBool();

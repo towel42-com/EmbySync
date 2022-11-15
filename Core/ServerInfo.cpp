@@ -134,6 +134,23 @@ QString CServerInfo::keyName() const
     return fKeyName;
 }
 
+bool CServerInfo::isServer( const QString & serverName ) const
+{
+    if ( keyName() == serverName )
+        return true;
+    if ( displayName( false ) == serverName )
+        return true;
+    if ( displayName( true ) == serverName )
+        return true;
+    if ( !fServerName.isEmpty() && ( fServerName == serverName ) )
+        return true;
+    if ( !fName.first.isEmpty() && ( fName.first == serverName ) )
+         return true;
+    if ( getUrl().host() == serverName )
+        return true;
+    return false;
+}
+
 void CServerInfo::autoSetDisplayName( bool usePort )
 {
     auto url = getUrl();

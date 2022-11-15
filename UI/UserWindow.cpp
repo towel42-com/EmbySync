@@ -45,9 +45,8 @@ CUserWindow::CUserWindow( std::shared_ptr< CServerModel > serverModel, std::shar
 
     auto horizontalLayout = new QHBoxLayout( fImpl->userDataWidgets );
     
-    for ( int ii = 0; ii < serverModel->serverCnt(); ++ii )
+    for ( auto && serverInfo : *serverModel )
     {
-        auto serverInfo = serverModel->getServerInfo( ii );
         if ( !serverInfo->isEnabled() )
             continue;
 

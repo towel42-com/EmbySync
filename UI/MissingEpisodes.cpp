@@ -60,7 +60,7 @@ CMissingEpisodes::CMissingEpisodes( QWidget * parent )
     setupActions();
 
     connect( this, &CMissingEpisodes::sigModelDataChanged, this, &CMissingEpisodes::slotModelDataChanged );
-    connect( this, &CMissingEpisodes::sigDataContextMenuRequested, this, &CMissingEpisodes::slotUsersContextMenu );
+    connect( this, &CMissingEpisodes::sigDataContextMenuRequested, this, &CMissingEpisodes::slotMediaContextMenu );
 
     connect( fImpl->searchByDate, &QCheckBox::toggled, this, &CMissingEpisodes::slotSearchByDateChanged );
     connect( fImpl->searchByShowName, &QCheckBox::toggled, this, &CMissingEpisodes::slotSearchByShowNameChanged );
@@ -121,7 +121,7 @@ void CMissingEpisodes::setupPage( std::shared_ptr< CSettings > settings, std::sh
 
     fImpl->servers->setModel( fServerFilterModel );
     fImpl->servers->setContextMenuPolicy( Qt::ContextMenuPolicy::CustomContextMenu );
-    connect( fImpl->servers, &QTreeView::clicked, this, &CMissingEpisodes::slotCurrentUserChanged );
+    connect( fImpl->servers, &QTreeView::clicked, this, &CMissingEpisodes::slotCurrentServerChanged );
 
     slotMediaChanged();
 
@@ -228,12 +228,10 @@ QSplitter * CMissingEpisodes::getDataSplitter() const
     return fImpl->dataSplitter;
 }
 
-void CMissingEpisodes::slotCurrentUserChanged( const QModelIndex & index )
+void CMissingEpisodes::slotCurrentServerChanged( const QModelIndex & index )
 {
     if ( fSyncSystem->isRunning() )
         return;
-
-    auto prevUserData = fSyncSystem->currUser();
 
     auto idx = index;
     if ( !idx.isValid() )
@@ -338,7 +336,7 @@ std::shared_ptr< CMediaData > CMissingEpisodes::getMediaData( QModelIndex idx ) 
     return retVal;
 }
 
-void CMissingEpisodes::slotUsersContextMenu( CDataTree * dataTree, const QPoint & pos )
+void CMissingEpisodes::slotMediaContextMenu( CDataTree * dataTree, const QPoint & pos )
 {
     if ( !dataTree )
         return;

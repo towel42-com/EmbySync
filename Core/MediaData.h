@@ -111,7 +111,7 @@ public:
     uint64_t playCount( const QString & serverName ) const;
     bool allPlayCountEqual() const;
 
-    QDateTime premiereDate() const { return fPremiereDate; }
+    QDate premiereDate() const { return fPremiereDate; }
 
     std::shared_ptr<SMediaServerData> userMediaData( const QString & serverName ) const;
     std::shared_ptr<SMediaServerData> newestMediaData() const;
@@ -119,6 +119,8 @@ public:
     QIcon getDirectionIcon( const QString & serverName ) const;
 
     QUrl getSearchURL() const;;
+
+    QJsonObject toJson( bool includeSearchURL );
 private:
     void computeName( const QJsonObject & media );
     template< typename T >
@@ -146,7 +148,7 @@ private:
     std::optional< int > fEpisode; // only valid for EpisodeTypes
     std::map< QString, QString > fProviders;
     std::map< QString, QString > fExternalUrls;
-    QDateTime fPremiereDate;
+    QDate fPremiereDate;
 
     bool fCanBeSynced{ false };
     std::map< QString, std::shared_ptr< SMediaServerData > > fInfoForServer;
