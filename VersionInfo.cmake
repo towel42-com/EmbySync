@@ -34,6 +34,7 @@ SET( VENDOR           "Scott Aron Bloom" )
 SET( HOMEPAGE         "www.towel42.com" )
 SET( PRODUCT_HOMEPAGE "github.com/towel42-com/EmbySync" )
 SET( EMAIL            "support@towel42.com" )
+STRING(TIMESTAMP COPYRIGHT "Copyright ${VENDOR} 2021-%Y")
 
 CreateVersion( ${CMAKE_SOURCE_DIR} 
 	MAJOR ${MAJOR_VERSION} 
@@ -47,5 +48,6 @@ CreateVersion( ${CMAKE_SOURCE_DIR}
     EMAIL ${EMAIL} 
     BUILD_DATE ${BUILD_DATE}
     BUILD_TIME ${BUILD_TIME}
+    COPYRIGHT  ${COPYRIGHT}
 	)
 

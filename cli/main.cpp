@@ -29,20 +29,16 @@
 
 void showVersion()
 {
-    std::cout << NVersion::APP_NAME << " - " << NVersion::getVersionString( true ) << "\n";
+    std::cout << NVersion::APP_NAME.toStdString() << " - " << NVersion::getVersionString( true ).toStdString() << "\n";
 }
 
 int main( int argc, char ** argv )
 {
     QCoreApplication appl( argc, argv );
-    appl.setApplicationName( QString::fromStdString( NVersion::APP_NAME ) );
-    appl.setApplicationVersion( QString::fromStdString( NVersion::getVersionString( true ) ) );
-    appl.setOrganizationName( QString::fromStdString( NVersion::VENDOR ) );
-    appl.setOrganizationDomain( QString::fromStdString( NVersion::HOMEPAGE ) );
-    appl.setOrganizationDomain( "github.com/towel42-com/EmbySync" ); // QString::fromStdString( NVersion::HOMEPAGE ) );
+    NVersion::setupApplication( appl, true );
 
     QCommandLineParser parser;
-    parser.setApplicationDescription( QString::fromStdString( NVersion::APP_NAME + " CLI - a tool to sync two emby servers" ) );
+    parser.setApplicationDescription( NVersion::APP_NAME + " CLI - a tool to sync two emby servers" );
     auto helpOption = parser.addHelpOption();
     auto versionOption = parser.addVersionOption();
 

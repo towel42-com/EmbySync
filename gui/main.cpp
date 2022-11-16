@@ -46,11 +46,7 @@ int main( int argc, char ** argv )
     QApplication::setAttribute( Qt::AA_EnableHighDpiScaling );
     QApplication::setAttribute( Qt::AA_UseHighDpiPixmaps );
     QApplication appl( argc, argv );
-    appl.setApplicationName( QString::fromStdString( NVersion::APP_NAME ) );
-    appl.setApplicationVersion( QString::fromStdString( NVersion::getVersionString( true ) ) );
-    appl.setOrganizationName( QString::fromStdString( NVersion::VENDOR ) );
-    appl.setOrganizationDomain( QString::fromStdString( NVersion::HOMEPAGE ) );
-    appl.setOrganizationDomain( "github.com/towel42-com/EmbySync" ); // QString::fromStdString( NVersion::HOMEPAGE ) );
+    NVersion::setupApplication( appl, true );
 
     auto aOK = NSABUtils::validateOpenSSL( true );
     if ( !aOK.first )
@@ -60,7 +56,7 @@ int main( int argc, char ** argv )
     }
 
     CMainWindow mainWindow;
-    mainWindow.setWindowTitle( QString::fromStdString( NVersion::getWindowTitle() ) );
+    mainWindow.setWindowTitle( NVersion::getWindowTitle() );
 
     mainWindow.show();
     return appl.exec();
