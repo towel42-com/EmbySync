@@ -644,8 +644,8 @@ QVariant CMediaMissingFilterModel::data( const QModelIndex & index, int role /*=
     if ( ( role != Qt::ForegroundRole ) && ( role != Qt::BackgroundRole ) )
         return QSortFilterProxyModel::data( index, role );
 
-    auto premierDate = index.data( CMediaModel::ECustomRoles::ePremiereDateRole ).toDate();
-    if ( premierDate > QDate::currentDate() )
+    auto premiereDate = index.data( CMediaModel::ECustomRoles::ePremiereDateRole ).toDate();
+    if ( premiereDate > QDate::currentDate() )
         return {};
 
     // reverse for black background

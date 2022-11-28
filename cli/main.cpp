@@ -52,10 +52,10 @@ int main( int argc, char ** argv )
     parser.addOption( selectedServerOption );
 
     auto dateStr = QDate::currentDate().toString( "MM/dd/yyyy" );
-    auto minDateOption = QCommandLineOption( QStringList() << "min_date", QString( "The oldest premier date to check if its missing (default %1)" ).arg( dateStr ), "min date", dateStr );
+    auto minDateOption = QCommandLineOption( QStringList() << "min_date", QString( "The oldest premiere date to check if its missing (default %1)" ).arg( dateStr ), "min date", dateStr );
     parser.addOption( minDateOption );
 
-    auto maxDateOption = QCommandLineOption( QStringList() << "max_date", QString( "The latest premier date to check if its missing (default %1)" ).arg( dateStr ), "max date", dateStr );
+    auto maxDateOption = QCommandLineOption( QStringList() << "max_date", QString( "The latest premiere date to check if its missing (default %1)" ).arg( dateStr ), "max date", dateStr );
     parser.addOption( maxDateOption );
 
     auto quietOption = QCommandLineOption( QStringList() << "quiet" << "q", QString( "Minimize text output" ), "" );
