@@ -1382,7 +1382,7 @@ void CSyncSystem::requestGetMediaList( const QString & serverName )
         std::make_pair( "SortOrder", "Ascending" ),
         std::make_pair( "Recursive", "True" ),
         std::make_pair( "IsMissing", "False" ),
-        std::make_pair( "Fields", "ProviderIds,ExternalUrls,ProductionYear,PremiereDate,DateCreated,PremierDate,EndDate,StartDate,Missing" )
+        std::make_pair( "Fields", "ProviderIds,ExternalUrls,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate,Missing" )
     };
 
     // ItemsService
@@ -1468,7 +1468,7 @@ void CSyncSystem::requestMissingEpisodes( const QString & serverName, const QDat
         std::make_pair( "SortOrder", "Ascending" ),
         std::make_pair( "Recursive", "True" ),
         std::make_pair( "IsMissing", "True" ),
-        std::make_pair( "Fields", "ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,PremierDate,EndDate,StartDate" )
+        std::make_pair( "Fields", "ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate" )
     };
     if ( minPremiereDate.isValid() )
     {
