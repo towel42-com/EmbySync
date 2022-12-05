@@ -45,6 +45,7 @@ public:
     virtual ~CDataTree() override;
 
     void setModel( QAbstractItemModel * model );
+    QAbstractItemModel * model() const;
     
     void setServer( const std::shared_ptr< const CServerInfo > & serverInfo, bool hideColumns );
     void hideColumns();

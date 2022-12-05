@@ -26,7 +26,9 @@ public:
 
     enum ECustomRoles
     {
-        eEnabledRole = Qt::UserRole + 1
+        eEnabledRole = Qt::UserRole + 1,
+        eIsPrimaryServer,
+        eIsPrimaryServerSet
     };
 
     CServerModel( QObject * parent = nullptr );
@@ -96,11 +98,13 @@ public:
     CServerFilterModel( QObject * parent );
 
     void setOnlyShowEnabledServers( bool showOnlyEnabled );
+    void setOnlyShowPrimaryServer( bool showOnlyPrimary );
 
     virtual bool filterAcceptsRow( int source_row, const QModelIndex & source_parent ) const override;
     virtual void sort( int column, Qt::SortOrder order = Qt::AscendingOrder ) override;
     virtual bool lessThan( const QModelIndex & source_left, const QModelIndex & source_right ) const override;
 private:
     bool fOnlyShowEnabled{ false };
+    bool fOnlyShowPrimaryServer{ false };
 };
 #endif

@@ -60,6 +60,11 @@ void CDataTree::setModel( QAbstractItemModel * model )
     connect( fImpl->data, &QTreeView::doubleClicked, this, &CDataTree::sigViewData );
 }
 
+QAbstractItemModel * CDataTree::model() const
+{
+    return fImpl->data->model();
+}
+
 void CDataTree::setServer( const std::shared_ptr< const CServerInfo > & serverInfo, bool hideColumns )
 {
     if ( fServerInfo )
