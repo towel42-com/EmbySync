@@ -332,16 +332,21 @@ void CSettingsDlg::accept()
 void CSettingsDlg::load()
 {
     fImpl->servers->setColumnCount( 3 );
+    QStringList serverList;
     for ( auto && serverInfo : *fServerModel )
     {
         auto name = serverInfo->displayName();
         auto url = serverInfo->url();
         auto apiKey = serverInfo->apiKey();
 
+        serverList << name;
         auto item = new QTreeWidgetItem( fImpl->servers, QStringList() << name << url << apiKey );
         item->setCheckState( 0, serverInfo->isEnabled() ? Qt::CheckState::Checked : Qt::CheckState::Unchecked );
         item->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/unknownStatus.png" ) ) );
     }
+
+    fImpl->primaryServer->addItems( serverList );
+    fImpl->primaryServer->setCurrentText( fSettings->primaryServer() );
 
     fMediaSourceColor = fSettings->mediaSourceColor();
     fMediaDestColor = fSettings->mediaDestColor();
@@ -378,6 +383,8 @@ void CSettingsDlg::save()
 {
     auto servers = getServerInfos( false );
     fServerModel->setServers( servers );
+
+    fSettings->setPrimaryServer( fImpl->primaryServer->currentText() );
 
     fSettings->setMediaSourceColor( fMediaSourceColor );
     fSettings->setMediaDestColor( fMediaDestColor );

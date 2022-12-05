@@ -133,7 +133,7 @@ void CMissingEpisodes::setupPage( std::shared_ptr< CSettings > settings, std::sh
     connect( fSyncSystem.get(), &CSyncSystem::sigMissingEpisodesLoaded, this, &CMissingEpisodes::slotMissingEpisodesLoaded );
 
     slotSetCurrentServer( QModelIndex() );
-    slotToggleShowEnabledServers();
+    showPrimaryServer();
 }
 
 void CMissingEpisodes::slotMediaChanged()
@@ -163,20 +163,21 @@ void CMissingEpisodes::slotMediaChanged()
 
 void CMissingEpisodes::setupActions()
 {
-    fActionOnlyShowEnabledServers = new QAction( this );
-    fActionOnlyShowEnabledServers->setObjectName( QString::fromUtf8( "fActionOnlyShowEnabledServers" ) );
-    fActionOnlyShowEnabledServers->setCheckable( true );
-    fActionOnlyShowEnabledServers->setText( QCoreApplication::translate( "CPlayStateCompare", "Only Show Syncable Users?", nullptr ) );
-    QIcon icon6;
-    icon6.addFile( QString::fromUtf8( ":/resources/showEnabled.png" ), QSize(), QIcon::Normal, QIcon::Off );
-    fActionOnlyShowEnabledServers->setIcon( icon6 );
+    fActionSearchForAll = new QAction( this );
+    fActionSearchForAll->setObjectName( QString::fromUtf8( "fActionProcess" ) );
+    QIcon icon3;
+    icon3.addFile( QString::fromUtf8( ":/SABUtilsResources/search.png" ), QSize(), QIcon::Normal, QIcon::Off );
+    Q_ASSERT( !icon3.isNull() );
+    fActionSearchForAll->setIcon( icon3 );
+    fActionSearchForAll->setText( QCoreApplication::translate( "CPlayStateCompare", "Search for All Missing", nullptr ) );
+    fActionSearchForAll->setToolTip( QCoreApplication::translate( "CPlayStateCompare", "Search for All Missing", nullptr ) );
 
     fToolBar = new QToolBar( this );
     fToolBar->setObjectName( QString::fromUtf8( "fToolBar" ) );
 
-    fToolBar->addAction( fActionOnlyShowEnabledServers );
+    fToolBar->addAction( fActionSearchForAll );
 
-    connect( fActionOnlyShowEnabledServers, &QAction::triggered, this, &CMissingEpisodes::slotToggleShowEnabledServers );
+    connect( fActionSearchForAll, &QAction::triggered, this, &CMissingEpisodes::slotSearchForAllMissing );
 }
 
 bool CMissingEpisodes::prepForClose()
@@ -186,7 +187,6 @@ bool CMissingEpisodes::prepForClose()
 
 void CMissingEpisodes::loadSettings()
 {
-    fActionOnlyShowEnabledServers->setChecked( fSettings->onlyShowEnabledServers() );
 }
 
 bool CMissingEpisodes::okToClose()
@@ -212,7 +212,14 @@ void CMissingEpisodes::slotCanceled()
 void CMissingEpisodes::slotSettingsChanged()
 {
     loadServers();
-    slotToggleShowEnabledServers();
+    showPrimaryServer();
+}
+
+void CMissingEpisodes::showPrimaryServer()
+{
+    NSABUtils::CAutoWaitCursor awc;
+    fServerFilterModel->setOnlyShowEnabledServers( true );
+    fServerFilterModel->setOnlyShowPrimaryServer( true );
 }
 
 void CMissingEpisodes::slotModelDataChanged()
@@ -276,7 +283,6 @@ std::shared_ptr< CTabUIInfo > CMissingEpisodes::getUIInfo() const
     retVal->fMenus = {};
     retVal->fToolBars = { fToolBar };
 
-    retVal->fActions[ "Filter" ] = std::make_pair( false, QList< QPointer< QAction > >( { fActionOnlyShowEnabledServers }  ) );
     return retVal;
 }
 
@@ -315,18 +321,6 @@ void CMissingEpisodes::slotMissingEpisodesLoaded()
     sortDataTrees();
 }
 
-void CMissingEpisodes::slotToggleShowEnabledServers()
-{   
-    fSettings->setOnlyShowEnabledServers( fActionOnlyShowEnabledServers->isChecked() );
-    showEnabledServers();
-}
-
-void CMissingEpisodes::showEnabledServers()
-{
-    NSABUtils::CAutoWaitCursor awc;
-    fServerFilterModel->setOnlyShowEnabledServers( fSettings->onlyShowEnabledServers() );
-}
-
 std::shared_ptr< CMediaData > CMissingEpisodes::getMediaData( QModelIndex idx ) const
 {
     if ( idx.model() != fMediaModel.get() )
@@ -361,4 +355,28 @@ void CMissingEpisodes::slotMediaContextMenu( CDataTree * dataTree, const QPoint 
              } );
 
     menu.exec( dataTree->dataTree()->mapToGlobal( pos ) );
+}
+
+void CMissingEpisodes::slotSearchForAllMissing()
+{
+    for ( auto && currTree : fDataTrees )
+    {
+        auto treeModel = currTree->model();
+
+        auto rowCount = treeModel->rowCount();
+        for ( int ii = 0; ii < rowCount; ++ii )
+        {
+            auto index = treeModel->index( ii, 0 );
+            auto premiereDate = index.data( CMediaModel::ECustomRoles::ePremiereDateRole ).toDate();
+            if ( premiereDate > QDate::currentDate() )
+                continue;
+
+            auto mediaData = getMediaData( index );
+            if ( !mediaData )
+                continue;
+
+            auto url = mediaData->getSearchURL();
+            QDesktopServices::openUrl( url );
+        }
+    }
 }

@@ -49,7 +49,15 @@ QVariant CServerModel::data( const QModelIndex & index, int role /*= Qt::Display
             return serverInfo->icon();
         return {};
     }
-    if ( role == ECustomRoles::eEnabledRole )
+    else if ( role == ECustomRoles::eIsPrimaryServerSet )
+    {
+        return !fSettings->primaryServer().isEmpty();
+    }
+    else if ( role == ECustomRoles::eIsPrimaryServer )
+    {
+        return fSettings->primaryServer() == serverInfo->displayName();
+    }
+    else if ( role == ECustomRoles::eEnabledRole )
     {
         return serverInfo->isEnabled();
     }
@@ -140,15 +148,23 @@ bool CServerFilterModel::filterAcceptsRow( int source_row, const QModelIndex & s
 {
     if ( !sourceModel() )
         return true;
-    if ( !fOnlyShowEnabled )
+    if ( !fOnlyShowEnabled && !fOnlyShowPrimaryServer )
         return true;
     auto childIdx = sourceModel()->index( source_row, 0, source_parent );
+    if ( fOnlyShowPrimaryServer && childIdx.data( CServerModel::eIsPrimaryServerSet ).toBool() )
+        return childIdx.data( CServerModel::eIsPrimaryServer ).toBool();
     return childIdx.data( CServerModel::eEnabledRole ).toBool();
 }
 
 void CServerFilterModel::setOnlyShowEnabledServers( bool value )
 {
     fOnlyShowEnabled = value;
+    invalidateFilter();
+}
+
+void CServerFilterModel::setOnlyShowPrimaryServer( bool value )
+{
+    fOnlyShowPrimaryServer = value;
     invalidateFilter();
 }
 

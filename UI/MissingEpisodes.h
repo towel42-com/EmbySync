@@ -83,15 +83,15 @@ public Q_SLOTS:
     virtual void slotSettingsChanged() override;
     void slotMediaContextMenu( CDataTree * dataTree, const QPoint & pos );
     virtual void slotSetCurrentServer( const QModelIndex & index );
+    void slotSearchForAllMissing();
 private Q_SLOTS:
     void slotSearchByShowNameChanged();
     void slotSearchByDateChanged();
     void slotCurrentServerChanged( const QModelIndex & index );
     void slotMissingEpisodesLoaded();
-    void slotToggleShowEnabledServers();
     void slotMediaChanged();
 private:
-    void showEnabledServers();
+    void showPrimaryServer();
     std::shared_ptr< CServerInfo > getCurrentServerInfo() const;
     std::shared_ptr< CServerInfo > getServerInfo( QModelIndex idx ) const;
 
@@ -102,7 +102,7 @@ private:
 
     std::unique_ptr< Ui::CMissingEpisodes > fImpl;
 
-    QPointer< QAction > fActionOnlyShowEnabledServers;
+    QPointer< QAction > fActionSearchForAll;
     QPointer< QToolBar > fToolBar{ nullptr };
 
     CServerFilterModel * fServerFilterModel { nullptr };

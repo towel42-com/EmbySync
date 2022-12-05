@@ -145,6 +145,9 @@ public:
 
     void addRecentProject( const QString & fileName );
     QStringList recentProjectList() const;
+
+    void setPrimaryServer( const QString & serverName );
+    QString primaryServer() const;
 private:
     QVariant getValue( const QJsonObject & data, const QString & fieldName, const QVariant & defaultValue ) const;
 
@@ -189,6 +192,8 @@ private:
 
     QStringList fSyncUserList;
     std::set< QString > fIgnoreShowList;
+
+    QString fPrimaryServer;
 
     std::shared_ptr< CServerModel > fServerModel;
     bool fChanged{ false };
