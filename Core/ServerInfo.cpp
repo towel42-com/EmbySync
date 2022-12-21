@@ -99,11 +99,11 @@ QUrl CServerInfo::getUrl( const QString & extraPath, const std::list< std::pair<
     auto retVal = QUrl( path );
 
     QUrlQuery query;
-    query.addQueryItem( "api_key", fAPIKey );
     for ( auto && ii : queryItems )
     {
         query.addQueryItem( ii.first, ii.second );
     }
+    query.addQueryItem( "api_key", fAPIKey );
     retVal.setQuery( query );
 
     //qDebug() << retVal;

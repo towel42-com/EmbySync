@@ -5,7 +5,7 @@
 #include "Settings.h"
 #include "ServerInfo.h"
 #include "ServerModel.h"
-
+#include "SABUtils/StringUtils.h"
 #include "ProgressSystem.h"
 
 #include <QJsonObject>
@@ -123,6 +123,14 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
         auto providerInfo = getProviderInfoForColumn( index.column() );
         return providerInfo.operator bool();
     }
+    if ( role == ECustomRoles::eIsNameColumnRole )
+    {
+        return perServerColumn( index.column() ) == eName;
+    }
+    if ( role == ECustomRoles::eIsPremiereDateColumnRole )
+    {
+        return perServerColumn( index.column() ) == ePremiereDate;
+    }
     if ( role == ECustomRoles::eShowItemRole )
     {
         if ( !mediaData )
@@ -140,6 +148,10 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
     if ( role == ECustomRoles::eSeriesNameRole )
     {
         return mediaData->seriesName();
+    }
+    if ( role == ECustomRoles::eOnServerRole )
+    {
+        return mediaData->onServer();
     }
 
 
@@ -183,7 +195,13 @@ QVariant CMediaModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
     {
         case eName: return isValid ? mediaData->name() : tr( "%1 - <Missing from Server>" ).arg( mediaData->name() );
         case eType: return mediaData->mediaType();
-        case ePremiereDate: return mediaData->premiereDate();
+        case ePremiereDate:
+        {
+            if ( ( mediaData->premiereDate().month() ) == 1 && ( mediaData->premiereDate().day() == 1 ) )
+                return mediaData->premiereDate().year();
+            else
+                return mediaData->premiereDate();
+        }
         case eMediaID: return isValid ? mediaData->getMediaID( serverName ) : QString();
         case eFavorite: return isValid ? ( mediaData->isFavorite( serverName ) ? "Yes" : "No" )  : QString();
         case ePlayed: return isValid ? ( mediaData->isPlayed( serverName ) ? "Yes" : "No" )  : QString();
@@ -415,6 +433,34 @@ void CMediaModel::loadMergedMedia( std::shared_ptr<CProgressSystem> progressSyst
     progressSystem->popState();
 }
 
+void CMediaModel::addMovieStub( const QString & name, int year )
+{
+    for ( auto && ii : fData )
+    {
+        if ( ( ii->name().toLower() == name.toLower() ) && ( ii->premiereDate().year() == year ) )
+            return;
+    }
+
+    auto mediaData = std::make_shared< CMediaData >( name, year, "Movie" );
+    beginInsertRows( QModelIndex(), static_cast< int >( fData.size() ), static_cast<int>( fData.size() ) );
+    fMediaToPos[ mediaData ] = fData.size();
+    fData.push_back( mediaData );
+    endInsertRows();
+}
+
+std::shared_ptr< CMediaCollection > CMediaModel::findCollection( const QString & serverName, const QString & name )
+{
+    auto pos = fCollections.find( serverName );
+    if ( pos == fCollections.end() )
+        return {};
+    for ( auto && ii : ( *pos ).second )
+    {
+        if ( ii->name() == name )
+            return ii;
+    }
+    return {};
+}
+
 std::unordered_set< QString >  CMediaModel::getKnownShows() const
 {
     std::unordered_set< QString > knownShows;
@@ -425,6 +471,16 @@ std::unordered_set< QString >  CMediaModel::getKnownShows() const
         knownShows.insert( ii->seriesName() );
     }
     return knownShows;
+}
+
+std::shared_ptr< CMediaData > CMediaModel::findMedia( const QString & name, int year ) const
+{
+    for ( auto && ii : fAllMedia )
+    {
+        if ( ii->isMatch( name, year ) )
+            return ii;
+    }
+    return {};
 }
 
 QVariant CMediaModel::getColor( const QModelIndex & index, const QString & serverName, bool background ) const
@@ -667,3 +723,410 @@ QVariant CMediaMissingFilterModel::data( const QModelIndex & index, int role /*=
     return {};
 }
 
+//////
+CMovieSearchFilterModel::CMovieSearchFilterModel( std::shared_ptr< CSettings > settings, QObject * parent ) :
+    QSortFilterProxyModel( parent ),
+    fSettings( settings )
+{
+    setDynamicSortFilter( false );
+    connect( this, &QSortFilterProxyModel::sourceModelChanged,
+             [this]()
+             {
+                 connect( dynamic_cast<CMediaModel *>( sourceModel() ), &CMediaModel::sigSettingsChanged,
+                          [this]()
+                          {
+                              invalidateFilter();
+                          } );
+             } );
+}
+
+
+void CMovieSearchFilterModel::addSearchMovie( const QString & name, int year, bool invalidate )
+{
+    fSearchForMovies.insert( { name, year } );
+    if ( invalidate )
+        invalidateFilter();
+}
+
+void CMovieSearchFilterModel::finishedAddingSearchMovies()
+{
+    invalidateFilter();
+}
+
+void CMovieSearchFilterModel::addMissingMoviesToSourceModel()
+{
+    auto mediaModel = dynamic_cast<CMediaModel *>( sourceModel() );
+    if ( !mediaModel )
+        return;
+
+    for ( auto && ii : fSearchForMovies )
+    {
+        mediaModel->addMovieStub( ii.fName, ii.fYear );
+    }
+}
+
+bool CMovieSearchFilterModel::filterAcceptsRow( int source_row, const QModelIndex & source_parent ) const
+{
+    if ( !sourceModel() )
+        return true;
+    auto childIdx = sourceModel()->index( source_row, 0, source_parent );
+    auto name = childIdx.data( CMediaModel::eMediaNameRole ).toString();
+    auto date = childIdx.data( CMediaModel::ePremiereDateRole ).toDate();
+    if ( name.isEmpty() || !date.isValid() )
+        return false;
+
+    auto year = date.year();
+    auto pos = fSearchForMovies.find( { name, year } );
+    //return pos != fSearchForMovies.end();
+
+    if ( pos == fSearchForMovies.end() )
+        return false;
+
+    auto onServer = childIdx.data( CMediaModel::ECustomRoles::eOnServerRole ).toBool();
+    if ( onServer )
+        return false;
+    return true;
+}
+
+bool CMovieSearchFilterModel::filterAcceptsColumn( int source_column, const QModelIndex & source_parent ) const
+{
+    auto idx = sourceModel()->index( 0, source_column, source_parent );
+    if ( idx.isValid() )
+    {
+        bool retVal = ( source_column != 1 ) && !idx.data( CMediaModel::ECustomRoles::eIsProviderColumnRole ).toBool();
+        if ( retVal )
+            retVal = idx.data( CMediaModel::ECustomRoles::eIsNameColumnRole ).toBool() || idx.data( CMediaModel::ECustomRoles::eIsPremiereDateColumnRole ).toBool();
+        //qDebug() << source_column << retVal;
+        return retVal;
+    }
+    return true;
+}
+
+void CMovieSearchFilterModel::sort( int column, Qt::SortOrder order /*= Qt::AscendingOrder */ )
+{
+    QSortFilterProxyModel::sort( column, order );
+}
+
+bool CMovieSearchFilterModel::lessThan( const QModelIndex & source_left, const QModelIndex & source_right ) const
+{
+    return QSortFilterProxyModel::lessThan( source_left, source_right );
+}
+
+QVariant CMovieSearchFilterModel::data( const QModelIndex & index, int role /*= Qt::DisplayRole */ ) const
+{
+    if ( ( role != Qt::ForegroundRole ) && ( role != Qt::BackgroundRole ) )
+        return QSortFilterProxyModel::data( index, role );
+
+    auto onServer = index.data( CMediaModel::ECustomRoles::eOnServerRole ).toBool();
+    if ( onServer )
+        return {};
+
+    // reverse for black background
+    if ( role == Qt::ForegroundRole )
+    {
+        auto color = fSettings->dataMissingColor( false );
+        if ( !color.isValid() )
+            return {};
+        return color;
+    }
+
+    if ( role == Qt::BackgroundRole )
+    {
+        auto color = fSettings->dataMissingColor( true );
+        if ( !color.isValid() )
+            return {};
+        return color;
+    }
+    return {};
+}
+
+QString CMovieSearchFilterModel::summary() const
+{
+    return tr( "Searching for: %1 Missing: %2" ).arg( static_cast<int>( fSearchForMovies.size() ) ).arg( rowCount() );
+}
+
+CCollectionsModel::CCollectionsModel( std::shared_ptr< CMediaModel > mediaModel ) : 
+    QAbstractItemModel( nullptr ),
+    fMediaModel( mediaModel )
+{
+}
+
+SIndexPtr * CCollectionsModel::idxPtr( void * ptr, bool isCollection ) const
+{
+    auto pos = fIndexPtrs.find( ptr );
+    if ( pos != fIndexPtrs.end() )
+        return ( *pos ).second;
+    auto curr = new SIndexPtr( ptr, isCollection );
+    fIndexPtrs[ ptr ] = curr;
+    return curr;
+}
+
+SIndexPtr * CCollectionsModel::idxPtr( SMediaCollectionData * media ) const
+{
+    return idxPtr( media, false );
+}
+
+SIndexPtr * CCollectionsModel::idxPtr( CMediaCollection * mediaCollection ) const
+{
+    return idxPtr( mediaCollection, true );
+}
+
+CMediaCollection * CCollectionsModel::collection( const QModelIndex & idx ) const
+{
+    auto idxPtr = reinterpret_cast<SIndexPtr*>( idx.internalPointer() );
+    if ( !idxPtr )
+        return nullptr;
+    if ( !idxPtr->fIsCollection )
+        return nullptr;
+    return reinterpret_cast<CMediaCollection *>( idxPtr->fPtr );
+}
+
+SMediaCollectionData * CCollectionsModel::media( const QModelIndex & idx ) const
+{
+    auto idxPtr = reinterpret_cast<SIndexPtr *>( idx.internalPointer() );
+    if ( !idxPtr )
+        return nullptr;
+    if ( idxPtr->fIsCollection )
+        return nullptr;
+    return reinterpret_cast<SMediaCollectionData *>( idxPtr->fPtr );
+}
+
+QModelIndex CCollectionsModel::index( int row, int column, const QModelIndex & parent /*= QModelIndex() */ ) const
+{
+    if ( parent.isValid() )
+    {
+        if ( isMedia( parent ) )
+            return {};
+        if ( isCollection( parent ) )
+        {
+            auto parentCollection = collection( parent );
+            if ( !parentCollection )
+                return {};
+
+            return createIndex( row, column, idxPtr( parentCollection->child( row ).get() ) );
+        }
+        return {};
+    }
+    else
+        return createIndex( row, column, idxPtr( fCollections[ row ].get() ) );
+}
+
+QModelIndex CCollectionsModel::parent( const QModelIndex & child ) const
+{
+    if ( !child.isValid() )
+        return {};
+    
+    auto collection = this->collection( child );
+    auto media = this->media( child );
+    Q_ASSERT( collection || media );
+
+    if ( collection )
+        return {};
+
+    if ( !media )
+        return {};
+    return createIndex( media->fCollection->collectionNum(), 0, idxPtr( fCollections[ media->fCollection->collectionNum() ].get() ) );
+}
+
+int CCollectionsModel::rowCount( const QModelIndex & parent /*= QModelIndex() */ ) const
+{
+    if ( parent.isValid() )
+    {
+        if ( parent.column() != 0 )
+            return 0;
+
+        if ( this->isMedia( parent ) )
+            return 0;
+
+        auto parentCollection = collection( parent );
+        if ( !parentCollection )
+            return 0;
+
+        auto retVal = parentCollection->childCount();
+        return retVal;
+    }
+    else
+    {
+        return static_cast<int>( fCollections.size() );
+    }
+}
+
+bool CCollectionsModel::isMedia( const QModelIndex & parent ) const
+{
+    return parent.isValid() && parent.parent().isValid();
+}
+
+bool CCollectionsModel::isCollection( const QModelIndex & parent ) const
+{
+    return !parent.isValid() || !parent.parent().isValid();
+}
+
+QString CCollectionsModel::summary() const
+{
+    int numMovies = 0;
+    int numMissing = 0;
+    for ( auto && ii : fCollections )
+    {
+        numMovies += ii->numMovies();
+        numMissing += ii->numMissing();
+    }
+
+    return tr( "Searching for: %1 Missing: %2" ).arg( numMovies ).arg( numMissing );
+}
+
+void CCollectionsModel::clear()
+{
+    beginResetModel();
+    fCollections.clear();
+    fIndexPtrs.clear();
+    endResetModel();
+}
+
+void CCollectionsModel::updateCollections( const QString & serverName, std::shared_ptr< CMediaModel > model )
+{
+    auto update = false;
+    for ( auto && ii : fCollections )
+    {
+        auto realCollection = fMediaModel->findCollection( serverName, ii->name() );
+        if ( realCollection )
+            update = ii->updateWithRealCollection( realCollection ) || update;
+    }
+    if ( update )
+    {
+        beginResetModel();
+        endResetModel();
+
+    }
+}
+
+void CCollectionsModel::createCollections( std::shared_ptr<const CServerInfo> serverInfo, std::shared_ptr< CSyncSystem > syncSystem )
+{
+    for ( auto && ii : fCollections )
+    {
+        if ( !ii->collectionExists() )
+        {
+            ii->createCollection( serverInfo, syncSystem );
+        }
+    }
+}
+
+void CCollectionsModel::slotMediaModelDataChanged()
+{
+    bool changed = false;
+    for ( auto && ii : fCollections )
+        changed = ii->updateMedia( fMediaModel ) || changed;
+    if ( changed )
+    {
+        beginResetModel();
+        endResetModel();
+    }
+}
+
+int CCollectionsModel::columnCount( const QModelIndex & parent /*= QModelIndex()*/  ) const
+{
+    if ( !parent.isValid() || ( parent.column() == 0 ) )
+        return 4;
+    return 0;
+}
+
+QVariant CCollectionsModel::data( const QModelIndex & index, int role /*= Qt::DisplayRole */ ) const
+{
+    if ( !index.isValid() )
+        return {};
+
+    if ( role == Qt::DisplayRole )
+    {
+        if ( isCollection( index ) )
+        {
+            auto collection = this->collection( index );
+            if ( !collection )
+                return {};
+            return collection->data( index.column(), role );
+        }
+        else if ( isMedia( index ) )
+        {
+            auto media = this->media( index );
+            if ( !media )
+                return {};
+            return media->data( index.column(), role );
+        }
+    }
+    return {};
+}
+
+bool CCollectionsModel::hasChildren( const QModelIndex & parent ) const
+{
+    return QAbstractItemModel::hasChildren( parent );
+}
+
+
+QVariant CCollectionsModel::headerData( int section, Qt::Orientation orientation, int role /* = Qt::DisplayRole */ ) const
+{
+    if ( ( orientation != Qt::Orientation::Horizontal ) || ( role != Qt::DisplayRole ) )
+        return QAbstractItemModel::headerData( section, orientation, role );
+    switch ( section )
+    {
+        case 0: return tr( "Name" );
+        case 1: return tr( "Year" );
+        case 2: return tr( "Collection Exists" );
+        case 3: return tr( "Missing Media" );
+    }
+    return {};
+}
+
+void CMediaModel::addCollection( const QString & serverName, const QString & name, const QString & id, const std::list< std::shared_ptr< CMediaData > > & items )
+{
+    auto collection = std::make_shared< CMediaCollection >( serverName, name, id, static_cast<int>( fCollections[ serverName ].size() ) );
+    fCollections[ serverName ].push_back( collection );
+    collection->setItems( items );
+}
+
+std::pair< QModelIndex, std::shared_ptr< CMediaCollection > > CCollectionsModel::addCollection( const QString & server, const QString & name )
+{
+    beginInsertRows( QModelIndex(), rowCount(), rowCount() );
+    auto curr = std::make_shared< CMediaCollection >( server, name, QString(), static_cast< int >( fCollections.size() ) );
+    fCollections.push_back( curr );
+    endInsertRows();
+    auto idx = index( rowCount() - 1, 0, {} );
+
+    Q_ASSERT( curr.get() == this->collection( idx ) );
+    return { idx, curr };
+}
+
+std::shared_ptr< SMediaCollectionData > CCollectionsModel::addMovie( int rank, const QString & name, int year, const QModelIndex & collectionIndex )
+{
+    Q_ASSERT( collectionIndex.isValid() );
+    if ( !collectionIndex.isValid() )
+        return {};
+
+    auto collection = this->collection( collectionIndex );
+    Q_ASSERT( collection );
+    if ( !collection )
+        return {};
+
+    bool sizeIncreased = ( rank >= collection->childCount() );
+    if ( sizeIncreased )
+        beginInsertRows( collectionIndex, collection->childCount(), rank - 1 );
+    auto retVal = collection->addMovie( rank, name, year );
+    if ( sizeIncreased )
+        endInsertRows();
+    else
+        emit dataChanged( index( rank - 1, 0, collectionIndex ), index( rank - 1, columnCount( collectionIndex ) - 1, collectionIndex ) );
+    Q_ASSERT( hasChildren( collectionIndex ) );
+    
+    auto rc = rowCount( collectionIndex );
+    if ( sizeIncreased )
+    {
+        Q_ASSERT( rc == ( rank ) );
+    }
+    else
+        Q_ASSERT( ( rank + 1 ) <= rc );
+    return retVal;
+}
+
+SIndexPtr::SIndexPtr( void * ptr, bool isCollection ) :
+    fPtr( ptr ),
+    fIsCollection( isCollection )
+{
+    Q_ASSERT( ptr );
+}

@@ -50,6 +50,7 @@
 #include <QTimer>
 #include <QToolBar>
 #include <QCloseEvent>
+#include <QTreeView>
 
 CUserInfoCompare::CUserInfoCompare( QWidget * parent )
     : CTabPageBase( parent ),

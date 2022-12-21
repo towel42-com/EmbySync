@@ -36,6 +36,7 @@ class CSettings;
 class CUserData;
 class QAbstractItemModel;
 class CServerInfo;
+class QTreeView;
 class CDataTree : public QWidget
 {
     Q_OBJECT
@@ -60,7 +61,7 @@ public:
 
     bool hasCurrentItem() const;
 
-    QWidget * dataTree() const;
+    QTreeView * dataTree() const;
     std::shared_ptr< const CServerInfo > serverInfo() const { return fServerInfo; }
 Q_SIGNALS:
     void sigCurrChanged( const QModelIndex & idx );

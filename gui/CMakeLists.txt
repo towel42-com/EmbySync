@@ -32,6 +32,7 @@ add_executable( ${PROJECT_NAME} WIN32
                 ${_PROJECT_DEPENDENCIES} 
                 ${_CMAKE_MODULE_FILES}
                 application.rc 
+                ../afi/movies.json
           )
 if ( NOT DEPLOYQT_EXECUTABLE )
     message( FATAL_ERROR "DEPLOYQT_EXECUTABLE not set" )

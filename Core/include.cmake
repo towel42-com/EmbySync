@@ -22,6 +22,7 @@
 
 set(qtproject_SRCS
     MediaData.cpp
+    MediaCollection.cpp
     MediaServerData.cpp
     MediaModel.cpp
     MergeMedia.cpp
@@ -45,6 +46,7 @@ set(qtproject_H
 
 set(project_H
     MediaData.h
+    MediaCollection.h
     MediaServerData.h
     MergeMedia.h
     ProgressSystem.h

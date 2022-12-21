@@ -73,6 +73,11 @@ QString toString( ERequestType request )
         case ERequestType::eSetConnectedID: return "SetConnectedID";
         case ERequestType::eUpdateUserData: return "UpdateUserData";
         case ERequestType::eGetMissingEpisodes: return "GetMissingEpisodes";
+        case ERequestType::eGetAllMovies: return "GetAllMovies";
+        case ERequestType::eGetAllCollections: return "GetAllCollections";
+        case ERequestType::eGetAllCollectionsEx: return "GetAllCollectionsEx";
+        case ERequestType::eGetCollection: return "GetCollection";
+        case ERequestType::eCreateCollection: return "CreateCollection";
     }
     return {};
 }
@@ -236,6 +241,90 @@ bool CSyncSystem::loadMissingEpisodes( std::shared_ptr< CUserData > userData, st
 
     emit sigAddToLog( EMsgType::eInfo, QString( "Loading Missing Episodes on server '%1' using admin user '%2'" ).arg( serverInfo->displayName() ).arg( userData->userName( serverInfo->keyName() ) ) );
     requestMissingEpisodes( serverInfo->keyName(), minPremiereDate, maxPremiereDate );
+    return true;
+}
+
+bool CSyncSystem::loadAllMovies( std::shared_ptr<const CServerInfo> serverInfo )
+{
+    for ( auto && userInfo : *fUsersModel )
+    {
+        if ( userInfo->isAdmin( serverInfo->keyName() ) )
+        {
+            return loadAllMovies( userInfo, serverInfo );
+        }
+    }
+    return false;
+}
+
+bool CSyncSystem::loadAllMovies( std::shared_ptr< CUserData > userData, std::shared_ptr<const CServerInfo> serverInfo )
+{
+    if ( !serverInfo || !serverInfo->isEnabled() )
+        return false;
+
+    if ( !userData->isAdmin( serverInfo->keyName() ) )
+        return false;
+
+    if ( !setCurrentUser( ETool::eMissingMovies, userData, false ) )
+        return false;
+
+    emit sigAddToLog( EMsgType::eInfo, QString( "Loading All Movies on server '%1' using admin user '%2'" ).arg( serverInfo->displayName() ).arg( userData->userName( serverInfo->keyName() ) ) );
+    requestAllMovies( serverInfo->keyName() );
+    return true;
+}
+
+bool CSyncSystem::loadAllCollections( std::shared_ptr<const CServerInfo> serverInfo )
+{
+    for ( auto && userInfo : *fUsersModel )
+    {
+        if ( userInfo->isAdmin( serverInfo->keyName() ) )
+        {
+            return loadAllCollections( userInfo, serverInfo );
+        }
+    }
+    return false;
+}
+
+bool CSyncSystem::loadAllCollections( std::shared_ptr< CUserData > userData, std::shared_ptr<const CServerInfo> serverInfo )
+{
+    if ( !serverInfo || !serverInfo->isEnabled() )
+        return false;
+
+    if ( !userData->isAdmin( serverInfo->keyName() ) )
+        return false;
+
+    if ( !setCurrentUser( ETool::eMissingCollections, userData, false ) )
+        return false;
+
+    emit sigAddToLog( EMsgType::eInfo, QString( "Loading All Collections on server '%1' using admin user '%2'" ).arg( serverInfo->displayName() ).arg( userData->userName( serverInfo->keyName() ) ) );
+    requestAllCollections( serverInfo->keyName() );
+    return true;
+}
+
+bool CSyncSystem::createCollection( std::shared_ptr<const CServerInfo> serverInfo, const QString & collectionName, const std::list< std::shared_ptr< CMediaData > > & items )
+{
+    for ( auto && userInfo : *fUsersModel )
+    {
+        if ( userInfo->isAdmin( serverInfo->keyName() ) )
+        {
+            return createCollection( userInfo, serverInfo, collectionName, items );
+        }
+    }
+    return false;
+}
+
+bool CSyncSystem::createCollection( std::shared_ptr< CUserData > userData, std::shared_ptr<const CServerInfo> serverInfo, const QString & collectionName, const std::list< std::shared_ptr< CMediaData > > & items )
+{
+    if ( !serverInfo || !serverInfo->isEnabled() )
+        return false;
+
+    if ( !userData->isAdmin( serverInfo->keyName() ) )
+        return false;
+
+    if ( !setCurrentUser( ETool::eMissingCollections, userData, false ) )
+        return false;
+
+    emit sigAddToLog( EMsgType::eInfo, QString( "Creating Collection '%3' on server '%1' using admin user '%2'" ).arg( serverInfo->displayName() ).arg( userData->userName( serverInfo->keyName() ) ).arg( collectionName ) );
+    requestCreateCollection( serverInfo->keyName(), collectionName, items );
     return true;
 }
 
@@ -456,6 +545,11 @@ void CSyncSystem::selectiveProcessUsers( const QString & selectedServer )
         bool dataProcessed = processUser( ii, selectedServer );
         (void)dataProcessed;
     }
+}
+
+void CSyncSystem::findMovieOnServer( const QString & /*movieName*/, int /*year*/ )
+{
+
 }
 
 bool CSyncSystem::processUser( std::shared_ptr< CUserData > userData, const QString & selectedServer )
@@ -685,8 +779,15 @@ void CSyncSystem::slotMergeMedia( ERequestType requestType )
     {
         case ERequestType::eGetMissingEpisodes:
             emit sigMissingEpisodesLoaded();
+            emit sigUserMediaLoaded();
+            break;
+        case ERequestType::eGetAllMovies:
+            emit sigAllMoviesLoaded();
+            emit sigUserMediaLoaded();
+            break;
         default:
             emit sigUserMediaLoaded();
+            break;
     }
 }
 
@@ -824,6 +925,15 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
             case ERequestType::eGetMissingEpisodes:
                 emit sigMissingEpisodesLoaded();
                 break;
+            case ERequestType::eGetAllMovies:
+                emit sigAllMoviesLoaded();
+                break;
+            case ERequestType::eGetAllCollections:
+            case ERequestType::eGetAllCollectionsEx:
+                break;
+            case ERequestType::eGetCollection:
+                emit sigAllCollectionsLoaded();
+                break;
             case ERequestType::eNone:
             case ERequestType::eReloadMediaData:
             case ERequestType::eUpdateUserMediaData:
@@ -835,6 +945,7 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
             case ERequestType::eUpdateUserData:
             case ERequestType::eGetServerHomePage:
             case ERequestType::eGetServerIcon:
+            case ERequestType::eCreateCollection:
                 break;
         }
 
@@ -904,6 +1015,53 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
             break;
         }
 
+        case ERequestType::eGetAllMovies:
+        {
+            if ( !fProgressSystem->wasCanceled() )
+            {
+                handleAllMoviesResponse( serverName, data );
+                if ( isLastRequestOfType( ERequestType::eGetAllMovies ) )
+                {
+                    fProgressSystem->resetProgress();
+                    slotMergeMedia( requestType );
+                }
+            }
+            break;
+        }
+        case ERequestType::eGetAllCollections:
+        {
+            if ( !fProgressSystem->wasCanceled() )
+            {
+                handleAllCollectionsResponse( serverName, data );
+            }
+            break;
+        }
+        case ERequestType::eGetAllCollectionsEx:
+        {
+            if ( !fProgressSystem->wasCanceled() )
+            {
+                handleAllCollectionsExResponse( serverName, data );
+                if ( isLastRequestOfType( ERequestType::eGetAllCollectionsEx ) )
+                {
+                    fProgressSystem->resetProgress();
+                }
+            }
+            break;
+        }
+        case ERequestType::eGetCollection:
+        {
+            if ( !fProgressSystem->wasCanceled() )
+            {
+                auto extraStrings = extraData.toStringList();
+                handleGetCollectionResponse( serverName, extraStrings.front(), extraStrings.back(), data );
+                if ( isLastRequestOfType( ERequestType::eGetCollection ) )
+                {
+                    emit sigAllCollectionsLoaded();
+                    fProgressSystem->resetProgress();
+                }
+            }
+            break;
+        }
         case ERequestType::eReloadMediaData:
         {
             handleReloadMediaResponse( serverName, data, extraData.toString() );
@@ -940,6 +1098,12 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
             handleSetConnectedID( serverName );
             break;
         }
+        case ERequestType::eCreateCollection:
+        {
+            handleCreateCollection( serverName, data );
+            break;
+        }
+
     }
     postHandleRequest( reply, serverName, requestType );
 }
@@ -1400,7 +1564,7 @@ void CSyncSystem::requestGetMediaList( const QString & serverName )
     setRequestType( reply, ERequestType::eGetMediaList );
 }
 
-void CSyncSystem::handleGetMediaListResponse( const QString & serverName, const QByteArray & data, const QString & progressTitle, const QString & logMsg, const QString & partialLogMsg )
+std::list< std::shared_ptr< CMediaData > > CSyncSystem::handleGetMediaListResponse( const QString & serverName, const QByteArray & data, const QString & progressTitle, const QString & logMsg, const QString & partialLogMsg )
 {
     QJsonParseError error;
     auto doc = QJsonDocument::fromJson( data, &error );
@@ -1408,28 +1572,32 @@ void CSyncSystem::handleGetMediaListResponse( const QString & serverName, const 
     {
         if ( fUserMsgFunc )
             fUserMsgFunc( EMsgType::eError, tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ) );
-        return;
+        return {};
     }
 
     //qDebug() << doc.toJson();
     if ( !doc[ "Items" ].isArray() )
     {
         fMediaModel->loadMedia( serverName, doc.object() );
-        return;
+        return {};
     }
 
     auto mediaList = doc[ "Items" ].toArray();
-    fProgressSystem->pushState();
+    auto showProgress = mediaList.count() > 10;
+    if ( showProgress )
+    {
+        fProgressSystem->pushState();
 
-    fProgressSystem->resetProgress();
-    fProgressSystem->setTitle( progressTitle );
-    fProgressSystem->setMaximum( mediaList.count() );
-
+        fProgressSystem->resetProgress();
+        fProgressSystem->setTitle( progressTitle );
+        fProgressSystem->setMaximum( mediaList.count() );
+    }
     emit sigAddToLog( EMsgType::eInfo, logMsg.arg( serverName ).arg( mediaList.count() ) );
     if ( fSettings->maxItems() > 0 )
         emit sigAddToLog( EMsgType::eInfo, partialLogMsg.arg( fSettings->maxItems() ) );
 
     int curr = 0;
+    std::list< std::shared_ptr< CMediaData > > retVal;
     //fMediaModel->beginBatchLoad();
     for ( auto && ii : mediaList )
     {
@@ -1440,18 +1608,24 @@ void CSyncSystem::handleGetMediaListResponse( const QString & serverName, const 
         }
         curr++;
 
-        if ( fProgressSystem->wasCanceled() )
-            break;
-        fProgressSystem->incProgress();
+        if ( showProgress )
+        {
+            if ( fProgressSystem->wasCanceled() )
+                break;
+            fProgressSystem->incProgress();
+        }
 
         auto media = ii.toObject();
-
-        fMediaModel->loadMedia( serverName, media );
+        retVal.push_back( fMediaModel->loadMedia( serverName, media ) );
     }
     //fMediaModel->endBatchLoad();
-    fProgressSystem->resetProgress();
-    fProgressSystem->popState();
-    fProgressSystem->incProgress();
+    if ( showProgress )
+    {
+        fProgressSystem->resetProgress();
+        fProgressSystem->popState();
+        fProgressSystem->incProgress();
+    }
+    return retVal;
 }
 
 void CSyncSystem::handleGetMediaListResponse( const QString & serverName, const QByteArray & data )
@@ -1481,7 +1655,6 @@ void CSyncSystem::requestMissingEpisodes( const QString & serverName, const QDat
 
     // ItemsService
     auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Users/%1/Items" ).arg( currUser().second->getUserID( serverName ) ), queryItems );
-    //auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Items" ), queryItems );
     if ( !url.isValid() )
         return;
 
@@ -1498,6 +1671,248 @@ void CSyncSystem::requestMissingEpisodes( const QString & serverName, const QDat
 void CSyncSystem::handleMissingEpisodesResponse( const QString & serverName, const QByteArray & data )
 {
     handleGetMediaListResponse( serverName, data, tr( "Loading Users Missing Media Data" ), tr( "Server '%1' has %2 missing episodes" ), tr( "Loading %2 missing episodes" ) );
+}
+
+void CSyncSystem::handleAllMoviesResponse( const QString & serverName, const QByteArray & data )
+{
+    handleGetMediaListResponse( serverName, data, tr( "Loading All Movies" ), tr( "Server '%1' has %2 movies" ), tr( "Loading %2 movies" ) );
+}
+
+void CSyncSystem::requestAllMovies( const QString & serverName )
+{
+    std::list< std::pair< QString, QString > > queryItems =
+    {
+        std::make_pair( "IncludeItemTypes", "Movie" ),
+        std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SortName" ),
+        std::make_pair( "SortOrder", "Ascending" ),
+        std::make_pair( "Recursive", "True" ),
+        std::make_pair( "Fields", "ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate" )
+    };
+
+    // ItemsService
+    auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Users/%1/Items" ).arg( currUser().second->getUserID( serverName ) ), queryItems );
+    if ( !url.isValid() )
+        return;
+
+    qDebug().noquote().nospace() << url;
+    auto request = QNetworkRequest( url );
+
+    emit sigAddToLog( EMsgType::eInfo, QString( "Requesting all movies from server '%2'" ).arg( serverName ) );
+
+    auto reply = makeRequest( request );
+    setServerName( reply, serverName );
+    setRequestType( reply, ERequestType::eGetAllMovies );
+}
+
+bool CSyncSystem::requestCreateCollection( const QString & serverName, const QString & collectionName, const std::list< std::shared_ptr< CMediaData > > & items )
+{
+    if ( collectionName.isEmpty() )
+        return false;
+
+    QStringList ids;
+    for ( auto && ii : items )
+    {
+        auto id = ii->getMediaID( serverName );
+        if ( id.isEmpty() )
+            return false;
+
+        ids << id;
+    }
+    std::list< std::pair< QString, QString > > queryItems =
+    {
+        std::make_pair( "IsLocked", "false" ),
+        std::make_pair( "Name", collectionName ),
+        std::make_pair( "Ids", ids.join( "," ) )
+    };
+
+    // collection service
+    auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "emby/Collections" ), queryItems );
+    if ( !url.isValid() )
+        return false;
+    // http://127.0.0.1:8096/emby/Collections?IsLocked=false&Name=AFI%20top%2010%20Animation&Ids=38871%2C38869%2C38867%2C38872%2C38868%2C38873%2C39091%2C39092%2C39007%2C39031&api_key=ead9662360084257ab76f01dabea92a5
+    // http://localhost:8096/emby/Collections?IsLocked=false&Name=AFI%20top%2010%20Animation&Ids=38871%2C38869%2C38867%2C38872%2C38868%2C38873%2C39091%2C39092%2C39007%2C39031&api_key=596f3a7d4e974692847d8885c278a11a
+
+
+
+    qDebug().noquote().nospace() << url.toEncoded();
+    auto request = QNetworkRequest( url );
+
+    emit sigAddToLog( EMsgType::eInfo, QString( "Requesting to create media collection '%1' with '%3' media items on server '%2'" ).arg( collectionName ).arg( serverName ).arg( ids.count() ) );
+
+    auto reply = makeRequest( request, ENetworkRequestType::ePost );
+    setServerName( reply, serverName );
+    setRequestType( reply, ERequestType::eCreateCollection );
+    return true;
+}
+
+void CSyncSystem::handleCreateCollection( const QString & /*serverName*/, const QByteArray & data )
+{
+    QJsonParseError error;
+    auto doc = QJsonDocument::fromJson( data, &error );
+    if ( error.error != QJsonParseError::NoError )
+    {
+        if ( fUserMsgFunc )
+            fUserMsgFunc( EMsgType::eError, tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ) );
+        return;
+    }
+
+    qDebug().nospace().noquote() << doc.toJson();
+}
+
+void CSyncSystem::requestAllCollections( const QString & serverName )
+{
+    // ItemsService
+    auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Library/MediaFolders" ), {} );
+    if ( !url.isValid() )
+        return;
+
+    qDebug().noquote().nospace() << url;
+    auto request = QNetworkRequest( url );
+
+    emit sigAddToLog( EMsgType::eInfo, QString( "Requesting all media folders from server '%2'" ).arg( serverName ) );
+
+    auto reply = makeRequest( request );
+    setServerName( reply, serverName );
+    setRequestType( reply, ERequestType::eGetAllCollections );
+}
+
+void CSyncSystem::handleAllCollectionsResponse( const QString & serverName, const QByteArray & data )
+{
+    QJsonParseError error;
+    auto doc = QJsonDocument::fromJson( data, &error );
+    if ( error.error != QJsonParseError::NoError )
+    {
+        if ( fUserMsgFunc )
+            fUserMsgFunc( EMsgType::eError, tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ) );
+        return;
+    }
+
+    qDebug() << doc.toJson();
+    if ( !doc[ "Items" ].isArray() )
+    {
+        return;
+    }
+
+    auto folders = doc[ "Items" ].toArray();
+    emit sigAddToLog( EMsgType::eInfo, tr( "There are %1 media folders on server %2" ).arg( folders.count() ).arg( serverName ) );
+
+    for ( auto && ii : folders )
+    {
+        auto folder = ii.toObject();
+        if ( !folder.contains( "CollectionType" ) )
+            continue;
+
+        if ( !folder.contains( "Id" ) )
+            continue;
+
+        auto type = folder[ "CollectionType" ].toString();
+        if ( type.toLower() != "boxsets" )
+            continue;
+
+        auto id = folder[ "Id" ].toString();
+        if ( id.isEmpty() )
+            continue;
+
+        requestAllCollectionsEx( serverName, id );
+    }
+}
+
+void CSyncSystem::requestAllCollectionsEx( const QString & serverName, const QString & boxSetsId )
+{
+    std::list< std::pair< QString, QString > > queryItems =
+    {
+        std::make_pair( "ParentId", boxSetsId ),
+        std::make_pair( "Recursive", "False" )
+    };
+
+
+    // ItemsService
+    auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Items" ), queryItems );
+    if ( !url.isValid() )
+        return;
+
+    qDebug().noquote().nospace() << url;
+    auto request = QNetworkRequest( url );
+
+    emit sigAddToLog( EMsgType::eInfo, QString( "Requesting all collections from server '%2'" ).arg( serverName ) );
+
+    auto reply = makeRequest( request );
+    setServerName( reply, serverName );
+    setRequestType( reply, ERequestType::eGetAllCollectionsEx );
+}
+
+void CSyncSystem::handleAllCollectionsExResponse( const QString & serverName, const QByteArray & data )
+{
+    QJsonParseError error;
+    auto doc = QJsonDocument::fromJson( data, &error );
+    if ( error.error != QJsonParseError::NoError )
+    {
+        if ( fUserMsgFunc )
+            fUserMsgFunc( EMsgType::eError, tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ) );
+        return;
+    }
+
+    qDebug().noquote().nospace() << doc.toJson();
+    if ( !doc[ "Items" ].isArray() )
+    {
+        return;
+    }
+
+    auto collections = doc[ "Items" ].toArray();
+    emit sigAddToLog( EMsgType::eInfo, tr( "There are %1 collections on server %2" ).arg( collections.count() ).arg( serverName ) );
+
+    for ( auto && ii : collections )
+    {
+        auto folder = ii.toObject();
+        if ( !folder.contains( "Name" ) )
+            continue;
+
+        if ( !folder.contains( "Id" ) )
+            continue;
+
+        auto name = folder[ "Name" ].toString();
+        auto id = folder[ "Id" ].toString();
+        if ( id.isEmpty() )
+            continue;
+
+        requestGetCollection( serverName, name, id );
+    }
+}
+
+void CSyncSystem::requestGetCollection( const QString & serverName, const QString & collectionName, const QString & collectionId )
+{
+    std::list< std::pair< QString, QString > > queryItems =
+    {
+        std::make_pair( "ParentId", collectionId ),
+        std::make_pair( "Recursive", "False" ),
+        std::make_pair( "IncludeItemTypes", "Movie" ),
+        std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SortName" ),
+        std::make_pair( "SortOrder", "Ascending" ),
+        std::make_pair( "Fields", "ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate" )
+    };
+
+
+    // ItemsService
+    auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Items" ), queryItems );
+    if ( !url.isValid() )
+        return;
+
+    qDebug().noquote().nospace() << url;
+    auto request = QNetworkRequest( url );
+
+    emit sigAddToLog( EMsgType::eInfo, QString( "Requesting collections %1 from server '%2'" ).arg( collectionName ).arg( serverName ) );
+
+    auto reply = makeRequest( request );
+    setServerName( reply, serverName );
+    setRequestType( reply, ERequestType::eGetCollection );
+    setExtraData( reply, QStringList() << collectionName << collectionId );
+}
+
+
+void CSyncSystem::handleGetCollectionResponse( const QString & serverName, const QString & collectionName, const QString & collectionId, const QByteArray & data )
+{
+    auto items = handleGetMediaListResponse( serverName, data, tr( "Loading Movies for Collection '%1'" ).arg( collectionName ), tr( "There are %3 movies in collection '%1' on server %2" ).arg( collectionName ), tr( "Loading %2 movies" ) );
+    fMediaModel->addCollection( serverName, collectionName, collectionId, items );
 }
 
 void CSyncSystem::requestReloadMediaItemData( const QString & serverName, const QString & mediaID )

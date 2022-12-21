@@ -1,17 +1,12 @@
 #include "ServerModel.h"
-#include "MediaData.h"
-#include "MergeMedia.h"
 
 #include "Settings.h"
 #include "ServerInfo.h"
-#include "ProgressSystem.h"
 
 #include <QJsonObject>
 #include <QJsonDocument>
 #include <QJsonArray>
-#include <QColor>
 
-#include <optional>
 CServerModel::CServerModel( QObject * parent) :
     QAbstractTableModel( parent )
 {

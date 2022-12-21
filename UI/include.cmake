@@ -1,4 +1,5 @@
 set(qtproject_SRCS
+    CreateCollections.cpp
     EditServerDlg.cpp
     MainWindow.cpp
     SettingsDlg.cpp
@@ -6,6 +7,7 @@ set(qtproject_SRCS
     MediaDataWidget.cpp
     MediaWindow.cpp 
     MissingEpisodes.cpp
+    MissingMovies.cpp
     PlayStateCompare.cpp
     UserInfoCompare.cpp
     UserDataWidget.cpp
@@ -15,6 +17,7 @@ set(qtproject_SRCS
 )
 
 set(qtproject_H
+    CreateCollections.h
     EditServerDlg.h
     MainWindow.h
     SettingsDlg.h
@@ -22,6 +25,7 @@ set(qtproject_H
     MediaDataWidget.h
     MediaWindow.h 
     MissingEpisodes.h
+    MissingMovies.h
     PlayStateCompare.h
     UserInfoCompare.h
     UserWindow.h
@@ -34,6 +38,7 @@ set(project_H
 )
 
 set(qtproject_UIS
+    CreateCollections.ui
     EditServerDlg.ui
     MainWindow.ui
     SettingsDlg.ui
@@ -41,6 +46,7 @@ set(qtproject_UIS
     MediaDataWidget.ui
     MediaWindow.ui 
     MissingEpisodes.ui
+    MissingMovies.ui
     PlayStateCompare.ui
     UserInfoCompare.ui
     UserDataWidget.ui

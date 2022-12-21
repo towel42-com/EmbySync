@@ -313,8 +313,8 @@ void CMissingEpisodes::slotSetCurrentServer( const QModelIndex & current )
 
 void CMissingEpisodes::slotMissingEpisodesLoaded()
 {
-    auto currUser = getCurrentServerInfo();
-    if ( !currUser )
+    auto currServer = getCurrentServerInfo();
+    if ( !currServer )
         return;
 
     hideDataTreeColumns();
@@ -359,24 +359,21 @@ void CMissingEpisodes::slotMediaContextMenu( CDataTree * dataTree, const QPoint 
 
 void CMissingEpisodes::slotSearchForAllMissing()
 {
-    for ( auto && currTree : fDataTrees )
-    {
-        auto treeModel = currTree->model();
-
-        auto rowCount = treeModel->rowCount();
-        for ( int ii = 0; ii < rowCount; ++ii )
+    bulkSearch(
+        [this]( const QModelIndex & index )
         {
-            auto index = treeModel->index( ii, 0 );
             auto premiereDate = index.data( CMediaModel::ECustomRoles::ePremiereDateRole ).toDate();
             if ( premiereDate > QDate::currentDate() )
-                continue;
+            {
+                return std::make_pair( false, QUrl() );
+            }
 
             auto mediaData = getMediaData( index );
             if ( !mediaData )
-                continue;
-
-            auto url = mediaData->getSearchURL();
-            QDesktopServices::openUrl( url );
-        }
-    }
+            {
+                return std::make_pair( false, QUrl() );
+            }
+            return std::make_pair( true, mediaData->getSearchURL() );
+        } );
 }
+
