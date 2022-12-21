@@ -61,7 +61,9 @@ enum class ETool
     eNone,
     ePlayState,
     eUserInfo,
-    eMissingEpisodes
+    eMissingEpisodes,
+    eMissingMovies,
+    eMissingCollections
 };
 
 enum class ERequestType
@@ -82,7 +84,12 @@ enum class ERequestType
     eDeleteConnectedID,
     eSetConnectedID,
     eUpdateUserData,
-    eGetMissingEpisodes
+    eGetMissingEpisodes,
+    eGetAllMovies,
+    eGetAllCollections,
+    eGetAllCollectionsEx,
+    eGetCollection,
+    eCreateCollection
 };
 
 enum class ENetworkRequestType
@@ -156,6 +163,15 @@ public:
     bool loadMissingEpisodes( std::shared_ptr< const CServerInfo > serverInfo, const QDate & minPremiereDate, const QDate & maxPremiereDate ); // return false if no admin user found on server
     bool loadMissingEpisodes( std::shared_ptr< CUserData > userData, std::shared_ptr<const CServerInfo> serverInfo, const QDate & minPremiereDate, const QDate & maxPremiereDate );
 
+    bool loadAllMovies( std::shared_ptr< const CServerInfo > serverInfo ); // return false if no admin user found on server
+    bool loadAllMovies( std::shared_ptr< CUserData > userData, std::shared_ptr<const CServerInfo> serverInfo );
+
+    bool loadAllCollections( std::shared_ptr< const CServerInfo > serverInfo ); // return false if no admin user found on server
+    bool loadAllCollections( std::shared_ptr< CUserData > userData, std::shared_ptr<const CServerInfo> serverInfo );
+
+    bool createCollection( std::shared_ptr<const CServerInfo> serverInfo, const QString & collectionName, const std::list< std::shared_ptr< CMediaData > > & items );
+    bool createCollection( std::shared_ptr< CUserData > userData, std::shared_ptr<const CServerInfo> serverInfo, const QString & collectionName, const std::list< std::shared_ptr< CMediaData > > & items );
+
     bool setCurrentUser( ETool tool, std::shared_ptr<CUserData> userData, bool forSync = true );
     void clearCurrUser();
     std::pair< ETool, std::shared_ptr< CUserData > > currUser() const;
@@ -172,12 +188,17 @@ public:
 
     void selectiveProcessMedia( const QString & selectedServer );
     void selectiveProcessUsers( const QString & selectedServer );
+
+    void findMovieOnServer( const QString & movieName, int year );
+
 Q_SIGNALS:
     void sigAddToLog( int msgType, const QString & msg );
     void sigAddInfoToLog( const QString & msg );
     void sigLoadingUsersFinished();
     void sigUserMediaLoaded();
     void sigMissingEpisodesLoaded();
+    void sigAllMoviesLoaded();
+    void sigAllCollectionsLoaded();
     void sigProcessingFinished( const QString & name );
     void sigTestServerResults( const QString & serverName, bool results, const QString & msg );
 public Q_SLOTS:
@@ -223,7 +244,7 @@ private:
     bool isLastRequestOfType( ERequestType type ) const;
 
     bool handleError( QNetworkReply * reply, const QString & serverName, QString & errorMsg, bool reportMsg );
-    void handleGetMediaListResponse( const QString & serverName, const QByteArray & data, const QString & progressTitle, const QString & logMsg, const QString & partialLogMsg );
+    std::list< std::shared_ptr< CMediaData > > handleGetMediaListResponse( const QString & serverName, const QByteArray & data, const QString & progressTitle, const QString & logMsg, const QString & partialLogMsg );
 
     void requestGetServerInfo( const QString & serverName );
     void handleGetServerInfoResponse( const QString & serverName, const QByteArray & data );
@@ -243,11 +264,26 @@ private:
     void handleGetUserAvatarResponse( const QString & serverName, const QString & userID, const QByteArray & data );
     void handleSetUserAvatarResponse( const QString & serverName, const QString & userID );
 
-    void requestGetMediaList( const QString & serverNameServer );
+    void requestGetMediaList( const QString & serverName );
     void handleGetMediaListResponse( const QString & serverName, const QByteArray & data );
 
-    void requestMissingEpisodes( const QString & serverNameServer, const QDate & minPremiereDate, const QDate & maxPremiereDate );
+    void requestMissingEpisodes( const QString & serverName, const QDate & minPremiereDate, const QDate & maxPremiereDate );
     void handleMissingEpisodesResponse( const QString & serverName, const QByteArray & data );
+
+    void requestAllMovies( const QString & serverName );
+    void handleAllMoviesResponse( const QString & serverName, const QByteArray & data );
+
+    bool requestCreateCollection( const QString & serverName, const QString & collectionName, const std::list< std::shared_ptr< CMediaData > > & items );
+    void handleCreateCollection( const QString & serverName, const QByteArray & data );
+
+    void requestAllCollections( const QString & serverName );
+    void handleAllCollectionsResponse( const QString & serverName, const QByteArray & data );
+
+    void requestAllCollectionsEx( const QString & serverName, const QString & boxSetId );
+    void handleAllCollectionsExResponse( const QString & serverName, const QByteArray & data );
+
+    void requestGetCollection( const QString & serverName, const QString & collectionName, const QString & collectionId );
+    void handleGetCollectionResponse( const QString & serverName, const QString & collectionName, const QString & collectionId, const QByteArray & data );
 
     void requestReloadMediaItemData( const QString & serverName, const QString & mediaID );
     void requestReloadMediaItemData( const QString & serverName, std::shared_ptr< CMediaData > mediaData );

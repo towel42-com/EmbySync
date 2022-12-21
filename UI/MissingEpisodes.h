@@ -26,6 +26,8 @@
 #include "TabPageBase.h"
 #include <memory>
 #include <QPointer>
+#include <QUrl>
+#include <list>
 class QMenu;
 class QAction;
 class QToolBar;

@@ -25,6 +25,9 @@
 #include "Settings.h"
 #include "ServerInfo.h"
 #include "ServerModel.h"
+#include "MediaModel.h"
+#include "SyncSystem.h"
+#include "SABUtils/StringUtils.h"
 
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -72,6 +75,13 @@ CMediaData::CMediaData( const QJsonObject & mediaObj, std::shared_ptr< CServerMo
             continue;
         fInfoForServer[ serverInfo->keyName() ] = std::make_shared< SMediaServerData >();
     }
+}
+
+CMediaData::CMediaData( const QString & name, int year, const QString & type )
+{
+    fName = name;
+    fType = type;
+    fPremiereDate = QDate( year, 1, 1 );
 }
 
 std::shared_ptr<SMediaServerData> CMediaData::userMediaData( const QString & serverName ) const
@@ -416,7 +426,11 @@ QUrl CMediaData::getSearchURL() const
             searchKey += " " + QString( "S%1" ).arg( fSeason.value(), 2, 10, QChar( '0' ) );
 
         if ( fEpisode.has_value() )
-            searchKey += +" " + QString( "E%1" ).arg( fEpisode.value(), 2, 10, QChar( '0' ) );
+            searchKey += " " + QString( "E%1" ).arg( fEpisode.value(), 2, 10, QChar( '0' ) );
+    }
+    if ( fPremiereDate.isValid() )
+    {
+        searchKey += " " + QString::number( fPremiereDate.year() );
     }
     QUrlQuery query;
     query.addQueryItem( "search", searchKey.replace( " ", "+" ) );
@@ -453,6 +467,11 @@ QJsonObject CMediaData::toJson( bool includeSearchURL )
         retVal[ "searchurl" ] = getSearchURL().toString();
 
     return retVal;
+}
+
+bool CMediaData::onServer() const
+{
+    return !this->fInfoForServer.empty();
 }
 
 void CMediaData::updateFromOther( const QString & otherServerName, std::shared_ptr< CMediaData > other )
@@ -546,4 +565,172 @@ bool CMediaData::validUserDataEqual() const
             return false;
     }
     return true;
+}
+
+bool CMediaData::isMatch( const QString & name, int year ) const
+{
+    bool isMatch = ( ( year >= premiereDate().year() - 1 ) && ( year <= premiereDate().year() + 1 ) );
+
+    if ( !isMatch )
+        return false;
+
+    if ( name.toLower().trimmed() == fName.toLower().trimmed() )
+        return true;
+    if ( NSABUtils::NStringUtils::isSimilar( fName, name, true ) )
+        return true;
+    return false;
+}
+
+CMediaCollection::CMediaCollection( const QString & serverName, const QString & name, const QString & id, int pos ) :
+    fName( name ),
+    fServerName( serverName ),
+    fPosition( pos )
+{
+    fCollectionInfo = std::make_shared< SCollectionServerInfo >( id );
+    fCollectionInfo->setId( id );
+}
+
+bool SCollectionServerInfo::missingMedia() const
+{
+    for ( auto && ii : fItems )
+    {
+        if ( !ii->fData || !ii->fData->onServer() )
+            return true;
+    }
+    return false;
+}
+
+int SCollectionServerInfo::numMissing() const
+{
+    int retVal = 0;
+    for ( auto && ii : fItems )
+    {
+        if ( !ii->fData || !ii->fData->onServer() )
+            ++retVal;
+    }
+    return retVal;
+}
+
+
+
+void SCollectionServerInfo::createCollection( std::shared_ptr<const CServerInfo> serverInfo, const QString & collectionName, std::shared_ptr< CSyncSystem > syncSystem )
+{
+    if ( collectionExists() )
+        return;
+
+    std::list< std::shared_ptr< CMediaData > > media;
+    for ( auto && ii : fItems )
+    {
+        if ( ii->fData )
+            media.emplace_back( ii->fData );
+    }
+
+    syncSystem->createCollection( serverInfo, collectionName, media );
+}
+
+QVariant CMediaCollection::data( int column, int role ) const
+{
+    if ( role == Qt::DisplayRole )
+    {
+        switch ( column )
+        {
+            case 0: return fName;
+            case 1: return {};
+            case 2: return fCollectionInfo->collectionExists() ? QObject::tr( "Yes" ) : QString( "No" );
+            case 3: return missingMedia() ? QObject::tr( "Yes" ) : QString();
+        }
+    }
+    return {};
+}
+
+std::shared_ptr< SMediaCollectionData > CMediaCollection::addMovie( int rank, const QString & name, int year )
+{
+    return fCollectionInfo->addMovie( rank, name, year, this );
+}
+
+void CMediaCollection::setItems( const std::list< std::shared_ptr< CMediaData > > & items )
+{
+    fCollectionInfo->fItems.clear();
+    fCollectionInfo->fItems.reserve( items.size() );
+    for ( auto && ii : items )
+    {
+        auto curr = std::make_shared< SMediaCollectionData >( ii, this );
+        fCollectionInfo->fItems.push_back( curr );
+    }
+}
+
+bool CMediaCollection::updateWithRealCollection( std::shared_ptr< CMediaCollection > realCollection )
+{
+    (void)realCollection;
+    return false;
+}
+
+SCollectionServerInfo::SCollectionServerInfo( const QString & id ) :
+    fCollectionID( id )
+{
+
+}
+
+bool SCollectionServerInfo::updateMedia( std::shared_ptr< CMediaModel > mediaModel )
+{
+    bool retVal = false;
+    for ( auto && ii : fItems )
+    {
+        if ( ii->fData && !ii->fData->onServer() )
+        {
+            retVal = ii->updateMedia( mediaModel ) || retVal;
+        }
+    }
+    return retVal;
+}
+
+std::shared_ptr< SMediaCollectionData > SCollectionServerInfo::addMovie( int rank, const QString & name, int year, CMediaCollection * parent )
+{
+    auto retVal = std::make_shared< SMediaCollectionData >( std::make_shared< CMediaData >( name, year, "Movie" ), parent );
+    if ( ( rank - 1 ) >= fItems.size() )
+    {
+        fItems.resize( rank );
+    }
+    fItems[ rank - 1 ] = retVal;
+    for ( size_t ii = 0; ii < fItems.size(); ++ii )
+    {
+        if ( !fItems[ ii ] )
+        {
+            auto tmp = std::make_shared < SMediaCollectionData >( nullptr, parent );
+            fItems[ ii ] = tmp;
+        }
+
+    }
+    return retVal;
+}
+
+QVariant SMediaCollectionData::data( int column, int role ) const
+{
+    if ( !fData )
+        return {};
+
+    if ( role == Qt::DisplayRole )
+    {
+        switch ( column )
+        {
+            case 0: return fData->name();
+            case 1: return fData->premiereDate().year();
+            case 3: return fData->onServer() ? QString() : QObject::tr( "Yes" );
+        }
+    }
+    return {};
+}
+
+bool SMediaCollectionData::updateMedia( std::shared_ptr< CMediaModel > mediaModel )
+{
+    if ( fData->onServer() )
+        return false;
+
+    auto data = mediaModel->findMedia( fData->name(), fData->premiereDate().year() );
+    if ( data )
+    {
+        fData = data;
+        return true;
+    }
+    return false;
 }

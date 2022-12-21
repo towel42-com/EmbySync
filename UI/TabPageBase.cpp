@@ -30,6 +30,8 @@
 #include <QSplitter>
 #include <QModelIndex>
 #include <QInputDialog>
+#include <QDesktopServices>
+#include <QTimer>
 
 
 CTabPageBase::CTabPageBase( QWidget * parent )
@@ -108,6 +110,47 @@ QString CTabPageBase::selectServer() const
     return ( *pos ).second;
 }
 
+void CTabPageBase::bulkSearch( std::function< std::pair< bool, QUrl > ( const QModelIndex & idx ) > addItemFunc )
+{
+    fBulkSearchURLs.clear();
+    for ( auto && currTree : fDataTrees )
+    {
+        auto treeModel = currTree->model();
+
+        auto rowCount = treeModel->rowCount();
+        bool add = false;
+        for ( int ii = 0; ii < rowCount; ++ii )
+        {
+            auto index = treeModel->index( ii, 0 );
+            auto text = index.data().toString();
+            if ( add )
+            {
+                auto curr = addItemFunc( index );
+                if ( curr.first )
+                {
+                    fBulkSearchURLs.emplace_back( curr.second );
+                }
+            }
+        }
+    }
+    while ( fBulkSearchURLs.size() > 10 )
+        fBulkSearchURLs.pop_back();
+
+    slotNextSearchURL();
+}
+
+void CTabPageBase::slotNextSearchURL()
+{
+    if ( fBulkSearchURLs.empty() )
+        return;
+
+    auto url = fBulkSearchURLs.front();
+    fBulkSearchURLs.pop_front();
+    QDesktopServices::openUrl( url );
+
+    QTimer::singleShot( 250, this, &CTabPageBase::slotNextSearchURL );
+}
+
 void CTabPageBase::loadServers( QAbstractItemModel * model )
 {
     clearServers();
@@ -139,7 +182,7 @@ void CTabPageBase::createServerTrees( QAbstractItemModel * model )
     }
 }
 
-void CTabPageBase::addDataTreeForServer( std::shared_ptr<const CServerInfo> server, QAbstractItemModel * model )
+CDataTree * CTabPageBase::addDataTreeForServer( std::shared_ptr<const CServerInfo> server, QAbstractItemModel * model )
 {
     auto dataTree = new CDataTree( server, getDataSplitter() );
 
@@ -151,6 +194,7 @@ void CTabPageBase::addDataTreeForServer( std::shared_ptr<const CServerInfo> serv
     connect( dataTree, &CDataTree::sigDataContextMenuRequested, this, &CTabPageBase::sigDataContextMenuRequested );
 
     fDataTrees.push_back( dataTree );
+    return dataTree;
 }
 
 void CTabPageBase::clearServers()

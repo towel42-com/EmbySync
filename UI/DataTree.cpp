@@ -71,7 +71,8 @@ void CDataTree::setServer( const std::shared_ptr< const CServerInfo > & serverIn
         disconnect( fServerInfo.get(), &CServerInfo::sigServerInfoChanged, this, &CDataTree::slotServerInfoChanged );
 
     fServerInfo = serverInfo;
-    connect( fServerInfo.get(), &CServerInfo::sigServerInfoChanged, this, &CDataTree::slotServerInfoChanged );
+    if ( fServerInfo )
+        connect( fServerInfo.get(), &CServerInfo::sigServerInfoChanged, this, &CDataTree::slotServerInfoChanged );
     slotServerInfoChanged();
     if ( hideColumns )
         this->hideColumns();
@@ -223,7 +224,7 @@ bool CDataTree::hasCurrentItem() const
     return currentIndex().isValid();
 }
 
-QWidget * CDataTree::dataTree() const
+QTreeView * CDataTree::dataTree() const
 {
     return fImpl->data;
 }
