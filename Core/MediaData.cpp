@@ -421,16 +421,22 @@ QUrl CMediaData::getSearchURL() const
 
     if ( this->mediaType() == "Episode" )
     {
-        searchKey = fSeriesName;
+        searchKey = QString( R"("%1")" ).arg( fSeriesName ).replace( "(", "" ).replace( ")", "" );
+
+        QString subKey;
         if ( fSeason.has_value() )
-            searchKey += " " + QString( "S%1" ).arg( fSeason.value(), 2, 10, QChar( '0' ) );
+            subKey += QString( "S%1" ).arg( fSeason.value(), 2, 10, QChar( '0' ) );
 
         if ( fEpisode.has_value() )
-            searchKey += " " + QString( "E%1" ).arg( fEpisode.value(), 2, 10, QChar( '0' ) );
+            subKey += QString( "E%1" ).arg( fEpisode.value(), 2, 10, QChar( '0' ) );
+        searchKey += " " + subKey;
     }
-    if ( fPremiereDate.isValid() )
+    else if ( this->mediaType() == "Movie" )
     {
-        searchKey += " " + QString::number( fPremiereDate.year() );
+        if ( fPremiereDate.isValid() )
+        {
+            searchKey += " " + QString::number( fPremiereDate.year() );
+        }
     }
     QUrlQuery query;
     query.addQueryItem( "search", searchKey.replace( " ", "+" ) );
