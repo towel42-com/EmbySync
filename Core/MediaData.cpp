@@ -406,9 +406,17 @@ QIcon CMediaData::getDirectionIcon( const QString & serverName ) const
     return retVal;
 }
 
-QUrl CMediaData::getSearchURL() const
+QUrl CMediaData::getSearchURL( ETorrentSite site ) const
 {
-    QUrl retVal( "https://rarbg.to/torrents.php" );
+    QString url;
+    if ( site == ETorrentSite::eRARBG )
+        url = "https://rarbg.to/torrents.php";
+    else if ( site == ETorrentSite::ePirateBay )
+        url = "https://thepiratebay.org/search.php";
+    else
+        return {};
+
+    QUrl retVal( url );
     QString searchKey;
 
     auto pos = fProviders.find( "imdb" );
@@ -470,7 +478,7 @@ QJsonObject CMediaData::toJson( bool includeSearchURL )
     retVal[ "server_infos" ] = serverInfos;
 
     if ( includeSearchURL )
-        retVal[ "searchurl" ] = getSearchURL().toString();
+        retVal[ "searchurl" ] = getSearchURL( ETorrentSite::eRARBG ).toString();
 
     return retVal;
 }

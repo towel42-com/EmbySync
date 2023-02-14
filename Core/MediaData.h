@@ -117,7 +117,12 @@ public:
 
     QIcon getDirectionIcon( const QString & serverName ) const;
 
-    QUrl getSearchURL() const;
+    enum class ETorrentSite
+    {
+        eRARBG,
+        ePirateBay
+    };
+    QUrl getSearchURL( ETorrentSite site ) const;
 
     QJsonObject toJson( bool includeSearchURL );
     
