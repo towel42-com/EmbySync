@@ -25,7 +25,7 @@ if(CMAKE_VERSION VERSION_LESS "3.7.0")
     set(CMAKE_INCLUDE_CURRENT_DIR ON)
 endif()
 
-include( ${CMAKE_SOURCE_DIR}/SABUtils/Project.cmake )
+include( ${CMAKE_SOURCE_DIR}/SABUtils/QtProject.cmake )
 
 SET( project_pub_DEPS
      Qt5::Network
