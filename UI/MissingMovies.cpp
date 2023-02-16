@@ -333,7 +333,7 @@ void CMissingMovies::slotMediaContextMenu( CDataTree * dataTree, const QPoint & 
 
 void CMissingMovies::slotLoadFile( const QString & fileName )
 {
-    setMovieSearchFile( fileName, false );
+    setMovieSearchFile( fileName, true );
 }
 
 void CMissingMovies::setMovieSearchFile( const QString & fileName, bool force )

@@ -293,6 +293,7 @@ void CMediaModel::clear()
 {
     beginResetModel();
     fData.clear();
+    fDataMap.clear();
     fMediaToPos.clear();
     fProviderColumnsByColumn.clear();
     fProviderNames.clear();
@@ -442,27 +443,42 @@ void CMediaModel::loadMergedMedia( std::shared_ptr<CProgressSystem> progressSyst
     fData.reserve( fAllMedia.size() );
     for ( auto && ii : fAllMedia )
     {
-        fMediaToPos[ ii ] = fData.size();
-        fData.push_back( ii );
-        updateProviderColumns( ii );
+        addMedia( ii, false );
     }
     endResetModel();
     progressSystem->popState();
 }
 
+void CMediaModel::addMedia( const std::shared_ptr<CMediaData> & media, bool emitUpdate )
+{
+    if ( emitUpdate )
+        beginInsertRows(QModelIndex(), static_cast<int>(fData.size()), static_cast<int>(fData.size()));
+    fMediaToPos[media] = fData.size();
+    fData.push_back(media);
+    fDataMap[SDummyMovie::nameKey(media->name())] = media;
+    fDataMap[SDummyMovie::nameKey(media->originalTitle())] = media;
+    updateProviderColumns(media);
+    if ( emitUpdate )
+        endInsertRows();
+}
+
 void CMediaModel::addMovieStub( const QString & name, int year )
 {
+    auto pos = fDataMap.find(SDummyMovie::nameKey(name));
+    if (pos != fDataMap.end())
+        return;
+
     for ( auto && ii : fData )
     {
-        if ( ( ii->name().toLower() == name.toLower() ) && ( ii->premiereDate().year() == year ) )
+        if ( ( SDummyMovie::nameKey( ii->name() ) == SDummyMovie::nameKey(name ) ) )
+            return;
+
+        if ((SDummyMovie::nameKey(ii->originalTitle()) == SDummyMovie::nameKey(name)))
             return;
     }
 
     auto mediaData = std::make_shared< CMediaData >( name, year, "Movie" );
-    beginInsertRows( QModelIndex(), static_cast< int >( fData.size() ), static_cast<int>( fData.size() ) );
-    fMediaToPos[ mediaData ] = fData.size();
-    fData.push_back( mediaData );
-    endInsertRows();
+    addMedia(mediaData, true);
 }
 
 std::shared_ptr< CMediaCollection > CMediaModel::findCollection( const QString & serverName, const QString & name )
@@ -782,6 +798,22 @@ void CMovieSearchFilterModel::addMissingMoviesToSourceModel()
     }
 }
 
+bool CMovieSearchFilterModel::inSearchForMovie(const QString& name, int year) const
+{
+    auto pos = fSearchForMovies.find({ name, year });
+    return pos != fSearchForMovies.end();
+}
+
+bool CMovieSearchFilterModel::inSearchForMovie(const QString& name) const
+{
+    for( auto && ii : fSearchForMovies )
+    {
+        if (ii.isMovie(name))
+            return true;
+    }
+    return false;
+}
+
 bool CMovieSearchFilterModel::filterAcceptsRow( int source_row, const QModelIndex & source_parent ) const
 {
     if ( !sourceModel() )
@@ -793,16 +825,13 @@ bool CMovieSearchFilterModel::filterAcceptsRow( int source_row, const QModelInde
         return false;
 
     auto year = date.year();
-    auto pos = fSearchForMovies.find( { name, year } );
-    //return pos != fSearchForMovies.end();
-
-    if ( pos == fSearchForMovies.end() )
+    if (!inSearchForMovie(name, year) && !inSearchForMovie(name))
         return false;
 
     auto onServer = childIdx.data( CMediaModel::ECustomRoles::eOnServerRole ).toBool();
-    if ( onServer )
-        return false;
-    return true;
+    if ( !onServer )
+        return true;
+    return false;
 }
 
 bool CMovieSearchFilterModel::filterAcceptsColumn( int source_column, const QModelIndex & source_parent ) const
@@ -1146,4 +1175,32 @@ SIndexPtr::SIndexPtr( void * ptr, bool isCollection ) :
     fIsCollection( isCollection )
 {
     Q_ASSERT( ptr );
+}
+
+QString SDummyMovie::nameKey(const QString& name)
+{
+    static std::unordered_map< QString, QString > sCache;
+    auto pos = sCache.find(name);
+    if (pos != sCache.end())
+        return (*pos).second;
+
+    auto retVal = name.toLower().remove( QRegularExpression( "[^a-zA-Z0-9 ]" ) );
+
+    auto startsWith = QStringList()
+        << "the"
+        << "national lampoons"
+        << "monty pythons"
+        ;
+    for( auto && ii : startsWith )
+    {
+        if ( retVal.startsWith( ii ) )
+            retVal = retVal.mid( ii.length() );
+    }
+
+    retVal = retVal.trimmed().remove(QRegularExpression(R"(episode \d+)"));
+    retVal = retVal.trimmed().remove(QRegularExpression(R"(episode [ivx]+)"));
+    retVal = retVal.trimmed().replace( QRegularExpression( "[ ]{2,}" ), " " );
+
+    sCache[name] = retVal;
+    return retVal;
 }
