@@ -68,6 +68,7 @@ CMediaData::CMediaData( const QJsonObject & mediaObj, std::shared_ptr< CServerMo
 {
     computeName( mediaObj );
     fType = mediaObj[ "Type" ].toString();
+    fOriginalTitle = mediaObj["OriginalTitle"].toString();
 
     for ( auto && serverInfo : *serverModel )
     {
@@ -80,6 +81,7 @@ CMediaData::CMediaData( const QJsonObject & mediaObj, std::shared_ptr< CServerMo
 CMediaData::CMediaData( const QString & name, int year, const QString & type )
 {
     fName = name;
+    fOriginalTitle = fName;
     fType = type;
     fPremiereDate = QDate( year, 1, 1 );
 }
@@ -110,7 +112,7 @@ QString CMediaData::mediaType() const
 void CMediaData::computeName( const QJsonObject & media )
 {
     auto name = fName = media[ "Name" ].toString();
-    if ( media[ "Type" ] == "Episode" )
+    if (media["Type"] == "Episode")
     {
         //auto tmp = QJsonDocument( media );
         //qDebug() << tmp.toJson();

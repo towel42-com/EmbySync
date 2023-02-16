@@ -96,6 +96,8 @@ public:
 
     void loadMergedMedia( std::shared_ptr<CProgressSystem> progressSystem );
 
+    void addMedia( const std::shared_ptr<CMediaData>& media, bool emitUpdate );
+
     using TMediaSet = std::unordered_set< std::shared_ptr< CMediaData > >;
 
     TMediaSet getAllMedia() const { return fAllMedia; }
@@ -138,6 +140,7 @@ private:
     std::map< QString, std::vector< std::shared_ptr< CMediaCollection > > > fCollections; // serverName -> collectionData
 
     std::vector< std::shared_ptr< CMediaData > > fData;
+    std::unordered_map< QString, std::shared_ptr< CMediaData > > fDataMap;
     std::shared_ptr< CSettings > fSettings;
     std::shared_ptr< CServerModel > fServerModel;
     std::unordered_map< std::shared_ptr< CMediaData >, size_t > fMediaToPos;
@@ -245,10 +248,21 @@ struct SDummyMovie
 {
     QString fName;
     int fYear{ 0 };
+    bool isMovie( const QString & movieName ) const
+    {
+        return nameKey() == nameKey(movieName);
+    }
+
+    QString nameKey() const
+    {
+        return nameKey(fName);
+    }
+
+    static QString nameKey( const QString & name );
 
     bool operator==( const SDummyMovie & r ) const
     {
-        return fName.toLower().trimmed() == r.fName.toLower().trimmed();
+        return nameKey() == r.nameKey();
     }
 };
 
@@ -259,9 +273,10 @@ namespace std
     {
         std::size_t operator()( const SDummyMovie & k ) const
         {
-            std::size_t h1 = 0; // std::hash< int >{}( k.second );
-            std::size_t h2 = qHash( k.fName.toLower().trimmed() );
-            return h1 & ( h2 << 1 );
+            return NSABUtils::HashCombine(std::make_pair(k.nameKey(), k.fYear));
+            //std::size_t h1 = 0; // std::hash< int >{}( k.second );
+            //std::size_t h2 = qHash( k.fName.toLower().trimmed() );
+            //return h1 & ( h2 << 1 );
         }
     };
 }
@@ -286,6 +301,9 @@ public:
 
     QString summary() const;
 private:
+    bool inSearchForMovie(const QString& name, int year) const;
+    bool inSearchForMovie(const QString& name ) const;
+
     std::shared_ptr< CSettings > fSettings;
     std::unordered_set< SDummyMovie > fSearchForMovies;
 };

@@ -69,6 +69,7 @@ public:
     void addProvider( const QString & providerName, const QString & providerID );
 
     QString name() const;
+    QString originalTitle() const { return fOriginalTitle; }
     QString seriesName() const;
     QString mediaType() const;
     bool beenLoaded( const QString & serverName ) const;
@@ -160,6 +161,7 @@ private:
 
     QString fType;
     QString fName;
+    QString fOriginalTitle;
     QString fSeriesName; // only valid for EpisodeTypes
     std::optional< int > fSeason; // only valid for EpisodeTypes
     std::optional< int > fEpisode; // only valid for EpisodeTypes

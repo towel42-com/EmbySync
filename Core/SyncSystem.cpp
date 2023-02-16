@@ -1595,7 +1595,7 @@ void CSyncSystem::requestGetMediaList( const QString & serverName )
         std::make_pair( "SortOrder", "Ascending" ),
         std::make_pair( "Recursive", "True" ),
         std::make_pair( "IsMissing", "False" ),
-        std::make_pair( "Fields", "ProviderIds,ExternalUrls,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate,Missing" )
+        std::make_pair( "Fields", "ProviderIds,ExternalUrls,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate,Missing,OriginalTitle" )
     };
 
     // ItemsService
@@ -1692,7 +1692,7 @@ void CSyncSystem::requestMissingEpisodes( const QString & serverName, const QDat
         std::make_pair( "SortOrder", "Ascending" ),
         std::make_pair( "Recursive", "True" ),
         std::make_pair( "IsMissing", "True" ),
-        std::make_pair( "Fields", "ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate" )
+        std::make_pair( "Fields", "ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate,OriginalTitle" )
     };
     if ( minPremiereDate.isValid() )
     {
@@ -1728,7 +1728,7 @@ void CSyncSystem::requestMissingTVDBid( const QString & serverName )
         std::make_pair( "Recursive", "True" ),
         //std::make_pair( "IsMissing", "True" ),
         std::make_pair( "HasTvdbId", "False" ),
-        std::make_pair( "Fields", "ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate" )
+        std::make_pair( "Fields", "ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate,OriginalTitle" )
     };
 
     // ItemsService
@@ -1769,7 +1769,7 @@ void CSyncSystem::requestAllMovies( const QString & serverName )
         std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SortName" ),
         std::make_pair( "SortOrder", "Ascending" ),
         std::make_pair( "Recursive", "True" ),
-        std::make_pair( "Fields", "ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate" )
+        std::make_pair( "Fields", "ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate,OriginalTitle" )
     };
 
     // ItemsService
@@ -1777,7 +1777,7 @@ void CSyncSystem::requestAllMovies( const QString & serverName )
     if ( !url.isValid() )
         return;
 
-    qDebug().noquote().nospace() << url;
+    //qDebug().noquote().nospace() << url;
     auto request = QNetworkRequest( url );
 
     emit sigAddToLog( EMsgType::eInfo, QString( "Requesting all movies from server '%2'" ).arg( serverName ) );
@@ -1817,7 +1817,7 @@ bool CSyncSystem::requestCreateCollection( const QString & serverName, const QSt
 
 
 
-    qDebug().noquote().nospace() << url.toEncoded();
+    //qDebug().noquote().nospace() << url.toEncoded();
     auto request = QNetworkRequest( url );
 
     emit sigAddToLog( EMsgType::eInfo, QString( "Requesting to create media collection '%1' with '%3' media items on server '%2'" ).arg( collectionName ).arg( serverName ).arg( ids.count() ) );
@@ -1839,7 +1839,7 @@ void CSyncSystem::handleCreateCollection( const QString & /*serverName*/, const 
         return;
     }
 
-    qDebug().nospace().noquote() << doc.toJson();
+    //qDebug().nospace().noquote() << doc.toJson();
 }
 
 void CSyncSystem::requestAllCollections( const QString & serverName )
@@ -1849,7 +1849,7 @@ void CSyncSystem::requestAllCollections( const QString & serverName )
     if ( !url.isValid() )
         return;
 
-    qDebug().noquote().nospace() << url;
+    //qDebug().noquote().nospace() << url;
     auto request = QNetworkRequest( url );
 
     emit sigAddToLog( EMsgType::eInfo, QString( "Requesting all media folders from server '%2'" ).arg( serverName ) );
@@ -1870,7 +1870,7 @@ void CSyncSystem::handleAllCollectionsResponse( const QString & serverName, cons
         return;
     }
 
-    qDebug() << doc.toJson();
+    //qDebug() << doc.toJson();
     if ( !doc[ "Items" ].isArray() )
     {
         return;
@@ -1914,7 +1914,7 @@ void CSyncSystem::requestAllCollectionsEx( const QString & serverName, const QSt
     if ( !url.isValid() )
         return;
 
-    qDebug().noquote().nospace() << url;
+    //qDebug().noquote().nospace() << url;
     auto request = QNetworkRequest( url );
 
     emit sigAddToLog( EMsgType::eInfo, QString( "Requesting all collections from server '%2'" ).arg( serverName ) );
@@ -1935,7 +1935,7 @@ void CSyncSystem::handleAllCollectionsExResponse( const QString & serverName, co
         return;
     }
 
-    qDebug().noquote().nospace() << doc.toJson();
+    //qDebug().noquote().nospace() << doc.toJson();
     if ( !doc[ "Items" ].isArray() )
     {
         return;
@@ -1980,7 +1980,7 @@ void CSyncSystem::requestGetCollection( const QString & serverName, const QStrin
     if ( !url.isValid() )
         return;
 
-    qDebug().noquote().nospace() << url;
+    //qDebug().noquote().nospace() << url;
     auto request = QNetworkRequest( url );
 
     emit sigAddToLog( EMsgType::eInfo, QString( "Requesting collections %1 from server '%2'" ).arg( collectionName ).arg( serverName ) );
