@@ -87,6 +87,8 @@ public:
     std::shared_ptr< CMediaData > loadMedia( const QString & serverName, const QJsonObject & media );
     std::shared_ptr< CMediaData > reloadMedia( const QString & serverName, const QJsonObject & media, const QString & mediaID );
 
+    void removeMedia( const QString & serverName, const std::shared_ptr< CMediaData > & media );
+
     void beginBatchLoad();
     void endBatchLoad();
 

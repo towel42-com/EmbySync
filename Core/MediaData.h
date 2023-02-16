@@ -47,6 +47,14 @@ enum class EMediaSyncStatus
     eMediaNeedsUpdating    // 2 or more servers have media and a sync is necessar
 };
 
+enum EMissingProviderIDs : uint8_t
+{
+    eNone = 0x00,
+    eTVDBid = 0x01,
+    eTMDBid = 0x02,
+    eIMDBid = 0x04,
+    eTVRageid = 0x08
+};
 
 class CMediaData
 {
@@ -128,6 +136,8 @@ public:
     
     bool onServer() const;
     bool isMatch( const QString & name, int year ) const;
+
+    bool isMissingProvider( EMissingProviderIDs missingIdsType ) const;
 private:
     void computeName( const QJsonObject & media );
     template< typename T >

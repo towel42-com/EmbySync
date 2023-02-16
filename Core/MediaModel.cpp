@@ -385,6 +385,23 @@ std::shared_ptr< CMediaData > CMediaModel::loadMedia( const QString & serverName
     return mediaData;
 }
 
+void CMediaModel::removeMedia( const QString & serverName, const std::shared_ptr< CMediaData > & mediaData )
+{
+    auto pos = fMediaMap.find( serverName );
+    if ( pos != fMediaMap.end() )
+    {
+        auto mediaID = mediaData->getMediaID( serverName );
+        auto pos2 = ( *pos ).second.find( mediaID );
+        if ( pos2 != ( *pos ).second.end() )
+            ( *pos ).second.erase( pos2 );
+
+        auto pos3 = fMediaToPos.find( mediaData );
+        if ( pos3 != fMediaToPos.end() )
+            fMediaToPos.erase( pos3 );
+    }
+    fMergeSystem->removeMedia( serverName, mediaData );
+}
+
 std::shared_ptr< CMediaData > CMediaModel::reloadMedia( const QString & serverName, const QJsonObject & media, const QString & mediaID )
 {
     auto mediaData = getMediaDataForID( serverName, mediaID );

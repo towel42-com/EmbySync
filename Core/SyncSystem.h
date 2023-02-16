@@ -62,6 +62,7 @@ enum class ETool
     ePlayState,
     eUserInfo,
     eMissingEpisodes,
+    eMissingTMDBId,
     eMissingMovies,
     eMissingCollections
 };
@@ -85,6 +86,7 @@ enum class ERequestType
     eSetConnectedID,
     eUpdateUserData,
     eGetMissingEpisodes,
+    eGetMissingTVDBid,
     eGetAllMovies,
     eGetAllCollections,
     eGetAllCollectionsEx,
@@ -138,6 +140,8 @@ enum EMsgType
 QString toString( EMsgType type );
 QString createMessage( EMsgType msgType, const QString & msg );
 
+enum EMissingProviderIDs : uint8_t;
+
 class CSyncSystem : public QObject
 {
     Q_OBJECT
@@ -162,6 +166,9 @@ public:
 
     bool loadMissingEpisodes( std::shared_ptr< const CServerInfo > serverInfo, const QDate & minPremiereDate, const QDate & maxPremiereDate ); // return false if no admin user found on server
     bool loadMissingEpisodes( std::shared_ptr< CUserData > userData, std::shared_ptr<const CServerInfo> serverInfo, const QDate & minPremiereDate, const QDate & maxPremiereDate );
+
+    bool loadMissingTVDBid( std::shared_ptr< const CServerInfo > serverInfo ); // return false if no admin user found on server
+    bool loadMissingTVDBid( std::shared_ptr< CUserData > userData, std::shared_ptr<const CServerInfo> serverInfo );
 
     bool loadAllMovies( std::shared_ptr< const CServerInfo > serverInfo ); // return false if no admin user found on server
     bool loadAllMovies( std::shared_ptr< CUserData > userData, std::shared_ptr<const CServerInfo> serverInfo );
@@ -197,6 +204,7 @@ Q_SIGNALS:
     void sigLoadingUsersFinished();
     void sigUserMediaLoaded();
     void sigMissingEpisodesLoaded();
+    void sigMissingTVDBidLoaded();
     void sigAllMoviesLoaded();
     void sigAllCollectionsLoaded();
     void sigProcessingFinished( const QString & name );
@@ -266,6 +274,9 @@ private:
 
     void requestGetMediaList( const QString & serverName );
     void handleGetMediaListResponse( const QString & serverName, const QByteArray & data );
+
+    void requestMissingTVDBid( const QString & serverName );
+    void handleMissingTVDBidResponse( const QString & serverName, const QByteArray & data );
 
     void requestMissingEpisodes( const QString & serverName, const QDate & minPremiereDate, const QDate & maxPremiereDate );
     void handleMissingEpisodesResponse( const QString & serverName, const QByteArray & data );

@@ -19,6 +19,7 @@ public:
     ~CMergeMedia() {};
 
     void addMediaInfo( const QString & serverName, std::shared_ptr<CMediaData> mediaData );
+    void removeMedia( const QString & serverName, const std::shared_ptr< CMediaData > & mediaData );
 
     bool merge( std::shared_ptr< CProgressSystem > progressSystem );
     void clear();

@@ -595,6 +595,45 @@ bool CMediaData::isMatch( const QString & name, int year ) const
     return false;
 }
 
+bool CMediaData::isMissingProvider( EMissingProviderIDs missingIdsType ) const
+{
+    if ( missingIdsType == EMissingProviderIDs::eNone )
+        return true;
+
+    if ( ( missingIdsType & EMissingProviderIDs::eIMDBid ) != 0 )
+    {
+        auto pos = fProviders.find( "Imdb" );
+        if ( pos == fProviders.end() )
+            return true;
+        return ( *pos ).second.isEmpty();
+    }
+
+    if ( ( missingIdsType & EMissingProviderIDs::eTVRageid ) != 0 )
+    {
+        auto pos = fProviders.find( "TvRage" );
+        if ( pos == fProviders.end() )
+            return true;
+        return ( *pos ).second.isEmpty();
+    }
+
+    if ( ( missingIdsType & EMissingProviderIDs::eTMDBid ) != 0 )
+    {
+        auto pos = fProviders.find( "Tmdb" );
+        if ( pos == fProviders.end() )
+            return true;
+        return ( *pos ).second.isEmpty();
+    }
+
+    if ( ( missingIdsType & EMissingProviderIDs::eTVDBid ) != 0 )
+    {
+        auto pos = fProviders.find( "Tvdb" );
+        if ( pos == fProviders.end() )
+            return true;
+        return ( *pos ).second.isEmpty();
+    }
+    return false;
+}
+
 CMediaCollection::CMediaCollection( const QString & serverName, const QString & name, const QString & id, int pos ) :
     fName( name ),
     fServerName( serverName ),

@@ -73,6 +73,7 @@ QString toString( ERequestType request )
         case ERequestType::eSetConnectedID: return "SetConnectedID";
         case ERequestType::eUpdateUserData: return "UpdateUserData";
         case ERequestType::eGetMissingEpisodes: return "GetMissingEpisodes";
+        case ERequestType::eGetMissingTVDBid: return "GetMissingTVDBid";
         case ERequestType::eGetAllMovies: return "GetAllMovies";
         case ERequestType::eGetAllCollections: return "GetAllCollections";
         case ERequestType::eGetAllCollectionsEx: return "GetAllCollectionsEx";
@@ -241,6 +242,34 @@ bool CSyncSystem::loadMissingEpisodes( std::shared_ptr< CUserData > userData, st
 
     emit sigAddToLog( EMsgType::eInfo, QString( "Loading Missing Episodes on server '%1' using admin user '%2'" ).arg( serverInfo->displayName() ).arg( userData->userName( serverInfo->keyName() ) ) );
     requestMissingEpisodes( serverInfo->keyName(), minPremiereDate, maxPremiereDate );
+    return true;
+}
+
+bool CSyncSystem::loadMissingTVDBid( std::shared_ptr<const CServerInfo> serverInfo )
+{
+    for ( auto && userInfo : *fUsersModel )
+    {
+        if ( userInfo->isAdmin( serverInfo->keyName() ) )
+        {
+            return loadMissingTVDBid( userInfo, serverInfo );
+        }
+    }
+    return false;
+}
+
+bool CSyncSystem::loadMissingTVDBid( std::shared_ptr< CUserData > userData, std::shared_ptr<const CServerInfo> serverInfo )
+{
+    if ( !serverInfo || !serverInfo->isEnabled() )
+        return false;
+
+    if ( !userData->isAdmin( serverInfo->keyName() ) )
+        return false;
+
+    if ( !setCurrentUser( ETool::eMissingTMDBId, userData, false ) )
+        return false;
+
+    emit sigAddToLog( EMsgType::eInfo, QString( "Loading Missing TVDBid on server '%1' using admin user '%2'" ).arg( serverInfo->displayName() ).arg( userData->userName( serverInfo->keyName() ) ) );
+    requestMissingTVDBid( serverInfo->keyName() );
     return true;
 }
 
@@ -781,6 +810,10 @@ void CSyncSystem::slotMergeMedia( ERequestType requestType )
             emit sigMissingEpisodesLoaded();
             emit sigUserMediaLoaded();
             break;
+        case ERequestType::eGetMissingTVDBid:
+            emit sigMissingTVDBidLoaded();
+            emit sigUserMediaLoaded();
+            break;
         case ERequestType::eGetAllMovies:
             emit sigAllMoviesLoaded();
             emit sigUserMediaLoaded();
@@ -925,6 +958,9 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
             case ERequestType::eGetMissingEpisodes:
                 emit sigMissingEpisodesLoaded();
                 break;
+            case ERequestType::eGetMissingTVDBid:
+                emit sigMissingTVDBidLoaded();
+                break;
             case ERequestType::eGetAllMovies:
                 emit sigAllMoviesLoaded();
                 break;
@@ -1014,7 +1050,20 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
             }
             break;
         }
+        case ERequestType::eGetMissingTVDBid:
+        {
+            if ( !fProgressSystem->wasCanceled() )
+            {
+                handleMissingTVDBidResponse( serverName, data );
 
+                if ( isLastRequestOfType( ERequestType::eGetMissingTVDBid ) )
+                {
+                    fProgressSystem->resetProgress();
+                    slotMergeMedia( requestType );
+                }
+            }
+            break;
+        }
         case ERequestType::eGetAllMovies:
         {
             if ( !fProgressSystem->wasCanceled() )
@@ -1603,7 +1652,7 @@ std::list< std::shared_ptr< CMediaData > > CSyncSystem::handleGetMediaListRespon
     {
         if ( fSettings->maxItems() > 0 )
         {
-            if ( curr >= fSettings->maxItems() )
+            if ( retVal.size() >= fSettings->maxItems() )
                 break;
         }
         curr++;
@@ -1616,7 +1665,8 @@ std::list< std::shared_ptr< CMediaData > > CSyncSystem::handleGetMediaListRespon
         }
 
         auto media = ii.toObject();
-        retVal.push_back( fMediaModel->loadMedia( serverName, media ) );
+        auto curr = fMediaModel->loadMedia( serverName, media );
+        retVal.push_back( curr );
     }
     //fMediaModel->endBatchLoad();
     if ( showProgress )
@@ -1666,6 +1716,39 @@ void CSyncSystem::requestMissingEpisodes( const QString & serverName, const QDat
     auto reply = makeRequest( request );
     setServerName( reply, serverName );
     setRequestType( reply, ERequestType::eGetMissingEpisodes );
+}
+
+void CSyncSystem::requestMissingTVDBid( const QString & serverName )
+{
+    std::list< std::pair< QString, QString > > queryItems =
+    {
+        std::make_pair( "IncludeItemTypes", "Episode" ),
+        std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SortName" ),
+        std::make_pair( "SortOrder", "Ascending" ),
+        std::make_pair( "Recursive", "True" ),
+        //std::make_pair( "IsMissing", "True" ),
+        std::make_pair( "HasTvdbId", "False" ),
+        std::make_pair( "Fields", "ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate" )
+    };
+
+    // ItemsService
+    auto && url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Users/%1/Items" ).arg( currUser().second->getUserID( serverName ) ), queryItems );
+    if ( !url.isValid() )
+        return;
+
+    //qDebug().noquote().nospace() << url;
+    auto request = QNetworkRequest( url );
+
+    emit sigAddToLog( EMsgType::eInfo, QString( "Requesting missing episodes from server '%2'" ).arg( serverName ) );
+
+    auto reply = makeRequest( request );
+    setServerName( reply, serverName );
+    setRequestType( reply, ERequestType::eGetMissingTVDBid );
+}
+
+void CSyncSystem::handleMissingTVDBidResponse( const QString & serverName, const QByteArray & data )
+{
+    handleGetMediaListResponse( serverName, data, tr( "Loading Users Missing TVDBid Media Data" ), tr( "Server '%1' has %2 missing TVDBid episodes" ), tr( "Loading %2 missing TVDBid episodes" ) );
 }
 
 void CSyncSystem::handleMissingEpisodesResponse( const QString & serverName, const QByteArray & data )
