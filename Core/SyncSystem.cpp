@@ -1797,10 +1797,13 @@ bool CSyncSystem::requestCreateCollection( const QString & serverName, const QSt
     {
         auto id = ii->getMediaID( serverName );
         if ( id.isEmpty() )
-            return false;
+            continue;
 
         ids << id;
     }
+    if ( ids.empty() )
+        return false;
+    
     std::list< std::pair< QString, QString > > queryItems =
     {
         std::make_pair( "IsLocked", "false" ),

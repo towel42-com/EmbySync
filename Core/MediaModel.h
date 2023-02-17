@@ -174,7 +174,7 @@ public:
     virtual QVariant headerData( int section, Qt::Orientation orientation, int role /* = Qt::DisplayRole */ ) const override;
 
     std::pair< QModelIndex, std::shared_ptr< CMediaCollection > > addCollection( const QString & server, const QString & name );
-    std::shared_ptr< SMediaCollectionData > addMovie( int rank, const QString & name, int year, const QModelIndex & collectionIndex );
+    std::shared_ptr< SMediaCollectionData > addMovie( const QString & name, int year, const QModelIndex & collectionIndex, int rank );
 
     CMediaCollection * collection( const QModelIndex & idx ) const;
     SMediaCollectionData * media( const QModelIndex & idx ) const;
@@ -186,7 +186,7 @@ public:
     void clear();
 
     void updateCollections( const QString & serverName, std::shared_ptr< CMediaModel > model );
-    void createCollections( std::shared_ptr<const CServerInfo> serverInfo, std::shared_ptr< CSyncSystem > syncSystem );
+    void createCollections( std::shared_ptr<const CServerInfo> serverInfo, std::shared_ptr< CSyncSystem > syncSystem, QWidget * parent );
 public Q_SLOTS:
     void slotMediaModelDataChanged();
 private:
