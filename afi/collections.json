@@ -1,4 +1,5 @@
-[
+{
+    "collections":[
     {
         "collection": "AFI top 10 Animation",
         "movies": [
@@ -6085,3 +6086,4 @@
         ]
     }
 ]
+}
