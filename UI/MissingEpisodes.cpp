@@ -169,8 +169,8 @@ void CMissingEpisodes::setupActions()
     icon3.addFile( QString::fromUtf8( ":/SABUtilsResources/search.png" ), QSize(), QIcon::Normal, QIcon::Off );
     Q_ASSERT( !icon3.isNull() );
     fActionSearchForAll->setIcon( icon3 );
-    fActionSearchForAll->setText( QCoreApplication::translate( "CPlayStateCompare", "Search for All Missing", nullptr ) );
-    fActionSearchForAll->setToolTip( QCoreApplication::translate( "CPlayStateCompare", "Search for All Missing", nullptr ) );
+    fActionSearchForAll->setText( QCoreApplication::translate( "CMissingEpisodes", "Search for All Missing", nullptr ) );
+    fActionSearchForAll->setToolTip( QCoreApplication::translate( "CMissingEpisodes", "Search for All Missing", nullptr ) );
 
     fToolBar = new QToolBar( this );
     fToolBar->setObjectName( QString::fromUtf8( "fToolBar" ) );

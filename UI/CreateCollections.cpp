@@ -50,6 +50,7 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QMetaMethod>
+#include <QInputDialog>
 #include <QTimer>
 #include <QToolBar>
 #include <QSettings>
@@ -116,7 +117,7 @@ void CCreateCollections::setupPage( std::shared_ptr< CSettings > settings, std::
 
     //new QAbstractItemModelTester( fCollections, QAbstractItemModelTester::FailureReportingMode::Fatal, this );
     //fMoviesModel->setSourceModel( fMediaModel.get() );
-    //connect( fMediaModel.get(), &CMediaModel::sigPendingMediaUpdate, this, &CPlayStateCompare::slotPendingMediaUpdate );
+    //connect( fMediaModel.get(), &CMediaModel::sigPendingMediaUpdate, this, &CCreateCollections::slotPendingMediaUpdate );
     connect( fSyncSystem.get(), &CSyncSystem::sigAllMoviesLoaded, this, &CCreateCollections::slotAllMoviesLoaded );
     connect( fSyncSystem.get(), &CSyncSystem::sigAllCollectionsLoaded, this, &CCreateCollections::slotAllCollectionsLoaded );
     
@@ -131,21 +132,21 @@ void CCreateCollections::slotMediaChanged()
 
 void CCreateCollections::setupActions()
 {
-    fActionSearchForAll = new QAction( this );
-    fActionSearchForAll->setObjectName( QString::fromUtf8( "fActionProcess" ) );
+    fCreateCollections = new QAction( this );
+    fCreateCollections->setObjectName( QString::fromUtf8( "fActionProcess" ) );
     QIcon icon3;
     icon3.addFile( QString::fromUtf8( ":/SABUtilsResources/run.png" ), QSize(), QIcon::Normal, QIcon::Off );
     Q_ASSERT( !icon3.isNull() );
-    fActionSearchForAll->setIcon( icon3 );
-    fActionSearchForAll->setText( QCoreApplication::translate( "CPlayStateCompare", "Create Missing Collections", nullptr ) );
-    fActionSearchForAll->setToolTip( QCoreApplication::translate( "CPlayStateCompare", "Create Missing Collections", nullptr ) );
+    fCreateCollections->setIcon( icon3 );
+    fCreateCollections->setText( QCoreApplication::translate( "CCreateCollections", "Create Missing Collections", nullptr ) );
+    fCreateCollections->setToolTip( QCoreApplication::translate( "CCreateCollections", "Create Missing Collections", nullptr ) );
 
     fToolBar = new QToolBar( this );
     fToolBar->setObjectName( QString::fromUtf8( "fToolBar" ) );
 
-    fToolBar->addAction( fActionSearchForAll );
+    fToolBar->addAction( fCreateCollections );
 
-    connect( fActionSearchForAll, &QAction::triggered, this, &CCreateCollections::slotCreateMissingCollections );
+    connect( fCreateCollections, &QAction::triggered, this, &CCreateCollections::slotCreateMissingCollections );
 }
 
 bool CCreateCollections::prepForClose()
@@ -362,6 +363,10 @@ void CCreateCollections::setCollectionsFile( const QString & fileName, bool forc
     if ( !force && ( QFileInfo( fileName ) == QFileInfo( fFileName ) ) )
         return;
 
+    auto serverInfo = getCurrentServerInfo();
+    if (!serverInfo)
+        return;
+
     fFileName.clear();
     QFile fi( fileName );
     if ( !fi.open( QFile::ReadOnly ) )
@@ -378,32 +383,59 @@ void CCreateCollections::setCollectionsFile( const QString & fileName, bool forc
         QMessageBox::critical( this, tr( "Error Reading File" ), tr( "Error: %1 @ %2" ).arg( error.errorString() ).arg( error.offset ) );
         return;
     }
-    if ( !doc.isArray() )
+
+    if (!doc.isObject())
     {
-        QMessageBox::critical( this, tr( "Error Reading File" ), tr( "Error: Should be array of objects" ) );
+        QMessageBox::critical(this, tr("Error Reading File"), tr("Error: Top level item should be object"));
         return;
     }
 
-    auto serverInfo = getCurrentServerInfo();
-    if ( !serverInfo )
+    auto root = doc.object();
+    auto collectionsObj = root["collections"];
+    auto moviesObj = root["movies"];
+    if (!collectionsObj.isArray() && !moviesObj.isArray())
+    {
+        QMessageBox::critical(this, tr("Error Reading File"), tr("Error: Top level item should contain an array called movies or collections"));
         return;
+    }
+
+    if (moviesObj.isArray())
+    {
+        QJsonObject collectionObj;
+        collectionObj["collection"] = "<Unnamed Collection>";
+        collectionObj["movies"] = moviesObj;
+        auto tmp = QJsonArray();
+        tmp.push_back( collectionObj );
+        collectionsObj = tmp;
+    }
+    QJsonArray collections;
+    if ( !collectionsObj.isArray() )
+    {
+        return;
+    }
 
     fCollections->clear();
-    auto collections = doc.array();
-    for ( auto && curr : collections )
+    collections = collectionsObj.toArray();
+    for (auto&& curr : collections)
     {
-        auto collectionName = curr.toObject()[ "collection" ].toString();
-        auto movies = curr.toObject()[ "movies" ].toArray();
+        auto collectionName = curr.toObject()["collection"].toString();
+        auto movies = curr.toObject()["movies"].toArray();
         QModelIndex idx;
         std::shared_ptr< CMediaCollection > collection;
-        std::tie( idx, collection ) = fCollections->addCollection( serverInfo->keyName(), collectionName );
-        Q_ASSERT( collection.get() == fCollections->collection( idx ) );
-        for ( auto && movie : movies )
+        std::tie(idx, collection) = fCollections->addCollection(serverInfo->keyName(), collectionName);
+        Q_ASSERT(collection.get() == fCollections->collection(idx));
+        for (auto&& movie : movies)
         {
-            auto rank = movie.toObject()[ "rank" ].toInt();
-            auto movieName = movie.toObject()[ "name" ].toString();
-            auto year = movie.toObject()[ "year" ].toInt();
-            fCollections->addMovie( rank, movieName, year, idx );
+            auto rank = movie.toObject()["rank"].toInt();
+            if (!movie.toObject().contains("rank"))
+                rank = -1;
+            auto movieName = movie.toObject()["name"].toString();
+            auto year = movie.toObject()["year"].toInt();
+            auto currCollection = fCollections->addMovie( movieName, year, idx, rank);
+            if (currCollection->fCollection && currCollection->fCollection->isUnNamed() )
+            {
+                currCollection->fCollection->setFileName(fFileName);
+            }
         }
     }
 }
@@ -413,7 +445,7 @@ void CCreateCollections::slotCreateMissingCollections()
     auto serverInfo = getCurrentServerInfo();
     if ( !serverInfo )
         return;
-    fCollections->createCollections( serverInfo, fSyncSystem );
+    fCollections->createCollections( serverInfo, fSyncSystem, this );
 }
 
 

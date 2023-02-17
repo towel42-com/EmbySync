@@ -108,7 +108,7 @@ private:
 
     std::unique_ptr< Ui::CCreateCollections > fImpl;
 
-    QPointer< QAction > fActionSearchForAll;
+    QPointer< QAction > fCreateCollections;
     QPointer< QToolBar > fToolBar{ nullptr };
 
     CServerFilterModel * fServerFilterModel { nullptr };
