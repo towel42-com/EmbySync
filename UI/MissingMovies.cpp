@@ -131,8 +131,8 @@ void CMissingMovies::setupActions()
     icon3.addFile( QString::fromUtf8( ":/SABUtilsResources/search.png" ), QSize(), QIcon::Normal, QIcon::Off );
     Q_ASSERT( !icon3.isNull() );
     fActionSearchForAll->setIcon( icon3 );
-    fActionSearchForAll->setText( QCoreApplication::translate( "CPlayStateCompare", "Search for All Missing", nullptr ) );
-    fActionSearchForAll->setToolTip( QCoreApplication::translate( "CPlayStateCompare", "Search for All Missing", nullptr ) );
+    fActionSearchForAll->setText( QCoreApplication::translate( "CMissingMovies", "Search for All Missing", nullptr ) );
+    fActionSearchForAll->setToolTip( QCoreApplication::translate( "CMissingMovies", "Search for All Missing", nullptr ) );
 
     fToolBar = new QToolBar( this );
     fToolBar->setObjectName( QString::fromUtf8( "fToolBar" ) );
@@ -363,12 +363,19 @@ void CMissingMovies::setMovieSearchFile( const QString & fileName, bool force )
         QMessageBox::critical( this, tr( "Error Reading File" ), tr( "Error: %1 @ %2" ).arg( error.errorString() ).arg( error.offset ) );
         return;
     }
-    if ( !doc.isArray() )
+    if ( !doc.isObject() )
     {
-        QMessageBox::critical( this, tr( "Error Reading File" ), tr( "Error: Should be array of objects" ) );
+        QMessageBox::critical( this, tr( "Error Reading File" ), tr( "Error: Top level item should be object" ) );
         return;
     }
-    auto movies = doc.array();
+    auto root = doc.object();
+    auto moviesObj = root["movies"];
+    if ( !moviesObj.isArray() )
+    {
+        QMessageBox::critical(this, tr("Error Reading File"), tr("Error: Top level item should contain an array called movies"));
+        return;
+    }
+    auto movies = moviesObj.toArray();
     for ( auto && movie : movies )
     {
         auto name = movie.toObject()[ "name" ].toString();
