@@ -222,7 +222,7 @@ struct SCollectionServerInfo
     }
     bool missingMedia() const;
 
-    std::shared_ptr< SMediaCollectionData > addMovie( int rank, const QString & name, int year, CMediaCollection * parent );
+    std::shared_ptr< SMediaCollectionData > addMovie( const QString & name, int year, CMediaCollection * parent, int rank);
 
     QString fCollectionID;
     std::vector< std::shared_ptr< SMediaCollectionData > > fItems;
@@ -239,7 +239,7 @@ public:
     }
     QVariant data( int column, int role ) const;
 
-    std::shared_ptr< SMediaCollectionData > addMovie( int rank, const QString & name, int year );
+    std::shared_ptr< SMediaCollectionData > addMovie( const QString & name, int year, int rank );
     void setItems( const std::list< std::shared_ptr< CMediaData > > & items );
     bool updateMedia( std::shared_ptr< CMediaModel > mediaModel )
     {
@@ -262,8 +262,13 @@ public:
     {
         fCollectionInfo->createCollection( serverInfo, fName, syncSystem );
     }
+    bool isUnNamed() const { return name() == "<Unnamed Collection>"; }
+    void setFileName(const QString& fileName) { fFileName = fileName; }
+    QString fileBaseName() const;
+    void setName(const QString& name) { fName = name; }
 private:
     QString fServerName;
+    QString fFileName;
     QString fName;
     int fPosition{ -1 };
     std::shared_ptr< SCollectionServerInfo > fCollectionInfo;

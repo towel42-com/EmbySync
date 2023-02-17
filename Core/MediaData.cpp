@@ -35,6 +35,7 @@
 
 #include <QObject>
 #include <QVariant>
+#include <QFileInfo>
 
 #include <chrono>
 #include <optional>
@@ -585,14 +586,18 @@ bool CMediaData::validUserDataEqual() const
 
 bool CMediaData::isMatch( const QString & name, int year ) const
 {
-    bool isMatch = ( ( year >= premiereDate().year() - 1 ) && ( year <= premiereDate().year() + 1 ) );
+    bool isMatch = ( ( year >= premiereDate().year() - 3 ) && ( year <= premiereDate().year() + 3 ) );
 
     if ( !isMatch )
         return false;
 
-    if ( name.toLower().trimmed() == fName.toLower().trimmed() )
+    if ( SDummyMovie::nameKey( name ) == SDummyMovie::nameKey( fName ) )
+        return true;
+    if (SDummyMovie::nameKey(name) == SDummyMovie::nameKey( fOriginalTitle ))
         return true;
     if ( NSABUtils::NStringUtils::isSimilar( fName, name, true ) )
+        return true;
+    if ( NSABUtils::NStringUtils::isSimilar( fOriginalTitle, name, true) )
         return true;
     return false;
 }
@@ -698,9 +703,9 @@ QVariant CMediaCollection::data( int column, int role ) const
     return {};
 }
 
-std::shared_ptr< SMediaCollectionData > CMediaCollection::addMovie( int rank, const QString & name, int year )
+std::shared_ptr< SMediaCollectionData > CMediaCollection::addMovie( const QString & name, int year, int rank )
 {
-    return fCollectionInfo->addMovie( rank, name, year, this );
+    return fCollectionInfo->addMovie( name, year, this, rank );
 }
 
 void CMediaCollection::setItems( const std::list< std::shared_ptr< CMediaData > > & items )
@@ -718,6 +723,11 @@ bool CMediaCollection::updateWithRealCollection( std::shared_ptr< CMediaCollecti
 {
     (void)realCollection;
     return false;
+}
+
+QString CMediaCollection::fileBaseName() const
+{
+    return QFileInfo(fFileName).baseName();
 }
 
 SCollectionServerInfo::SCollectionServerInfo( const QString & id ) :
@@ -739,14 +749,18 @@ bool SCollectionServerInfo::updateMedia( std::shared_ptr< CMediaModel > mediaMod
     return retVal;
 }
 
-std::shared_ptr< SMediaCollectionData > SCollectionServerInfo::addMovie( int rank, const QString & name, int year, CMediaCollection * parent )
+std::shared_ptr< SMediaCollectionData > SCollectionServerInfo::addMovie( const QString & name, int year, CMediaCollection * parent, int rank )
 {
     auto retVal = std::make_shared< SMediaCollectionData >( std::make_shared< CMediaData >( name, year, "Movie" ), parent );
-    if ( ( rank - 1 ) >= fItems.size() )
+
+    if ( ( rank > 0 ) && ( rank - 1 ) >= fItems.size() )
     {
         fItems.resize( rank );
     }
-    fItems[ rank - 1 ] = retVal;
+    if (rank == -1)
+        fItems.push_back(retVal);
+    else
+        fItems[ rank - 1 ] = retVal;
     for ( size_t ii = 0; ii < fItems.size(); ++ii )
     {
         if ( !fItems[ ii ] )

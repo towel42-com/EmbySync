@@ -10,6 +10,7 @@
 
 #include <QJsonObject>
 #include <QColor>
+#include <QInputDialog>
 
 #include <optional>
 CMediaModel::CMediaModel( std::shared_ptr< CSettings > settings, std::shared_ptr< CServerModel > serverModel, QObject * parent ) :
@@ -510,6 +511,8 @@ std::shared_ptr< CMediaData > CMediaModel::findMedia( const QString & name, int 
 {
     for ( auto && ii : fAllMedia )
     {
+        if (ii->name().contains("Freaks"))
+            int xyz = 0;
         if ( ii->isMatch( name, year ) )
             return ii;
     }
@@ -1045,10 +1048,18 @@ void CCollectionsModel::updateCollections( const QString & serverName, std::shar
     }
 }
 
-void CCollectionsModel::createCollections( std::shared_ptr<const CServerInfo> serverInfo, std::shared_ptr< CSyncSystem > syncSystem )
+void CCollectionsModel::createCollections( std::shared_ptr<const CServerInfo> serverInfo, std::shared_ptr< CSyncSystem > syncSystem, QWidget * parent )
 {
     for ( auto && ii : fCollections )
     {
+        if ( ii->isUnNamed() )
+        {
+            bool aOK = false;
+            auto collectionName = QInputDialog::getText(parent, tr("Unnamed Collection"), tr("What do you want to name the Collection?"), QLineEdit::Normal, ii->fileBaseName(), &aOK);
+            if (!aOK || collectionName.isEmpty())
+                return;
+            ii->setName( collectionName );
+        }
         if ( !ii->collectionExists() )
         {
             ii->createCollection( serverInfo, syncSystem );
@@ -1139,7 +1150,7 @@ std::pair< QModelIndex, std::shared_ptr< CMediaCollection > > CCollectionsModel:
     return { idx, curr };
 }
 
-std::shared_ptr< SMediaCollectionData > CCollectionsModel::addMovie( int rank, const QString & name, int year, const QModelIndex & collectionIndex )
+std::shared_ptr< SMediaCollectionData > CCollectionsModel::addMovie( const QString & name, int year, const QModelIndex & collectionIndex, int rank )
 {
     Q_ASSERT( collectionIndex.isValid() );
     if ( !collectionIndex.isValid() )
@@ -1150,10 +1161,10 @@ std::shared_ptr< SMediaCollectionData > CCollectionsModel::addMovie( int rank, c
     if ( !collection )
         return {};
 
-    bool sizeIncreased = ( rank >= collection->childCount() );
+    bool sizeIncreased = ( rank == -1 ) || ( rank >= collection->childCount() );
     if ( sizeIncreased )
-        beginInsertRows( collectionIndex, collection->childCount(), rank - 1 );
-    auto retVal = collection->addMovie( rank, name, year );
+        beginInsertRows( collectionIndex, collection->childCount(), ( rank > 0 ) ? ( rank - 1 ) : collection->childCount() );
+    auto retVal = collection->addMovie( name, year, rank );
     if ( sizeIncreased )
         endInsertRows();
     else
@@ -1163,7 +1174,7 @@ std::shared_ptr< SMediaCollectionData > CCollectionsModel::addMovie( int rank, c
     auto rc = rowCount( collectionIndex );
     if ( sizeIncreased )
     {
-        Q_ASSERT( rc == ( rank ) );
+        Q_ASSERT( (rank == -1 ) || ( rc == ( rank ) ) );
     }
     else
         Q_ASSERT( ( rank + 1 ) <= rc );
