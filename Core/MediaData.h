@@ -65,6 +65,8 @@ public:
 
     CMediaData( const QJsonObject & mediaObj, std::shared_ptr< CServerModel > serverModel );
     CMediaData( const QString & name, int year, const QString & type ); // stub for dummy media
+
+    static bool isExtra( const QJsonObject & obj );
     bool hasProviderIDs() const;
     void addProvider( const QString & providerName, const QString & providerID );
 
