@@ -1595,7 +1595,7 @@ void CSyncSystem::requestGetMediaList( const QString & serverName )
         std::make_pair( "SortOrder", "Ascending" ),
         std::make_pair( "Recursive", "True" ),
         std::make_pair( "IsMissing", "False" ),
-        std::make_pair( "Fields", "ProviderIds,ExternalUrls,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate,Missing,OriginalTitle" )
+        std::make_pair("Fields", "Path,ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate,OriginalTitle")
     };
 
     // ItemsService
@@ -1627,6 +1627,8 @@ std::list< std::shared_ptr< CMediaData > > CSyncSystem::handleGetMediaListRespon
     //qDebug() << doc.toJson();
     if ( !doc[ "Items" ].isArray() )
     {
+        if ( CMediaData::isExtra( doc.object() ) )
+            return {};
         fMediaModel->loadMedia( serverName, doc.object() );
         return {};
     }
@@ -1650,6 +1652,9 @@ std::list< std::shared_ptr< CMediaData > > CSyncSystem::handleGetMediaListRespon
     //fMediaModel->beginBatchLoad();
     for ( auto && ii : mediaList )
     {
+        auto media = ii.toObject();
+        if ( CMediaData::isExtra( media ))
+            continue;
         if ( fSettings->maxItems() > 0 )
         {
             if ( retVal.size() >= fSettings->maxItems() )
@@ -1664,7 +1669,6 @@ std::list< std::shared_ptr< CMediaData > > CSyncSystem::handleGetMediaListRespon
             fProgressSystem->incProgress();
         }
 
-        auto media = ii.toObject();
         auto curr = fMediaModel->loadMedia( serverName, media );
         retVal.push_back( curr );
     }
@@ -1692,7 +1696,7 @@ void CSyncSystem::requestMissingEpisodes( const QString & serverName, const QDat
         std::make_pair( "SortOrder", "Ascending" ),
         std::make_pair( "Recursive", "True" ),
         std::make_pair( "IsMissing", "True" ),
-        std::make_pair( "Fields", "ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate,OriginalTitle" )
+        std::make_pair("Fields", "Path,ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate,OriginalTitle")
     };
     if ( minPremiereDate.isValid() )
     {
@@ -1728,7 +1732,8 @@ void CSyncSystem::requestMissingTVDBid( const QString & serverName )
         std::make_pair( "Recursive", "True" ),
         //std::make_pair( "IsMissing", "True" ),
         std::make_pair( "HasTvdbId", "False" ),
-        std::make_pair( "Fields", "ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate,OriginalTitle" )
+        std::make_pair( "HasSpecialFeature", "False"),
+        std::make_pair( "Fields", "Path,ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate,OriginalTitle" )
     };
 
     // ItemsService
@@ -1769,7 +1774,7 @@ void CSyncSystem::requestAllMovies( const QString & serverName )
         std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SortName" ),
         std::make_pair( "SortOrder", "Ascending" ),
         std::make_pair( "Recursive", "True" ),
-        std::make_pair( "Fields", "ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate,OriginalTitle" )
+        std::make_pair("Fields", "Path,ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate,OriginalTitle")
     };
 
     // ItemsService
@@ -1974,7 +1979,7 @@ void CSyncSystem::requestGetCollection( const QString & serverName, const QStrin
         std::make_pair( "IncludeItemTypes", "Movie" ),
         std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SortName" ),
         std::make_pair( "SortOrder", "Ascending" ),
-        std::make_pair( "Fields", "ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate" )
+        std::make_pair("Fields", "Path,ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate,OriginalTitle")
     };
 
 

@@ -42,7 +42,7 @@ option( gtest_force_shared_crt "Use shared ( DLL ) run-time lib even when Google
 
 set_property( GLOBAL PROPERTY USE_FOLDERS ON )
 
-file( REAL_PATH ~/bin/EmbySync CMAKE_INSTALL_PREFIX EXPAND_TILDE)
+file( REAL_PATH ~/Dropbox/home/bin/EmbySync CMAKE_INSTALL_PREFIX EXPAND_TILDE)
 
 SET( SAB_ENABLE_TESTING ON )
 add_subdirectory( SABUtils )

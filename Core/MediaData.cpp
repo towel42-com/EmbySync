@@ -87,6 +87,24 @@ CMediaData::CMediaData( const QString & name, int year, const QString & type )
     fPremiereDate = QDate( year, 1, 1 );
 }
 
+bool CMediaData::isExtra(const QJsonObject& obj)
+{
+    if (!obj.contains("Path"))
+        return false;
+    auto fullPath = obj["Path"].toString();
+    auto path = QFileInfo(fullPath);
+    auto parentDir = path.absolutePath();
+    auto parentDirName = QFileInfo(parentDir).baseName();
+    parentDirName = parentDirName.toLower();
+    if (   parentDirName.contains( "extras" )
+        || parentDirName.contains( "featurettes" )
+        || parentDirName.contains("interviews")
+        || parentDirName.contains("season 00")
+        )
+        return true;
+    return false;
+}
+
 std::shared_ptr<SMediaServerData> CMediaData::userMediaData( const QString & serverName ) const
 {
     auto pos = fInfoForServer.find( serverName );
