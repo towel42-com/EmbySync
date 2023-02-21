@@ -20,19 +20,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-cmake_minimum_required(VERSION 3.21)
-if(CMAKE_VERSION VERSION_LESS "3.7.0")
-    set(CMAKE_INCLUDE_CURRENT_DIR ON)
-endif()
-
-project(root-EmbySync) 
+cmake_minimum_required(VERSION 3.22)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/SABUtils/Modules ${CMAKE_MODULE_PATH})
+IF(WIN32)
+    find_package(VerifyVisualStudio REQUIRED)
+    VerifyVisualStudio( _ )
+    IF ( NOT _VISUAL_STUDIO_FOUND )
+        MESSAGE( FATAL_ERROR "Could not find Visual Studio compiler/linker" )
+    ENDIF()
+ENDIF()
+project(root-EmbySync) 
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED true)
 find_package(Threads)
-find_package(Qt5 COMPONENTS Core Widgets Network Test REQUIRED)
+find_package(Qt5 COMPONENTS Core Widgets Network Test Multimedia REQUIRED)
 find_package(Deploy REQUIRED)
 find_package(CheckOpenSSL REQUIRED)
 find_package(AddUnitTest REQUIRED)
@@ -58,5 +61,3 @@ INSTALL( FILES ReleaseNotes.txt DESTINATION . )
 
 include( ${CMAKE_SOURCE_DIR}/InstallerInfo.cmake )
 include( CPack )
-
-
