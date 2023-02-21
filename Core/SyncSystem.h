@@ -242,6 +242,7 @@ private Q_SLOTS:
     void slotRepairNextUser();
 
 private:
+    QString getItemFields() const;
     std::shared_ptr< CUserData > findFirstAdminUser(std::shared_ptr<const CServerInfo> serverInfo) const;
     QNetworkReply * makeRequest( QNetworkRequest & request, ENetworkRequestType requestType = ENetworkRequestType::eGet, const QByteArray & data = {}, QString contentType = QString() );
 
@@ -274,7 +275,8 @@ private:
     void handleSetUserAvatarResponse( const QString & serverName, const QString & userID );
 
     void requestGetMediaList( const QString & serverName );
-    void handleGetMediaListResponse( const QString & serverName, const QByteArray & data );
+
+    void handleGetMediaListResponse(const QString& serverName, const QByteArray& data);
 
     void requestMissingTVDBid( const QString & serverName );
     void handleMissingTVDBidResponse( const QString & serverName, const QByteArray & data );

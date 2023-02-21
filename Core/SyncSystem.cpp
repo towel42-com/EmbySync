@@ -1693,7 +1693,7 @@ void CSyncSystem::requestMissingEpisodes( const QString & serverName, const QDat
         std::make_pair( "SortOrder", "Ascending" ),
         std::make_pair( "Recursive", "True" ),
         std::make_pair( "IsMissing", "True" ),
-        std::make_pair("Fields", "Path,ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate,OriginalTitle")
+        std::make_pair( "Fields", "ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,PremierDate,EndDate,StartDate" )
     };
     if ( minPremiereDate.isValid() )
     {
