@@ -29,6 +29,7 @@
 
 #include <QSortFilterProxyModel>
 #include <QScrollBar>
+#include <QHeaderView>
 
 CDataTree::CDataTree( const std::shared_ptr< const CServerInfo > & serverInfo, QWidget * parentWidget )
     : QWidget( parentWidget ),
@@ -39,7 +40,7 @@ CDataTree::CDataTree( const std::shared_ptr< const CServerInfo > & serverInfo, Q
     installEventFilter( this );
     fImpl->data->setContextMenuPolicy( Qt::ContextMenuPolicy::CustomContextMenu );
     connect( fImpl->data, &QTreeView::customContextMenuRequested, this, &CDataTree::slotContextMenuRequested );
-
+    connect( fImpl->data->header(), &QHeaderView::sectionClicked, this, &CDataTree::slotHeaderClicked );
     setServer( serverInfo, false );
 }
 
@@ -59,13 +60,19 @@ void CDataTree::setModel( QAbstractItemModel * model )
     connect( fImpl->data, &QTreeView::doubleClicked, this, &CDataTree::sigViewData );
 }
 
+QAbstractItemModel * CDataTree::model() const
+{
+    return fImpl->data->model();
+}
+
 void CDataTree::setServer( const std::shared_ptr< const CServerInfo > & serverInfo, bool hideColumns )
 {
     if ( fServerInfo )
         disconnect( fServerInfo.get(), &CServerInfo::sigServerInfoChanged, this, &CDataTree::slotServerInfoChanged );
 
     fServerInfo = serverInfo;
-    connect( fServerInfo.get(), &CServerInfo::sigServerInfoChanged, this, &CDataTree::slotServerInfoChanged );
+    if ( fServerInfo )
+        connect( fServerInfo.get(), &CServerInfo::sigServerInfoChanged, this, &CDataTree::slotServerInfoChanged );
     slotServerInfoChanged();
     if ( hideColumns )
         this->hideColumns();
@@ -181,6 +188,19 @@ void CDataTree::hideColumns()
     }
 }
 
+void CDataTree::sort( int defColumn, Qt::SortOrder defOrder )
+{
+    int column = defColumn;
+    auto order = defOrder;
+    if ( fUserSort )
+    {
+        column = fImpl->data->header()->sortIndicatorSection();;
+        order = fImpl->data->header()->sortIndicatorOrder();
+    }
+
+    fImpl->data->sortByColumn( column, order );
+}
+
 bool CDataTree::eventFilter( QObject * obj, QEvent * event )
 {
     if ( obj == fImpl->data->horizontalScrollBar() )
@@ -204,7 +224,7 @@ bool CDataTree::hasCurrentItem() const
     return currentIndex().isValid();
 }
 
-QWidget * CDataTree::dataTree() const
+QTreeView * CDataTree::dataTree() const
 {
     return fImpl->data;
 }
@@ -212,4 +232,9 @@ QWidget * CDataTree::dataTree() const
 void CDataTree::slotContextMenuRequested( const QPoint & pos )
 {
     emit sigDataContextMenuRequested( this, pos );
+}
+
+void CDataTree::slotHeaderClicked()
+{
+    fUserSort = true;
 }

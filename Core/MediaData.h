@@ -24,21 +24,21 @@
 #define __MEDIADATA_H
 
 #include <QString>
-#include <QMap>
 #include <QUrlQuery>
 #include <QDateTime>
 #include <QIcon>
 
+#include <functional>
+#include <map>
 #include <memory>
-
-class QVariant;
-class QListWidgetItem;
+#include <optional>
+class CServerInfo;
+class CMediaModel;
 class QJsonObject;
-class QTreeWidget;
-class QListWidget;
-class QColor;
 class CServerModel;
+class CSyncSystem;
 struct SMediaServerData;
+
 
 enum class EMediaSyncStatus
 {
@@ -47,6 +47,14 @@ enum class EMediaSyncStatus
     eMediaNeedsUpdating    // 2 or more servers have media and a sync is necessar
 };
 
+enum EMissingProviderIDs : uint8_t
+{
+    eNone = 0x00,
+    eTVDBid = 0x01,
+    eTMDBid = 0x02,
+    eIMDBid = 0x04,
+    eTVRageid = 0x08
+};
 
 class CMediaData
 {
@@ -54,13 +62,16 @@ public:
     static QStringList getHeaderLabels();
     static void setMSecsToStringFunc( std::function< QString( uint64_t ) > func );
     static std::function< QString( uint64_t ) > mecsToStringFunc();
-    static QString computeName( const QJsonObject & media );
 
     CMediaData( const QJsonObject & mediaObj, std::shared_ptr< CServerModel > serverModel );
+    CMediaData( const QString & name, int year, const QString & type ); // stub for dummy media
+
+    static bool isExtra( const QJsonObject & obj );
     bool hasProviderIDs() const;
     void addProvider( const QString & providerName, const QString & providerID );
 
     QString name() const;
+    QString originalTitle() const { return fOriginalTitle; }
     QString seriesName() const;
     QString mediaType() const;
     bool beenLoaded( const QString & serverName ) const;
@@ -110,13 +121,28 @@ public:
     uint64_t playCount( const QString & serverName ) const;
     bool allPlayCountEqual() const;
 
-    QDateTime premiereDate() const { return fPremiereDate; }
+    QDate premiereDate() const { return fPremiereDate; }
 
     std::shared_ptr<SMediaServerData> userMediaData( const QString & serverName ) const;
     std::shared_ptr<SMediaServerData> newestMediaData() const;
 
     QIcon getDirectionIcon( const QString & serverName ) const;
+
+    enum class ETorrentSite
+    {
+        eRARBG,
+        ePirateBay
+    };
+    QUrl getSearchURL( ETorrentSite site ) const;
+
+    QJsonObject toJson( bool includeSearchURL );
+    
+    bool onServer() const;
+    bool isMatch( const QString & name, int year ) const;
+
+    bool isMissingProvider( EMissingProviderIDs missingIdsType ) const;
 private:
+    void computeName( const QJsonObject & media );
     template< typename T >
     bool allEqual( std::function< T( std::shared_ptr< SMediaServerData > ) > func ) const
     {
@@ -137,10 +163,13 @@ private:
 
     QString fType;
     QString fName;
+    QString fOriginalTitle;
     QString fSeriesName; // only valid for EpisodeTypes
+    std::optional< int > fSeason; // only valid for EpisodeTypes
+    std::optional< int > fEpisode; // only valid for EpisodeTypes
     std::map< QString, QString > fProviders;
     std::map< QString, QString > fExternalUrls;
-    QDateTime fPremiereDate;
+    QDate fPremiereDate;
 
     bool fCanBeSynced{ false };
     std::map< QString, std::shared_ptr< SMediaServerData > > fInfoForServer;
@@ -148,4 +177,105 @@ private:
     static std::function< QString( uint64_t ) > sMSecsToStringFunc;
 
 };
+
+class CMediaCollection;
+struct SMediaCollectionData
+{
+    SMediaCollectionData( std::shared_ptr< CMediaData > data, CMediaCollection * collection ) :
+        fData( data ),
+        fCollection( collection )
+    {
+    }
+    QVariant data( int column, int role ) const;;
+    bool updateMedia( std::shared_ptr< CMediaModel > mediaModel );
+    std::shared_ptr< CMediaData > fData;
+    CMediaCollection * fCollection{ nullptr };
+};
+
+struct SCollectionServerInfo
+{
+    SCollectionServerInfo( const QString & id );
+
+    bool updateMedia( std::shared_ptr< CMediaModel > mediaModel );
+
+    int childCount() const
+    {
+        return static_cast<int>( fItems.size() );
+    }
+    int numMissing() const;
+
+    std::shared_ptr< SMediaCollectionData > child( int pos ) const // may be null
+    {
+        if ( ( pos < 0 ) || ( pos >= fItems.size() ) )
+            return {};
+        return fItems[ pos ];
+    }
+
+    void createCollection( std::shared_ptr<const CServerInfo> serverInfo, const QString & collectionName, std::shared_ptr< CSyncSystem > syncSystem );
+
+
+    bool collectionExists() const
+    {
+        return !fCollectionID.isEmpty();
+    }
+    void setId( const QString & id )
+    {
+        fCollectionID = id;
+    }
+    bool missingMedia() const;
+
+    std::shared_ptr< SMediaCollectionData > addMovie( const QString & name, int year, CMediaCollection * parent, int rank);
+
+    QString fCollectionID;
+    std::vector< std::shared_ptr< SMediaCollectionData > > fItems;
+};
+
+class CMediaCollection
+{
+public:
+    CMediaCollection( const QString & serverName, const QString & name, const QString & id, int pos );
+    int childCount() const { return fCollectionInfo ? fCollectionInfo->childCount() : 0; }
+    std::shared_ptr< SMediaCollectionData > child( int pos ) const
+    {
+        return fCollectionInfo->child( pos );
+    }
+    QVariant data( int column, int role ) const;
+
+    std::shared_ptr< SMediaCollectionData > addMovie( const QString & name, int year, int rank );
+    void setItems( const std::list< std::shared_ptr< CMediaData > > & items );
+    bool updateMedia( std::shared_ptr< CMediaModel > mediaModel )
+    {
+        return fCollectionInfo->updateMedia( mediaModel );
+    }
+    bool missingMedia() const
+    {
+        return fCollectionInfo->missingMedia();
+    }
+
+    int numMovies() const { return childCount(); }
+    int numMissing() const { return fCollectionInfo ? fCollectionInfo->numMissing() : 0; }
+    int collectionNum() const { return fPosition; }
+
+    QString name() const { return fName; }
+
+    bool updateWithRealCollection( std::shared_ptr< CMediaCollection > realCollection );
+    bool collectionExists() const { return fCollectionInfo->collectionExists(); }
+    void createCollection( std::shared_ptr<const CServerInfo> serverInfo, std::shared_ptr< CSyncSystem > syncSystem )
+    {
+        fCollectionInfo->createCollection( serverInfo, fName, syncSystem );
+    }
+    bool isUnNamed() const { return name() == "<Unnamed Collection>"; }
+    void setFileName(const QString& fileName) { fFileName = fileName; }
+    QString fileBaseName() const;
+    void setName(const QString& name) { fName = name; }
+private:
+    QString fServerName;
+    QString fFileName;
+    QString fName;
+    int fPosition{ -1 };
+    std::shared_ptr< SCollectionServerInfo > fCollectionInfo;
+};
+
+
+
 #endif 

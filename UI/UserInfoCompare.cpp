@@ -50,6 +50,7 @@
 #include <QTimer>
 #include <QToolBar>
 #include <QCloseEvent>
+#include <QTreeView>
 
 CUserInfoCompare::CUserInfoCompare( QWidget * parent )
     : CTabPageBase( parent ),
@@ -86,16 +87,16 @@ void CUserInfoCompare::setupActions()
     QIcon icon3;
     icon3.addFile( QString::fromUtf8( ":/resources/process.png" ), QSize(), QIcon::Normal, QIcon::Off );
     fActionProcess->setIcon( icon3 );
-    fActionProcess->setText( QCoreApplication::translate( "CPlayStateCompare", "Process Media", nullptr ) );
-    fActionProcess->setToolTip( QCoreApplication::translate( "CPlayStateCompare", "Process Media", nullptr ) );
+    fActionProcess->setText( QCoreApplication::translate( "CUserInfoCompare", "Process Media", nullptr ) );
+    fActionProcess->setToolTip( QCoreApplication::translate( "CUserInfoCompare", "Process Media", nullptr ) );
 
     fActionSelectiveProcess = new QAction( this );
     fActionSelectiveProcess->setObjectName( QString::fromUtf8( "fActionSelectiveProcess" ) );
     QIcon icon4;
     icon4.addFile( QString::fromUtf8( ":/resources/processRight.png" ), QSize(), QIcon::Normal, QIcon::Off );
     fActionSelectiveProcess->setIcon( icon4 );
-    fActionSelectiveProcess->setText( QCoreApplication::translate( "CPlayStateCompare", "Select a Server and Update other servers to it..", nullptr ) );
-    fActionSelectiveProcess->setToolTip( QCoreApplication::translate( "CPlayStateCompare", "Select a Server and Update other servers to it", nullptr ) );
+    fActionSelectiveProcess->setText( QCoreApplication::translate( "CUserInfoCompare", "Select a Server and Update other servers to it..", nullptr ) );
+    fActionSelectiveProcess->setToolTip( QCoreApplication::translate( "CUserInfoCompare", "Select a Server and Update other servers to it", nullptr ) );
 
     fActionRepairUserConnectedIDs = new QAction( this );
     fActionRepairUserConnectedIDs->setObjectName( QString::fromUtf8( "fActionRepairUserConnectedIDs" ) );
@@ -109,11 +110,11 @@ void CUserInfoCompare::setupActions()
 
     fViewMenu = new QMenu( this );
     fViewMenu->setObjectName( QString::fromUtf8( "fViewMenu" ) );
-    fViewMenu->setTitle( QCoreApplication::translate( "CPlayStateCompare", "View", nullptr ) );
+    fViewMenu->setTitle( QCoreApplication::translate( "CUserInfoCompare", "View", nullptr ) );
 
     fActionViewUserInformation = new QAction( this );
     fActionViewUserInformation->setObjectName( QString::fromUtf8( "fActionViewUserInformation" ) );
-    fActionViewUserInformation->setText( QCoreApplication::translate( "CPlayStateCompare", "User Information...", nullptr ) );
+    fActionViewUserInformation->setText( QCoreApplication::translate( "CUserInfoCompare", "User Information...", nullptr ) );
 
     fViewMenu->addAction( fActionViewUserInformation );
     connect( fActionViewUserInformation, &QAction::triggered, this, &CUserInfoCompare::slotViewUserInfo );

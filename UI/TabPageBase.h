@@ -26,6 +26,9 @@
 #include <QWidget>
 #include <tuple>
 #include <memory>
+#include <list>
+#include <QUrl>
+
 class CSettings;
 class CUsersModel;
 class CMediaModel;
@@ -70,6 +73,11 @@ public:
 
     void autoSizeDataTrees();
     void hideDataTreeColumns();
+    void sortDataTrees();
+
+    virtual int defaultSortColumn() const { return 0; }
+    virtual Qt::SortOrder defaultSortOrder() const { return Qt::SortOrder::AscendingOrder; }
+
     virtual bool prepForClose() = 0;
 Q_SIGNALS:
     void sigAddToLog( int msgType, const QString & msg );
@@ -83,8 +91,10 @@ public Q_SLOTS:
     virtual void slotCanceled() {};
     virtual void slotModelDataChanged() {};
     virtual void slotSettingsChanged() {};
+    virtual void slotNextSearchURL() final;
 
 protected:
+    void bulkSearch( std::function< std::pair< bool, QUrl >( const QModelIndex & idx ) > addItemFunc );
 
     QString selectServer() const;
 
@@ -92,7 +102,7 @@ protected:
 
     virtual void clearServers();
     virtual void createServerTrees( QAbstractItemModel * model );
-    virtual void addDataTreeForServer( std::shared_ptr<const CServerInfo> server, QAbstractItemModel * model );
+    virtual CDataTree * addDataTreeForServer( std::shared_ptr<const CServerInfo> server, QAbstractItemModel * model );
     virtual void setupDataTreePeers();
 
     std::shared_ptr< CSettings > fSettings;
@@ -103,5 +113,6 @@ protected:
     std::shared_ptr< CSyncSystem > fSyncSystem;
 
     std::vector< CDataTree * > fDataTrees;
+    std::list< QUrl > fBulkSearchURLs;
 };
 #endif

@@ -59,6 +59,9 @@ public:
 
     QString keyName() const;// getUrl().toString()
 
+    bool isServer( const QString & serverName ) const;
+
+
     bool canSync() const;
 
     QString apiKey() const { return fAPIKey; }

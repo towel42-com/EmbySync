@@ -1,0 +1,301 @@
+{
+"movies":[
+    {
+        "name": "Freaks",
+        "year": 1932
+    },
+    {
+        "name": "The Mask of Fu Manchu",
+        "year": 1932
+    },
+    {
+        "name": "Gone With the Wind",
+        "year": 1939
+    },
+    {
+        "name": "Dumbo",
+        "year": 1941
+    },
+
+    {
+        "name": "Song of the South",
+        "year": 1946
+    },
+
+
+
+    {
+        "name": "Peter Pan",
+        "year": 1953
+    },
+
+
+
+    {
+        "name": "Lady and the Tramp",
+        "year": 1955
+    },
+
+
+
+    {
+        "name": "The Searchers",
+        "year": 1956
+    },
+
+
+
+    {
+        "name": "Breakfast at Tiffany's",
+        "year": 1961
+    },
+
+    {
+        "name": "The Producers",
+        "year": 1967
+    },
+
+
+
+    {
+        "name": "You Only Live Twice",
+        "year": 1967
+    },
+
+
+
+
+    {
+        "name": "Myra Breckinridge",
+        "year": 1970
+    },
+
+
+    {
+        "name": "Female Trouble",
+        "year": 1972
+    },
+
+
+    {
+        "name": "A Clockwork Orange",
+        "year": 1972
+    },
+
+
+    {
+        "name": "Blazing Saddles",
+        "year": 1974
+    },
+
+
+    {
+        "name": "Ilsa: She Wolf of the SS",
+        "year": 1975
+    },
+
+
+    {
+        "name": "Bad News Bears",
+        "year": 1976
+    },
+
+
+    {
+        "name": "Silver Streak",
+        "year": 1976
+    },
+
+
+    {
+        "name": "Monty Python's Life of Brian",
+        "year": 1976
+    },
+
+
+    {
+        "name": "National Lampoon's Animal House",
+        "year": 1978
+    },
+
+
+    {
+        "name": "The Jerk",
+        "year": 1979
+    },
+
+
+    {
+        "name": "Manhattan",
+        "year": 1979
+    },
+
+
+    {
+        "name": "Ordinary People",
+        "year": 1980
+    },
+
+
+    {
+        "name": "Airplane!",
+        "year": 1980
+    },
+
+
+    {
+        "name": "Dressed to Kill",
+        "year": 1980
+    },
+
+
+    {
+        "name": "Porky's",
+        "year": 1981
+    },
+
+
+    {
+        "name": "Stripes",
+        "year": 1981
+    },
+
+
+    {
+        "name": "Tootsie",
+        "year": 1982
+    },
+
+
+    {
+        "name": "48 Hrs",
+        "year": 1982
+    },
+
+
+    {
+        "name": "The Toy",
+        "year": 1982
+    },
+
+
+    {
+        "name": "Zapped",
+        "year": 1982
+    },
+
+
+    {
+        "name": "Revenge of the Nerds",
+        "year": 1984
+    },
+
+
+    {
+        "name": "Sixteen Candles",
+        "year": 1984
+    },
+
+
+    {
+        "name": "Police Academy",
+        "year": 1984
+    },
+
+
+    {
+        "name": "Weird Science",
+        "year": 1985
+    },
+
+
+    {
+        "name": "Teen Wolf",
+        "year": 1985
+    },
+
+
+    {
+        "name": "Crocodile Dundee",
+        "year": 1986
+    },
+
+
+    {
+        "name": "Soul Man",
+        "year": 1986
+    },
+
+
+    {
+        "name": "Who Framed Roger Rabbit",
+        "year": 1988
+    },
+
+
+    {
+        "name": "Heathers",
+        "year": 1989
+    },
+
+
+    {
+        "name": "Ace Ventura: Pet Detective",
+        "year": 1994
+    },
+
+
+    {
+        "name": "Heavenly Creatures",
+        "year": 1994
+    },
+
+
+    {
+        "name": "Pocahontas",
+        "year": 1995
+    },
+
+
+    {
+        "name": "Dogma",
+        "year": 1999
+    },
+
+
+    {
+        "name": "Star Wars: The Phantom Menace",
+        "year": 1999
+    },
+
+
+    {
+        "name": "Bamboozled",
+        "year": 2000
+    },
+
+
+    {
+        "name": "Shallow Hal",
+        "year": 2001
+    },
+
+
+    {
+        "name": "Blue Valentine",
+        "year": 2010
+    },
+
+
+    {
+        "name": "The Diary of a Teenage Girl",
+        "year": 2015
+    },
+
+
+    {
+        "name": "Beach Rats",
+        "year": 2017
+    }
+]
+}

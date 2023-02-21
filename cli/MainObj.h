@@ -25,6 +25,7 @@
 #define __MAINOBJ_H
 
 #include <QObject>
+#include <QDate>
 #include <QRegularExpression>
 #include <list>
 #include <memory>
@@ -36,21 +37,50 @@ class CUserData;
 class CMediaModel;
 class CUsersModel;
 class CServerModel;
+class CServerInfo;
 class CMainObj : public QObject
 {
     Q_OBJECT;
 public:
-    CMainObj( const QString & settingsFile, QObject * parent = nullptr );
+    enum class EMode
+    {
+        eUnknown,
+        eCheckMissing,
+        eSync
+    };
+
+    CMainObj( const QString & settingsFile, const QString & mode, QObject * parent = nullptr );
 
     void run();
     void setSelectiveProcesssServer( const QString & selectedServer )
     {
         this->fSelectedServerToProcess = selectedServer;
     }
-    bool aOK() const
+    void setMinimumDate( const QString & minDate );
+    void setMinimumDate( const QDate & minDate )
     {
-        return fAOK;
+        fMinDate = minDate;
     }
+    void setMaximumDate( const QString & maxDate );
+    void setMaximumDate( const QDate & maxDate )
+    {
+        fMaxDate = maxDate;
+    }
+
+    bool aOK() const;
+
+    QString errorString() const
+    {
+        return fErrorString;
+    }
+
+    void setQuiet( bool quiet )
+    {
+        fQuiet = quiet;
+    }
+    void addToLog( int msgType, const QString & title, const QString & msg );
+    void addToLog( int msgType, const QString & msg );
+
 Q_SIGNALS:
     void sigExit( int exitCode );
 public Q_SLOTS:
@@ -59,8 +89,10 @@ public Q_SLOTS:
     void slotProcessNextUser();
     void slotUserMediaCompletelyLoaded();
     void slotProcessingFinished( const QString & userName );
+    void slotMissingEpisodesLoaded();
     void slotProcessMedia();
 private:
+    bool setMode( const QString & mode );
     std::shared_ptr< CSettings > fSettings;
     std::shared_ptr< CSyncSystem > fSyncSystem;
 
@@ -70,12 +102,19 @@ private:
 
     QString fSettingsFile;
     QRegularExpression fUserRegExp;
-    bool fAOK{ false };
+    mutable QString fErrorString{ "Unknown Error" };
+    mutable bool fAOK{ false };
 
     std::tuple< int, QString, QString > fCurrentProgress{ 0, QString(), QString() };
 
     std::list< std::shared_ptr< CUserData > > fUsersToSync;
     QString fSelectedServerToProcess;
+    std::shared_ptr< CServerInfo > fSelectedServer;
+
+    QDate fMinDate;
+    QDate fMaxDate;
+    EMode fMode{ EMode::eUnknown };
+    bool fQuiet{ false };
 };
 
 #endif

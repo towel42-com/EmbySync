@@ -30,6 +30,8 @@
 #include <QSplitter>
 #include <QModelIndex>
 #include <QInputDialog>
+#include <QDesktopServices>
+#include <QTimer>
 
 
 CTabPageBase::CTabPageBase( QWidget * parent )
@@ -73,13 +75,18 @@ void CTabPageBase::hideDataTreeColumns()
         ii->hideColumns();
 }
 
+void CTabPageBase::sortDataTrees()
+{
+    for ( auto && ii : fDataTrees )
+        ii->sort( defaultSortColumn(), defaultSortOrder() );
+}
+
 QString CTabPageBase::selectServer() const
 {
     QStringList serverNames;
     std::map< QString, QString > servers;
-    for ( int ii = 0; ii < fServerModel->serverCnt(); ++ii )
+    for ( auto && serverInfo : *fServerModel )
     {
-        auto serverInfo = fServerModel->getServerInfo( ii );
         if ( !serverInfo->isEnabled() )
             continue;
 
@@ -101,6 +108,47 @@ QString CTabPageBase::selectServer() const
     if ( pos == servers.end() )
         return QString();
     return ( *pos ).second;
+}
+
+void CTabPageBase::bulkSearch( std::function< std::pair< bool, QUrl > ( const QModelIndex & idx ) > addItemFunc )
+{
+    fBulkSearchURLs.clear();
+    for ( auto && currTree : fDataTrees )
+    {
+        auto treeModel = currTree->model();
+
+        auto rowCount = treeModel->rowCount();
+        bool add = false;
+        for ( int ii = 0; ii < rowCount; ++ii )
+        {
+            auto index = treeModel->index( ii, 0 );
+            auto text = index.data().toString();
+            if ( add )
+            {
+                auto curr = addItemFunc( index );
+                if ( curr.first )
+                {
+                    fBulkSearchURLs.emplace_back( curr.second );
+                }
+            }
+        }
+    }
+    while ( fBulkSearchURLs.size() > 10 )
+        fBulkSearchURLs.pop_back();
+
+    slotNextSearchURL();
+}
+
+void CTabPageBase::slotNextSearchURL()
+{
+    if ( fBulkSearchURLs.empty() )
+        return;
+
+    auto url = fBulkSearchURLs.front();
+    fBulkSearchURLs.pop_front();
+    QDesktopServices::openUrl( url );
+
+    QTimer::singleShot( 250, this, &CTabPageBase::slotNextSearchURL );
 }
 
 void CTabPageBase::loadServers( QAbstractItemModel * model )
@@ -125,27 +173,28 @@ void CTabPageBase::setupDataTreePeers()
 
 void CTabPageBase::createServerTrees( QAbstractItemModel * model )
 {
-    for ( int ii = 0; ii < fServerModel->serverCnt(); ++ii )
+    for ( auto && serverInfo : *fServerModel )
     {
-        auto serverInfo = fServerModel->getServerInfo( ii );
         if ( !serverInfo->isEnabled() )
             continue;
 
-        addDataTreeForServer( fServerModel->getServerInfo( ii ), model );
+        addDataTreeForServer( serverInfo, model );
     }
 }
 
-void CTabPageBase::addDataTreeForServer( std::shared_ptr<const CServerInfo> server, QAbstractItemModel * model )
+CDataTree * CTabPageBase::addDataTreeForServer( std::shared_ptr<const CServerInfo> server, QAbstractItemModel * model )
 {
     auto dataTree = new CDataTree( server, getDataSplitter() );
 
     getDataSplitter()->addWidget( dataTree );
     dataTree->setModel( model );
+    dataTree->sort( defaultSortColumn(), defaultSortOrder() );
     connect( dataTree, &CDataTree::sigCurrChanged, this, &CTabPageBase::sigSetCurrentDataItem );
     connect( dataTree, &CDataTree::sigViewData, this, &CTabPageBase::sigViewData );
     connect( dataTree, &CDataTree::sigDataContextMenuRequested, this, &CTabPageBase::sigDataContextMenuRequested );
 
     fDataTrees.push_back( dataTree );
+    return dataTree;
 }
 
 void CTabPageBase::clearServers()

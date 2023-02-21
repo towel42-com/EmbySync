@@ -160,10 +160,12 @@ void CMainWindow::setupProgressSystem()
     fSyncSystem->setProgressSystem( fProgressSystem );
 
     fSyncSystem->setUserMsgFunc(
-        [this]( const QString & title, const QString & msg, bool isCritical )
+        [this]( EMsgType msgType, const QString & title, const QString & msg )
         {
-            if ( isCritical )
+            if ( msgType == EMsgType::eError )
                 QMessageBox::critical( this, title, msg );
+            else if ( msgType == EMsgType::eWarning )
+                QMessageBox::warning( this, title, msg );
             else
                 QMessageBox::information( this, title, msg );
         } );
@@ -454,6 +456,7 @@ void CMainWindow::progressIncValue()
         return;
 
     fProgressDlg->setValue( progressValue() + 1 );
+    qApp->processEvents();
 }
 
 void CMainWindow::slotCurentTabChanged( int /*idx*/ )

@@ -17,71 +17,13 @@
    <item row="2" column="0" colspan="2">
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>5</number>
+      <number>4</number>
      </property>
-     <widget class="QWidget" name="generalTab">
-      <attribute name="title">
-       <string>General</string>
-      </attribute>
-      <layout class="QGridLayout" name="gridLayout_2">
-       <item row="0" column="0">
-        <widget class="QCheckBox" name="checkForLatest">
-         <property name="text">
-          <string>Check for latest version?</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0">
-        <spacer name="verticalSpacer_5">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item row="1" column="0">
-        <widget class="QCheckBox" name="loadLastProject">
-         <property name="text">
-          <string>Load last project on StartUp?</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
      <widget class="QWidget" name="serversTab">
       <attribute name="title">
        <string>Server Info</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout">
-       <item row="5" column="2">
-        <spacer name="verticalSpacer_4">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>204</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item row="1" column="2">
-        <widget class="QToolButton" name="delServer">
-         <property name="text">
-          <string>...</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../SABUtils/resources/SABUtils.qrc">
-           <normaloff>:/SABUtilsResources/delete.png</normaloff>:/SABUtilsResources/delete.png</iconset>
-         </property>
-        </widget>
-       </item>
        <item row="0" column="0" rowspan="6" colspan="2">
         <widget class="QTreeWidget" name="servers">
          <property name="alternatingRowColors">
@@ -110,14 +52,25 @@
          </column>
         </widget>
        </item>
-       <item row="3" column="2">
-        <widget class="QToolButton" name="moveServerUp">
+       <item row="0" column="2">
+        <widget class="QToolButton" name="addServer">
          <property name="text">
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset resource="EmbySync.qrc">
-           <normaloff>:/resources/moveup.png</normaloff>:/resources/moveup.png</iconset>
+          <iconset resource="../SABUtils/resources/SABUtils.qrc">
+           <normaloff>:/SABUtilsResources/add.png</normaloff>:/SABUtilsResources/add.png</iconset>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="2">
+        <widget class="QToolButton" name="delServer">
+         <property name="text">
+          <string>...</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../SABUtils/resources/SABUtils.qrc">
+           <normaloff>:/SABUtilsResources/delete.png</normaloff>:/SABUtilsResources/delete.png</iconset>
          </property>
         </widget>
        </item>
@@ -132,25 +85,42 @@
          </property>
         </widget>
        </item>
-       <item row="7" column="1" colspan="2">
-        <widget class="QDialogButtonBox" name="testButtonBox">
-         <property name="standardButtons">
-          <set>QDialogButtonBox::NoButton</set>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="2">
-        <widget class="QToolButton" name="addServer">
+       <item row="3" column="2">
+        <widget class="QToolButton" name="moveServerUp">
          <property name="text">
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset resource="../SABUtils/resources/SABUtils.qrc">
-           <normaloff>:/SABUtilsResources/add.png</normaloff>:/SABUtilsResources/add.png</iconset>
+          <iconset resource="EmbySync.qrc">
+           <normaloff>:/resources/moveup.png</normaloff>:/resources/moveup.png</iconset>
          </property>
         </widget>
        </item>
-       <item row="6" column="0">
+       <item row="4" column="2">
+        <widget class="QToolButton" name="moveServerDown">
+         <property name="text">
+          <string>...</string>
+         </property>
+         <property name="icon">
+          <iconset resource="EmbySync.qrc">
+           <normaloff>:/resources/movedown.png</normaloff>:/resources/movedown.png</iconset>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="2">
+        <spacer name="verticalSpacer_4">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>204</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="7" column="0">
         <spacer name="verticalSpacer">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -163,16 +133,33 @@
          </property>
         </spacer>
        </item>
-       <item row="4" column="2">
-        <widget class="QToolButton" name="moveServerDown">
-         <property name="text">
-          <string>...</string>
-         </property>
-         <property name="icon">
-          <iconset resource="EmbySync.qrc">
-           <normaloff>:/resources/movedown.png</normaloff>:/resources/movedown.png</iconset>
+       <item row="8" column="1">
+        <widget class="QDialogButtonBox" name="testButtonBox">
+         <property name="standardButtons">
+          <set>QDialogButtonBox::NoButton</set>
          </property>
         </widget>
+       </item>
+       <item row="6" column="0" colspan="3">
+        <layout class="QHBoxLayout" name="horizontalLayout">
+         <item>
+          <widget class="QLabel" name="label">
+           <property name="text">
+            <string>Primary Server:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="primaryServer">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+             <horstretch>1</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
       </layout>
      </widget>
@@ -358,7 +345,7 @@
          <property name="orientation">
           <enum>Qt::Vertical</enum>
          </property>
-         <widget class="QWidget" name="">
+         <widget class="QWidget" name="layoutWidget_1">
           <layout class="QGridLayout" name="gridLayout_5">
            <item row="0" column="0">
             <widget class="QLabel" name="label_7">
@@ -425,7 +412,7 @@
            </item>
           </layout>
          </widget>
-         <widget class="QWidget" name="">
+         <widget class="QWidget" name="layoutWidget_2">
           <layout class="QVBoxLayout" name="verticalLayout">
            <item>
             <widget class="QLabel" name="label_6">
@@ -487,7 +474,7 @@
          <property name="orientation">
           <enum>Qt::Vertical</enum>
          </property>
-         <widget class="QWidget" name="">
+         <widget class="QWidget" name="layoutWidget_3">
           <layout class="QGridLayout" name="gridLayout_6">
            <item row="0" column="0">
             <widget class="QLabel" name="label_8">
@@ -554,7 +541,7 @@
            </item>
           </layout>
          </widget>
-         <widget class="QWidget" name="">
+         <widget class="QWidget" name="layoutWidget_4">
           <layout class="QVBoxLayout" name="verticalLayout_3">
            <item>
             <widget class="QLabel" name="label_9">
@@ -606,6 +593,40 @@
        </item>
       </layout>
      </widget>
+     <widget class="QWidget" name="generalTab">
+      <attribute name="title">
+       <string>General</string>
+      </attribute>
+      <layout class="QGridLayout" name="gridLayout_2">
+       <item row="0" column="0">
+        <widget class="QCheckBox" name="checkForLatest">
+         <property name="text">
+          <string>Check for latest version?</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <spacer name="verticalSpacer_5">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="1" column="0">
+        <widget class="QCheckBox" name="loadLastProject">
+         <property name="text">
+          <string>Load last project on StartUp?</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
     </widget>
    </item>
    <item row="3" column="0">
@@ -621,13 +642,13 @@
   </layout>
  </widget>
  <tabstops>
-  <tabstop>tabWidget</tabstop>
-  <tabstop>maxItems</tabstop>
-  <tabstop>syncAudio</tabstop>
-  <tabstop>syncVideo</tabstop>
-  <tabstop>syncEpisode</tabstop>
-  <tabstop>syncMovie</tabstop>
-  <tabstop>syncTrailer</tabstop>
+  <tabstop>servers</tabstop>
+  <tabstop>addServer</tabstop>
+  <tabstop>delServer</tabstop>
+  <tabstop>editServer</tabstop>
+  <tabstop>moveServerUp</tabstop>
+  <tabstop>moveServerDown</tabstop>
+  <tabstop>primaryServer</tabstop>
   <tabstop>syncAdultVideo</tabstop>
   <tabstop>syncMusicVideo</tabstop>
   <tabstop>syncGame</tabstop>
@@ -637,13 +658,23 @@
   <tabstop>delUser</tabstop>
   <tabstop>editUser</tabstop>
   <tabstop>knownUsers</tabstop>
-  <tabstop>servers</tabstop>
-  <tabstop>addServer</tabstop>
-  <tabstop>delServer</tabstop>
-  <tabstop>editServer</tabstop>
+  <tabstop>tabWidget</tabstop>
+  <tabstop>maxItems</tabstop>
+  <tabstop>syncAudio</tabstop>
+  <tabstop>syncVideo</tabstop>
   <tabstop>mediaSourceColor</tabstop>
   <tabstop>mediaDestColor</tabstop>
   <tabstop>dataMissingColor</tabstop>
+  <tabstop>checkForLatest</tabstop>
+  <tabstop>loadLastProject</tabstop>
+  <tabstop>syncEpisode</tabstop>
+  <tabstop>syncMovie</tabstop>
+  <tabstop>showsList</tabstop>
+  <tabstop>addShow</tabstop>
+  <tabstop>delShow</tabstop>
+  <tabstop>editShow</tabstop>
+  <tabstop>knownShows</tabstop>
+  <tabstop>syncTrailer</tabstop>
  </tabstops>
  <resources>
   <include location="EmbySync.qrc"/>
