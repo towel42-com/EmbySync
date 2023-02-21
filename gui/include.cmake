@@ -1,3 +1,7 @@
+set(_PROJECT_NAME EmbySyncGUI)
+set(USE_QT TRUE)
+set(FOLDER_NAME Apps)
+
 set(qtproject_SRCS
     main.cpp    
 )

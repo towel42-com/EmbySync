@@ -37,7 +37,13 @@
 #include <map>
 
 CSettings::CSettings( std::shared_ptr< CServerModel > serverModel ) :
-    fServerModel( serverModel )
+    CSettings( true, serverModel )
+{
+}
+
+CSettings::CSettings( bool saveOnDelete, std::shared_ptr< CServerModel > serverModel ) :
+    fServerModel( serverModel ),
+    fSaveOnDelete( saveOnDelete )
 {
     fSyncUserList = QStringList() << ".*";
     fServerModel->setSettings( this );
@@ -45,7 +51,8 @@ CSettings::CSettings( std::shared_ptr< CServerModel > serverModel ) :
 
 CSettings::~CSettings()
 {
-    save();
+    if ( fSaveOnDelete )
+        save();
 }
 
 bool CSettings::checkForLatest()
@@ -162,6 +169,7 @@ bool CSettings::load( const QString & fileName, std::function<void( const QStrin
     setSyncUserList( getValue( json.object(), "SyncUserList", QStringList() << ".*" ).toStringList() );
     setIgnoreShowList( getValue( json.object(), "IgnoreShowList", QStringList() ).toStringList() );
 
+    setPrimaryServer( getValue( json.object(), "PrimaryServer", QString() ).toString() );
     fChanged = false;
 
     if ( addToRecentFileList )
@@ -183,6 +191,16 @@ QStringList CSettings::recentProjectList() const
 {
     QSettings settings;
     return settings.value( "RecentProjects", QStringList() ).toStringList();
+}
+
+void CSettings::setPrimaryServer( const QString & serverName )
+{
+    updateValue( fPrimaryServer, serverName );
+}
+
+QString CSettings::primaryServer() const
+{
+    return fPrimaryServer;
 }
 
 bool CSettings::save()
@@ -220,6 +238,8 @@ bool CSettings::save( std::function<void( const QString & title, const QString &
     root[ "SyncGame" ] = syncGame();
     root[ "SyncBook" ] = syncBook();
     
+    root[ "PrimaryServer" ] = primaryServer();
+
     auto userList = QJsonArray();
     for ( auto && ii : fSyncUserList )
         userList.push_back( ii );

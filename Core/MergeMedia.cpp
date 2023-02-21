@@ -22,6 +22,40 @@ void CMergeMedia::addMediaInfo( const QString & serverName, std::shared_ptr<CMed
     }
 }
 
+void CMergeMedia::removeMedia( const QString & serverName, const std::shared_ptr< CMediaData > & mediaData )
+{
+    auto pos = fMediaMap.find( serverName );
+    if ( pos != fMediaMap.end() )
+    {
+        auto pos2 = ( *pos ).second.find( mediaData->getMediaID( serverName ) );
+        ( *pos ).second.erase( pos2 );
+    }
+
+    auto && providers = mediaData->getProviders( true );
+    for ( auto && ii : providers )
+    {
+        auto pos = fProviderSearchMap.find( serverName );
+        if ( pos != fProviderSearchMap.end() )
+        {
+            auto pos2 = ( *pos ).second.find( ii.first );
+            if ( pos2 != ( *pos ).second.end() )
+            {
+                auto pos3 = ( *pos2 ).second.find( ii.second );
+                if ( pos3 != ( *pos2 ).second.end() )
+                    ( *pos2 ).second.erase( pos3 );
+                if ( (*pos2).second.empty() )
+                {
+                    ( *pos ).second.erase( pos2 );
+                }
+            }
+            if ( (*pos).second.empty() )
+            {
+                fProviderSearchMap.erase( serverName );
+            }
+        }
+    }
+}
+
 bool CMergeMedia::merge( std::shared_ptr< CProgressSystem > progressSystem )
 {
     progressSystem->resetProgress();

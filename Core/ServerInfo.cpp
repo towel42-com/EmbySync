@@ -99,11 +99,11 @@ QUrl CServerInfo::getUrl( const QString & extraPath, const std::list< std::pair<
     auto retVal = QUrl( path );
 
     QUrlQuery query;
-    query.addQueryItem( "api_key", fAPIKey );
     for ( auto && ii : queryItems )
     {
         query.addQueryItem( ii.first, ii.second );
     }
+    query.addQueryItem( "api_key", fAPIKey );
     retVal.setQuery( query );
 
     //qDebug() << retVal;
@@ -132,6 +132,23 @@ QString CServerInfo::keyName() const
     if ( fKeyName.isEmpty() )
         fKeyName = getUrl().toString( QUrl::RemoveUserInfo | QUrl::RemoveQuery );
     return fKeyName;
+}
+
+bool CServerInfo::isServer( const QString & serverName ) const
+{
+    if ( keyName() == serverName )
+        return true;
+    if ( displayName( false ) == serverName )
+        return true;
+    if ( displayName( true ) == serverName )
+        return true;
+    if ( !fServerName.isEmpty() && ( fServerName == serverName ) )
+        return true;
+    if ( !fName.first.isEmpty() && ( fName.first == serverName ) )
+         return true;
+    if ( getUrl().host() == serverName )
+        return true;
+    return false;
 }
 
 void CServerInfo::autoSetDisplayName( bool usePort )

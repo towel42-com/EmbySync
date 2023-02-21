@@ -1,17 +1,12 @@
 #include "ServerModel.h"
-#include "MediaData.h"
-#include "MergeMedia.h"
 
 #include "Settings.h"
 #include "ServerInfo.h"
-#include "ProgressSystem.h"
 
 #include <QJsonObject>
 #include <QJsonDocument>
 #include <QJsonArray>
-#include <QColor>
 
-#include <optional>
 CServerModel::CServerModel( QObject * parent) :
     QAbstractTableModel( parent )
 {
@@ -49,7 +44,15 @@ QVariant CServerModel::data( const QModelIndex & index, int role /*= Qt::Display
             return serverInfo->icon();
         return {};
     }
-    if ( role == ECustomRoles::eEnabledRole )
+    else if ( role == ECustomRoles::eIsPrimaryServerSet )
+    {
+        return !fSettings->primaryServer().isEmpty();
+    }
+    else if ( role == ECustomRoles::eIsPrimaryServer )
+    {
+        return fSettings->primaryServer() == serverInfo->displayName();
+    }
+    else if ( role == ECustomRoles::eEnabledRole )
     {
         return serverInfo->isEnabled();
     }
@@ -140,15 +143,23 @@ bool CServerFilterModel::filterAcceptsRow( int source_row, const QModelIndex & s
 {
     if ( !sourceModel() )
         return true;
-    if ( !fOnlyShowEnabled )
+    if ( !fOnlyShowEnabled && !fOnlyShowPrimaryServer )
         return true;
     auto childIdx = sourceModel()->index( source_row, 0, source_parent );
+    if ( fOnlyShowPrimaryServer && childIdx.data( CServerModel::eIsPrimaryServerSet ).toBool() )
+        return childIdx.data( CServerModel::eIsPrimaryServer ).toBool();
     return childIdx.data( CServerModel::eEnabledRole ).toBool();
 }
 
 void CServerFilterModel::setOnlyShowEnabledServers( bool value )
 {
     fOnlyShowEnabled = value;
+    invalidateFilter();
+}
+
+void CServerFilterModel::setOnlyShowPrimaryServer( bool value )
+{
+    fOnlyShowPrimaryServer = value;
     invalidateFilter();
 }
 
@@ -210,7 +221,7 @@ int CServerModel::enabledServerCnt() const
     return retVal;
 }
 
-bool CServerModel::serversChanged( const std::vector< std::shared_ptr< CServerInfo > > & lhs, const std::vector< std::shared_ptr< CServerInfo > > & rhs ) const
+bool CServerModel::serversChanged( const TServerVector & lhs, const TServerVector & rhs ) const
 {
     if ( lhs.size() != rhs.size() )
         return true;
@@ -308,6 +319,29 @@ std::shared_ptr< const CServerInfo > CServerModel::findServerInfo( const QString
     if ( pos != fServerMap.end() )
         return ( *pos ).second.first;
     return {};
+}
+
+std::shared_ptr< CServerInfo > CServerModel::enableServer( const QString & serverName, bool disableOthers, QString & msg )
+{
+    std::shared_ptr< CServerInfo > retVal;
+    for ( auto && ii : fServers )
+    {
+        auto isServer = ii->isServer( serverName );
+        if ( isServer )
+        {
+            ii->setIsEnabled( true );
+        }
+        else if ( disableOthers )
+            ii->setIsEnabled( false );
+        if ( isServer && retVal )
+        {
+            msg = QString( "Multiple servers match '%1'." ).arg( serverName );
+            return false;
+        }
+        if ( isServer )
+            retVal = ii;
+    }
+    return retVal;
 }
 
 void CServerModel::updateServerInfo( const QString & serverName, const QJsonObject & serverData )

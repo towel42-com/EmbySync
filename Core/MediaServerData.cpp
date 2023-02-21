@@ -24,7 +24,7 @@
 #include "MediaData.h"
 #include <QVariant>
 
-QJsonObject SMediaServerData::userDataJSON() const
+QJsonObject SMediaServerData::toJson() const
 {
     QJsonObject obj;
     obj[ "IsFavorite" ] = fIsFavorite;

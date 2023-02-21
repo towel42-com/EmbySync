@@ -21,17 +21,19 @@
 # SOFTWARE.
 
 cmake_minimum_required(VERSION 3.22)
- 
-project( EmbySyncGUI ) 
 
-include( include.cmake )
-include( ${CMAKE_SOURCE_DIR}/Project.cmake )
+find_package(IncludeProjectSettings REQUIRED)
+include( ${CMAKE_CURRENT_LIST_DIR}/include.cmake )
+project( ${_PROJECT_NAME} )
+IncludeProjectSettings(QT ${USE_QT})
+ 
 include_directories( ${CMAKE_BINARY_DIR} )
 
 add_executable( ${PROJECT_NAME} WIN32
                 ${_PROJECT_DEPENDENCIES} 
                 ${_CMAKE_MODULE_FILES}
                 application.rc 
+                ../afi/movies.json
           )
 if ( NOT DEPLOYQT_EXECUTABLE )
     message( FATAL_ERROR "DEPLOYQT_EXECUTABLE not set" )

@@ -172,9 +172,8 @@ QString CUserData::sortName( std::shared_ptr< CServerModel > serverModel ) const
     if ( !connectedID().isEmpty() )
         return connectedID();
 
-    for ( int ii = 0; ii < serverModel->serverCnt(); ++ii )
+    for ( auto && serverInfo : *serverModel )
     {
-        auto serverInfo = serverModel->getServerInfo( ii );
         if ( !serverInfo->isEnabled() )
             continue;
         auto info = userInfo( serverInfo->keyName() );

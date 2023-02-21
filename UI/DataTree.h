@@ -36,6 +36,7 @@ class CSettings;
 class CUserData;
 class QAbstractItemModel;
 class CServerInfo;
+class QTreeView;
 class CDataTree : public QWidget
 {
     Q_OBJECT
@@ -45,9 +46,11 @@ public:
     virtual ~CDataTree() override;
 
     void setModel( QAbstractItemModel * model );
+    QAbstractItemModel * model() const;
     
     void setServer( const std::shared_ptr< const CServerInfo > & serverInfo, bool hideColumns );
     void hideColumns();
+    void sort( int column, Qt::SortOrder order ); // if the user hasnt changed the sort, use column and order, otherwise use existing settings
 
     void addPeerDataTree( CDataTree * peer );
     QModelIndex currentIndex() const;
@@ -58,7 +61,7 @@ public:
 
     bool hasCurrentItem() const;
 
-    QWidget * dataTree() const;
+    QTreeView * dataTree() const;
     std::shared_ptr< const CServerInfo > serverInfo() const { return fServerInfo; }
 Q_SIGNALS:
     void sigCurrChanged( const QModelIndex & idx );
@@ -76,11 +79,13 @@ private Q_SLOTS:
     void slotVActionTriggered( int action );
     void slotServerInfoChanged();
     void slotContextMenuRequested( const QPoint & pos );
+    void slotHeaderClicked();
 
 private:
     std::unique_ptr< Ui::CDataTree > fImpl;
     std::vector< CDataTree * > fPeers;
 
+    bool fUserSort{ false };
     std::shared_ptr< const CServerInfo > fServerInfo;
 };
 #endif 

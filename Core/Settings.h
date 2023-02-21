@@ -48,6 +48,7 @@ class CSettings
 {
 public:
     CSettings( std::shared_ptr< CServerModel > serverModel );
+    CSettings( bool saveOnDelete, std::shared_ptr< CServerModel > serverModel );
     virtual ~CSettings();
 
     // global settings store in the registry
@@ -144,8 +145,11 @@ public:
 
     void addRecentProject( const QString & fileName );
     QStringList recentProjectList() const;
+
+    void setPrimaryServer( const QString & serverName );
+    QString primaryServer() const;
 private:
-    QVariant getValue( const QJsonObject  & data, const QString & fieldName, const QVariant & defaultValue ) const;
+    QVariant getValue( const QJsonObject & data, const QString & fieldName, const QVariant & defaultValue ) const;
 
     QColor getColor( const QColor & clr, bool forBackground /*= true */ ) const;
     bool maybeSave( QWidget * parent, std::function<QString()> selectFileFunc, std::function<void( const QString & title, const QString & msg )> errorFunc );
@@ -189,8 +193,12 @@ private:
     QStringList fSyncUserList;
     std::set< QString > fIgnoreShowList;
 
+    QString fPrimaryServer;
+
     std::shared_ptr< CServerModel > fServerModel;
     bool fChanged{ false };
+
+    bool fSaveOnDelete{ true };
 };
 
 #endif 

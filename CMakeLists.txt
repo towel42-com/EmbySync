@@ -21,6 +21,7 @@
 # SOFTWARE.
 
 cmake_minimum_required(VERSION 3.22)
+project(root-EmbySync) 
 
 SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/SABUtils/Modules ${CMAKE_MODULE_PATH})
 IF(WIN32)
@@ -30,7 +31,6 @@ IF(WIN32)
         MESSAGE( FATAL_ERROR "Could not find Visual Studio compiler/linker" )
     ENDIF()
 ENDIF()
-project(root-EmbySync) 
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED true)
@@ -48,7 +48,8 @@ option( gtest_force_shared_crt "Use shared ( DLL ) run-time lib even when Google
 
 set_property( GLOBAL PROPERTY USE_FOLDERS ON )
 
-file( REAL_PATH ~/bin/EmbySync CMAKE_INSTALL_PREFIX EXPAND_TILDE)
+file( REAL_PATH ~/Dropbox/home/bin/EmbySync CMAKE_INSTALL_PREFIX EXPAND_TILDE)
+
 SET( SAB_ENABLE_TESTING ON )
 add_subdirectory( SABUtils )
 add_subdirectory( UI )
@@ -56,8 +57,4 @@ add_subdirectory( Core )
 add_subdirectory( gui )
 add_subdirectory( cli )
 
-INSTALL( FILES License.txt DESTINATION . )
-INSTALL( FILES ReleaseNotes.txt DESTINATION . )
-
-include( ${CMAKE_SOURCE_DIR}/InstallerInfo.cmake )
-include( CPack )
+include( InstallerInfo.cmake )

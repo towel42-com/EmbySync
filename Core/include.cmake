@@ -20,8 +20,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+set(_PROJECT_NAME Core)
+set(USE_QT TRUE)
+set(FOLDER_NAME Libs)
+
 set(qtproject_SRCS
     MediaData.cpp
+    MediaCollection.cpp
     MediaServerData.cpp
     MediaModel.cpp
     MergeMedia.cpp
@@ -45,6 +50,7 @@ set(qtproject_H
 
 set(project_H
     MediaData.h
+    MediaCollection.h
     MediaServerData.h
     MergeMedia.h
     ProgressSystem.h

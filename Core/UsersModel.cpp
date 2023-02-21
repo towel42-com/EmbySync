@@ -27,21 +27,22 @@ void CUsersModel::setupColumns()
     fServerNumToColumn.clear();
     int columnNum = static_cast<int>( eFirstServerColumn );
     auto colsPerServer = this->columnsPerServer();
-    for ( int ii = 0; ii < fServerModel->serverCnt(); ++ii )
+    int serverNum = 0;
+    for ( auto && serverInfo : *fServerModel )
     {
-        auto serverInfo = fServerModel->getServerInfo( ii );
         if ( !serverInfo->isEnabled() )
             continue;
         for ( int jj = 0; jj < colsPerServer; ++jj )
         {
-            fServerNumToColumn[ ii ] = columnNum;
-            fColumnToServerInfo[ columnNum ] = std::make_pair( ii, serverInfo );
+            fServerNumToColumn[ serverNum ] = columnNum;
+            fColumnToServerInfo[ columnNum ] = std::make_pair( serverNum, serverInfo );
 
             columnNum++;
         }
 
         disconnect( serverInfo.get(), &CServerInfo::sigServerInfoChanged, this, &CUsersModel::slotServerInfoChanged );
         connect( serverInfo.get(), &CServerInfo::sigServerInfoChanged, this, &CUsersModel::slotServerInfoChanged );
+        serverNum++;
     }
     Q_ASSERT( columnNum == columnCount() );
 }
@@ -207,6 +208,8 @@ QVariant CUsersModel::data( const QModelIndex & index, int role /*= Qt::DisplayR
     {
         case EServerColumns::eUserName:
             return userData->name( serverName );
+        case EServerColumns::eIsAdmin:
+            return userData->isAdmin(serverName);
         case EServerColumns::eServerConnectedID:
             return userData->connectedID( serverName );
         case EServerColumns::eServerConnectedIDType:
@@ -355,6 +358,8 @@ QVariant CUsersModel::headerData( int section, Qt::Orientation orientation, int 
 
             case EServerColumns::eUserName:
                 return tr( "%2" ).arg( ( *pos ).second.second->displayName() );
+            case EServerColumns::eIsAdmin:
+                return tr( "Is Admin?" );
             case EServerColumns::eIconStatus:
                 return tr( "Icon Ratio" );
             case EServerColumns::eDateCreated:
@@ -401,12 +406,11 @@ void CUsersModel::loadAvatars( std::shared_ptr< CSyncSystem > syncSystem ) const
 {
     for ( auto && user : fUsers )
     {
-        for ( int ii = 0; ii < fServerModel->serverCnt(); ++ii )
+        for ( auto && serverInfo : *fServerModel )
         {
-            auto server = fServerModel->getServerInfo( ii );
-            if ( !server->isEnabled() )
+            if ( !serverInfo->isEnabled() )
                 continue;
-            auto serverName = server->keyName();
+            auto serverName = serverInfo->keyName();
             if ( user->hasAvatarInfo( serverName ) )
                 syncSystem->requestGetUserAvatar( serverName, user->getUserID( serverName ) );
         }
@@ -671,11 +675,11 @@ std::shared_ptr< CUserData > CUsersModel::userData( const QString & name, bool e
     return {};
 }
 
-std::vector< std::shared_ptr< CUserData > > CUsersModel::getAllUsers( bool sorted ) const
+CUsersModel::TUserDataVector CUsersModel::getAllUsers( bool sorted ) const
 {
     if ( sorted )
     {
-        std::vector< std::shared_ptr< CUserData > > retVal;
+        TUserDataVector retVal;
         retVal.reserve( fUserMap.size() );
         for ( auto && ii : fUserMap )
         {
