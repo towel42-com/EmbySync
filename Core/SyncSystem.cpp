@@ -1580,6 +1580,26 @@ void CSyncSystem::handleSetConnectedID( const QString & serverName )
     return fUsersModel->updateUserConnectID( serverName, fCurrUserConnectID.fUserData->getUserID( serverName ), fCurrUserConnectID.fUserData->connectedIDType(), fCurrUserConnectID.fUserData->connectedID() );
 }
 
+QString CSyncSystem::getItemFields() const
+{
+    static QStringList items
+    {
+         "Path"
+        ,"ProviderIds"
+        ,"ExternalUrls"
+        ,"Missing"
+        ,"ProductionYear"
+        ,"PremiereDate"
+        ,"DateCreated"
+        ,"PremierDate"
+        ,"EndDate"
+        ,"StartDate"
+        ,"OriginalTitle"
+    };
+    static auto retVal = items.join(",");
+    return retVal;
+}
+
 void CSyncSystem::requestGetMediaList( const QString & serverName )
 {
     if ( !currUser().second )
@@ -1592,7 +1612,7 @@ void CSyncSystem::requestGetMediaList( const QString & serverName )
         std::make_pair( "SortOrder", "Ascending" ),
         std::make_pair( "Recursive", "True" ),
         std::make_pair( "IsMissing", "False" ),
-        std::make_pair("Fields", "Path,ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate,OriginalTitle")
+        std::make_pair("Fields", getItemFields() )
     };
 
     // ItemsService
@@ -1693,7 +1713,7 @@ void CSyncSystem::requestMissingEpisodes( const QString & serverName, const QDat
         std::make_pair( "SortOrder", "Ascending" ),
         std::make_pair( "Recursive", "True" ),
         std::make_pair( "IsMissing", "True" ),
-        std::make_pair( "Fields", "ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,PremierDate,EndDate,StartDate" )
+        std::make_pair( "Fields", getItemFields() )
     };
     if ( minPremiereDate.isValid() )
     {
@@ -1730,7 +1750,7 @@ void CSyncSystem::requestMissingTVDBid( const QString & serverName )
         //std::make_pair( "IsMissing", "True" ),
         std::make_pair( "HasTvdbId", "False" ),
         std::make_pair( "HasSpecialFeature", "False"),
-        std::make_pair( "Fields", "Path,ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate,OriginalTitle" )
+        std::make_pair( "Fields", getItemFields() )
     };
 
     // ItemsService
@@ -1771,7 +1791,7 @@ void CSyncSystem::requestAllMovies( const QString & serverName )
         std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SortName" ),
         std::make_pair( "SortOrder", "Ascending" ),
         std::make_pair( "Recursive", "True" ),
-        std::make_pair("Fields", "Path,ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate,OriginalTitle")
+        std::make_pair("Fields", getItemFields() )
     };
 
     // ItemsService
