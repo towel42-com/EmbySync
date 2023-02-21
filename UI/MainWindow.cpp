@@ -366,7 +366,7 @@ void CMainWindow::loadSettings()
 {
     slotAddToLog( EMsgType::eInfo, "Loading Settings" );
 
-    auto windowTitle = QString::fromStdString( NVersion::getWindowTitle() );
+    auto windowTitle = NVersion::getWindowTitle();
     if ( !fSettings->fileName().isEmpty() )
         windowTitle += " - " + QFileInfo( fSettings->fileName() ).fileName();
 
