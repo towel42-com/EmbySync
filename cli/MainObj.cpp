@@ -30,6 +30,7 @@
 #include "Core/ServerInfo.h"
 #include "Core/MediaModel.h"
 #include "Core/ServerModel.h"
+#include "Core/CollectionsModel.h"
 #include "Core/MediaData.h"
 
 #include "SABUtils/QtUtils.h"
@@ -88,8 +89,9 @@ CMainObj::CMainObj( const QString & settingsFile, const QString & mode, QObject 
 
     fUsersModel = std::make_shared< CUsersModel >( fSettings, fServerModel );
     fMediaModel = std::make_shared< CMediaModel >( fSettings, fServerModel );
+    fCollectionsModel = std::make_shared< CCollectionsModel >( fMediaModel );
 
-    fSyncSystem = std::make_shared< CSyncSystem >( fSettings, fUsersModel, fMediaModel, fServerModel );
+    fSyncSystem = std::make_shared< CSyncSystem >( fSettings, fUsersModel, fMediaModel, fCollectionsModel, fServerModel );
 
     connect( fSyncSystem.get(), &CSyncSystem::sigAddToLog, this, &CMainObj::slotAddToLog );
     connect( fSyncSystem.get(), &CSyncSystem::sigLoadingUsersFinished, this, &CMainObj::slotLoadingUsersFinished );

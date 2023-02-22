@@ -37,6 +37,7 @@ class CUserData;
 class CMediaModel;
 class CUsersModel;
 class CServerModel;
+class CCollectionsModel;
 class CServerInfo;
 class CMainObj : public QObject
 {
@@ -98,6 +99,7 @@ private:
 
     std::shared_ptr< CServerModel > fServerModel;
     std::shared_ptr< CMediaModel > fMediaModel;
+    std::shared_ptr< CCollectionsModel > fCollectionsModel;
     std::shared_ptr< CUsersModel > fUsersModel;
 
     QString fSettingsFile;
