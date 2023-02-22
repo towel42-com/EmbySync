@@ -50,20 +50,20 @@ public:
         eSync
     };
 
-    CMainObj( const QString & settingsFile, const QString & mode, QObject * parent = nullptr );
+    CMainObj(const QString& settingsFile, const QString& mode, QObject* parent = nullptr);
 
     void run();
-    void setSelectiveProcesssServer( const QString & selectedServer )
+    void setSelectiveProcesssServer(const QString& selectedServer)
     {
         this->fSelectedServerToProcess = selectedServer;
     }
-    void setMinimumDate( const QString & minDate );
-    void setMinimumDate( const QDate & minDate )
+    void setMinimumDate(const QString& minDate);
+    void setMinimumDate(const QDate& minDate)
     {
         fMinDate = minDate;
     }
-    void setMaximumDate( const QString & maxDate );
-    void setMaximumDate( const QDate & maxDate )
+    void setMaximumDate(const QString& maxDate);
+    void setMaximumDate(const QDate& maxDate)
     {
         fMaxDate = maxDate;
     }
@@ -75,25 +75,25 @@ public:
         return fErrorString;
     }
 
-    void setQuiet( bool quiet )
+    void setQuiet(bool quiet)
     {
         fQuiet = quiet;
     }
-    void addToLog( int msgType, const QString & title, const QString & msg );
-    void addToLog( int msgType, const QString & msg );
+    void addToLog(int msgType, const QString& title, const QString& msg);
+    void addToLog(int msgType, const QString& msg);
 
 Q_SIGNALS:
-    void sigExit( int exitCode );
+    void sigExit(int exitCode);
 public Q_SLOTS:
-    void slotAddToLog( int msgType, const QString & msg );
+    void slotAddToLog(int msgType, const QString& msg);
     void slotLoadingUsersFinished();
     void slotProcessNextUser();
     void slotUserMediaCompletelyLoaded();
-    void slotProcessingFinished( const QString & userName );
+    void slotProcessingFinished(const QString& userName);
     void slotMissingEpisodesLoaded();
     void slotProcessMedia();
 private:
-    bool setMode( const QString & mode );
+    bool setMode(const QString& mode);
     std::shared_ptr< CSettings > fSettings;
     std::shared_ptr< CSyncSystem > fSyncSystem;
 

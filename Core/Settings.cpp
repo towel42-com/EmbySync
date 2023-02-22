@@ -36,166 +36,166 @@
 
 #include <map>
 
-CSettings::CSettings( std::shared_ptr< CServerModel > serverModel ) :
-    CSettings( true, serverModel )
+CSettings::CSettings(std::shared_ptr< CServerModel > serverModel) :
+    CSettings(true, serverModel)
 {
 }
 
-CSettings::CSettings( bool saveOnDelete, std::shared_ptr< CServerModel > serverModel ) :
-    fServerModel( serverModel ),
-    fSaveOnDelete( saveOnDelete )
+CSettings::CSettings(bool saveOnDelete, std::shared_ptr< CServerModel > serverModel) :
+    fServerModel(serverModel),
+    fSaveOnDelete(saveOnDelete)
 {
     fSyncUserList = QStringList() << ".*";
-    fServerModel->setSettings( this );
+    fServerModel->setSettings(this);
 }
 
 CSettings::~CSettings()
 {
-    if ( fSaveOnDelete )
+    if (fSaveOnDelete)
         save();
 }
 
 bool CSettings::checkForLatest()
 {
     QSettings settings;
-    return settings.value( "CheckForLatest", true ).toBool();
+    return settings.value("CheckForLatest", true).toBool();
 }
 
-void CSettings::setCheckForLatest( bool value )
+void CSettings::setCheckForLatest(bool value)
 {
     QSettings settings;
-    settings.setValue( "CheckForLatest", value );
+    settings.setValue("CheckForLatest", value);
 }
 
 bool CSettings::loadLastProject()
 {
     QSettings settings;
-    return settings.value( "LoadLastProject", true ).toBool();
+    return settings.value("LoadLastProject", true).toBool();
 }
 
-void CSettings::setLoadLastProject( bool value )
+void CSettings::setLoadLastProject(bool value)
 {
     QSettings settings;
-    settings.setValue( "LoadLastProject", value );
+    settings.setValue("LoadLastProject", value);
 }
 
-QVariant CSettings::getValue( const QJsonObject  & json, const QString & fieldName, const QVariant & defaultValue ) const
+QVariant CSettings::getValue(const QJsonObject& json, const QString& fieldName, const QVariant& defaultValue) const
 {
-    if ( json.find( fieldName ) == json.end() )
+    if (json.find(fieldName) == json.end())
         return defaultValue;
     else
-        return json[ fieldName ].toVariant();
+        return json[fieldName].toVariant();
 }
 
-bool CSettings::load( const QString & fileName, std::function<void( const QString & title, const QString & msg )> errorFunc, bool addToRecentFileList )
+bool CSettings::load(const QString& fileName, std::function<void(const QString& title, const QString& msg)> errorFunc, bool addToRecentFileList)
 {
     fFileName = fileName;
 
-    QFile file( fFileName );
-    if ( !file.open( QFile::ReadOnly | QFile::Text ) )
+    QFile file(fFileName);
+    if (!file.open(QFile::ReadOnly | QFile::Text))
     {
-        if ( errorFunc )
-            errorFunc( QObject::tr( "Could not open" ), QObject::tr( "Could not open file '%1'" ).arg( fFileName ) );
+        if (errorFunc)
+            errorFunc(QObject::tr("Could not open"), QObject::tr("Could not open file '%1'").arg(fFileName));
         fFileName.clear();
         return false;
     }
 
     QJsonParseError error;
-    auto json = QJsonDocument::fromJson( file.readAll(), &error );
-    if ( error.error != QJsonParseError::NoError )
+    auto json = QJsonDocument::fromJson(file.readAll(), &error);
+    if (error.error != QJsonParseError::NoError)
     {
-        if ( errorFunc )
-            errorFunc( QObject::tr( "Could not read" ), QObject::tr( "Could not read file '%1' - '%2' @ %3" ).arg( fFileName ).arg( error.errorString() ).arg( error.offset ) );
+        if (errorFunc)
+            errorFunc(QObject::tr("Could not read"), QObject::tr("Could not read file '%1' - '%2' @ %3").arg(fFileName).arg(error.errorString()).arg(error.offset));
         fFileName.clear();
         return false;
     }
 
-    if ( json.object().contains( "lhs" ) )
+    if (json.object().contains("lhs"))
     {
         QString errorMsg;
-        if ( !fServerModel->loadServer( json[ "lhs" ].toObject(), errorMsg, false ) )
+        if (!fServerModel->loadServer(json["lhs"].toObject(), errorMsg, false))
         {
-            if ( errorFunc )
-                errorFunc( QObject::tr( "Could not read" ), QObject::tr( "Could not read file '%1' - '%2' for lhs server" ).arg( fFileName ).arg( errorMsg ) );
+            if (errorFunc)
+                errorFunc(QObject::tr("Could not read"), QObject::tr("Could not read file '%1' - '%2' for lhs server").arg(fFileName).arg(errorMsg));
             fFileName.clear();
             return false;
         }
     }
 
-    if ( json.object().contains( "rhs" ) )
+    if (json.object().contains("rhs"))
     {
         QString errorMsg;
-        if ( !fServerModel->loadServer( json[ "rhs" ].toObject(), errorMsg, true ) )
+        if (!fServerModel->loadServer(json["rhs"].toObject(), errorMsg, true))
         {
-            if ( errorFunc )
-                errorFunc( QObject::tr( "Could not read" ), QObject::tr( "Could not read file '%1' - '%2' for rhs server" ).arg( fFileName ).arg( errorMsg ) );
+            if (errorFunc)
+                errorFunc(QObject::tr("Could not read"), QObject::tr("Could not read file '%1' - '%2' for rhs server").arg(fFileName).arg(errorMsg));
 
             fFileName.clear();
             return false;
         }
     }
 
-    auto servers = json[ "servers" ].toArray();
-    for ( int ii = 0; ii < servers.count(); ++ii )
+    auto servers = json["servers"].toArray();
+    for (int ii = 0; ii < servers.count(); ++ii)
     {
         QString errorMsg;
-        if ( !fServerModel->loadServer( servers[ ii ].toObject(), errorMsg, ( ii == ( servers.count() - 1 ) ) ) )
+        if (!fServerModel->loadServer(servers[ii].toObject(), errorMsg, (ii == (servers.count() - 1))))
         {
-            if ( errorFunc )
-                errorFunc( QObject::tr( "Could not read" ), QObject::tr( "Could not read file '%1' - '%2' for server[%3]" ).arg( fFileName ).arg( errorMsg ).arg( ii ) );
-                fFileName.clear();
-                return false;
+            if (errorFunc)
+                errorFunc(QObject::tr("Could not read"), QObject::tr("Could not read file '%1' - '%2' for server[%3]").arg(fFileName).arg(errorMsg).arg(ii));
+            fFileName.clear();
+            return false;
         }
     }
-    
-    setOnlyShowSyncableUsers( getValue( json.object(), "OnlyShowSyncableUsers", true ).toBool() );
-    setOnlyShowMediaWithDifferences( getValue( json.object(), "OnlyShowSyncableUsers", true ).toBool() );
-    setShowMediaWithIssues( getValue( json.object(), "ShowMediaWithIssues", false ).toBool() );
-    setOnlyShowEnabledServers( getValue( json.object(), "OnlyShowEnabledServers", true ).toBool() );
-    setOnlyShowUsersWithDifferences( getValue( json.object(), "OnlyShowUsersWithDifferences", true ).toBool() );
-    setShowUsersWithIssues( getValue( json.object(), "ShowUsersWithIssues", false ).toBool() );
-    setMediaSourceColor( getValue( json.object(), "MediaSourceColor", "yellow" ).toString() );
-    setMediaDestColor( getValue( json.object(), "MediaDestColor", "yellow" ).toString() );
-    setMaxItems( getValue( json.object(), "MaxItems", -1 ).toInt() );
-    setSyncAudio( getValue( json.object(), "SyncAudio", true ).toBool() );
-    setSyncVideo( getValue( json.object(), "SyncVideo", true ).toBool() );
-    setSyncEpisode( getValue( json.object(), "SyncEpisode", true ).toBool() );
-    setSyncMovie( getValue( json.object(), "SyncMovie", true ).toBool() );
-    setSyncTrailer( getValue( json.object(), "SyncTrailer", true ).toBool() );
-    setSyncAdultVideo( getValue( json.object(), "SyncAdultVideo", true ).toBool() );
-    setSyncMusicVideo( getValue( json.object(), "SyncMusicVideo", true ).toBool() );
-    setSyncGame( getValue( json.object(), "SyncGame", true ).toBool() );
-    setSyncBook( getValue( json.object(), "SyncBook", true ).toBool() );
-    setSyncUserList( getValue( json.object(), "SyncUserList", QStringList() << ".*" ).toStringList() );
-    setIgnoreShowList( getValue( json.object(), "IgnoreShowList", QStringList() ).toStringList() );
 
-    setPrimaryServer( getValue( json.object(), "PrimaryServer", QString() ).toString() );
+    setOnlyShowSyncableUsers(getValue(json.object(), "OnlyShowSyncableUsers", true).toBool());
+    setOnlyShowMediaWithDifferences(getValue(json.object(), "OnlyShowSyncableUsers", true).toBool());
+    setShowMediaWithIssues(getValue(json.object(), "ShowMediaWithIssues", false).toBool());
+    setOnlyShowEnabledServers(getValue(json.object(), "OnlyShowEnabledServers", true).toBool());
+    setOnlyShowUsersWithDifferences(getValue(json.object(), "OnlyShowUsersWithDifferences", true).toBool());
+    setShowUsersWithIssues(getValue(json.object(), "ShowUsersWithIssues", false).toBool());
+    setMediaSourceColor(getValue(json.object(), "MediaSourceColor", "yellow").toString());
+    setMediaDestColor(getValue(json.object(), "MediaDestColor", "yellow").toString());
+    setMaxItems(getValue(json.object(), "MaxItems", -1).toInt());
+    setSyncAudio(getValue(json.object(), "SyncAudio", true).toBool());
+    setSyncVideo(getValue(json.object(), "SyncVideo", true).toBool());
+    setSyncEpisode(getValue(json.object(), "SyncEpisode", true).toBool());
+    setSyncMovie(getValue(json.object(), "SyncMovie", true).toBool());
+    setSyncTrailer(getValue(json.object(), "SyncTrailer", true).toBool());
+    setSyncAdultVideo(getValue(json.object(), "SyncAdultVideo", true).toBool());
+    setSyncMusicVideo(getValue(json.object(), "SyncMusicVideo", true).toBool());
+    setSyncGame(getValue(json.object(), "SyncGame", true).toBool());
+    setSyncBook(getValue(json.object(), "SyncBook", true).toBool());
+    setSyncUserList(getValue(json.object(), "SyncUserList", QStringList() << ".*").toStringList());
+    setIgnoreShowList(getValue(json.object(), "IgnoreShowList", QStringList()).toStringList());
+
+    setPrimaryServer(getValue(json.object(), "PrimaryServer", QString()).toString());
     fChanged = false;
 
-    if ( addToRecentFileList )
-        addRecentProject( fFileName );
+    if (addToRecentFileList)
+        addRecentProject(fFileName);
     return true;
 }
 
-void CSettings::addRecentProject( const QString & fileName )
+void CSettings::addRecentProject(const QString& fileName)
 {
     auto fileList = recentProjectList();
-    fileList.removeAll( fileName );
-    fileList.push_front( fileName );
+    fileList.removeAll(fileName);
+    fileList.push_front(fileName);
 
     QSettings settings;
-    settings.setValue( "RecentProjects", fileList );
+    settings.setValue("RecentProjects", fileList);
 }
 
 QStringList CSettings::recentProjectList() const
 {
     QSettings settings;
-    return settings.value( "RecentProjects", QStringList() ).toStringList();
+    return settings.value("RecentProjects", QStringList()).toStringList();
 }
 
-void CSettings::setPrimaryServer( const QString & serverName )
+void CSettings::setPrimaryServer(const QString& serverName)
 {
-    updateValue( fPrimaryServer, serverName );
+    updateValue(fPrimaryServer, serverName);
 }
 
 QString CSettings::primaryServer() const
@@ -205,81 +205,81 @@ QString CSettings::primaryServer() const
 
 bool CSettings::save()
 {
-    if ( fFileName.isEmpty() )
+    if (fFileName.isEmpty())
         return false;
-    return save( std::function<void( const QString & title, const QString & msg )>() );
+    return save(std::function<void(const QString& title, const QString& msg)>());
 }
 
-bool CSettings::save( std::function<void( const QString & title, const QString & msg )> errorFunc )
+bool CSettings::save(std::function<void(const QString& title, const QString& msg)> errorFunc)
 {
-    if ( fFileName.isEmpty() )
+    if (fFileName.isEmpty())
         return false;
 
     QJsonDocument json;
     auto root = json.object();
 
-    root[ "OnlyShowSyncableUsers" ] = onlyShowSyncableUsers();
-    root[ "OnlyShowMediaWithDifferences" ] = onlyShowMediaWithDifferences();
-    root[ "ShowMediaWithIssues" ] = showMediaWithIssues();
-    root[ "OnlyShowEnabledServers" ] = onlyShowEnabledServers();
+    root["OnlyShowSyncableUsers"] = onlyShowSyncableUsers();
+    root["OnlyShowMediaWithDifferences"] = onlyShowMediaWithDifferences();
+    root["ShowMediaWithIssues"] = showMediaWithIssues();
+    root["OnlyShowEnabledServers"] = onlyShowEnabledServers();
 
 
-    root[ "MediaSourceColor" ] = mediaSourceColor().name();
-    root[ "MediaDestColor" ] = mediaDestColor().name();
-    root[ "MaxItems" ] = maxItems();
+    root["MediaSourceColor"] = mediaSourceColor().name();
+    root["MediaDestColor"] = mediaDestColor().name();
+    root["MaxItems"] = maxItems();
 
-    root[ "SyncAudio" ] = syncAudio();
-    root[ "SyncVideo" ] = syncVideo();
-    root[ "SyncEpisode" ] = syncEpisode();
-    root[ "SyncMovie" ] = syncMovie();
-    root[ "SyncTrailer" ] = syncTrailer();
-    root[ "SyncAdultVideo" ] = syncAdultVideo();
-    root[ "SyncMusicVideo" ] = syncMusicVideo();
-    root[ "SyncGame" ] = syncGame();
-    root[ "SyncBook" ] = syncBook();
-    
-    root[ "PrimaryServer" ] = primaryServer();
+    root["SyncAudio"] = syncAudio();
+    root["SyncVideo"] = syncVideo();
+    root["SyncEpisode"] = syncEpisode();
+    root["SyncMovie"] = syncMovie();
+    root["SyncTrailer"] = syncTrailer();
+    root["SyncAdultVideo"] = syncAdultVideo();
+    root["SyncMusicVideo"] = syncMusicVideo();
+    root["SyncGame"] = syncGame();
+    root["SyncBook"] = syncBook();
+
+    root["PrimaryServer"] = primaryServer();
 
     auto userList = QJsonArray();
-    for ( auto && ii : fSyncUserList )
-        userList.push_back( ii );
-    root[ "SyncUserList" ] = userList;
-    
+    for (auto&& ii : fSyncUserList)
+        userList.push_back(ii);
+    root["SyncUserList"] = userList;
+
     auto showList = QJsonArray();
-    for ( auto && ii : fIgnoreShowList )
-        showList.push_back( ii );
-    root[ "IgnoreShowList" ] = showList;
+    for (auto&& ii : fIgnoreShowList)
+        showList.push_back(ii);
+    root["IgnoreShowList"] = showList;
 
-    fServerModel->save( root );
+    fServerModel->save(root);
 
-    json = QJsonDocument( root );
+    json = QJsonDocument(root);
 
-    auto jsonData = json.toJson( QJsonDocument::Indented );
+    auto jsonData = json.toJson(QJsonDocument::Indented);
 
-    QFile file( fFileName );
-    if ( !file.open( QFile::WriteOnly | QFile::Text | QFile::Truncate ) )
+    QFile file(fFileName);
+    if (!file.open(QFile::WriteOnly | QFile::Text | QFile::Truncate))
     {
-        if ( errorFunc )
-            errorFunc( QObject::tr( "Could not open" ), QObject::tr( "Could not open file '%1' for writing" ).arg( fFileName ) );
+        if (errorFunc)
+            errorFunc(QObject::tr("Could not open"), QObject::tr("Could not open file '%1' for writing").arg(fFileName));
         return false;
     }
 
-    file.write( jsonData );
+    file.write(jsonData);
     fChanged = false;
 
-    addRecentProject( fFileName );
+    addRecentProject(fFileName);
     return true;
 }
 
-QColor CSettings::getColor( const QColor & clr, bool forBackground /*= true */ ) const
+QColor CSettings::getColor(const QColor& clr, bool forBackground /*= true */) const
 {
-    if (clr == Qt::black )
+    if (clr == Qt::black)
     {
-        if ( !forBackground )
-            return QColor( Qt::white ).name();
+        if (!forBackground)
+            return QColor(Qt::white).name();
     }
 
-    if ( !forBackground )
+    if (!forBackground)
         return QString();
     return clr;
 }
@@ -291,168 +291,168 @@ void CSettings::reset()
     fFileName.clear();
 }
 
-QColor CSettings::mediaSourceColor( bool forBackground /*= true */ ) const
+QColor CSettings::mediaSourceColor(bool forBackground /*= true */) const
 {
-    return getColor( fMediaSourceColor, forBackground );
+    return getColor(fMediaSourceColor, forBackground);
 }
 
 
 QString CSettings::getSyncItemTypes() const
 {
     QStringList values;
-    if ( syncAudio() )
+    if (syncAudio())
         values << "Audio";
-    if ( syncVideo() )
+    if (syncVideo())
         values << "Video";
-    if ( syncEpisode() )
+    if (syncEpisode())
         values << "Episode";
-    if ( syncTrailer() )
+    if (syncTrailer())
         values << "Trailer";
-    if ( syncMovie() )
+    if (syncMovie())
         values << "Movie";
-    if ( syncAdultVideo() )
+    if (syncAdultVideo())
         values << "AdultVideo";
-    if ( syncMusicVideo() )
+    if (syncMusicVideo())
         values << "MusicVideo";
-    if ( syncGame() )
+    if (syncGame())
         values << "Game";
-    if ( syncBook() )
+    if (syncBook())
         values << "Book";
-    return values.join( "," );
+    return values.join(",");
 }
 
-void CSettings::setMediaSourceColor( const QColor & color )
+void CSettings::setMediaSourceColor(const QColor& color)
 {
-    updateValue( fMediaSourceColor, color );
+    updateValue(fMediaSourceColor, color);
 }
 
-QColor CSettings::mediaDestColor( bool forBackground /*= true */ ) const
+QColor CSettings::mediaDestColor(bool forBackground /*= true */) const
 {
-    return getColor( fMediaDestColor, forBackground );
+    return getColor(fMediaDestColor, forBackground);
 }
 
-void CSettings::setMediaDestColor( const QColor & color )
+void CSettings::setMediaDestColor(const QColor& color)
 {
-    updateValue( fMediaDestColor, color );
+    updateValue(fMediaDestColor, color);
 }
 
-QColor CSettings::dataMissingColor( bool forBackground /*= true */ ) const
+QColor CSettings::dataMissingColor(bool forBackground /*= true */) const
 {
-    return getColor( fMediaDataMissingColor, forBackground );
+    return getColor(fMediaDataMissingColor, forBackground);
 }
 
-void CSettings::setDataMissingColor( const QColor & color )
+void CSettings::setDataMissingColor(const QColor& color)
 {
-    updateValue( fMediaDataMissingColor, color );
+    updateValue(fMediaDataMissingColor, color);
 }
 
-void CSettings::setMaxItems( int maxItems )
+void CSettings::setMaxItems(int maxItems)
 {
-    updateValue( fMaxItems, maxItems );
+    updateValue(fMaxItems, maxItems);
 }
 
-void CSettings::setSyncAudio( bool value )
+void CSettings::setSyncAudio(bool value)
 {
-    updateValue( fSyncAudio, value );
+    updateValue(fSyncAudio, value);
 }
 
-void CSettings::setSyncVideo( bool value )
+void CSettings::setSyncVideo(bool value)
 {
-    updateValue( fSyncVideo, value );
+    updateValue(fSyncVideo, value);
 }
 
-void CSettings::setSyncEpisode( bool value )
+void CSettings::setSyncEpisode(bool value)
 {
-    updateValue( fSyncEpisode, value );
+    updateValue(fSyncEpisode, value);
 }
 
-void CSettings::setSyncMovie( bool value )
+void CSettings::setSyncMovie(bool value)
 {
-    updateValue( fSyncMovie, value );
+    updateValue(fSyncMovie, value);
 }
 
-void CSettings::setSyncTrailer( bool value )
+void CSettings::setSyncTrailer(bool value)
 {
-    updateValue( fSyncTrailer, value );
+    updateValue(fSyncTrailer, value);
 }
 
-void CSettings::setSyncAdultVideo( bool value )
+void CSettings::setSyncAdultVideo(bool value)
 {
-    updateValue( fSyncAdultVideo, value );
+    updateValue(fSyncAdultVideo, value);
 }
 
-void CSettings::setSyncMusicVideo( bool value )
+void CSettings::setSyncMusicVideo(bool value)
 {
-    updateValue( fSyncMusicVideo, value );
+    updateValue(fSyncMusicVideo, value);
 }
 
-void CSettings::setSyncGame( bool value )
+void CSettings::setSyncGame(bool value)
 {
-    updateValue( fSyncGame, value );
+    updateValue(fSyncGame, value);
 }
 
-void CSettings::setSyncBook( bool value )
+void CSettings::setSyncBook(bool value)
 {
-    updateValue( fSyncBook, value );
+    updateValue(fSyncBook, value);
 }
 
-void CSettings::setOnlyShowSyncableUsers( bool value )
+void CSettings::setOnlyShowSyncableUsers(bool value)
 {
     fOnlyShowSyncableUsers = value;
 }
 
-void CSettings::setOnlyShowMediaWithDifferences( bool value )
+void CSettings::setOnlyShowMediaWithDifferences(bool value)
 {
     fOnlyShowMediaWithDifferences = value;
 }
 
-void CSettings::setShowMediaWithIssues( bool value )
+void CSettings::setShowMediaWithIssues(bool value)
 {
     fShowMediaWithIssues = value;
 }
 
-void CSettings::setOnlyShowUsersWithDifferences( bool value )
+void CSettings::setOnlyShowUsersWithDifferences(bool value)
 {
     fOnlyShowUsersWithDifferences = value;
 }
 
-void CSettings::setShowUsersWithIssues( bool value )
+void CSettings::setShowUsersWithIssues(bool value)
 {
     fShowUsersWithIssues = value;
 }
 
-void CSettings::setOnlyShowEnabledServers( bool value )
+void CSettings::setOnlyShowEnabledServers(bool value)
 {
     fOnlyShowEnabledServers = value;
 }
 
-void CSettings::setSyncUserList( const QStringList & value )
+void CSettings::setSyncUserList(const QStringList& value)
 {
-    updateValue( fSyncUserList, value );
+    updateValue(fSyncUserList, value);
 }
 
 QRegularExpression CSettings::ignoreShowRegEx() const
 {
     QStringList regExList;
-    for ( auto && ii : fIgnoreShowList )
+    for (auto&& ii : fIgnoreShowList)
     {
-        if ( ii.isEmpty() )
+        if (ii.isEmpty())
             continue;
-        if ( !QRegularExpression( ii ).isValid() )
+        if (!QRegularExpression(ii).isValid())
             continue;
         regExList << "(" + ii + ")";
     }
-    auto regExpStr = regExList.join( "|" );
+    auto regExpStr = regExList.join("|");
     QRegularExpression regExp;
-    if ( !regExpStr.isEmpty() )
-        regExp = QRegularExpression( regExpStr );
+    if (!regExpStr.isEmpty())
+        regExp = QRegularExpression(regExpStr);
     return regExp;
 }
 
-void CSettings::setIgnoreShowList( const QStringList & value )
+void CSettings::setIgnoreShowList(const QStringList& value)
 {
     std::set< QString > tmp = { value.begin(), value.end() };
-    updateValue( fIgnoreShowList, tmp );
+    updateValue(fIgnoreShowList, tmp);
 }
 
 

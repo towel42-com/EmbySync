@@ -46,7 +46,7 @@ class CTabPageBase : public QWidget
 {
     Q_OBJECT
 public:
-    CTabPageBase( QWidget * parent = nullptr );
+    CTabPageBase(QWidget* parent = nullptr);
     virtual ~CTabPageBase() override;
 
     virtual void setupPage(std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem)
@@ -69,9 +69,9 @@ public:
     virtual void loadingUsersFinished() = 0;
 
     QModelIndex currentDataIndex() const;
-    std::pair< QModelIndex, QWidget * > dataIndexAt( const QPoint & pos ) const;
+    std::pair< QModelIndex, QWidget* > dataIndexAt(const QPoint& pos) const;
 
-    virtual QSplitter * getDataSplitter() const = 0;
+    virtual QSplitter* getDataSplitter() const = 0;
 
     void autoSizeDataTrees();
     void hideDataTreeColumns();
@@ -82,12 +82,12 @@ public:
 
     virtual bool prepForClose() = 0;
 Q_SIGNALS:
-    void sigAddToLog( int msgType, const QString & msg );
-    void sigAddInfoToLog( const QString & msg );
+    void sigAddToLog(int msgType, const QString& msg);
+    void sigAddInfoToLog(const QString& msg);
     void sigSettingsLoaded();
-    void sigSetCurrentDataItem( const QModelIndex & current );
-    void sigViewData( const QModelIndex & idx );
-    void sigDataContextMenuRequested( CDataTree * tree, const QPoint & pos );
+    void sigSetCurrentDataItem(const QModelIndex& current);
+    void sigViewData(const QModelIndex& idx);
+    void sigDataContextMenuRequested(CDataTree* tree, const QPoint& pos);
 
 public Q_SLOTS:
     virtual void slotCanceled() {};
@@ -96,15 +96,15 @@ public Q_SLOTS:
     virtual void slotNextSearchURL() final;
 
 protected:
-    void bulkSearch( std::function< std::pair< bool, QUrl >( const QModelIndex & idx ) > addItemFunc );
+    void bulkSearch(std::function< std::pair< bool, QUrl >(const QModelIndex& idx) > addItemFunc);
 
     QString selectServer() const;
 
-    virtual void loadServers( QAbstractItemModel * model );
+    virtual void loadServers(QAbstractItemModel* model);
 
     virtual void clearServers();
-    virtual void createServerTrees( QAbstractItemModel * model );
-    virtual CDataTree * addDataTreeForServer( std::shared_ptr<const CServerInfo> server, QAbstractItemModel * model );
+    virtual void createServerTrees(QAbstractItemModel* model);
+    virtual CDataTree* addDataTreeForServer(std::shared_ptr<const CServerInfo> server, QAbstractItemModel* model);
     virtual void setupDataTreePeers();
 
     std::shared_ptr< CSettings > fSettings;
@@ -115,7 +115,7 @@ protected:
     std::shared_ptr< CProgressSystem > fProgressSystem;
     std::shared_ptr< CSyncSystem > fSyncSystem;
 
-    std::vector< CDataTree * > fDataTrees;
+    std::vector< CDataTree* > fDataTrees;
     std::list< QUrl > fBulkSearchURLs;
 };
 #endif

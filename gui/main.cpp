@@ -31,32 +31,32 @@
 #include "SABUtils/ValidateOpenSSL.h"
 
 
-int main( int argc, char ** argv )
+int main(int argc, char** argv)
 {
     CMediaData::setMSecsToStringFunc(
-        []( uint64_t msecs )
+        [](uint64_t msecs)
         {
-            return NSABUtils::CTimeString( msecs ).toString( "dd:hh:mm:ss.zzz", true );
-        } );
+            return NSABUtils::CTimeString(msecs).toString("dd:hh:mm:ss.zzz", true);
+        });
 
     NSABUtils::initResources();
-    Q_INIT_RESOURCE( EmbySync );
-    Q_INIT_RESOURCE( Token );
+    Q_INIT_RESOURCE(EmbySync);
+    Q_INIT_RESOURCE(Token);
 
-    QApplication::setAttribute( Qt::AA_EnableHighDpiScaling );
-    QApplication::setAttribute( Qt::AA_UseHighDpiPixmaps );
-    QApplication appl( argc, argv );
-    NVersion::setupApplication( appl, true );
+    QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+    QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
+    QApplication appl(argc, argv);
+    NVersion::setupApplication(appl, true);
 
-    auto aOK = NSABUtils::validateOpenSSL( true );
-    if ( !aOK.first )
+    auto aOK = NSABUtils::validateOpenSSL(true);
+    if (!aOK.first)
     {
-        QMessageBox::critical( nullptr, QObject::tr( "Could not find OpenSSL libraries" ), aOK.second );
+        QMessageBox::critical(nullptr, QObject::tr("Could not find OpenSSL libraries"), aOK.second);
         return -1;
     }
 
     CMainWindow mainWindow;
-    mainWindow.setWindowTitle( NVersion::getWindowTitle() );
+    mainWindow.setWindowTitle(NVersion::getWindowTitle());
 
     mainWindow.show();
     return appl.exec();

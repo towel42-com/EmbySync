@@ -37,16 +37,16 @@ class CUserDataWidget : public QGroupBox
 {
     Q_OBJECT
 public:
-    CUserDataWidget( QWidget * parentWidget = nullptr );
-    CUserDataWidget( const QString & title, QWidget * parentWidget = nullptr );
-    CUserDataWidget( std::shared_ptr< SUserServerData > userData, QWidget * parentWidget = nullptr );
+    CUserDataWidget(QWidget* parentWidget = nullptr);
+    CUserDataWidget(const QString& title, QWidget* parentWidget = nullptr);
+    CUserDataWidget(std::shared_ptr< SUserServerData > userData, QWidget* parentWidget = nullptr);
 
     virtual ~CUserDataWidget() override;
 
-    void setServerName( const QString & serverName ) { fServerName = serverName; }
+    void setServerName(const QString& serverName) { fServerName = serverName; }
     QString serverName() const { return fServerName; }
-    void setUserData( std::shared_ptr< SUserServerData > userData );
-    void applyUserData( std::shared_ptr< SUserServerData > userData );  
+    void setUserData(std::shared_ptr< SUserServerData > userData);
+    void applyUserData(std::shared_ptr< SUserServerData > userData);
 
     QImage avatar() const { return fAvatar; }
 
@@ -57,12 +57,12 @@ public Q_SLOTS:
     void slotProcessToServer();
     void slotSelectChangeAvatar();
 Q_SIGNALS:
-    void sigApplyFromServer( CUserDataWidget * which );
-    void sigProcessToServer( CUserDataWidget * which );
+    void sigApplyFromServer(CUserDataWidget* which);
+    void sigProcessToServer(CUserDataWidget* which);
 
 private:
-    void load( std::shared_ptr< SUserServerData > userData );
-    void setAvatar( const QImage & image );
+    void load(std::shared_ptr< SUserServerData > userData);
+    void setAvatar(const QImage& image);
 
     std::unique_ptr< Ui::CUserDataWidget > fImpl;
     std::shared_ptr< SUserServerData > fUserData;

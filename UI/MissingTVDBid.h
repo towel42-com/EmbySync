@@ -51,7 +51,7 @@ class CMissingTVDBid : public CTabPageBase
 {
     Q_OBJECT
 public:
-    CMissingTVDBid( QWidget * parent = nullptr );
+    CMissingTVDBid(QWidget* parent = nullptr);
 
     virtual ~CMissingTVDBid() override;
 
@@ -68,10 +68,10 @@ public:
 
     virtual void loadingUsersFinished() override;
 
-    virtual QSplitter * getDataSplitter() const override;
+    virtual QSplitter* getDataSplitter() const override;
 
     virtual bool prepForClose() override;
-    std::shared_ptr< CMediaData > getMediaData( QModelIndex idx ) const;
+    std::shared_ptr< CMediaData > getMediaData(QModelIndex idx) const;
 
     virtual int defaultSortColumn() const override { return 1; }
     virtual Qt::SortOrder defaultSortOrder() const override { return Qt::SortOrder::AscendingOrder; }
@@ -83,27 +83,27 @@ public Q_SLOTS:
     virtual void slotCanceled() override;
     virtual void slotModelDataChanged() override;
     virtual void slotSettingsChanged() override;
-    void slotMediaContextMenu( CDataTree * dataTree, const QPoint & pos );
-    virtual void slotSetCurrentServer( const QModelIndex & index );
+    void slotMediaContextMenu(CDataTree* dataTree, const QPoint& pos);
+    virtual void slotSetCurrentServer(const QModelIndex& index);
 private Q_SLOTS:
-    void slotCurrentServerChanged( const QModelIndex & index );
+    void slotCurrentServerChanged(const QModelIndex& index);
     void slotMissingTVDBidLoaded();
     void slotMediaChanged();
 private:
     void showPrimaryServer();
     std::shared_ptr< CServerInfo > getCurrentServerInfo() const;
-    std::shared_ptr< CServerInfo > getServerInfo( QModelIndex idx ) const;
+    std::shared_ptr< CServerInfo > getServerInfo(QModelIndex idx) const;
 
     void reset();
 
     void loadServers();
-    virtual void createServerTrees( QAbstractItemModel * model ) override;
+    virtual void createServerTrees(QAbstractItemModel* model) override;
 
     std::unique_ptr< Ui::CMissingTVDBid > fImpl;
 
     QPointer< QToolBar > fToolBar{ nullptr };
 
-    CServerFilterModel * fServerFilterModel { nullptr };
-    CMediaMissingFilterModel * fMissingMediaModel{ nullptr };
+    CServerFilterModel* fServerFilterModel{ nullptr };
+    CMediaMissingFilterModel* fMissingMediaModel{ nullptr };
 };
 #endif

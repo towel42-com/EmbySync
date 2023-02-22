@@ -33,12 +33,12 @@
 struct SUserServerData
 {
     bool isValid() const;
-    bool userDataEqual( const SUserServerData & rhs ) const;
+    bool userDataEqual(const SUserServerData& rhs) const;
 
-    static std::tuple< QString, QString, QString > getUserNames( const QJsonObject & userObj );
+    static std::tuple< QString, QString, QString > getUserNames(const QJsonObject& userObj);
     QDateTime latestAccess() const;
     QJsonObject userDataJSON() const;
-    void loadFromJSON( const QJsonObject & userObj );
+    void loadFromJSON(const QJsonObject& userObj);
 
     QString fName;
     QString fUserID;
@@ -72,9 +72,9 @@ struct SUserServerData
     bool fIsHidden{ false };
 };
 
-bool operator==( const SUserServerData & lhs, const SUserServerData & rhs );
-inline bool operator!=( const SUserServerData & lhs, const SUserServerData & rhs )
+bool operator==(const SUserServerData& lhs, const SUserServerData& rhs);
+inline bool operator!=(const SUserServerData& lhs, const SUserServerData& rhs)
 {
-    return !operator==( lhs, rhs );
+    return !operator==(lhs, rhs);
 }
 #endif

@@ -22,121 +22,121 @@
 
 #include "ProgressSystem.h"
 
-void CProgressSystem::setTitle( const QString & title )
+void CProgressSystem::setTitle(const QString& title)
 {
-    if ( fSetTitleFunc )
-        fSetTitleFunc( title );
+    if (fSetTitleFunc)
+        fSetTitleFunc(title);
 }
 
 void CProgressSystem::pushState()
 {
-    fStateStack.push_back( std::make_tuple( title(), value(), maximum() ) );
+    fStateStack.push_back(std::make_tuple(title(), value(), maximum()));
 }
 
 void CProgressSystem::popState()
 {
-    if ( fStateStack.empty() )
+    if (fStateStack.empty())
         return;
     auto newState = fStateStack.back();
     fStateStack.pop_back();
-    setTitle( std::get< 0 >( newState ) );
-    setValue( std::get< 1 >( newState ) );
-    setMaximum( std::get< 2 >( newState ) );
+    setTitle(std::get< 0 >(newState));
+    setValue(std::get< 1 >(newState));
+    setMaximum(std::get< 2 >(newState));
 }
 
 QString CProgressSystem::title() const
 {
-    if ( fTitleFunc )
+    if (fTitleFunc)
         return fTitleFunc();
     return {};
 }
 
-void CProgressSystem::setMaximum( int count )
+void CProgressSystem::setMaximum(int count)
 {
-    if ( fSetMaximumFunc )
-        fSetMaximumFunc( count );
+    if (fSetMaximumFunc)
+        fSetMaximumFunc(count);
 }
 
 int CProgressSystem::maximum() const
 {
-    if ( fMaximumFunc )
+    if (fMaximumFunc)
         return fMaximumFunc();
     return 0;
 }
 
 int CProgressSystem::value() const
 {
-    if ( fValueFunc )
+    if (fValueFunc)
         return fValueFunc();
     return 0;
 }
 
-void CProgressSystem::setValue( int value ) const
+void CProgressSystem::setValue(int value) const
 {
-    if ( fSetValueFunc )
-        fSetValueFunc( value );
+    if (fSetValueFunc)
+        fSetValueFunc(value);
 }
 
 void CProgressSystem::incProgress()
 {
-    if ( fIncFunc )
+    if (fIncFunc)
         fIncFunc();
 }
 
 void CProgressSystem::resetProgress() const
 {
-    if ( fResetFunc )
+    if (fResetFunc)
         fResetFunc();
 }
 
 bool CProgressSystem::wasCanceled() const
 {
-    if ( fWasCanceledFunc )
+    if (fWasCanceledFunc)
         return fWasCanceledFunc();
     return false;
 }
 
-void CProgressSystem::setSetTitleFunc( std::function< void( const QString & title ) > setTitleFunc )
+void CProgressSystem::setSetTitleFunc(std::function< void(const QString& title) > setTitleFunc)
 {
     fSetTitleFunc = setTitleFunc;
 }
 
-void CProgressSystem::setTitleFunc( std::function< QString() > titleFunc )
+void CProgressSystem::setTitleFunc(std::function< QString() > titleFunc)
 {
     fTitleFunc = titleFunc;
 }
 
-void CProgressSystem::setMaximumFunc( std::function< int() > maximumFunc )
+void CProgressSystem::setMaximumFunc(std::function< int() > maximumFunc)
 {
     fMaximumFunc = maximumFunc;
 }
 
-void CProgressSystem::setSetMaximumFunc( std::function< void( int ) > setMaximumFunc )
+void CProgressSystem::setSetMaximumFunc(std::function< void(int) > setMaximumFunc)
 {
     fSetMaximumFunc = setMaximumFunc;
 }
 
-void CProgressSystem::setValueFunc( std::function< int() > valueFunc )
+void CProgressSystem::setValueFunc(std::function< int() > valueFunc)
 {
     fValueFunc = valueFunc;
 }
 
-void CProgressSystem::setSetValueFunc( std::function< void( int ) > setValueFunc )
+void CProgressSystem::setSetValueFunc(std::function< void(int) > setValueFunc)
 {
     fSetValueFunc = setValueFunc;
 }
 
-void CProgressSystem::setIncFunc( std::function< void() > incFunc )
+void CProgressSystem::setIncFunc(std::function< void() > incFunc)
 {
     fIncFunc = incFunc;
 }
 
-void CProgressSystem::setResetFunc( std::function< void() > resetFunc )
+void CProgressSystem::setResetFunc(std::function< void() > resetFunc)
 {
     fResetFunc = resetFunc;
 }
 
-void CProgressSystem::setWasCanceledFunc( std::function< bool() > wasCanceledFunc )
+void CProgressSystem::setWasCanceledFunc(std::function< bool() > wasCanceledFunc)
 {
     fWasCanceledFunc = wasCanceledFunc;
 }

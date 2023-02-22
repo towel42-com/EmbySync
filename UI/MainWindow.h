@@ -30,7 +30,7 @@ namespace Ui
 {
     class CMainWindow;
 }
-namespace NSABUtils{ class CGitHubGetVersions; }
+namespace NSABUtils { class CGitHubGetVersions; }
 class CSettings;
 class QProgressDialog;
 class CProgressSystem;
@@ -47,13 +47,13 @@ class CMainWindow : public QMainWindow
 {
     Q_OBJECT
 public:
-    CMainWindow( QWidget * parent = nullptr );
+    CMainWindow(QWidget* parent = nullptr);
 
     virtual ~CMainWindow() override;
 
-    virtual void closeEvent( QCloseEvent * closeEvent ) override;
+    virtual void closeEvent(QCloseEvent* closeEvent) override;
 
-    virtual void showEvent( QShowEvent * event ) override;
+    virtual void showEvent(QShowEvent* event) override;
 Q_SIGNALS:
     void sigSettingsChanged();
     void sigSettingsLoaded();
@@ -81,32 +81,32 @@ public Q_SLOTS:
     void slotReloadServers();
 
 private Q_SLOTS:
-    void slotAddToLog( int msgType, const QString & msg );
-    void slotAddInfoToLog( const QString & msg );
+    void slotAddToLog(int msgType, const QString& msg);
+    void slotAddInfoToLog(const QString& msg);
     void slotVersionsDownloaded();
-    void slotCurentTabChanged( int idx );
+    void slotCurentTabChanged(int idx);
     void slotServersLoaded();
 private:
     bool okToClosePages();
     bool prepForClosePages();
 
 
-    CTabPageBase * getCurrentPage() const;
-    void setupPage( int pageIndex );
+    CTabPageBase* getCurrentPage() const;
+    void setupPage(int pageIndex);
 
     void setupProgressSystem();
-    void checkForLatest( bool quiteIfUpToDate );
+    void checkForLatest(bool quiteIfUpToDate);
 
 
-    void progressSetup( const QString & title );
+    void progressSetup(const QString& title);
 
-    void progressSetMaximum( int count );
+    void progressSetMaximum(int count);
     int progressValue() const;
-    void progressSetValue( int value );
+    void progressSetValue(int value);
     void progressIncValue();
     void progressReset();
 
-    void loadFile( const QString & fileName );
+    void loadFile(const QString& fileName);
 
     void reset();
 
@@ -123,11 +123,11 @@ private:
     std::shared_ptr< CProgressSystem > fProgressSystem;
 
 
-    QProgressDialog * fProgressDlg{ nullptr };
+    QProgressDialog* fProgressDlg{ nullptr };
 
-    std::unordered_map< int, CTabPageBase * > fPages;
+    std::unordered_map< int, CTabPageBase* > fPages;
     std::shared_ptr< CTabUIInfo > fCurrentTabUIInfo;
 
-    std::pair< NSABUtils::CGitHubGetVersions *, bool > fGitHubVersion{ nullptr, false };
+    std::pair< NSABUtils::CGitHubGetVersions*, bool > fGitHubVersion{ nullptr, false };
 };
 #endif

@@ -28,8 +28,8 @@
 class IServerForColumn
 {
 public:
-    virtual QString serverForColumn( int column ) const = 0;
-    virtual std::list< int > columnsForBaseColumn( int baseColumn ) const = 0;
+    virtual QString serverForColumn(int column) const = 0;
+    virtual std::list< int > columnsForBaseColumn(int baseColumn) const = 0;
 };
 
 ;

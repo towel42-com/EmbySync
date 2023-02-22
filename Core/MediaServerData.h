@@ -38,25 +38,25 @@ struct SMediaServerData
     uint64_t fPlaybackPositionTicks; // 1 tick = 10000 ms
 
     uint64_t playbackPositionMSecs() const;
-    void setPlaybackPositionMSecs( uint64_t msecs );
+    void setPlaybackPositionMSecs(uint64_t msecs);
 
     QTime playbackPositionTime() const;
-    void setPlaybackPosition( const QTime & time );
+    void setPlaybackPosition(const QTime& time);
 
     QString playbackPosition() const;
 
-    bool userDataEqual( const SMediaServerData & rhs ) const;
+    bool userDataEqual(const SMediaServerData& rhs) const;
 
     QJsonObject toJson() const;
-    void loadUserDataFromJSON( const QJsonObject & userDataObj );
+    void loadUserDataFromJSON(const QJsonObject& userDataObj);
 
     bool isValid() const;
     bool fBeenLoaded{ false };
 };
 
-bool operator==( const SMediaServerData & lhs, const SMediaServerData & rhs );
-inline bool operator!=( const SMediaServerData & lhs, const SMediaServerData & rhs )
+bool operator==(const SMediaServerData& lhs, const SMediaServerData& rhs);
+inline bool operator!=(const SMediaServerData& lhs, const SMediaServerData& rhs)
 {
-    return !operator==( lhs, rhs );
+    return !operator==(lhs, rhs);
 }
 #endif 
