@@ -20,8 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef _CREATECOLLECTIONS_H
-#define _CREATECOLLECTIONS_H
+#ifndef _COLLECTIONSMANAGER_H
+#define _COLLECTIONSMANAGER_H
 
 #include "TabPageBase.h"
 #include <memory>
@@ -32,9 +32,10 @@
 class QMenu;
 class QAction;
 class QToolBar;
+class CCollectionsFilterModel;
 namespace Ui
 {
-    class CCreateCollections;
+    class CCollectionsManager;
 }
 
 class CMediaData;
@@ -42,21 +43,21 @@ class CUserData;
 class CSettings;
 class CSyncSystem;
 class CUsersModel;
+class CCollectionsManager;
 class CDataTree;
 class CProgressSystem;
 class CTabUIInfo;
 class CServerFilterModel;
-class CCollectionsModel;
 
-class CCreateCollections : public CTabPageBase
+class CCollectionsManager : public CTabPageBase
 {
     Q_OBJECT
 public:
-    CCreateCollections( QWidget * parent = nullptr );
+    CCollectionsManager( QWidget * parent = nullptr );
 
-    virtual ~CCreateCollections() override;
+    virtual ~CCollectionsManager() override;
 
-    virtual void setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem ) override;
+    virtual void setupPage(std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem) override;
 
     virtual void setupActions();
 
@@ -74,7 +75,7 @@ public:
     virtual bool prepForClose() override;
     std::shared_ptr< CMediaData > getMediaData( QModelIndex idx ) const;
 
-    virtual int defaultSortColumn() const override { return 1; }
+    virtual int defaultSortColumn() const override { return 0; }
     virtual Qt::SortOrder defaultSortOrder() const override { return Qt::SortOrder::AscendingOrder; }
 
 Q_SIGNALS:
@@ -94,7 +95,6 @@ private Q_SLOTS:
     void slotMediaChanged();
     void slotLoadFile( const QString & fileName );
 private:
-    QString fFileName;
     void setCollectionsFile( const QString & fileName, bool force );
 
     void showPrimaryServer();
@@ -106,12 +106,13 @@ private:
     void loadServers();
     virtual void createServerTrees( QAbstractItemModel * model ) override;
 
-    std::unique_ptr< Ui::CCreateCollections > fImpl;
+    std::unique_ptr< Ui::CCollectionsManager > fImpl;
 
+    QPointer< QAction > fLoadCollections;
     QPointer< QAction > fCreateCollections;
     QPointer< QToolBar > fToolBar{ nullptr };
 
+    CCollectionsFilterModel* fFilterModel{ nullptr };
     CServerFilterModel * fServerFilterModel { nullptr };
-    CCollectionsModel * fCollections{ nullptr };
 };
 #endif

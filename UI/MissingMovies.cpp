@@ -93,9 +93,9 @@ CMissingMovies::~CMissingMovies()
     settings.setValue( "MovieListFile", fImpl->listFile->text() );
 }
 
-void CMissingMovies::setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem )
+void CMissingMovies::setupPage(std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem)
 {
-    CTabPageBase::setupPage( settings, syncSystem, mediaModel, userModel, serverModel, progressSystem );
+    CTabPageBase::setupPage(settings, syncSystem, mediaModel, collectionsModel, userModel, serverModel, progressSystem);
 
     fServerFilterModel = new CServerFilterModel( fServerModel.get() );
     fServerFilterModel->setSourceModel( fServerModel.get() );
@@ -126,7 +126,7 @@ void CMissingMovies::slotMediaChanged()
 void CMissingMovies::setupActions()
 {
     fActionSearchForAll = new QAction( this );
-    fActionSearchForAll->setObjectName( QString::fromUtf8( "fActionProcess" ) );
+    fActionSearchForAll->setObjectName( QString::fromUtf8( "fActionSearchForAll" ) );
     QIcon icon3;
     icon3.addFile( QString::fromUtf8( ":/SABUtilsResources/search.png" ), QSize(), QIcon::Normal, QIcon::Off );
     Q_ASSERT( !icon3.isNull() );
