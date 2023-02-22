@@ -28,6 +28,7 @@
 #include "UsersModel.h"
 #include "MediaModel.h"
 #include "ServerModel.h"
+#include "CollectionsModel.h"
 
 #include "ServerInfo.h"
 #include "MediaData.h"
@@ -103,11 +104,12 @@ QString createMessage( EMsgType msgType, const QString & msg )
     return fullMsg;
 }
 
-CSyncSystem::CSyncSystem( std::shared_ptr< CSettings > settings, std::shared_ptr< CUsersModel > usersModel, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CServerModel > serverModel, QObject * parent ) :
+CSyncSystem::CSyncSystem( std::shared_ptr< CSettings > settings, std::shared_ptr< CUsersModel > usersModel, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CServerModel > serverModel, QObject * parent ) :
     QObject( parent ),
     fSettings( settings ),
     fUsersModel( usersModel ),
     fMediaModel( mediaModel ),
+    fCollectionsModel( collectionsModel ),
     fServerModel( serverModel ),
     fProgressSystem( new CProgressSystem )
 {
@@ -1086,7 +1088,8 @@ void CSyncSystem::slotRequestFinished( QNetworkReply * reply )
         {
             if ( !fProgressSystem->wasCanceled() )
             {
-                handleAllCollectionsExResponse( serverName, data );
+                auto tmp = extraData.toStringList();
+                handleAllCollectionsExResponse( serverName, data, tmp.front(), tmp.back() );
                 if ( isLastRequestOfType( ERequestType::eGetAllCollectionsEx ) )
                 {
                     fProgressSystem->resetProgress();
@@ -1921,15 +1924,17 @@ void CSyncSystem::handleAllCollectionsResponse( const QString & serverName, cons
         if ( id.isEmpty() )
             continue;
 
-        requestAllCollectionsEx( serverName, id );
+        auto name = folder["Name"].toString();
+
+        requestAllCollectionsEx( serverName, name, id );
     }
 }
 
-void CSyncSystem::requestAllCollectionsEx( const QString & serverName, const QString & boxSetsId )
+void CSyncSystem::requestAllCollectionsEx( const QString & serverName, const QString & folderName, const QString & folderId )
 {
     std::list< std::pair< QString, QString > > queryItems =
     {
-        std::make_pair( "ParentId", boxSetsId ),
+        std::make_pair( "ParentId", folderId ),
         std::make_pair( "Recursive", "False" )
     };
 
@@ -1942,14 +1947,16 @@ void CSyncSystem::requestAllCollectionsEx( const QString & serverName, const QSt
     //qDebug().noquote().nospace() << url;
     auto request = QNetworkRequest( url );
 
-    emit sigAddToLog( EMsgType::eInfo, QString( "Requesting all collections from server '%2'" ).arg( serverName ) );
+    emit sigAddToLog( EMsgType::eInfo, QString( "Requesting collections from folder '%1(%2)' from server '%3'" ).arg( folderName ).arg( folderId ).arg( serverName ) );
 
     auto reply = makeRequest( request );
     setServerName( reply, serverName );
     setRequestType( reply, ERequestType::eGetAllCollectionsEx );
+    setExtraData(reply, QStringList() << folderName << folderId );
+
 }
 
-void CSyncSystem::handleAllCollectionsExResponse( const QString & serverName, const QByteArray & data )
+void CSyncSystem::handleAllCollectionsExResponse( const QString & serverName, const QByteArray & data, const QString & folderName, const QString& folderId)
 {
     QJsonParseError error;
     auto doc = QJsonDocument::fromJson( data, &error );
@@ -1967,7 +1974,7 @@ void CSyncSystem::handleAllCollectionsExResponse( const QString & serverName, co
     }
 
     auto collections = doc[ "Items" ].toArray();
-    emit sigAddToLog( EMsgType::eInfo, tr( "There are %1 collections on server %2" ).arg( collections.count() ).arg( serverName ) );
+    emit sigAddToLog( EMsgType::eInfo, tr( "There are %1 collections in folder %2(%3) on server %4" ).arg(collections.count() ).arg( folderName ).arg( folderId ).arg( serverName ) );
 
     for ( auto && ii : collections )
     {
@@ -2008,7 +2015,7 @@ void CSyncSystem::requestGetCollection( const QString & serverName, const QStrin
     //qDebug().noquote().nospace() << url;
     auto request = QNetworkRequest( url );
 
-    emit sigAddToLog( EMsgType::eInfo, QString( "Requesting collections %1 from server '%2'" ).arg( collectionName ).arg( serverName ) );
+    emit sigAddToLog( EMsgType::eInfo, QString( "Requesting collection %1(%2) from server '%3'" ).arg( collectionName ).arg( collectionId ).arg( serverName ) );
 
     auto reply = makeRequest( request );
     setServerName( reply, serverName );
@@ -2019,8 +2026,8 @@ void CSyncSystem::requestGetCollection( const QString & serverName, const QStrin
 
 void CSyncSystem::handleGetCollectionResponse( const QString & serverName, const QString & collectionName, const QString & collectionId, const QByteArray & data )
 {
-    auto items = handleGetMediaListResponse( serverName, data, tr( "Loading Movies for Collection '%1'" ).arg( collectionName ), tr( "There are %3 movies in collection '%1' on server %2" ).arg( collectionName ), tr( "Loading %2 movies" ) );
-    fMediaModel->addCollection( serverName, collectionName, collectionId, items );
+    auto items = handleGetMediaListResponse( serverName, data, tr( "Loading Movies for Collection '%1(%2)'" ).arg( collectionName ).arg( collectionId ), tr( "There are %4 movies in collection '%1(%2)' on server %3" ).arg( collectionName ).arg( collectionId ), tr( "Loading %2 movies" ) );
+    fCollectionsModel->addCollection( serverName, collectionName, collectionId, items );
 }
 
 void CSyncSystem::requestReloadMediaItemData( const QString & serverName, const QString & mediaID )

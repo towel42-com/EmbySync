@@ -114,9 +114,6 @@ public:
     const_iterator end() const { return fAllMedia.cend(); }
 
     void addMovieStub( const QString & name, int year );
-
-    void addCollection( const QString & serverName, const QString & name, const QString & id, const std::list< std::shared_ptr< CMediaData > > & items );
-    std::shared_ptr< CMediaCollection > findCollection( const QString & serverName, const QString & name );
 Q_SIGNALS:
     void sigPendingMediaUpdate();
     void sigSettingsChanged();
@@ -137,68 +134,16 @@ private:
 
     TMediaSet fAllMedia;
     std::map< QString, TMediaIDToMediaData > fMediaMap; // serverName -> mediaID -> mediaData
-    std::map< QString, std::vector< std::shared_ptr< CMediaCollection > > > fCollections; // serverName -> collectionData
 
     std::vector< std::shared_ptr< CMediaData > > fData;
     std::unordered_map< QString, std::shared_ptr< CMediaData > > fDataMap;
-    std::shared_ptr< CSettings > fSettings;
-    std::shared_ptr< CServerModel > fServerModel;
     std::unordered_map< std::shared_ptr< CMediaData >, size_t > fMediaToPos;
     std::unordered_set< QString > fProviderNames;
     std::unordered_map< int, std::pair< QString, QString > > fProviderColumnsByColumn;
     EDirSort fDirSort{ eNoSort };
-};
 
-struct SIndexPtr
-{
-    SIndexPtr( void * ptr, bool isCollection );
-    void * fPtr{ nullptr };
-    bool fIsCollection{ false };
-};
-
-class CCollectionsModel : public QAbstractItemModel
-{
-    Q_OBJECT;
-public:
-    CCollectionsModel( std::shared_ptr< CMediaModel > mediaModel );
-
-    virtual  QModelIndex index( int row, int column, const QModelIndex & parent = QModelIndex() ) const override;
-    virtual QModelIndex parent( const QModelIndex & child ) const override;
-    virtual bool hasChildren( const QModelIndex & parent ) const override;
-
-    virtual int rowCount( const QModelIndex & parent = QModelIndex() ) const override;
-
-    virtual int columnCount( const QModelIndex & parent = QModelIndex() ) const override;
-
-    virtual QVariant data( const QModelIndex & index, int role = Qt::DisplayRole ) const override;
-    virtual QVariant headerData( int section, Qt::Orientation orientation, int role /* = Qt::DisplayRole */ ) const override;
-
-    std::pair< QModelIndex, std::shared_ptr< CMediaCollection > > addCollection( const QString & server, const QString & name );
-    std::shared_ptr< SMediaCollectionData > addMovie( const QString & name, int year, const QModelIndex & collectionIndex, int rank );
-
-    CMediaCollection * collection( const QModelIndex & idx ) const;
-    SMediaCollectionData * media( const QModelIndex & idx ) const;
-
-    bool isMedia( const QModelIndex & parent ) const;
-    bool isCollection( const QModelIndex & parent ) const;
-
-    QString summary() const;
-    void clear();
-
-    void updateCollections( const QString & serverName, std::shared_ptr< CMediaModel > model );
-    void createCollections( std::shared_ptr<const CServerInfo> serverInfo, std::shared_ptr< CSyncSystem > syncSystem, QWidget * parent );
-public Q_SLOTS:
-    void slotMediaModelDataChanged();
-private:
-    std::vector< std::shared_ptr< CMediaCollection > > fCollections;
-    
-    SIndexPtr * idxPtr( CMediaCollection * mediaCollection ) const;
-    SIndexPtr * idxPtr( SMediaCollectionData * media ) const;
-    SIndexPtr * idxPtr( void * media, bool isCollection ) const;
-
-    mutable std::map< void *, SIndexPtr * > fIndexPtrs;
-
-    std::shared_ptr< CMediaModel > fMediaModel;
+    std::shared_ptr< CServerModel > fServerModel;
+    std::shared_ptr< CSettings > fSettings;
 };
 
 struct SMediaSummary

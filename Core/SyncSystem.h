@@ -40,6 +40,7 @@
 class CUsersModel;
 class CMediaModel;
 class CServerModel;
+class CCollectionsModel;
 
 class QNetworkReply;
 class QAuthenticator;
@@ -146,7 +147,7 @@ class CSyncSystem : public QObject
 {
     Q_OBJECT
 public:
-    CSyncSystem( std::shared_ptr< CSettings > settings, std::shared_ptr< CUsersModel > usersModel, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CServerModel > serverModel, QObject * parent = nullptr );
+    CSyncSystem( std::shared_ptr< CSettings > settings, std::shared_ptr< CUsersModel > usersModel, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CServerModel > serverModel, QObject * parent = nullptr );
 
     void setProcessNewMediaFunc( std::function< void( std::shared_ptr< CMediaData > userData ) > processMediaFunc );
     void setUserMsgFunc( std::function< void( EMsgType msgType, const QString & title, const QString & msg ) > userMsgFunc );
@@ -293,8 +294,8 @@ private:
     void requestAllCollections( const QString & serverName );
     void handleAllCollectionsResponse( const QString & serverName, const QByteArray & data );
 
-    void requestAllCollectionsEx( const QString & serverName, const QString & boxSetId );
-    void handleAllCollectionsExResponse( const QString & serverName, const QByteArray & data );
+    void requestAllCollectionsEx( const QString & serverName, const QString & folderName, const QString & folderId );
+    void handleAllCollectionsExResponse( const QString & serverName, const QByteArray & data, const QString & folderName, const QString & folderId );
 
     void requestGetCollection( const QString & serverName, const QString & collectionName, const QString & collectionId );
     void handleGetCollectionResponse( const QString & serverName, const QString & collectionName, const QString & collectionId, const QByteArray & data );
@@ -326,6 +327,7 @@ private:
     std::shared_ptr< CSettings > fSettings;
     std::shared_ptr< CUsersModel > fUsersModel;
     std::shared_ptr< CMediaModel > fMediaModel;
+    std::shared_ptr< CCollectionsModel > fCollectionsModel;
     std::shared_ptr< CServerModel > fServerModel;
     QNetworkAccessManager * fManager{ nullptr };
 
