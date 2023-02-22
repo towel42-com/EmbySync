@@ -36,7 +36,7 @@ class CEditServerDlg : public QDialog
 {
     Q_OBJECT
 public:
-    CEditServerDlg(const QString& name, const QString& url, const QString& apiKey, bool enabled, QWidget* parent = nullptr);
+    CEditServerDlg( const QString &name, const QString &url, const QString &apiKey, bool enabled, QWidget *parent = nullptr );
     virtual ~CEditServerDlg() override;
 
     QString name() const;
@@ -47,10 +47,11 @@ public:
 Q_SIGNALS:
 public Q_SLOTS:
     void slotChanged();
+
 private:
     void updateButtons();
     bool okToTest();
 
     std::unique_ptr< Ui::CEditServerDlg > fImpl;
 };
-#endif 
+#endif

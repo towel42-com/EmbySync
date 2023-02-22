@@ -52,44 +52,46 @@
 #include <QSettings>
 #include <QDesktopServices>
 
-CMissingTVDBid::CMissingTVDBid(QWidget* parent)
-    : CTabPageBase(parent),
-    fImpl(new Ui::CMissingTVDBid)
+CMissingTVDBid::CMissingTVDBid( QWidget *parent ) :
+    CTabPageBase( parent ),
+    fImpl( new Ui::CMissingTVDBid )
 {
-    fImpl->setupUi(this);
+    fImpl->setupUi( this );
     setupActions();
 
-    connect(this, &CMissingTVDBid::sigModelDataChanged, this, &CMissingTVDBid::slotModelDataChanged);
-    connect(this, &CMissingTVDBid::sigDataContextMenuRequested, this, &CMissingTVDBid::slotMediaContextMenu);
+    connect( this, &CMissingTVDBid::sigModelDataChanged, this, &CMissingTVDBid::slotModelDataChanged );
+    connect( this, &CMissingTVDBid::sigDataContextMenuRequested, this, &CMissingTVDBid::slotMediaContextMenu );
 }
 
 CMissingTVDBid::~CMissingTVDBid()
 {
 }
 
-void CMissingTVDBid::setupPage(std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem)
+void CMissingTVDBid::setupPage(
+    std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel,
+    std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem )
 {
-    CTabPageBase::setupPage(settings, syncSystem, mediaModel, collectionsModel, userModel, serverModel, progressSystem);
+    CTabPageBase::setupPage( settings, syncSystem, mediaModel, collectionsModel, userModel, serverModel, progressSystem );
 
-    fServerFilterModel = new CServerFilterModel(fServerModel.get());
-    fServerFilterModel->setSourceModel(fServerModel.get());
-    fServerFilterModel->sort(0, Qt::SortOrder::AscendingOrder);
-    NSABUtils::setupModelChanged(fMediaModel.get(), this, QMetaMethod::fromSignal(&CMissingTVDBid::sigModelDataChanged));
+    fServerFilterModel = new CServerFilterModel( fServerModel.get() );
+    fServerFilterModel->setSourceModel( fServerModel.get() );
+    fServerFilterModel->sort( 0, Qt::SortOrder::AscendingOrder );
+    NSABUtils::setupModelChanged( fMediaModel.get(), this, QMetaMethod::fromSignal( &CMissingTVDBid::sigModelDataChanged ) );
 
-    fImpl->servers->setModel(fServerFilterModel);
-    fImpl->servers->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
-    connect(fImpl->servers, &QTreeView::clicked, this, &CMissingTVDBid::slotCurrentServerChanged);
+    fImpl->servers->setModel( fServerFilterModel );
+    fImpl->servers->setContextMenuPolicy( Qt::ContextMenuPolicy::CustomContextMenu );
+    connect( fImpl->servers, &QTreeView::clicked, this, &CMissingTVDBid::slotCurrentServerChanged );
 
     slotMediaChanged();
 
-    connect(fMediaModel.get(), &CMediaModel::sigMediaChanged, this, &CMissingTVDBid::slotMediaChanged);
+    connect( fMediaModel.get(), &CMediaModel::sigMediaChanged, this, &CMissingTVDBid::slotMediaChanged );
 
-    fMissingMediaModel = new CMediaMissingFilterModel(settings, fMediaModel.get());
-    fMissingMediaModel->setSourceModel(fMediaModel.get());
-    //connect( fMediaModel.get(), &CMediaModel::sigPendingMediaUpdate, this, &CPlayStateCompare::slotPendingMediaUpdate );
-    connect(fSyncSystem.get(), &CSyncSystem::sigMissingTVDBidLoaded, this, &CMissingTVDBid::slotMissingTVDBidLoaded);
+    fMissingMediaModel = new CMediaMissingFilterModel( settings, fMediaModel.get() );
+    fMissingMediaModel->setSourceModel( fMediaModel.get() );
+    // connect( fMediaModel.get(), &CMediaModel::sigPendingMediaUpdate, this, &CPlayStateCompare::slotPendingMediaUpdate );
+    connect( fSyncSystem.get(), &CSyncSystem::sigMissingTVDBidLoaded, this, &CMissingTVDBid::slotMissingTVDBidLoaded );
 
-    slotSetCurrentServer(QModelIndex());
+    slotSetCurrentServer( QModelIndex() );
     showPrimaryServer();
 }
 
@@ -99,8 +101,8 @@ void CMissingTVDBid::slotMediaChanged()
 
 void CMissingTVDBid::setupActions()
 {
-    fToolBar = new QToolBar(this);
-    fToolBar->setObjectName(QString::fromUtf8("fToolBar"));
+    fToolBar = new QToolBar( this );
+    fToolBar->setObjectName( QString::fromUtf8( "fToolBar" ) );
 }
 
 bool CMissingTVDBid::prepForClose()
@@ -141,8 +143,8 @@ void CMissingTVDBid::slotSettingsChanged()
 void CMissingTVDBid::showPrimaryServer()
 {
     NSABUtils::CAutoWaitCursor awc;
-    fServerFilterModel->setOnlyShowEnabledServers(true);
-    fServerFilterModel->setOnlyShowPrimaryServer(true);
+    fServerFilterModel->setOnlyShowEnabledServers( true );
+    fServerFilterModel->setOnlyShowPrimaryServer( true );
 }
 
 void CMissingTVDBid::slotModelDataChanged()
@@ -153,48 +155,47 @@ void CMissingTVDBid::loadingUsersFinished()
 {
 }
 
-QSplitter* CMissingTVDBid::getDataSplitter() const
+QSplitter *CMissingTVDBid::getDataSplitter() const
 {
     return fImpl->dataSplitter;
 }
 
-void CMissingTVDBid::slotCurrentServerChanged(const QModelIndex& index)
+void CMissingTVDBid::slotCurrentServerChanged( const QModelIndex &index )
 {
-    if (fSyncSystem->isRunning())
+    if ( fSyncSystem->isRunning() )
         return;
 
     auto idx = index;
-    if (!idx.isValid())
+    if ( !idx.isValid() )
         idx = fImpl->servers->selectionModel()->currentIndex();
 
-    if (!index.isValid())
+    if ( !index.isValid() )
         return;
 
-    auto serverInfo = getServerInfo(idx);
-    if (!serverInfo)
+    auto serverInfo = getServerInfo( idx );
+    if ( !serverInfo )
         return;
 
-    if (!fDataTrees.empty())
+    if ( !fDataTrees.empty() )
     {
-        fDataTrees[0]->setServer(serverInfo, true);
+        fDataTrees[ 0 ]->setServer( serverInfo, true );
     }
 
     fMediaModel->clear();
 
-    if (!fSyncSystem->loadMissingTVDBid(serverInfo))
+    if ( !fSyncSystem->loadMissingTVDBid( serverInfo ) )
     {
-        QMessageBox::critical(this, tr("No Admin User Found"), tr("No user found with Administrator Privileges on server '%1'").arg(serverInfo->displayName()));
+        QMessageBox::critical( this, tr( "No Admin User Found" ), tr( "No user found with Administrator Privileges on server '%1'" ).arg( serverInfo->displayName() ) );
     }
 }
-
 
 std::shared_ptr< CServerInfo > CMissingTVDBid::getCurrentServerInfo() const
 {
     auto idx = fImpl->servers->selectionModel()->currentIndex();
-    if (!idx.isValid())
+    if ( !idx.isValid() )
         return {};
 
-    return getServerInfo(idx);
+    return getServerInfo( idx );
 }
 
 std::shared_ptr< CTabUIInfo > CMissingTVDBid::getUIInfo() const
@@ -207,84 +208,84 @@ std::shared_ptr< CTabUIInfo > CMissingTVDBid::getUIInfo() const
     return retVal;
 }
 
-std::shared_ptr< CServerInfo > CMissingTVDBid::getServerInfo(QModelIndex idx) const
+std::shared_ptr< CServerInfo > CMissingTVDBid::getServerInfo( QModelIndex idx ) const
 {
-    if (idx.model() != fServerModel.get())
-        idx = fServerFilterModel->mapToSource(idx);
+    if ( idx.model() != fServerModel.get() )
+        idx = fServerFilterModel->mapToSource( idx );
 
-    auto retVal = fServerModel->getServerInfo(idx);
+    auto retVal = fServerModel->getServerInfo( idx );
     return retVal;
 }
 
 void CMissingTVDBid::loadServers()
 {
-    CTabPageBase::loadServers(fMissingMediaModel);
+    CTabPageBase::loadServers( fMissingMediaModel );
 }
 
-void CMissingTVDBid::createServerTrees(QAbstractItemModel* model)
+void CMissingTVDBid::createServerTrees( QAbstractItemModel *model )
 {
-    addDataTreeForServer(nullptr, model);
+    addDataTreeForServer( nullptr, model );
 }
 
-void CMissingTVDBid::slotSetCurrentServer(const QModelIndex& current)
+void CMissingTVDBid::slotSetCurrentServer( const QModelIndex &current )
 {
-    auto serverInfo = getServerInfo(current);
+    auto serverInfo = getServerInfo( current );
     slotModelDataChanged();
 }
 
 void CMissingTVDBid::slotMissingTVDBidLoaded()
 {
     auto currServer = getCurrentServerInfo();
-    if (!currServer)
+    if ( !currServer )
         return;
 
     hideDataTreeColumns();
     sortDataTrees();
 }
 
-std::shared_ptr< CMediaData > CMissingTVDBid::getMediaData(QModelIndex idx) const
+std::shared_ptr< CMediaData > CMissingTVDBid::getMediaData( QModelIndex idx ) const
 {
-    if (idx.model() != fMediaModel.get())
-        idx = fMissingMediaModel->mapToSource(idx);
+    if ( idx.model() != fMediaModel.get() )
+        idx = fMissingMediaModel->mapToSource( idx );
 
-    auto retVal = fMediaModel->getMediaData(idx);
+    auto retVal = fMediaModel->getMediaData( idx );
     return retVal;
 }
 
-void CMissingTVDBid::slotMediaContextMenu(CDataTree* dataTree, const QPoint& pos)
+void CMissingTVDBid::slotMediaContextMenu( CDataTree *dataTree, const QPoint &pos )
 {
-    if (!dataTree)
+    if ( !dataTree )
         return;
 
-    auto idx = dataTree->indexAt(pos);
-    if (!idx.isValid())
+    auto idx = dataTree->indexAt( pos );
+    if ( !idx.isValid() )
         return;
 
-    auto mediaData = getMediaData(idx);
-    if (!mediaData)
+    auto mediaData = getMediaData( idx );
+    if ( !mediaData )
         return;
 
-    QMenu menu(tr("Context Menu"));
+    QMenu menu( tr( "Context Menu" ) );
 
-    auto action = new QAction("Search for Torrent on RARBG", &menu);
-    menu.addAction(action);
-    connect(action, &QAction::triggered,
-        [mediaData]()
+    auto action = new QAction( "Search for Torrent on RARBG", &menu );
+    menu.addAction( action );
+    connect(
+        action, &QAction::triggered,
+        [ mediaData ]()
         {
-            auto url = mediaData->getSearchURL(CMediaData::ETorrentSite::eRARBG);
-            QDesktopServices::openUrl(url);
-        });
+            auto url = mediaData->getSearchURL( CMediaData::ETorrentSite::eRARBG );
+            QDesktopServices::openUrl( url );
+        } );
 
-    action = new QAction("Search for Torrent on piratebay.org", &menu);
-    menu.addAction(action);
-    connect(action, &QAction::triggered,
-        [mediaData]()
+    action = new QAction( "Search for Torrent on piratebay.org", &menu );
+    menu.addAction( action );
+    connect(
+        action, &QAction::triggered,
+        [ mediaData ]()
         {
-            auto url = mediaData->getSearchURL(CMediaData::ETorrentSite::ePirateBay);
-            QDesktopServices::openUrl(url);
-        });
+            auto url = mediaData->getSearchURL( CMediaData::ETorrentSite::ePirateBay );
+            QDesktopServices::openUrl( url );
+        } );
 
-    menu.exec(dataTree->dataTree()->mapToGlobal(pos));
+    menu.exec( dataTree->dataTree()->mapToGlobal( pos ) );
 }
-
-

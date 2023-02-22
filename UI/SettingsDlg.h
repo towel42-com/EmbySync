@@ -52,48 +52,43 @@ class CSettingsDlg : public QDialog
 {
     Q_OBJECT
 public:
-    CSettingsDlg(std::shared_ptr< CSettings > settings, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CSyncSystem > syncSystem, QWidget* parent = nullptr);
+    CSettingsDlg( std::shared_ptr< CSettings > settings, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CSyncSystem > syncSystem, QWidget *parent = nullptr );
 
     virtual ~CSettingsDlg() override;
     virtual void accept() override;
 
-    void setKnownUsers(const std::vector< std::shared_ptr< CUserData > >& knownUsers)
-    {
-        loadKnownUsers(knownUsers);
-    }
-    void setKnownShows(const std::unordered_set< QString >& knownShows)
-    {
-        loadKnownShows(knownShows);
-    }
+    void setKnownUsers( const std::vector< std::shared_ptr< CUserData > > &knownUsers ) { loadKnownUsers( knownUsers ); }
+    void setKnownShows( const std::unordered_set< QString > &knownShows ) { loadKnownShows( knownShows ); }
 
 public Q_SLOTS:
     void slotTestServers();
-    void slotTestServerResults(const QString& serverName, bool results, const QString& msg);
+    void slotTestServerResults( const QString &serverName, bool results, const QString &msg );
     void slotMoveServerUp();
     void slotMoveServerDown();
     void slotCurrServerChanged();
+
 private:
-    void loadKnownUsers(const std::vector< std::shared_ptr< CUserData > >& knownUsers);
-    void loadKnownShows(const std::unordered_set< QString >& knownShows);
-    void moveCurrServer(bool up);
+    void loadKnownUsers( const std::vector< std::shared_ptr< CUserData > > &knownUsers );
+    void loadKnownShows( const std::unordered_set< QString > &knownShows );
+    void moveCurrServer( bool up );
     void load();
     void save();
 
-    std::vector< std::shared_ptr< CServerInfo > > getServerInfos(bool enabledOnly) const;
-    std::shared_ptr< CServerInfo > getServerInfo(int ii) const;
+    std::vector< std::shared_ptr< CServerInfo > > getServerInfos( bool enabledOnly ) const;
+    std::shared_ptr< CServerInfo > getServerInfo( int ii ) const;
 
-    void editServer(QTreeWidgetItem* item);
-    void editUser(QListWidgetItem* item);
-    void editShow(QListWidgetItem* item);
+    void editServer( QTreeWidgetItem *item );
+    void editUser( QListWidgetItem *item );
+    void editShow( QListWidgetItem *item );
     void updateColors();
-    void updateColor(QLabel* label, const QColor& color);
+    void updateColor( QLabel *label, const QColor &color );
     void updateKnownUsers();
 
-    QRegularExpression validateRegExes(QListWidget* list) const;
+    QRegularExpression validateRegExes( QListWidget *list ) const;
 
     void updateKnownShows();
 
-    void setIsMatch(QTreeWidgetItem* item, bool isMatch, bool negMatch);
+    void setIsMatch( QTreeWidgetItem *item, bool isMatch, bool negMatch );
 
     QStringList syncUserStrings() const;
     QStringList ignoreShowStrings() const;
@@ -105,8 +100,8 @@ private:
     QColor fMediaSourceColor;
     QColor fMediaDestColor;
     QColor fDataMissingColor;
-    std::vector< std::pair< std::shared_ptr< CUserData >, QTreeWidgetItem* > > fKnownUsers;
-    std::vector< std::pair< QString, QTreeWidgetItem* > > fKnownShows;
-    QPushButton* fTestButton{ nullptr };
+    std::vector< std::pair< std::shared_ptr< CUserData >, QTreeWidgetItem * > > fKnownUsers;
+    std::vector< std::pair< QString, QTreeWidgetItem * > > fKnownShows;
+    QPushButton *fTestButton{ nullptr };
 };
-#endif 
+#endif

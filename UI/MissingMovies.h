@@ -51,11 +51,13 @@ class CMissingMovies : public CTabPageBase
 {
     Q_OBJECT
 public:
-    CMissingMovies(QWidget* parent = nullptr);
+    CMissingMovies( QWidget *parent = nullptr );
 
     virtual ~CMissingMovies() override;
 
-    virtual void setupPage(std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem) override;
+    virtual void setupPage(
+        std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel,
+        std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem ) override;
 
     virtual void setupActions();
 
@@ -68,10 +70,10 @@ public:
 
     virtual void loadingUsersFinished() override;
 
-    virtual QSplitter* getDataSplitter() const override;
+    virtual QSplitter *getDataSplitter() const override;
 
     virtual bool prepForClose() override;
-    std::shared_ptr< CMediaData > getMediaData(QModelIndex idx) const;
+    std::shared_ptr< CMediaData > getMediaData( QModelIndex idx ) const;
 
     virtual int defaultSortColumn() const override { return 1; }
     virtual Qt::SortOrder defaultSortOrder() const override { return Qt::SortOrder::AscendingOrder; }
@@ -83,33 +85,34 @@ public Q_SLOTS:
     virtual void slotCanceled() override;
     virtual void slotModelDataChanged() override;
     virtual void slotSettingsChanged() override;
-    void slotMediaContextMenu(CDataTree* dataTree, const QPoint& pos);
-    virtual void slotSetCurrentServer(const QModelIndex& index);
+    void slotMediaContextMenu( CDataTree *dataTree, const QPoint &pos );
+    virtual void slotSetCurrentServer( const QModelIndex &index );
     void slotSearchForAllMissing();
 private Q_SLOTS:
-    void slotCurrentServerChanged(const QModelIndex& index);
+    void slotCurrentServerChanged( const QModelIndex &index );
     void slotAllMoviesLoaded();
     void slotMediaChanged();
-    void slotLoadFile(const QString& fileName);
+    void slotLoadFile( const QString &fileName );
+
 private:
     QString fFileName;
-    void setMovieSearchFile(const QString& fileName, bool force);
+    void setMovieSearchFile( const QString &fileName, bool force );
 
     void showPrimaryServer();
     std::shared_ptr< CServerInfo > getCurrentServerInfo() const;
-    std::shared_ptr< CServerInfo > getServerInfo(QModelIndex idx) const;
+    std::shared_ptr< CServerInfo > getServerInfo( QModelIndex idx ) const;
 
     void reset();
 
     void loadServers();
-    virtual void createServerTrees(QAbstractItemModel* model) override;
+    virtual void createServerTrees( QAbstractItemModel *model ) override;
 
     std::unique_ptr< Ui::CMissingMovies > fImpl;
 
     QPointer< QAction > fActionSearchForAll;
     QPointer< QToolBar > fToolBar{ nullptr };
 
-    CServerFilterModel* fServerFilterModel{ nullptr };
-    CMovieSearchFilterModel* fMoviesModel{ nullptr };
+    CServerFilterModel *fServerFilterModel{ nullptr };
+    CMovieSearchFilterModel *fMoviesModel{ nullptr };
 };
 #endif

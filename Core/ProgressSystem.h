@@ -32,40 +32,40 @@ public:
     void popState();
 
     QString title() const;
-    void setTitle(const QString& title);
+    void setTitle( const QString &title );
 
     int maximum() const;
-    void setMaximum(int count);
+    void setMaximum( int count );
 
     int value() const;
-    void setValue(int value) const;
+    void setValue( int value ) const;
 
     void incProgress();
     void resetProgress() const;
     bool wasCanceled() const;
 
-    void setSetTitleFunc(std::function< void(const QString& title) > setTitleFunc);
-    void setTitleFunc(std::function< QString() > titleFunc);
+    void setSetTitleFunc( std::function< void( const QString &title ) > setTitleFunc );
+    void setTitleFunc( std::function< QString() > titleFunc );
 
-    void setMaximumFunc(std::function< int() > maximumFunc);
-    void setSetMaximumFunc(std::function< void(int) > setMaximumFunc);
+    void setMaximumFunc( std::function< int() > maximumFunc );
+    void setSetMaximumFunc( std::function< void( int ) > setMaximumFunc );
 
-    void setValueFunc(std::function< int() > valueFunc);
-    void setSetValueFunc(std::function< void(int) > setValueFunc);
+    void setValueFunc( std::function< int() > valueFunc );
+    void setSetValueFunc( std::function< void( int ) > setValueFunc );
 
-    void setIncFunc(std::function< void() > incFunc);
-    void setResetFunc(std::function< void() > resetFunc);
-    void setWasCanceledFunc(std::function< bool() > wasCanceledFunc);
+    void setIncFunc( std::function< void() > incFunc );
+    void setResetFunc( std::function< void() > resetFunc );
+    void setWasCanceledFunc( std::function< bool() > wasCanceledFunc );
 
 private:
-    std::function< void(const QString& title) > fSetTitleFunc;
+    std::function< void( const QString &title ) > fSetTitleFunc;
     std::function< QString() > fTitleFunc;
 
     std::function< int() > fMaximumFunc;
-    std::function< void(int) > fSetMaximumFunc;
+    std::function< void( int ) > fSetMaximumFunc;
 
     std::function< int() > fValueFunc;
-    std::function< void(int) > fSetValueFunc;
+    std::function< void( int ) > fSetValueFunc;
 
     std::function< void() > fIncFunc;
     std::function< void() > fResetFunc;

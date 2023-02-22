@@ -30,19 +30,19 @@
 #include <QMetaMethod>
 #include <QMessageBox>
 
-CEditServerDlg::CEditServerDlg(const QString& name, const QString& url, const QString& apiKey, bool enabled, QWidget* parent)
-    : QDialog(parent),
-    fImpl(new Ui::CEditServerDlg)
+CEditServerDlg::CEditServerDlg( const QString &name, const QString &url, const QString &apiKey, bool enabled, QWidget *parent ) :
+    QDialog( parent ),
+    fImpl( new Ui::CEditServerDlg )
 {
-    fImpl->setupUi(this);
-    fImpl->name->setText(name);
-    fImpl->url->setText(url);
-    fImpl->apiKey->setText(apiKey);
-    fImpl->enabled->setChecked(enabled);
+    fImpl->setupUi( this );
+    fImpl->name->setText( name );
+    fImpl->url->setText( url );
+    fImpl->apiKey->setText( apiKey );
+    fImpl->enabled->setChecked( enabled );
 
-    QObject::connect(fImpl->name, &QLineEdit::textChanged, this, &CEditServerDlg::slotChanged);
-    QObject::connect(fImpl->apiKey, &QLineEdit::textChanged, this, &CEditServerDlg::slotChanged);
-    QObject::connect(fImpl->url, &CHyperLinkLineEdit::textChanged, this, &CEditServerDlg::slotChanged);
+    QObject::connect( fImpl->name, &QLineEdit::textChanged, this, &CEditServerDlg::slotChanged );
+    QObject::connect( fImpl->apiKey, &QLineEdit::textChanged, this, &CEditServerDlg::slotChanged );
+    QObject::connect( fImpl->url, &CHyperLinkLineEdit::textChanged, this, &CEditServerDlg::slotChanged );
     updateButtons();
 }
 
@@ -84,6 +84,5 @@ void CEditServerDlg::slotChanged()
 
 void CEditServerDlg::updateButtons()
 {
-    fImpl->buttonBox->button(QDialogButtonBox::StandardButton::Ok)->setEnabled(okToTest());
+    fImpl->buttonBox->button( QDialogButtonBox::StandardButton::Ok )->setEnabled( okToTest() );
 }
-

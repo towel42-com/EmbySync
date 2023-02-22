@@ -35,67 +35,53 @@ class QJsonObject;
 class CServerInfo : public QObject
 {
     Q_OBJECT;
+
 public:
     CServerInfo() = default;
-    CServerInfo(const QString& name, const QString& url, const QString& apiKey, bool enabled);
-    CServerInfo(const QString& name);
+    CServerInfo( const QString &name, const QString &url, const QString &apiKey, bool enabled );
+    CServerInfo( const QString &name );
 
-    bool operator==(const CServerInfo& rhs) const;
-    bool operator!=(const CServerInfo& rhs) const
-    {
-        return !operator==(rhs);
-    }
+    bool operator==( const CServerInfo &rhs ) const;
+    bool operator!=( const CServerInfo &rhs ) const { return !operator==( rhs ); }
 
-    bool setUrl(const QString& url);
-    QString url(bool clean = false) const;
-    QUrl getUrl() const; // includes the query for apikey
-    QUrl getUrl(const QString& extraPath, const std::list< std::pair< QString, QString > >& queryItems) const;
+    bool setUrl( const QString &url );
+    QString url( bool clean = false ) const;
+    QUrl getUrl() const;   // includes the query for apikey
+    QUrl getUrl( const QString &extraPath, const std::list< std::pair< QString, QString > > &queryItems ) const;
 
-    QString displayName(bool verbose = false) const; // returns the name, if empty returns the fqdn, if the same fqdn is used more than once, it use fqdn:port, verbose includes the url
-    bool setDisplayName(const QString& name, bool generated);
-    void autoSetDisplayName(bool usePort);
+    QString displayName( bool verbose = false ) const;   // returns the name, if empty returns the fqdn, if the same fqdn is used more than once, it use fqdn:port, verbose includes the url
+    bool setDisplayName( const QString &name, bool generated );
+    void autoSetDisplayName( bool usePort );
 
-    bool displayNameGenerated() const
-    {
-        return fName.second;
-    }
+    bool displayNameGenerated() const { return fName.second; }
 
-    QString keyName() const;// getUrl().toString()
+    QString keyName() const;   // getUrl().toString()
 
-    bool isServer(const QString& serverName) const;
-
+    bool isServer( const QString &serverName ) const;
 
     bool canSync() const;
 
-    QString apiKey() const
-    {
-        return fAPIKey;
-    }
-    bool setAPIKey(const QString& key);
+    QString apiKey() const { return fAPIKey; }
+    bool setAPIKey( const QString &key );
 
     QJsonObject toJson() const;
-    static std::shared_ptr< CServerInfo > fromJson(const QJsonObject& obj, QString& errorMsg);
+    static std::shared_ptr< CServerInfo > fromJson( const QJsonObject &obj, QString &errorMsg );
 
-    bool isEnabled() const
-    {
-        return fIsEnabled && canSync();
-    }
-    bool setIsEnabled(bool isEnabled);
+    bool isEnabled() const { return fIsEnabled && canSync(); }
+    bool setIsEnabled( bool isEnabled );
 
-    void update(const QJsonObject& serverData);
+    void update( const QJsonObject &serverData );
 
-    QIcon icon() const
-    {
-        return fIcon;
-    }
-    void setIcon(const QByteArray& data, const QString& type);
+    QIcon icon() const { return fIcon; }
+    void setIcon( const QByteArray &data, const QString &type );
 
 Q_SIGNALS:
     void sigServerInfoChanged();
+
 private:
     mutable std::optional< QUrl > fDefaultURL;
 
-    std::pair< QString, bool > fName; // may be automatically generated or not
+    std::pair< QString, bool > fName;   // may be automatically generated or not
     mutable QString fKeyName;
     QString fURL;
     QString fAPIKey;
@@ -113,4 +99,4 @@ private:
     QString fID;
 };
 
-#endif 
+#endif

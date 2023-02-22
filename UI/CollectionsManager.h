@@ -53,11 +53,13 @@ class CCollectionsManager : public CTabPageBase
 {
     Q_OBJECT
 public:
-    CCollectionsManager(QWidget* parent = nullptr);
+    CCollectionsManager( QWidget *parent = nullptr );
 
     virtual ~CCollectionsManager() override;
 
-    virtual void setupPage(std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem) override;
+    virtual void setupPage(
+        std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel,
+        std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem ) override;
 
     virtual void setupActions();
 
@@ -70,10 +72,10 @@ public:
 
     virtual void loadingUsersFinished() override;
 
-    virtual QSplitter* getDataSplitter() const override;
+    virtual QSplitter *getDataSplitter() const override;
 
     virtual bool prepForClose() override;
-    std::shared_ptr< CMediaData > getMediaData(QModelIndex idx) const;
+    std::shared_ptr< CMediaData > getMediaData( QModelIndex idx ) const;
 
     virtual int defaultSortColumn() const override { return 0; }
     virtual Qt::SortOrder defaultSortOrder() const override { return Qt::SortOrder::AscendingOrder; }
@@ -85,26 +87,27 @@ public Q_SLOTS:
     virtual void slotCanceled() override;
     virtual void slotModelDataChanged() override;
     virtual void slotSettingsChanged() override;
-    void slotMediaContextMenu(CDataTree* dataTree, const QPoint& pos);
-    virtual void slotSetCurrentServer(const QModelIndex& index);
+    void slotMediaContextMenu( CDataTree *dataTree, const QPoint &pos );
+    virtual void slotSetCurrentServer( const QModelIndex &index );
     void slotCreateMissingCollections();
 private Q_SLOTS:
-    void slotCurrentServerChanged(const QModelIndex& index);
+    void slotCurrentServerChanged( const QModelIndex &index );
     void slotAllMoviesLoaded();
     void slotAllCollectionsLoaded();
     void slotMediaChanged();
-    void slotLoadFile(const QString& fileName);
+    void slotLoadFile( const QString &fileName );
+
 private:
-    void setCollectionsFile(const QString& fileName, bool force);
+    void setCollectionsFile( const QString &fileName, bool force );
 
     void showPrimaryServer();
-    std::shared_ptr< CServerInfo > getCurrentServerInfo(const QModelIndex& index = {}) const;
-    std::shared_ptr< CServerInfo > getServerInfo(QModelIndex idx) const;
+    std::shared_ptr< CServerInfo > getCurrentServerInfo( const QModelIndex &index = {} ) const;
+    std::shared_ptr< CServerInfo > getServerInfo( QModelIndex idx ) const;
 
     void reset();
 
     void loadServers();
-    virtual void createServerTrees(QAbstractItemModel* model) override;
+    virtual void createServerTrees( QAbstractItemModel *model ) override;
 
     std::unique_ptr< Ui::CCollectionsManager > fImpl;
 
@@ -112,7 +115,7 @@ private:
     QPointer< QAction > fCreateCollections;
     QPointer< QToolBar > fToolBar{ nullptr };
 
-    CCollectionsFilterModel* fFilterModel{ nullptr };
-    CServerFilterModel* fServerFilterModel{ nullptr };
+    CCollectionsFilterModel *fFilterModel{ nullptr };
+    CServerFilterModel *fServerFilterModel{ nullptr };
 };
 #endif
