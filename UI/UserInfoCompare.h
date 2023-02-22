@@ -50,7 +50,7 @@ class CUserInfoCompare : public CTabPageBase
 {
     Q_OBJECT
 public:
-    CUserInfoCompare( QWidget * parent = nullptr );
+    CUserInfoCompare(QWidget* parent = nullptr);
     virtual ~CUserInfoCompare() override;
 
     virtual void setupPage(std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem) override;
@@ -63,7 +63,7 @@ public:
     virtual std::shared_ptr< CTabUIInfo > getUIInfo() const override;
     virtual void loadingUsersFinished() override;
 
-    virtual QSplitter * getDataSplitter() const override;
+    virtual QSplitter* getDataSplitter() const override;
 
     void onlyShowSyncableUsers();
     void onlyShowUsersWithDifferences();
@@ -73,15 +73,15 @@ public:
 Q_SIGNALS:
     void sigSettingsLoaded();
     void sigModelDataChanged();
-    void sigAddToLog( int msgType, const QString & msg );
-    void sigAddInfoToLog( const QString & msg );
+    void sigAddToLog(int msgType, const QString& msg);
+    void sigAddInfoToLog(const QString& msg);
 
 public Q_SLOTS:
     void slotCanceled() override;
     void slotModelDataChanged() override;
     void slotSettingsChanged() override;
-    void slotViewUser( const QModelIndex & current );
-    void slotSetCurrentUser( const QModelIndex & current );
+    void slotViewUser(const QModelIndex& current);
+    void slotSetCurrentUser(const QModelIndex& current);
     void slotViewUserInfo();
 
 private Q_SLOTS:
@@ -89,8 +89,8 @@ private Q_SLOTS:
     void slotSelectiveProcess();
     void slotRepairUserConnectedIDs();
 
-    void slotCurrentUserChanged( const QModelIndex & index );
-    void slotUsersContextMenu( CDataTree * dataTree, const QPoint & pos );
+    void slotCurrentUserChanged(const QModelIndex& index);
+    void slotUsersContextMenu(CDataTree* dataTree, const QPoint& pos);
 
     void slotToggleOnlyShowSyncableUsers();
     void slotToggleOnlyShowUsersWithDifferences();
@@ -101,15 +101,15 @@ private Q_SLOTS:
     void slotAutoSetConnectID();
 private:
     std::shared_ptr< CUserData > getCurrUserData() const;
-    std::shared_ptr< CUserData > getUserData( QModelIndex idx ) const;
-    std::shared_ptr< const CServerInfo > getServerInfo( QModelIndex idx ) const;
+    std::shared_ptr< CUserData > getUserData(QModelIndex idx) const;
+    std::shared_ptr< const CServerInfo > getServerInfo(QModelIndex idx) const;
 
     void reset();
 
     void loadServers();
 
     std::unique_ptr< Ui::CUserInfoCompare > fImpl;
-    CUsersFilterModel * fUsersFilterModel{ nullptr };
+    CUsersFilterModel* fUsersFilterModel{ nullptr };
 
     QPointer< CUserWindow > fUserWindow;
 
@@ -125,7 +125,7 @@ private:
     QPointer< QAction > fActionOnlyShowUsersWithDifferences{ nullptr };
     QPointer< QAction > fActionShowUsersWithIssues{ nullptr };
 
-    QToolBar * fToolBar{ nullptr };
-    CDataTree * fContextTree{ nullptr };
+    QToolBar* fToolBar{ nullptr };
+    CDataTree* fContextTree{ nullptr };
 };
 #endif

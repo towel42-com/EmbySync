@@ -50,7 +50,7 @@ class CPlayStateCompare : public CTabPageBase
 {
     Q_OBJECT
 public:
-    CPlayStateCompare( QWidget * parent = nullptr );
+    CPlayStateCompare(QWidget* parent = nullptr);
     virtual ~CPlayStateCompare() override;
 
     virtual void setupPage(std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem) override;
@@ -65,7 +65,7 @@ public:
 
     virtual void loadingUsersFinished() override;
 
-    virtual QSplitter * getDataSplitter() const override;
+    virtual QSplitter* getDataSplitter() const override;
 
     void onlyShowSyncableUsers();
     void onlyShowMediaWithDifferences();
@@ -89,7 +89,7 @@ private Q_SLOTS:
     void slotUserMediaCompletelyLoaded();
     void slotPendingMediaUpdate();
 
-    void slotCurrentUserChanged( const QModelIndex & index );
+    void slotCurrentUserChanged(const QModelIndex& index);
 
     void slotToggleOnlyShowSyncableUsers();
     void slotToggleOnlyShowMediaWithDifferences();
@@ -98,15 +98,15 @@ private Q_SLOTS:
 
     void slotUserMediaLoaded();
 
-    void slotSetCurrentMediaItem( const QModelIndex & current );
-    void slotViewMedia( const QModelIndex & current );
+    void slotSetCurrentMediaItem(const QModelIndex& current);
+    void slotViewMedia(const QModelIndex& current);
 
     void slotViewMediaInfo();
 private:
-    std::shared_ptr< CMediaData > getMediaData( QModelIndex idx ) const;
+    std::shared_ptr< CMediaData > getMediaData(QModelIndex idx) const;
 
     std::shared_ptr< CUserData > getCurrUserData() const;
-    std::shared_ptr< CUserData > getUserData( QModelIndex idx ) const;
+    std::shared_ptr< CUserData > getUserData(QModelIndex idx) const;
 
     void reset();
 
@@ -114,11 +114,11 @@ private:
 
     std::unique_ptr< Ui::CPlayStateCompare > fImpl;
 
-    CUsersFilterModel * fUsersFilterModel{ nullptr };
-    CMediaFilterModel * fMediaFilterModel{ nullptr };
+    CUsersFilterModel* fUsersFilterModel{ nullptr };
+    CMediaFilterModel* fMediaFilterModel{ nullptr };
 
-    QTimer * fPendingMediaUpdateTimer{ nullptr };
-    QTimer * fMediaLoadedTimer{ nullptr };
+    QTimer* fPendingMediaUpdateTimer{ nullptr };
+    QTimer* fMediaLoadedTimer{ nullptr };
 
     QPointer< CMediaWindow > fMediaWindow;
 

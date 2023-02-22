@@ -52,129 +52,129 @@
 #include <QCloseEvent>
 #include <QTreeView>
 
-CUserInfoCompare::CUserInfoCompare( QWidget * parent )
-    : CTabPageBase( parent ),
-    fImpl( new Ui::CUserInfoCompare )
+CUserInfoCompare::CUserInfoCompare(QWidget* parent)
+    : CTabPageBase(parent),
+    fImpl(new Ui::CUserInfoCompare)
 {
-    fImpl->setupUi( this );
+    fImpl->setupUi(this);
     setupActions();
 
-    connect( this, &CUserInfoCompare::sigModelDataChanged, this, &CUserInfoCompare::slotModelDataChanged );
-    connect( this, &CUserInfoCompare::sigDataContextMenuRequested, this, &CUserInfoCompare::slotUsersContextMenu );
+    connect(this, &CUserInfoCompare::sigModelDataChanged, this, &CUserInfoCompare::slotModelDataChanged);
+    connect(this, &CUserInfoCompare::sigDataContextMenuRequested, this, &CUserInfoCompare::slotUsersContextMenu);
 
-    connect( this, &CTabPageBase::sigSetCurrentDataItem, this, &CUserInfoCompare::slotSetCurrentUser );
-    connect( this, &CTabPageBase::sigViewData, this, &CUserInfoCompare::slotViewUser );
+    connect(this, &CTabPageBase::sigSetCurrentDataItem, this, &CUserInfoCompare::slotSetCurrentUser);
+    connect(this, &CTabPageBase::sigViewData, this, &CUserInfoCompare::slotViewUser);
 }
 
 void CUserInfoCompare::setupPage(std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem)
 {
     CTabPageBase::setupPage(settings, syncSystem, mediaModel, collectionsModel, userModel, serverModel, progressSystem);
 
-    fUsersFilterModel = new CUsersFilterModel( false, fUsersModel.get() );
-    fUsersFilterModel->setSourceModel( fUsersModel.get() );
+    fUsersFilterModel = new CUsersFilterModel(false, fUsersModel.get());
+    fUsersFilterModel->setSourceModel(fUsersModel.get());
 
-    fUsersFilterModel->sort( -1, Qt::SortOrder::AscendingOrder );
+    fUsersFilterModel->sort(-1, Qt::SortOrder::AscendingOrder);
 }
 
 void CUserInfoCompare::setupActions()
 {
-    fProcessMenu = new QMenu( this );
-    fProcessMenu->setObjectName( QString::fromUtf8( "fProcessMenu" ) );
-    fProcessMenu->setTitle( QCoreApplication::translate( "CUserInfoCompare", "Process", nullptr ) );
+    fProcessMenu = new QMenu(this);
+    fProcessMenu->setObjectName(QString::fromUtf8("fProcessMenu"));
+    fProcessMenu->setTitle(QCoreApplication::translate("CUserInfoCompare", "Process", nullptr));
 
-    fActionProcess = new QAction( this );
-    fActionProcess->setObjectName( QString::fromUtf8( "fActionProcess" ) );
+    fActionProcess = new QAction(this);
+    fActionProcess->setObjectName(QString::fromUtf8("fActionProcess"));
     QIcon icon3;
-    icon3.addFile( QString::fromUtf8( ":/resources/process.png" ), QSize(), QIcon::Normal, QIcon::Off );
-    fActionProcess->setIcon( icon3 );
-    fActionProcess->setText( QCoreApplication::translate( "CUserInfoCompare", "Process Media", nullptr ) );
-    fActionProcess->setToolTip( QCoreApplication::translate( "CUserInfoCompare", "Process Media", nullptr ) );
+    icon3.addFile(QString::fromUtf8(":/resources/process.png"), QSize(), QIcon::Normal, QIcon::Off);
+    fActionProcess->setIcon(icon3);
+    fActionProcess->setText(QCoreApplication::translate("CUserInfoCompare", "Process Media", nullptr));
+    fActionProcess->setToolTip(QCoreApplication::translate("CUserInfoCompare", "Process Media", nullptr));
 
-    fActionSelectiveProcess = new QAction( this );
-    fActionSelectiveProcess->setObjectName( QString::fromUtf8( "fActionSelectiveProcess" ) );
+    fActionSelectiveProcess = new QAction(this);
+    fActionSelectiveProcess->setObjectName(QString::fromUtf8("fActionSelectiveProcess"));
     QIcon icon4;
-    icon4.addFile( QString::fromUtf8( ":/resources/processRight.png" ), QSize(), QIcon::Normal, QIcon::Off );
-    fActionSelectiveProcess->setIcon( icon4 );
-    fActionSelectiveProcess->setText( QCoreApplication::translate( "CUserInfoCompare", "Select a Server and Update other servers to it..", nullptr ) );
-    fActionSelectiveProcess->setToolTip( QCoreApplication::translate( "CUserInfoCompare", "Select a Server and Update other servers to it", nullptr ) );
+    icon4.addFile(QString::fromUtf8(":/resources/processRight.png"), QSize(), QIcon::Normal, QIcon::Off);
+    fActionSelectiveProcess->setIcon(icon4);
+    fActionSelectiveProcess->setText(QCoreApplication::translate("CUserInfoCompare", "Select a Server and Update other servers to it..", nullptr));
+    fActionSelectiveProcess->setToolTip(QCoreApplication::translate("CUserInfoCompare", "Select a Server and Update other servers to it", nullptr));
 
-    fActionRepairUserConnectedIDs = new QAction( this );
-    fActionRepairUserConnectedIDs->setObjectName( QString::fromUtf8( "fActionRepairUserConnectedIDs" ) );
-    fActionRepairUserConnectedIDs->setText( QCoreApplication::translate( "CUserInfoCompare", "Repair User Connected IDs", nullptr ) );
-    fActionRepairUserConnectedIDs->setToolTip( QCoreApplication::translate( "CUserInfoCompare", "Repair User Connected IDs", nullptr ) );
+    fActionRepairUserConnectedIDs = new QAction(this);
+    fActionRepairUserConnectedIDs->setObjectName(QString::fromUtf8("fActionRepairUserConnectedIDs"));
+    fActionRepairUserConnectedIDs->setText(QCoreApplication::translate("CUserInfoCompare", "Repair User Connected IDs", nullptr));
+    fActionRepairUserConnectedIDs->setToolTip(QCoreApplication::translate("CUserInfoCompare", "Repair User Connected IDs", nullptr));
 
-    fProcessMenu->addAction( fActionProcess );
-    fProcessMenu->addAction( fActionSelectiveProcess );
+    fProcessMenu->addAction(fActionProcess);
+    fProcessMenu->addAction(fActionSelectiveProcess);
     fProcessMenu->addSeparator();
-    fProcessMenu->addAction( fActionRepairUserConnectedIDs );
+    fProcessMenu->addAction(fActionRepairUserConnectedIDs);
 
-    fViewMenu = new QMenu( this );
-    fViewMenu->setObjectName( QString::fromUtf8( "fViewMenu" ) );
-    fViewMenu->setTitle( QCoreApplication::translate( "CUserInfoCompare", "View", nullptr ) );
+    fViewMenu = new QMenu(this);
+    fViewMenu->setObjectName(QString::fromUtf8("fViewMenu"));
+    fViewMenu->setTitle(QCoreApplication::translate("CUserInfoCompare", "View", nullptr));
 
-    fActionViewUserInformation = new QAction( this );
-    fActionViewUserInformation->setObjectName( QString::fromUtf8( "fActionViewUserInformation" ) );
-    fActionViewUserInformation->setText( QCoreApplication::translate( "CUserInfoCompare", "User Information...", nullptr ) );
+    fActionViewUserInformation = new QAction(this);
+    fActionViewUserInformation->setObjectName(QString::fromUtf8("fActionViewUserInformation"));
+    fActionViewUserInformation->setText(QCoreApplication::translate("CUserInfoCompare", "User Information...", nullptr));
 
-    fViewMenu->addAction( fActionViewUserInformation );
-    connect( fActionViewUserInformation, &QAction::triggered, this, &CUserInfoCompare::slotViewUserInfo );
+    fViewMenu->addAction(fActionViewUserInformation);
+    connect(fActionViewUserInformation, &QAction::triggered, this, &CUserInfoCompare::slotViewUserInfo);
 
-    fActionOnlyShowSyncableUsers = new QAction( this );
-    fActionOnlyShowSyncableUsers->setObjectName( QString::fromUtf8( "fActionOnlyShowSyncableUsers" ) );
-    fActionOnlyShowSyncableUsers->setCheckable( true );
-    fActionOnlyShowSyncableUsers->setText( QCoreApplication::translate( "CUserInfoCompare", "Only Show Syncable Users?", nullptr ) );
+    fActionOnlyShowSyncableUsers = new QAction(this);
+    fActionOnlyShowSyncableUsers->setObjectName(QString::fromUtf8("fActionOnlyShowSyncableUsers"));
+    fActionOnlyShowSyncableUsers->setCheckable(true);
+    fActionOnlyShowSyncableUsers->setText(QCoreApplication::translate("CUserInfoCompare", "Only Show Syncable Users?", nullptr));
     QIcon icon6;
-    icon6.addFile( QString::fromUtf8( ":/resources/syncusers.png" ), QSize(), QIcon::Normal, QIcon::Off );
-    fActionOnlyShowSyncableUsers->setIcon( icon6 );
+    icon6.addFile(QString::fromUtf8(":/resources/syncusers.png"), QSize(), QIcon::Normal, QIcon::Off);
+    fActionOnlyShowSyncableUsers->setIcon(icon6);
 
-    fActionOnlyShowUsersWithDifferences = new QAction( this );
-    fActionOnlyShowUsersWithDifferences->setObjectName( QString::fromUtf8( "fActionOnlyShowUsersWithDifferences" ) );
-    fActionOnlyShowUsersWithDifferences->setCheckable( true );
-    fActionOnlyShowUsersWithDifferences->setText( QCoreApplication::translate( "CUserInfoCompare", "Only Show Users with Differences?", nullptr ) );
-    fActionOnlyShowUsersWithDifferences->setToolTip( QCoreApplication::translate( "CUserInfoCompare", "Only Show Users with Differences?", nullptr ) );
+    fActionOnlyShowUsersWithDifferences = new QAction(this);
+    fActionOnlyShowUsersWithDifferences->setObjectName(QString::fromUtf8("fActionOnlyShowUsersWithDifferences"));
+    fActionOnlyShowUsersWithDifferences->setCheckable(true);
+    fActionOnlyShowUsersWithDifferences->setText(QCoreApplication::translate("CUserInfoCompare", "Only Show Users with Differences?", nullptr));
+    fActionOnlyShowUsersWithDifferences->setToolTip(QCoreApplication::translate("CUserInfoCompare", "Only Show Users with Differences?", nullptr));
     QIcon icon7;
-    icon7.addFile( QString::fromUtf8( ":/resources/syncmedia.png" ), QSize(), QIcon::Normal, QIcon::Off );
-    fActionOnlyShowUsersWithDifferences->setIcon( icon7 );
+    icon7.addFile(QString::fromUtf8(":/resources/syncmedia.png"), QSize(), QIcon::Normal, QIcon::Off);
+    fActionOnlyShowUsersWithDifferences->setIcon(icon7);
 
-    fActionShowUsersWithIssues = new QAction( this );
-    fActionShowUsersWithIssues->setObjectName( QString::fromUtf8( "fActionShowUsersWithIssues" ) );
-    fActionShowUsersWithIssues->setCheckable( true );
+    fActionShowUsersWithIssues = new QAction(this);
+    fActionShowUsersWithIssues->setObjectName(QString::fromUtf8("fActionShowUsersWithIssues"));
+    fActionShowUsersWithIssues->setCheckable(true);
     QIcon icon5;
-    icon5.addFile( QString::fromUtf8( ":/resources/issues.png" ), QSize(), QIcon::Normal, QIcon::Off );
-    fActionShowUsersWithIssues->setIcon( icon5 );
-    fActionShowUsersWithIssues->setText( QCoreApplication::translate( "CUserInfoCompare", "Show Users with Issues?", nullptr ) );
-    fActionShowUsersWithIssues->setToolTip( QCoreApplication::translate( "CUserInfoCompare", "Show Users with Issues?", nullptr ) );
+    icon5.addFile(QString::fromUtf8(":/resources/issues.png"), QSize(), QIcon::Normal, QIcon::Off);
+    fActionShowUsersWithIssues->setIcon(icon5);
+    fActionShowUsersWithIssues->setText(QCoreApplication::translate("CUserInfoCompare", "Show Users with Issues?", nullptr));
+    fActionShowUsersWithIssues->setToolTip(QCoreApplication::translate("CUserInfoCompare", "Show Users with Issues?", nullptr));
 
-    fToolBar = new QToolBar( this );
-    fToolBar->setObjectName( QString::fromUtf8( "fToolBar" ) );
+    fToolBar = new QToolBar(this);
+    fToolBar->setObjectName(QString::fromUtf8("fToolBar"));
 
-    fToolBar->addAction( fActionOnlyShowSyncableUsers );
-    fToolBar->addAction( fActionOnlyShowUsersWithDifferences );
-    fToolBar->addAction( fActionShowUsersWithIssues );
+    fToolBar->addAction(fActionOnlyShowSyncableUsers);
+    fToolBar->addAction(fActionOnlyShowUsersWithDifferences);
+    fToolBar->addAction(fActionShowUsersWithIssues);
     fToolBar->addSeparator();
-    fToolBar->addAction( fActionProcess );
-    fToolBar->addAction( fActionSelectiveProcess );
+    fToolBar->addAction(fActionProcess);
+    fToolBar->addAction(fActionSelectiveProcess);
 
-    connect( fActionProcess, &QAction::triggered, this, &CUserInfoCompare::slotProcess );
-    connect( fActionSelectiveProcess, &QAction::triggered, this, &CUserInfoCompare::slotSelectiveProcess );
-    connect( fActionRepairUserConnectedIDs, &QAction::triggered, this, &CUserInfoCompare::slotRepairUserConnectedIDs );
+    connect(fActionProcess, &QAction::triggered, this, &CUserInfoCompare::slotProcess);
+    connect(fActionSelectiveProcess, &QAction::triggered, this, &CUserInfoCompare::slotSelectiveProcess);
+    connect(fActionRepairUserConnectedIDs, &QAction::triggered, this, &CUserInfoCompare::slotRepairUserConnectedIDs);
 
-    connect( fActionOnlyShowSyncableUsers, &QAction::triggered, this, &CUserInfoCompare::slotToggleOnlyShowSyncableUsers );
-    connect( fActionOnlyShowUsersWithDifferences, &QAction::triggered, this, &CUserInfoCompare::slotToggleOnlyShowUsersWithDifferences );
-    connect( fActionShowUsersWithIssues, &QAction::triggered, this, &CUserInfoCompare::slotToggleShowUsersWithIssues );
+    connect(fActionOnlyShowSyncableUsers, &QAction::triggered, this, &CUserInfoCompare::slotToggleOnlyShowSyncableUsers);
+    connect(fActionOnlyShowUsersWithDifferences, &QAction::triggered, this, &CUserInfoCompare::slotToggleOnlyShowUsersWithDifferences);
+    connect(fActionShowUsersWithIssues, &QAction::triggered, this, &CUserInfoCompare::slotToggleShowUsersWithIssues);
 }
 
 CUserInfoCompare::~CUserInfoCompare()
 {
-    if ( fUserWindow )
+    if (fUserWindow)
         delete fUserWindow.data();
 }
 
 bool CUserInfoCompare::prepForClose()
 {
-    if ( fUserWindow )
+    if (fUserWindow)
     {
-        if ( !fUserWindow->okToClose() )
+        if (!fUserWindow->okToClose())
             return false;
     }
     return true;
@@ -182,9 +182,9 @@ bool CUserInfoCompare::prepForClose()
 
 void CUserInfoCompare::loadSettings()
 {
-    fActionOnlyShowSyncableUsers->setChecked( fSettings->onlyShowSyncableUsers() );
-    fActionOnlyShowUsersWithDifferences->setChecked( fSettings->onlyShowUsersWithDifferences() );
-    fActionShowUsersWithIssues->setChecked( fSettings->showUsersWithIssues() );
+    fActionOnlyShowSyncableUsers->setChecked(fSettings->onlyShowSyncableUsers());
+    fActionOnlyShowUsersWithDifferences->setChecked(fSettings->onlyShowUsersWithDifferences());
+    fActionShowUsersWithIssues->setChecked(fSettings->showUsersWithIssues());
 }
 
 bool CUserInfoCompare::okToClose()
@@ -220,26 +220,26 @@ void CUserInfoCompare::slotModelDataChanged()
     bool mediaLoaded = canSync && fMediaModel->rowCount();
     bool hasUsersNeedingFixing = fUsersModel->hasUsersWithConnectedIDNeedingUpdate();
 
-    fActionRepairUserConnectedIDs->setEnabled( hasUsersNeedingFixing );
+    fActionRepairUserConnectedIDs->setEnabled(hasUsersNeedingFixing);
 
-    if ( fUserWindow )
+    if (fUserWindow)
         fUserWindow->reloadUser();
 }
 
 void CUserInfoCompare::loadingUsersFinished()
 {
     onlyShowSyncableUsers();
-    fUsersFilterModel->sort( 0, Qt::SortOrder::AscendingOrder );
+    fUsersFilterModel->sort(0, Qt::SortOrder::AscendingOrder);
     hideDataTreeColumns();
     autoSizeDataTrees();
 }
 
-QSplitter * CUserInfoCompare::getDataSplitter() const
+QSplitter* CUserInfoCompare::getDataSplitter() const
 {
     return fImpl->dataSplitter;
 }
 
-void CUserInfoCompare::slotCurrentUserChanged( const QModelIndex & /*index*/ )
+void CUserInfoCompare::slotCurrentUserChanged(const QModelIndex& /*index*/)
 {
 }
 
@@ -247,34 +247,34 @@ void CUserInfoCompare::slotCurrentUserChanged( const QModelIndex & /*index*/ )
 std::shared_ptr< CUserData > CUserInfoCompare::getCurrUserData() const
 {
     auto idx = currentDataIndex();
-    if ( !idx.isValid() )
+    if (!idx.isValid())
         return {};
 
-    return getUserData( idx );
+    return getUserData(idx);
 }
 
-std::shared_ptr< CUserData > CUserInfoCompare::getUserData( QModelIndex idx ) const
+std::shared_ptr< CUserData > CUserInfoCompare::getUserData(QModelIndex idx) const
 {
-    if ( idx.model() != fUsersModel.get() )
-        idx = fUsersFilterModel->mapToSource( idx );
+    if (idx.model() != fUsersModel.get())
+        idx = fUsersFilterModel->mapToSource(idx);
 
-    auto retVal = fUsersModel->userData( idx );
+    auto retVal = fUsersModel->userData(idx);
     return retVal;
 }
 
-std::shared_ptr< const CServerInfo > CUserInfoCompare::getServerInfo( QModelIndex idx ) const
+std::shared_ptr< const CServerInfo > CUserInfoCompare::getServerInfo(QModelIndex idx) const
 {
-    if ( idx.model() != fUsersModel.get() )
-        idx = fUsersFilterModel->mapToSource( idx );
+    if (idx.model() != fUsersModel.get())
+        idx = fUsersFilterModel->mapToSource(idx);
 
-    auto retVal = fUsersModel->serverInfo( idx );
+    auto retVal = fUsersModel->serverInfo(idx);
     return retVal;
 }
 
 
 void CUserInfoCompare::slotToggleOnlyShowSyncableUsers()
 {
-    fSettings->setOnlyShowSyncableUsers( fActionOnlyShowSyncableUsers->isChecked() );
+    fSettings->setOnlyShowSyncableUsers(fActionOnlyShowSyncableUsers->isChecked());
     onlyShowSyncableUsers();
 }
 
@@ -282,12 +282,12 @@ void CUserInfoCompare::onlyShowSyncableUsers()
 {
     NSABUtils::CAutoWaitCursor awc;
     auto usersSummary = fUsersModel->settingsChanged();
-    fImpl->usersLabel->setText( tr( "Users: %1 sync-able out of %2 total users" ).arg( usersSummary.fSyncable ).arg( usersSummary.fTotal ) );
+    fImpl->usersLabel->setText(tr("Users: %1 sync-able out of %2 total users").arg(usersSummary.fSyncable).arg(usersSummary.fTotal));
 }
 
 void CUserInfoCompare::slotToggleOnlyShowUsersWithDifferences()
 {
-    fSettings->setOnlyShowUsersWithDifferences( fActionOnlyShowUsersWithDifferences->isChecked() );
+    fSettings->setOnlyShowUsersWithDifferences(fActionOnlyShowUsersWithDifferences->isChecked());
     onlyShowUsersWithDifferences();
 }
 
@@ -301,20 +301,20 @@ void CUserInfoCompare::onlyShowUsersWithDifferences()
 
     auto column = fUsersFilterModel->sortColumn();
     auto order = fUsersFilterModel->sortOrder();
-    if ( column == -1 )
+    if (column == -1)
     {
         column = 0;
         order = Qt::AscendingOrder;
     }
-    fUsersFilterModel->sort( column, order );
+    fUsersFilterModel->sort(column, order);
 
-    for ( auto && ii : fDataTrees )
+    for (auto&& ii : fDataTrees)
         ii->autoSize();
 }
 
 void CUserInfoCompare::slotToggleShowUsersWithIssues()
 {
-    fSettings->setShowUsersWithIssues( fActionShowUsersWithIssues->isChecked() );
+    fSettings->setShowUsersWithIssues(fActionShowUsersWithIssues->isChecked());
     showUsersWithIssues();
 }
 
@@ -333,115 +333,115 @@ std::shared_ptr< CTabUIInfo > CUserInfoCompare::getUIInfo() const
     retVal->fMenus = { fProcessMenu, fViewMenu };
     retVal->fToolBars = { fToolBar };
 
-    retVal->fActions[ "Filter" ] = std::make_pair( false, QList< QPointer< QAction > >( { fActionOnlyShowSyncableUsers, fActionOnlyShowUsersWithDifferences, fActionShowUsersWithIssues } ) );
+    retVal->fActions["Filter"] = std::make_pair(false, QList< QPointer< QAction > >({ fActionOnlyShowSyncableUsers, fActionOnlyShowUsersWithDifferences, fActionShowUsersWithIssues }));
     return retVal;
 }
 
 void CUserInfoCompare::loadServers()
 {
-    CTabPageBase::loadServers( fUsersFilterModel );
+    CTabPageBase::loadServers(fUsersFilterModel);
 }
 
 void CUserInfoCompare::slotRepairUserConnectedIDs()
 {
     auto users = fUsersModel->usersWithConnectedIDNeedingUpdate();
-    fSyncSystem->repairConnectIDs( users );
+    fSyncSystem->repairConnectIDs(users);
 }
 
 void CUserInfoCompare::slotSetConnectID()
 {
     auto currIdx = currentDataIndex();
-    if ( !currIdx.isValid() )
+    if (!currIdx.isValid())
         return;
 
-    auto userData = getUserData( currIdx );
-    if ( !userData )
+    auto userData = getUserData(currIdx);
+    if (!userData)
         return;
-    
-    auto serverInfo = getServerInfo( currIdx );
-    if ( !serverInfo && fContextTree )
+
+    auto serverInfo = getServerInfo(currIdx);
+    if (!serverInfo && fContextTree)
         serverInfo = fContextTree->serverInfo();
 
-    if ( !serverInfo )
+    if (!serverInfo)
         return;
 
-    auto newConnectedID = QInputDialog::getText( this, tr( "Enter Connect ID" ), tr( "Connect ID:" ), QLineEdit::Normal, userData->connectedID( serverInfo->keyName() ) );
-    if ( newConnectedID == userData->connectedID( serverInfo->keyName() ) )
+    auto newConnectedID = QInputDialog::getText(this, tr("Enter Connect ID"), tr("Connect ID:"), QLineEdit::Normal, userData->connectedID(serverInfo->keyName()));
+    if (newConnectedID == userData->connectedID(serverInfo->keyName()))
         return;
 
-    fSyncSystem->setConnectedID( serverInfo->keyName(), newConnectedID, userData );
- }
+    fSyncSystem->setConnectedID(serverInfo->keyName(), newConnectedID, userData);
+}
 
 void CUserInfoCompare::slotAutoSetConnectID()
 {
     auto currIdx = currentDataIndex();
-    if ( !currIdx.isValid() )
+    if (!currIdx.isValid())
         return;
 
-    auto userData = getUserData( currIdx );
-    if ( !userData )
+    auto userData = getUserData(currIdx);
+    if (!userData)
         return;
 
-    fSyncSystem->repairConnectIDs( { userData } );
+    fSyncSystem->repairConnectIDs({ userData });
 }
 
-void CUserInfoCompare::slotUsersContextMenu( CDataTree* dataTree, const QPoint & pos )
+void CUserInfoCompare::slotUsersContextMenu(CDataTree* dataTree, const QPoint& pos)
 {
-    if ( !dataTree )
+    if (!dataTree)
         return;
 
     fContextTree = dataTree;
-    auto idx = dataTree->indexAt( pos );
-    if ( !idx.isValid() )
+    auto idx = dataTree->indexAt(pos);
+    if (!idx.isValid())
         return;
 
-    auto userData = getUserData( idx );
-    if ( !userData )
+    auto userData = getUserData(idx);
+    if (!userData)
         return;
 
-    QMenu menu( tr( "Context Menu" ) );
+    QMenu menu(tr("Context Menu"));
 
-    QAction action( "Set Connect ID" );
-    menu.addAction( &action );
-    connect( &action, &QAction::triggered, this, &CUserInfoCompare::slotSetConnectID );
+    QAction action("Set Connect ID");
+    menu.addAction(&action);
+    connect(&action, &QAction::triggered, this, &CUserInfoCompare::slotSetConnectID);
 
-    QAction action2( "AutoSet Connect ID" );
-    menu.addAction( &action2 );
-    action2.setEnabled( userData->connectedIDNeedsUpdate() );
-    connect( &action2, &QAction::triggered, this, &CUserInfoCompare::slotAutoSetConnectID );
+    QAction action2("AutoSet Connect ID");
+    menu.addAction(&action2);
+    action2.setEnabled(userData->connectedIDNeedsUpdate());
+    connect(&action2, &QAction::triggered, this, &CUserInfoCompare::slotAutoSetConnectID);
 
-    menu.exec( dataTree->dataTree()->mapToGlobal( pos ) );
+    menu.exec(dataTree->dataTree()->mapToGlobal(pos));
 }
 
 
-void CUserInfoCompare::slotViewUser( const QModelIndex & current )
+void CUserInfoCompare::slotViewUser(const QModelIndex& current)
 {
     slotViewUserInfo();
-    slotSetCurrentUser( current );
+    slotSetCurrentUser(current);
 }
 
-void CUserInfoCompare::slotSetCurrentUser( const QModelIndex & current )
+void CUserInfoCompare::slotSetCurrentUser(const QModelIndex& current)
 {
-    auto userData = getUserData( current );
+    auto userData = getUserData(current);
 
-    if ( fUserWindow )
-        fUserWindow->setUser( userData );
+    if (fUserWindow)
+        fUserWindow->setUser(userData);
 
     slotModelDataChanged();
 }
 
 void CUserInfoCompare::slotViewUserInfo()
 {
-    if ( !fUserWindow )
-        fUserWindow = new CUserWindow( fServerModel, fSyncSystem, nullptr );
+    if (!fUserWindow)
+        fUserWindow = new CUserWindow(fServerModel, fSyncSystem, nullptr);
 
     auto idx = currentDataIndex();
-    if ( idx.isValid() )
+    if (idx.isValid())
     {
-        auto userData = getUserData( idx );
-        if ( userData )
+        auto userData = getUserData(idx);
+        if (userData)
         {
-            fUserWindow->setUser( userData );
+            fUserWindow->setUser(userData);
         }
     }
 
@@ -458,8 +458,8 @@ void CUserInfoCompare::slotProcess()
 void CUserInfoCompare::slotSelectiveProcess()
 {
     auto serverName = selectServer();
-    if ( serverName.isEmpty() )
+    if (serverName.isEmpty())
         return;
 
-    fSyncSystem->selectiveProcessUsers( serverName );
+    fSyncSystem->selectiveProcessUsers(serverName);
 }

@@ -35,57 +35,57 @@
 
 #include <QCloseEvent>
 
-CUserWindow::CUserWindow( std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CSyncSystem > syncSystem, QWidget * parent )
-    : QWidget( parent ),
-    fImpl( new Ui::CUserWindow ),
-    fSyncSystem( syncSystem )
+CUserWindow::CUserWindow(std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CSyncSystem > syncSystem, QWidget* parent)
+    : QWidget(parent),
+    fImpl(new Ui::CUserWindow),
+    fSyncSystem(syncSystem)
 {
-    fImpl->setupUi( this );
-    connect( fImpl->process, &QPushButton::clicked, this, &CUserWindow::slotUploadUserData );
+    fImpl->setupUi(this);
+    connect(fImpl->process, &QPushButton::clicked, this, &CUserWindow::slotUploadUserData);
 
-    auto horizontalLayout = new QHBoxLayout( fImpl->userDataWidgets );
-    
-    for ( auto && serverInfo : *serverModel )
+    auto horizontalLayout = new QHBoxLayout(fImpl->userDataWidgets);
+
+    for (auto&& serverInfo : *serverModel)
     {
-        if ( !serverInfo->isEnabled() )
+        if (!serverInfo->isEnabled())
             continue;
 
-        auto userDataWidget = new CUserDataWidget( this );
-        userDataWidget->setServerName( serverInfo->keyName() );
-        horizontalLayout->addWidget( userDataWidget );
-        fUserDataWidgets[ serverInfo->keyName() ] = userDataWidget;
-        connect( userDataWidget, &CUserDataWidget::sigApplyFromServer, this, &CUserWindow::slotApplyFromServer );
-        connect( userDataWidget, &CUserDataWidget::sigProcessToServer, this, &CUserWindow::slotProcessToServer );
+        auto userDataWidget = new CUserDataWidget(this);
+        userDataWidget->setServerName(serverInfo->keyName());
+        horizontalLayout->addWidget(userDataWidget);
+        fUserDataWidgets[serverInfo->keyName()] = userDataWidget;
+        connect(userDataWidget, &CUserDataWidget::sigApplyFromServer, this, &CUserWindow::slotApplyFromServer);
+        connect(userDataWidget, &CUserDataWidget::sigProcessToServer, this, &CUserWindow::slotProcessToServer);
     }
 
-    NSABUtils::setupWidgetChanged( this, QMetaMethod::fromSignal( &CUserWindow::sigChanged ), { fImpl->process } );
-    connect( this, &CUserWindow::sigChanged,
-             [this]()
-             {
-                 fChanged = true;
-                 fImpl->process->setEnabled( true );
-             } );
+    NSABUtils::setupWidgetChanged(this, QMetaMethod::fromSignal(&CUserWindow::sigChanged), { fImpl->process });
+    connect(this, &CUserWindow::sigChanged,
+        [this]()
+        {
+            fChanged = true;
+            fImpl->process->setEnabled(true);
+        });
 
-    fImpl->process->setEnabled( false );
+    fImpl->process->setEnabled(false);
 }
 
 CUserWindow::~CUserWindow()
 {
 }
 
-void CUserWindow::setUser( std::shared_ptr< CUserData > userData )
+void CUserWindow::setUser(std::shared_ptr< CUserData > userData)
 {
-    loadUser( userData );
+    loadUser(userData);
 }
 
-void CUserWindow::loadUser( std::shared_ptr<CUserData> & userData )
+void CUserWindow::loadUser(std::shared_ptr<CUserData>& userData)
 {
     fUserData = userData;
 
-    setEnabled( fUserData.get() != nullptr );
-    for ( auto && ii : fUserDataWidgets )
+    setEnabled(fUserData.get() != nullptr);
+    for (auto&& ii : fUserDataWidgets)
     {
-        ii.second->setUserData( fUserData ? fUserData->userInfo( ii.first ) : std::shared_ptr< SUserServerData >() );
+        ii.second->setUserData(fUserData ? fUserData->userInfo(ii.first) : std::shared_ptr< SUserServerData >());
     }
 
     fChanged = false;
@@ -93,12 +93,12 @@ void CUserWindow::loadUser( std::shared_ptr<CUserData> & userData )
 
 void CUserWindow::reloadUser()
 {
-    loadUser( fUserData );
+    loadUser(fUserData);
 }
 
-void CUserWindow::closeEvent( QCloseEvent * event )
+void CUserWindow::closeEvent(QCloseEvent* event)
 {
-    if ( !okToClose() )
+    if (!okToClose())
     {
         event->ignore();
         fChanged = false;
@@ -107,20 +107,20 @@ void CUserWindow::closeEvent( QCloseEvent * event )
         event->accept();
 }
 
-bool CUserWindow::okToClose() 
+bool CUserWindow::okToClose()
 {
-    if ( fChanged && isVisible() )
+    if (fChanged && isVisible())
     {
         QMessageBox msgBox;
-        msgBox.setText( tr( "The user information has changed" ) );
-        msgBox.setInformativeText( tr( "Would you like to upload the changes to the server?" ) );
-        msgBox.setStandardButtons( QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel );
-        msgBox.setDefaultButton( QMessageBox::Save );
+        msgBox.setText(tr("The user information has changed"));
+        msgBox.setInformativeText(tr("Would you like to upload the changes to the server?"));
+        msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
+        msgBox.setDefaultButton(QMessageBox::Save);
         int status = msgBox.exec();
 
-        if ( status == QMessageBox::StandardButton::Save )
+        if (status == QMessageBox::StandardButton::Save)
             slotUploadUserData();
-        if ( status == QMessageBox::StandardButton::Cancel )
+        if (status == QMessageBox::StandardButton::Cancel)
             return false;
     }
     return true;
@@ -128,39 +128,39 @@ bool CUserWindow::okToClose()
 
 void CUserWindow::slotUploadUserData()
 {
-    if ( !fUserData )
+    if (!fUserData)
         return;
 
-    for ( auto && ii : fUserDataWidgets )
+    for (auto&& ii : fUserDataWidgets)
     {
-        fSyncSystem->updateUserData( ii.first, fUserData, ii.second->createUserData() );
-        if ( !ii.second->avatar().isNull() )
-            fSyncSystem->requestSetUserAvatar( ii.first, fUserData->getUserID( ii.first ), ii.second->avatar() );
+        fSyncSystem->updateUserData(ii.first, fUserData, ii.second->createUserData());
+        if (!ii.second->avatar().isNull())
+            fSyncSystem->requestSetUserAvatar(ii.first, fUserData->getUserID(ii.first), ii.second->avatar());
     }
     fChanged = false;
 }
 
-void CUserWindow::slotApplyFromServer( CUserDataWidget * which )
+void CUserWindow::slotApplyFromServer(CUserDataWidget* which)
 {
-    if ( !which )
+    if (!which)
         return;
 
     auto newData = which->createUserData();
-    for ( auto && ii : fUserDataWidgets )
+    for (auto&& ii : fUserDataWidgets)
     {
-        if ( ii.second == which )
+        if (ii.second == which)
             continue;
-        ii.second->applyUserData( newData );
+        ii.second->applyUserData(newData);
     }
 }
 
-void CUserWindow::slotProcessToServer( CUserDataWidget * which )
+void CUserWindow::slotProcessToServer(CUserDataWidget* which)
 {
-    if ( !which )
+    if (!which)
         return;
 
-    fSyncSystem->updateUserData( which->serverName(), fUserData, which->createUserData() );
-    if ( !which->avatar().isNull() )
-        fSyncSystem->requestSetUserAvatar( which->serverName(), fUserData->getUserID( which->serverName() ), which->avatar() );
+    fSyncSystem->updateUserData(which->serverName(), fUserData, which->createUserData());
+    if (!which->avatar().isNull())
+        fSyncSystem->requestSetUserAvatar(which->serverName(), fUserData->getUserID(which->serverName()), which->avatar());
 }
 

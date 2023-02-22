@@ -61,51 +61,51 @@
 #include <QJsonObject>
 #include <QJsonParseError>
 
-CCollectionsManager::CCollectionsManager( QWidget * parent )
-    : CTabPageBase( parent ),
-    fImpl( new Ui::CCollectionsManager )
+CCollectionsManager::CCollectionsManager(QWidget* parent)
+    : CTabPageBase(parent),
+    fImpl(new Ui::CCollectionsManager)
 {
-    fImpl->setupUi( this );
+    fImpl->setupUi(this);
     setupActions();
 
-    connect( this, &CCollectionsManager::sigModelDataChanged, this, &CCollectionsManager::slotModelDataChanged );
-    connect( this, &CCollectionsManager::sigDataContextMenuRequested, this, &CCollectionsManager::slotMediaContextMenu );
+    connect(this, &CCollectionsManager::sigModelDataChanged, this, &CCollectionsManager::slotModelDataChanged);
+    connect(this, &CCollectionsManager::sigDataContextMenuRequested, this, &CCollectionsManager::slotMediaContextMenu);
 }
 
 CCollectionsManager::~CCollectionsManager()
 {
 }
 
-void CCollectionsManager::setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem )
+void CCollectionsManager::setupPage(std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem)
 {
     CTabPageBase::setupPage(settings, syncSystem, mediaModel, collectionsModel, userModel, serverModel, progressSystem);
 
-    fServerFilterModel = new CServerFilterModel( fServerModel.get() );
-    fServerFilterModel->setSourceModel( fServerModel.get() );
-    fServerFilterModel->sort( 0, Qt::SortOrder::AscendingOrder );
-    NSABUtils::setupModelChanged( fMediaModel.get(), this, QMetaMethod::fromSignal( &CCollectionsManager::sigModelDataChanged ) );
+    fServerFilterModel = new CServerFilterModel(fServerModel.get());
+    fServerFilterModel->setSourceModel(fServerModel.get());
+    fServerFilterModel->sort(0, Qt::SortOrder::AscendingOrder);
+    NSABUtils::setupModelChanged(fMediaModel.get(), this, QMetaMethod::fromSignal(&CCollectionsManager::sigModelDataChanged));
 
-    fFilterModel = new CCollectionsFilterModel( fCollectionsModel.get() );
-    fFilterModel->setSourceModel( fCollectionsModel.get() );
+    fFilterModel = new CCollectionsFilterModel(fCollectionsModel.get());
+    fFilterModel->setSourceModel(fCollectionsModel.get());
 
-    fImpl->servers->setModel( fServerFilterModel );
-    fImpl->servers->setContextMenuPolicy( Qt::ContextMenuPolicy::CustomContextMenu );
-    connect( fImpl->servers, &QTreeView::clicked, this, &CCollectionsManager::slotCurrentServerChanged );
+    fImpl->servers->setModel(fServerFilterModel);
+    fImpl->servers->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
+    connect(fImpl->servers, &QTreeView::clicked, this, &CCollectionsManager::slotCurrentServerChanged);
 
     slotMediaChanged();
 
-    connect( fMediaModel.get(), &CMediaModel::sigMediaChanged, this, &CCollectionsManager::slotMediaChanged );
+    connect(fMediaModel.get(), &CMediaModel::sigMediaChanged, this, &CCollectionsManager::slotMediaChanged);
 
-    connect( this, &CCollectionsManager::sigModelDataChanged, fCollectionsModel.get(), &CCollectionsModel::slotMediaModelDataChanged );
+    connect(this, &CCollectionsManager::sigModelDataChanged, fCollectionsModel.get(), &CCollectionsModel::slotMediaModelDataChanged);
 
     //new QAbstractItemModelTester( fCollections, QAbstractItemModelTester::FailureReportingMode::Fatal, this );
     //fMoviesModel->setSourceModel( fMediaModel.get() );
     //connect( fMediaModel.get(), &CMediaModel::sigPendingMediaUpdate, this, &CCollectionsManager::slotPendingMediaUpdate );
-    connect( fSyncSystem.get(), &CSyncSystem::sigAllMoviesLoaded, this, &CCollectionsManager::slotAllMoviesLoaded );
-    connect( fSyncSystem.get(), &CSyncSystem::sigAllCollectionsLoaded, this, &CCollectionsManager::slotAllCollectionsLoaded );
-    
+    connect(fSyncSystem.get(), &CSyncSystem::sigAllMoviesLoaded, this, &CCollectionsManager::slotAllMoviesLoaded);
+    connect(fSyncSystem.get(), &CSyncSystem::sigAllCollectionsLoaded, this, &CCollectionsManager::slotAllCollectionsLoaded);
 
-    slotSetCurrentServer( QModelIndex() );
+
+    slotSetCurrentServer(QModelIndex());
     showPrimaryServer();
 }
 
@@ -135,22 +135,22 @@ void CCollectionsManager::setupActions()
         fLoadCollections->setText(QCoreApplication::translate("CCollectionsManager", "Create Missing Collections", nullptr));
         fLoadCollections->setToolTip(QCoreApplication::translate("CCollectionsManager", "Create Missing Collections", nullptr));
     }
-    fToolBar = new QToolBar( this );
-    fToolBar->setObjectName( QString::fromUtf8( "fToolBar" ) );
+    fToolBar = new QToolBar(this);
+    fToolBar->setObjectName(QString::fromUtf8("fToolBar"));
 
-    fToolBar->addAction( fLoadCollections);
+    fToolBar->addAction(fLoadCollections);
     fToolBar->addSeparator();
-    fToolBar->addAction( fCreateCollections );
+    fToolBar->addAction(fCreateCollections);
 
-    connect( fCreateCollections, &QAction::triggered, this, &CCollectionsManager::slotCreateMissingCollections );
-    connect(fLoadCollections, &QAction::triggered, 
-            [this]()
-            {
-                auto fileName = QFileDialog::getOpenFileName(this, QObject::tr("Select File"), QString(), QObject::tr("Movie List File (*.json);;All Files (* *.*)"));
-                if (fileName.isEmpty())
-                    return;
-                setCollectionsFile(fileName, true);
-            });
+    connect(fCreateCollections, &QAction::triggered, this, &CCollectionsManager::slotCreateMissingCollections);
+    connect(fLoadCollections, &QAction::triggered,
+        [this]()
+        {
+            auto fileName = QFileDialog::getOpenFileName(this, QObject::tr("Select File"), QString(), QObject::tr("Movie List File (*.json);;All Files (* *.*)"));
+            if (fileName.isEmpty())
+                return;
+            setCollectionsFile(fileName, true);
+        });
 }
 
 bool CCollectionsManager::prepForClose()
@@ -191,56 +191,56 @@ void CCollectionsManager::slotSettingsChanged()
 void CCollectionsManager::showPrimaryServer()
 {
     NSABUtils::CAutoWaitCursor awc;
-    fServerFilterModel->setOnlyShowEnabledServers( true );
-    fServerFilterModel->setOnlyShowPrimaryServer( true );
+    fServerFilterModel->setOnlyShowEnabledServers(true);
+    fServerFilterModel->setOnlyShowPrimaryServer(true);
 }
 
 void CCollectionsManager::slotModelDataChanged()
 {
-    fImpl->summaryLabel->setText( fCollectionsModel->summary() );
+    fImpl->summaryLabel->setText(fCollectionsModel->summary());
 }
 
 void CCollectionsManager::loadingUsersFinished()
 {
 }
 
-QSplitter * CCollectionsManager::getDataSplitter() const
+QSplitter* CCollectionsManager::getDataSplitter() const
 {
     return fImpl->dataSplitter;
 }
 
-void CCollectionsManager::slotCurrentServerChanged( const QModelIndex & index )
+void CCollectionsManager::slotCurrentServerChanged(const QModelIndex& index)
 {
-    if ( fSyncSystem->isRunning() )
+    if (fSyncSystem->isRunning())
         return;
 
-    auto serverInfo = getCurrentServerInfo( index );
-    if ( !serverInfo )
+    auto serverInfo = getCurrentServerInfo(index);
+    if (!serverInfo)
         return;
 
-    if ( !fDataTrees.empty() )
+    if (!fDataTrees.empty())
     {
-        fDataTrees[ 0 ]->setServer( serverInfo, true );
+        fDataTrees[0]->setServer(serverInfo, true);
     }
 
     fMediaModel->clear();
     fCollectionsModel->clear();
-    if ( !fSyncSystem->loadAllMovies( serverInfo ) )
+    if (!fSyncSystem->loadAllMovies(serverInfo))
     {
-        QMessageBox::critical( this, tr( "No Admin User Found" ), tr( "No user found with Administrator Privileges on server '%1'" ).arg( serverInfo->displayName() ) );
+        QMessageBox::critical(this, tr("No Admin User Found"), tr("No user found with Administrator Privileges on server '%1'").arg(serverInfo->displayName()));
     }
 }
 
 
-std::shared_ptr< CServerInfo > CCollectionsManager::getCurrentServerInfo( const QModelIndex & index ) const
+std::shared_ptr< CServerInfo > CCollectionsManager::getCurrentServerInfo(const QModelIndex& index) const
 {
     auto idx = index;
-    if ( !idx.isValid() )
+    if (!idx.isValid())
         idx = fImpl->servers->selectionModel()->currentIndex();
-    if ( !idx.isValid() )
+    if (!idx.isValid())
         return {};
 
-    return getServerInfo( idx );
+    return getServerInfo(idx);
 }
 
 std::shared_ptr< CTabUIInfo > CCollectionsManager::getUIInfo() const
@@ -253,31 +253,31 @@ std::shared_ptr< CTabUIInfo > CCollectionsManager::getUIInfo() const
     return retVal;
 }
 
-std::shared_ptr< CServerInfo > CCollectionsManager::getServerInfo( QModelIndex idx ) const
+std::shared_ptr< CServerInfo > CCollectionsManager::getServerInfo(QModelIndex idx) const
 {
-    if ( idx.model() != fServerModel.get() )
-        idx = fServerFilterModel->mapToSource( idx );
+    if (idx.model() != fServerModel.get())
+        idx = fServerFilterModel->mapToSource(idx);
 
-    auto retVal = fServerModel->getServerInfo( idx );
+    auto retVal = fServerModel->getServerInfo(idx);
     return retVal;
 }
 
 void CCollectionsManager::loadServers()
 {
-    CTabPageBase::loadServers( fFilterModel );
+    CTabPageBase::loadServers(fFilterModel);
 }
 
-void CCollectionsManager::createServerTrees( QAbstractItemModel * model )
+void CCollectionsManager::createServerTrees(QAbstractItemModel* model)
 {
-    auto dataTree = addDataTreeForServer( nullptr, model );
-    dataTree->dataTree()->setRootIsDecorated( true );
-    dataTree->dataTree()->setItemsExpandable( true );
-    dataTree->dataTree()->setIndentation( 20 );
+    auto dataTree = addDataTreeForServer(nullptr, model);
+    dataTree->dataTree()->setRootIsDecorated(true);
+    dataTree->dataTree()->setItemsExpandable(true);
+    dataTree->dataTree()->setIndentation(20);
 }
 
-void CCollectionsManager::slotSetCurrentServer( const QModelIndex & current )
+void CCollectionsManager::slotSetCurrentServer(const QModelIndex& current)
 {
-    auto serverInfo = getServerInfo( current );
+    auto serverInfo = getServerInfo(current);
     slotModelDataChanged();
 }
 
@@ -287,98 +287,98 @@ void CCollectionsManager::slotAllMoviesLoaded()
     sortDataTrees();
 
     auto serverInfo = getCurrentServerInfo();
-    if ( !serverInfo )
+    if (!serverInfo)
         return;
 
-    if ( !fSyncSystem->loadAllCollections( serverInfo ) )
+    if (!fSyncSystem->loadAllCollections(serverInfo))
     {
-        QMessageBox::critical( this, tr( "No Admin User Found" ), tr( "No user found with Administrator Privileges on server '%1'" ).arg( serverInfo->displayName() ) );
+        QMessageBox::critical(this, tr("No Admin User Found"), tr("No user found with Administrator Privileges on server '%1'").arg(serverInfo->displayName()));
     }
 }
 
 void CCollectionsManager::slotAllCollectionsLoaded()
 {
     auto serverInfo = getCurrentServerInfo();
-    if ( !serverInfo )
+    if (!serverInfo)
         return;
 
-    fCollectionsModel->updateCollections( serverInfo->keyName(), fMediaModel );
+    fCollectionsModel->updateCollections(serverInfo->keyName(), fMediaModel);
 }
 
-std::shared_ptr< CMediaData > CCollectionsManager::getMediaData( QModelIndex idx ) const
+std::shared_ptr< CMediaData > CCollectionsManager::getMediaData(QModelIndex idx) const
 {
-    auto retVal = fMediaModel->getMediaData( idx );
+    auto retVal = fMediaModel->getMediaData(idx);
     return retVal;
 }
 
-void CCollectionsManager::slotMediaContextMenu( CDataTree * dataTree, const QPoint & pos )
+void CCollectionsManager::slotMediaContextMenu(CDataTree* dataTree, const QPoint& pos)
 {
-    if ( !dataTree )
+    if (!dataTree)
         return;
 
-    auto idx = dataTree->indexAt( pos );
-    if ( !idx.isValid() )
+    auto idx = dataTree->indexAt(pos);
+    if (!idx.isValid())
         return;
 
-    auto mediaData = getMediaData( idx );
-    if ( !mediaData )
+    auto mediaData = getMediaData(idx);
+    if (!mediaData)
         return;
 
-    QMenu menu( tr( "Context Menu" ) );
+    QMenu menu(tr("Context Menu"));
 
-    auto action = new QAction( "Search for Torrent on RARBG", &menu );
-    menu.addAction( action );
-    connect( action, &QAction::triggered,
-             [mediaData]()
-             {
-                 auto url = mediaData->getSearchURL( CMediaData::ETorrentSite::eRARBG );
-                 QDesktopServices::openUrl( url );
-             } );
+    auto action = new QAction("Search for Torrent on RARBG", &menu);
+    menu.addAction(action);
+    connect(action, &QAction::triggered,
+        [mediaData]()
+        {
+            auto url = mediaData->getSearchURL(CMediaData::ETorrentSite::eRARBG);
+            QDesktopServices::openUrl(url);
+        });
 
-    action = new QAction( "Search for Torrent on piratebay.org", &menu );
-    menu.addAction( action );
-    connect( action, &QAction::triggered,
-             [ mediaData ]()
-             {
-                 auto url = mediaData->getSearchURL( CMediaData::ETorrentSite::ePirateBay );
-                 QDesktopServices::openUrl( url );
-             } );
+    action = new QAction("Search for Torrent on piratebay.org", &menu);
+    menu.addAction(action);
+    connect(action, &QAction::triggered,
+        [mediaData]()
+        {
+            auto url = mediaData->getSearchURL(CMediaData::ETorrentSite::ePirateBay);
+            QDesktopServices::openUrl(url);
+        });
 
-    menu.exec( dataTree->dataTree()->mapToGlobal( pos ) );
+    menu.exec(dataTree->dataTree()->mapToGlobal(pos));
 }
 
-void CCollectionsManager::slotLoadFile( const QString & fileName )
+void CCollectionsManager::slotLoadFile(const QString& fileName)
 {
-    setCollectionsFile( fileName, false );
+    setCollectionsFile(fileName, false);
 }
 
-void CCollectionsManager::setCollectionsFile( const QString & fileName, bool force )
+void CCollectionsManager::setCollectionsFile(const QString& fileName, bool force)
 {
-    if ( !fMediaModel )
+    if (!fMediaModel)
         return;
 
-    if ( fileName.isEmpty() )
+    if (fileName.isEmpty())
         return;
 
-    if ( !force )
+    if (!force)
         return;
 
     auto serverInfo = getCurrentServerInfo();
     if (!serverInfo)
         return;
 
-    QFile fi( fileName );
-    if ( !fi.open( QFile::ReadOnly ) )
+    QFile fi(fileName);
+    if (!fi.open(QFile::ReadOnly))
     {
         return;
     }
 
     auto data = fi.readAll();
     QJsonParseError error;
-    auto doc = QJsonDocument::fromJson( data, &error );
-    if ( error.error != QJsonParseError::NoError )
+    auto doc = QJsonDocument::fromJson(data, &error);
+    if (error.error != QJsonParseError::NoError)
     {
-        QMessageBox::critical( this, tr( "Error Reading File" ), tr( "Error: %1 @ %2" ).arg( error.errorString() ).arg( error.offset ) );
+        QMessageBox::critical(this, tr("Error Reading File"), tr("Error: %1 @ %2").arg(error.errorString()).arg(error.offset));
         return;
     }
 
@@ -403,11 +403,11 @@ void CCollectionsManager::setCollectionsFile( const QString & fileName, bool for
         collectionObj["collection"] = "<Unnamed Collection>";
         collectionObj["movies"] = moviesObj;
         auto tmp = QJsonArray();
-        tmp.push_back( collectionObj );
+        tmp.push_back(collectionObj);
         collectionsObj = tmp;
     }
     QJsonArray collections;
-    if ( !collectionsObj.isArray() )
+    if (!collectionsObj.isArray())
     {
         return;
     }
@@ -430,10 +430,10 @@ void CCollectionsManager::setCollectionsFile( const QString & fileName, bool for
                 rank = -1;
             auto movieName = movie.toObject()["name"].toString();
             auto year = movie.toObject()["year"].toInt();
-            auto currCollection = fCollectionsModel->addMovie( movieName, year, idx, rank);
-            if (currCollection->fCollection && currCollection->fCollection->isUnNamed() )
+            auto currCollection = fCollectionsModel->addMovie(movieName, year, idx, rank);
+            if (currCollection->fCollection && currCollection->fCollection->isUnNamed())
             {
-                currCollection->fCollection->setFileName( fileName );
+                currCollection->fCollection->setFileName(fileName);
             }
         }
     }
@@ -442,9 +442,9 @@ void CCollectionsManager::setCollectionsFile( const QString & fileName, bool for
 void CCollectionsManager::slotCreateMissingCollections()
 {
     auto serverInfo = getCurrentServerInfo();
-    if ( !serverInfo )
+    if (!serverInfo)
         return;
-    fCollectionsModel->createCollections( serverInfo, fSyncSystem, this );
+    fCollectionsModel->createCollections(serverInfo, fSyncSystem, this);
 }
 
 

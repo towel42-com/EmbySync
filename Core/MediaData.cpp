@@ -44,47 +44,47 @@
 QStringList CMediaData::getHeaderLabels()
 {
     return QStringList()
-        << QObject::tr( "Name" )
-        << QObject::tr( "ID" )
-        << QObject::tr( "Is Favorite?" )
-        << QObject::tr( "Played?" )
-        << QObject::tr( "Last Played" )
-        << QObject::tr( "Play Count" )
-        << QObject::tr( "Play Position" )
+        << QObject::tr("Name")
+        << QObject::tr("ID")
+        << QObject::tr("Is Favorite?")
+        << QObject::tr("Played?")
+        << QObject::tr("Last Played")
+        << QObject::tr("Play Count")
+        << QObject::tr("Play Position")
         ;
 }
 
-std::function< QString( uint64_t ) > CMediaData::sMSecsToStringFunc;
-void CMediaData::setMSecsToStringFunc( std::function< QString( uint64_t ) > func )
+std::function< QString(uint64_t) > CMediaData::sMSecsToStringFunc;
+void CMediaData::setMSecsToStringFunc(std::function< QString(uint64_t) > func)
 {
     sMSecsToStringFunc = func;
 }
 
-std::function< QString( uint64_t ) > CMediaData::mecsToStringFunc()
+std::function< QString(uint64_t) > CMediaData::mecsToStringFunc()
 {
     return sMSecsToStringFunc;
 }
 
-CMediaData::CMediaData( const QJsonObject & mediaObj, std::shared_ptr< CServerModel > serverModel )
+CMediaData::CMediaData(const QJsonObject& mediaObj, std::shared_ptr< CServerModel > serverModel)
 {
-    computeName( mediaObj );
-    fType = mediaObj[ "Type" ].toString();
+    computeName(mediaObj);
+    fType = mediaObj["Type"].toString();
     fOriginalTitle = mediaObj["OriginalTitle"].toString();
 
-    for ( auto && serverInfo : *serverModel )
+    for (auto&& serverInfo : *serverModel)
     {
-        if ( !serverInfo->isEnabled() )
+        if (!serverInfo->isEnabled())
             continue;
-        fInfoForServer[ serverInfo->keyName() ] = std::make_shared< SMediaServerData >();
+        fInfoForServer[serverInfo->keyName()] = std::make_shared< SMediaServerData >();
     }
 }
 
-CMediaData::CMediaData( const QString & name, int year, const QString & type )
+CMediaData::CMediaData(const QString& name, int year, const QString& type)
 {
     fName = name;
     fOriginalTitle = fName;
     fType = type;
-    fPremiereDate = QDate( year, 1, 1 );
+    fPremiereDate = QDate(year, 1, 1);
 }
 
 bool CMediaData::isExtra(const QJsonObject& obj)
@@ -96,8 +96,8 @@ bool CMediaData::isExtra(const QJsonObject& obj)
     auto parentDir = path.absolutePath();
     auto parentDirName = QFileInfo(parentDir).baseName();
     parentDirName = parentDirName.toLower();
-    if (   parentDirName.contains( "extras" )
-        || parentDirName.contains( "featurettes" )
+    if (parentDirName.contains("extras")
+        || parentDirName.contains("featurettes")
         || parentDirName.contains("interviews")
         || parentDirName.contains("season 00")
         )
@@ -105,11 +105,11 @@ bool CMediaData::isExtra(const QJsonObject& obj)
     return false;
 }
 
-std::shared_ptr<SMediaServerData> CMediaData::userMediaData( const QString & serverName ) const
+std::shared_ptr<SMediaServerData> CMediaData::userMediaData(const QString& serverName) const
 {
-    auto pos = fInfoForServer.find( serverName );
-    if ( pos != fInfoForServer.end() )
-        return ( *pos ).second;
+    auto pos = fInfoForServer.find(serverName);
+    if (pos != fInfoForServer.end())
+        return (*pos).second;
     return {};
 }
 
@@ -128,87 +128,87 @@ QString CMediaData::mediaType() const
     return fType;
 }
 
-void CMediaData::computeName( const QJsonObject & media )
+void CMediaData::computeName(const QJsonObject& media)
 {
-    auto name = fName = media[ "Name" ].toString();
+    auto name = fName = media["Name"].toString();
     if (media["Type"] == "Episode")
     {
         //auto tmp = QJsonDocument( media );
         //qDebug() << tmp.toJson();
 
-        fSeriesName = media[ "SeriesName" ].toString();
-        auto season = media[ "SeasonName" ].toString();
-        auto pos = season.lastIndexOf( ' ' );
+        fSeriesName = media["SeriesName"].toString();
+        auto season = media["SeasonName"].toString();
+        auto pos = season.lastIndexOf(' ');
         bool aOK = false;
-        if ( pos != -1 )
+        if (pos != -1)
         {
-            fSeason = season.mid( pos + 1 ).toInt( &aOK );
-            if ( aOK )
-                season = QString( "S%1" ).arg( fSeason.value(), 2, 10, QChar( '0' ) );
+            fSeason = season.mid(pos + 1).toInt(&aOK);
+            if (aOK)
+                season = QString("S%1").arg(fSeason.value(), 2, 10, QChar('0'));
         }
-        if ( !aOK )
+        if (!aOK)
         {
             season.clear();
             fSeason.reset();
         }
 
-        fEpisode = media[ "IndexNumber" ].toInt();
-        if ( fEpisode.value() == 0 )
+        fEpisode = media["IndexNumber"].toInt();
+        if (fEpisode.value() == 0)
             fEpisode.reset();
 
-        auto episode = fEpisode.has_value() ? QString( "E%1" ).arg( fEpisode.value(), 2, 10, QChar( '0' ) ) : QString();
-        fName = QString( "%1 - %2%3" ).arg( fSeriesName ).arg( season ).arg( episode );
-        auto episodeName = media[ "EpisodeTitle" ].toString();
-        if ( !episodeName.isEmpty() )
-            fName += QString( " - %1" ).arg( episodeName );
-        if ( !name.isEmpty() )
-            fName += QString( " - %1" ).arg( name );
+        auto episode = fEpisode.has_value() ? QString("E%1").arg(fEpisode.value(), 2, 10, QChar('0')) : QString();
+        fName = QString("%1 - %2%3").arg(fSeriesName).arg(season).arg(episode);
+        auto episodeName = media["EpisodeTitle"].toString();
+        if (!episodeName.isEmpty())
+            fName += QString(" - %1").arg(episodeName);
+        if (!name.isEmpty())
+            fName += QString(" - %1").arg(name);
     }
 }
 
-void CMediaData::loadData( const QString & serverName, const QJsonObject & media )
+void CMediaData::loadData(const QString& serverName, const QJsonObject& media)
 {
     //qDebug().noquote().nospace() << QJsonDocument( media ).toJson( QJsonDocument::Indented );
 
-    auto externalUrls = media[ "ExternalUrls" ].toArray();
-    for ( auto && ii : externalUrls )
+    auto externalUrls = media["ExternalUrls"].toArray();
+    for (auto&& ii : externalUrls)
     {
         auto urlObj = ii.toObject();
-        auto name = urlObj[ "Name" ].toString();
-        auto url = urlObj[ "Url" ].toString();
-        fExternalUrls[ name ] = url;
+        auto name = urlObj["Name"].toString();
+        auto url = urlObj["Url"].toString();
+        fExternalUrls[name] = url;
     }
 
-    auto userDataObj = media[ "UserData" ].toObject();
+    auto userDataObj = media["UserData"].toObject();
 
     //auto tmp = QJsonDocument( userDataObj );
     //qDebug() << tmp.toJson();
 
-    auto mediaData = userMediaData( serverName );
-    mediaData->loadUserDataFromJSON( userDataObj );
+    auto mediaData = userMediaData(serverName);
+    mediaData->loadUserDataFromJSON(userDataObj);
 
-    auto providerIDsObj = media[ "ProviderIds" ].toObject();
-    for ( auto && ii = providerIDsObj.begin(); ii != providerIDsObj.end(); ++ii )
+    auto providerIDsObj = media["ProviderIds"].toObject();
+    for (auto&& ii = providerIDsObj.begin(); ii != providerIDsObj.end(); ++ii)
     {
         auto providerName = ii.key();
         auto providerID = ii.value().toString();
-        addProvider( providerName, providerID );
+        addProvider(providerName, providerID);
     }
 
-    fPremiereDate = media[ "PremiereDate" ].toVariant().toDate();
+    fPremiereDate = media["PremiereDate"].toVariant().toDate();
 }
 
 QString CMediaData::externalUrlsText() const
 {
-    auto retVal = QString( "External Urls:</br>\n<ul>\n%1\n</ul>" );
+    auto retVal = QString("External Urls:</br>\n<ul>\n%1\n</ul>");
 
     QStringList externalUrls;
-    for ( auto && ii : fExternalUrls )
+    for (auto&& ii : fExternalUrls)
     {
-        auto curr = QString( R"(<li>%1 - <a href="%2">%2</a></li>)" ).arg( ii.first ).arg( ii.second );
+        auto curr = QString(R"(<li>%1 - <a href="%2">%2</a></li>)").arg(ii.first).arg(ii.second);
         externalUrls << curr;
     }
-    retVal = retVal.arg( externalUrls.join( "\n" ) );
+    retVal = retVal.arg(externalUrls.join("\n"));
     return retVal;
 }
 
@@ -220,100 +220,100 @@ bool CMediaData::hasProviderIDs() const
 QString CMediaData::getProviderList() const
 {
     QStringList retVal;
-    for ( auto && ii : fProviders )
+    for (auto&& ii : fProviders)
     {
         retVal << ii.first.toLower() + "." + ii.second.toLower();
     }
-    return retVal.join( "," );
+    return retVal.join(",");
 }
 
-bool CMediaData::isPlayed( const QString & serverName ) const
+bool CMediaData::isPlayed(const QString& serverName) const
 {
-    auto mediaData = userMediaData( serverName );
-    if ( !mediaData )
+    auto mediaData = userMediaData(serverName);
+    if (!mediaData)
         return false;
     return mediaData->fPlayed;
 }
 
-uint64_t CMediaData::playCount( const QString & serverName ) const
+uint64_t CMediaData::playCount(const QString& serverName) const
 {
-    auto mediaData = userMediaData( serverName );
-    if ( !mediaData )
+    auto mediaData = userMediaData(serverName);
+    if (!mediaData)
         return 0;
     return mediaData->fPlayCount;
 }
 
 bool CMediaData::allPlayCountEqual() const
 {
-    return allEqual< uint64_t >( []( std::shared_ptr< SMediaServerData > data )
-                     {
-                         return data->fPlayCount;
-                     } );
+    return allEqual< uint64_t >([](std::shared_ptr< SMediaServerData > data)
+        {
+            return data->fPlayCount;
+        });
 }
 
-bool CMediaData::isFavorite( const QString & serverName ) const
+bool CMediaData::isFavorite(const QString& serverName) const
 {
-    auto mediaData = userMediaData( serverName );
-    if ( !mediaData )
+    auto mediaData = userMediaData(serverName);
+    if (!mediaData)
         return false;
     return mediaData->fIsFavorite;
 }
 
 bool CMediaData::allFavoriteEqual() const
 {
-    return allEqual< bool >( []( std::shared_ptr< SMediaServerData > data )
-                                 {
-                                     return data->fIsFavorite;
-                                 } );
+    return allEqual< bool >([](std::shared_ptr< SMediaServerData > data)
+        {
+            return data->fIsFavorite;
+        });
 }
 
-QDateTime CMediaData::lastPlayed( const QString & serverName ) const
+QDateTime CMediaData::lastPlayed(const QString& serverName) const
 {
-    auto mediaData = userMediaData( serverName );
-    if ( !mediaData )
+    auto mediaData = userMediaData(serverName);
+    if (!mediaData)
         return {};
     return mediaData->fLastPlayedDate;
 }
 
 bool CMediaData::allLastPlayedEqual() const
 {
-    return allEqual< QDateTime >( []( std::shared_ptr< SMediaServerData > data )
-                             {
-                                 return data->fLastPlayedDate;
-                             } );
+    return allEqual< QDateTime >([](std::shared_ptr< SMediaServerData > data)
+        {
+            return data->fLastPlayedDate;
+        });
 }
 
 // 1 tick = 10000 ms
-uint64_t CMediaData::playbackPositionTicks( const QString & serverName ) const
+uint64_t CMediaData::playbackPositionTicks(const QString& serverName) const
 {
-    auto mediaData = userMediaData( serverName );
-    if ( !mediaData )
+    auto mediaData = userMediaData(serverName);
+    if (!mediaData)
         return 0;
     return mediaData->fPlaybackPositionTicks;
 }
 
 // stored in ticks
 // 1 tick = 10000 ms
-uint64_t CMediaData::playbackPositionMSecs( const QString & serverName ) const
+uint64_t CMediaData::playbackPositionMSecs(const QString& serverName) const
 {
-    auto mediaData = userMediaData( serverName );
-    if ( !mediaData )
+    auto mediaData = userMediaData(serverName);
+    if (!mediaData)
         return 0;
     return mediaData->playbackPositionMSecs();
 }
 
-QString CMediaData::playbackPosition( const QString & serverName ) const
+QString CMediaData::playbackPosition(const QString& serverName) const
 {
-    auto mediaData = userMediaData( serverName );
-    if ( !mediaData )
+    auto mediaData = userMediaData(serverName);
+    if (!mediaData)
         return {};
     return mediaData->playbackPosition();
 }
 
-QTime CMediaData::playbackPositionTime( const QString & serverName ) const
+QTime CMediaData::playbackPositionTime(const QString& serverName) const
 {
-    auto mediaData = userMediaData( serverName );
-    if ( !mediaData )
+    auto mediaData = userMediaData(serverName);
+    if (!mediaData)
         return {};
     return mediaData->playbackPositionTime();
 }
@@ -321,60 +321,60 @@ QTime CMediaData::playbackPositionTime( const QString & serverName ) const
 
 bool CMediaData::allPlayedEqual() const
 {
-    return allEqual< bool >( []( std::shared_ptr< SMediaServerData > data )
-                                  {
-                                      return data->fPlayed;
-                                  } );
+    return allEqual< bool >([](std::shared_ptr< SMediaServerData > data)
+        {
+            return data->fPlayed;
+        });
 }
 
 bool CMediaData::allPlaybackPositionTicksEqual() const
 {
-    return allEqual< int64_t >( []( std::shared_ptr< SMediaServerData > data )
-                             {
-                                 return data->fPlaybackPositionTicks;
-                             } );
+    return allEqual< int64_t >([](std::shared_ptr< SMediaServerData > data)
+        {
+            return data->fPlaybackPositionTicks;
+        });
 }
 
 QUrlQuery CMediaData::getSearchForMediaQuery() const
 {
     QUrlQuery query;
 
-    query.addQueryItem( "IncludeItemTypes", "Movie,Episode,Video" );
-    query.addQueryItem( "AnyProviderIdEquals", getProviderList() );
-    query.addQueryItem( "SortBy", "SortName" );
-    query.addQueryItem( "SortOrder", "Ascending" );
-    query.addQueryItem( "Recursive", "True" );
+    query.addQueryItem("IncludeItemTypes", "Movie,Episode,Video");
+    query.addQueryItem("AnyProviderIdEquals", getProviderList());
+    query.addQueryItem("SortBy", "SortName");
+    query.addQueryItem("SortOrder", "Ascending");
+    query.addQueryItem("Recursive", "True");
 
     return query;
 }
 
-QString CMediaData::getProviderID( const QString & provider )
+QString CMediaData::getProviderID(const QString& provider)
 {
-    auto pos = fProviders.find( provider );
-    if ( pos == fProviders.end() )
+    auto pos = fProviders.find(provider);
+    if (pos == fProviders.end())
         return {};
-    return ( *pos ).second;
+    return (*pos).second;
 }
 
-std::map< QString, QString > CMediaData::getProviders( bool addKeyIfEmpty /*= false */ ) const
+std::map< QString, QString > CMediaData::getProviders(bool addKeyIfEmpty /*= false */) const
 {
     auto retVal = fProviders;
-    if ( addKeyIfEmpty && retVal.empty() )
+    if (addKeyIfEmpty && retVal.empty())
     {
-        retVal[ fType ] = fName;
+        retVal[fType] = fName;
     }
 
-    return std::move( retVal );
+    return std::move(retVal);
 }
 
-void CMediaData::addProvider( const QString & providerName, const QString & providerID )
+void CMediaData::addProvider(const QString& providerName, const QString& providerID)
 {
-    fProviders[ providerName ] = providerID;
+    fProviders[providerName] = providerID;
 }
 
-void CMediaData::setMediaID( const QString & serverName, const QString & mediaID )
+void CMediaData::setMediaID(const QString& serverName, const QString& mediaID)
 {
-    auto mediaData = userMediaData( serverName );
+    auto mediaData = userMediaData(serverName);
     mediaData->fMediaID = mediaID;
     updateCanBeSynced();
 }
@@ -382,124 +382,124 @@ void CMediaData::setMediaID( const QString & serverName, const QString & mediaID
 void CMediaData::updateCanBeSynced()
 {
     int serverCnt = 0;
-    for ( auto && ii : fInfoForServer )
+    for (auto&& ii : fInfoForServer)
     {
-        if ( ii.second->isValid() )
+        if (ii.second->isValid())
             serverCnt++;
     }
     fCanBeSynced = serverCnt > 1;
 }
 
-QString CMediaData::getMediaID( const QString & serverName ) const
+QString CMediaData::getMediaID(const QString& serverName) const
 {
-    auto mediaData = userMediaData( serverName );
-    if ( !mediaData )
+    auto mediaData = userMediaData(serverName);
+    if (!mediaData)
         return {};
     return mediaData->fMediaID;
 }
 
-bool CMediaData::beenLoaded( const QString & serverName ) const
+bool CMediaData::beenLoaded(const QString& serverName) const
 {
-    auto mediaData = userMediaData( serverName );
-    if ( !mediaData )
+    auto mediaData = userMediaData(serverName);
+    if (!mediaData)
         return {};
     return mediaData->fBeenLoaded;
 }
 
-QIcon CMediaData::getDirectionIcon( const QString & serverName ) const
+QIcon CMediaData::getDirectionIcon(const QString& serverName) const
 {
-    static QIcon sErrorIcon( ":/resources/error.png" );
-    static QIcon sEqualIcon( ":/resources/equal.png" );
-    static QIcon sArrowUpIcon( ":/resources/arrowup.png" );
-    static QIcon sArrowDownIcon( ":/resources/arrowdown.png" );
+    static QIcon sErrorIcon(":/resources/error.png");
+    static QIcon sEqualIcon(":/resources/equal.png");
+    static QIcon sArrowUpIcon(":/resources/arrowup.png");
+    static QIcon sArrowDownIcon(":/resources/arrowdown.png");
     QIcon retVal;
-    if ( !isValidForServer( serverName ) )
+    if (!isValidForServer(serverName))
         retVal = sErrorIcon;
-    else if ( !canBeSynced() )
+    else if (!canBeSynced())
         return {};
-    else if ( validUserDataEqual() )
+    else if (validUserDataEqual())
         retVal = sEqualIcon;
-    else if ( needsUpdating( serverName ) )
+    else if (needsUpdating(serverName))
         retVal = sArrowDownIcon;
-    else 
+    else
         retVal = sArrowUpIcon;
 
     return retVal;
 }
 
-QUrl CMediaData::getSearchURL( ETorrentSite site ) const
+QUrl CMediaData::getSearchURL(ETorrentSite site) const
 {
     QString url;
-    if ( site == ETorrentSite::eRARBG )
+    if (site == ETorrentSite::eRARBG)
         url = "https://rarbg.to/torrents.php";
-    else if ( site == ETorrentSite::ePirateBay )
+    else if (site == ETorrentSite::ePirateBay)
         url = "https://thepiratebay.org/search.php";
     else
         return {};
 
-    QUrl retVal( url );
+    QUrl retVal(url);
     QString searchKey;
 
-    auto pos = fProviders.find( "imdb" );
-    if ( pos != fProviders.end() )
+    auto pos = fProviders.find("imdb");
+    if (pos != fProviders.end())
     {
-        searchKey = ( *pos ).second;
+        searchKey = (*pos).second;
     }
-    if ( searchKey.isEmpty() )
+    if (searchKey.isEmpty())
         searchKey = fName;
 
-    if ( this->mediaType() == "Episode" )
+    if (this->mediaType() == "Episode")
     {
-        searchKey = QString( R"("%1")" ).arg( fSeriesName ).replace( "(", "" ).replace( ")", "" );
+        searchKey = QString(R"("%1")").arg(fSeriesName).replace("(", "").replace(")", "");
 
         QString subKey;
-        if ( fSeason.has_value() )
-            subKey += QString( "S%1" ).arg( fSeason.value(), 2, 10, QChar( '0' ) );
+        if (fSeason.has_value())
+            subKey += QString("S%1").arg(fSeason.value(), 2, 10, QChar('0'));
 
-        if ( fEpisode.has_value() )
-            subKey += QString( "E%1" ).arg( fEpisode.value(), 2, 10, QChar( '0' ) );
+        if (fEpisode.has_value())
+            subKey += QString("E%1").arg(fEpisode.value(), 2, 10, QChar('0'));
         searchKey += " " + subKey;
     }
-    else if ( this->mediaType() == "Movie" )
+    else if (this->mediaType() == "Movie")
     {
-        if ( fPremiereDate.isValid() )
+        if (fPremiereDate.isValid())
         {
-            searchKey += " " + QString::number( fPremiereDate.year() );
+            searchKey += " " + QString::number(fPremiereDate.year());
         }
     }
     QUrlQuery query;
-    query.addQueryItem( "search", searchKey.replace( " ", "+" ) );
-    retVal.setQuery( query );
+    query.addQueryItem("search", searchKey.replace(" ", "+"));
+    retVal.setQuery(query);
     return retVal;
 }
 
-QJsonObject CMediaData::toJson( bool includeSearchURL )
+QJsonObject CMediaData::toJson(bool includeSearchURL)
 {
     QJsonObject retVal;
 
-    retVal[ "type" ] = fType;
-    retVal[ "name" ] = fName;
-    if ( !fSeriesName.isEmpty() )
-        retVal[ "seriesname" ] = fSeriesName;
-    if ( fSeason.has_value() )
-        retVal[ "season" ] = fSeason.value();
-    if ( fEpisode.has_value() )
-        retVal[ "season" ] = fEpisode.value();
-    retVal[ "premiere_date" ] = fPremiereDate.toString( "MM/dd/yyyy" );
+    retVal["type"] = fType;
+    retVal["name"] = fName;
+    if (!fSeriesName.isEmpty())
+        retVal["seriesname"] = fSeriesName;
+    if (fSeason.has_value())
+        retVal["season"] = fSeason.value();
+    if (fEpisode.has_value())
+        retVal["season"] = fEpisode.value();
+    retVal["premiere_date"] = fPremiereDate.toString("MM/dd/yyyy");
 
     QJsonArray serverInfos;
-    for ( auto && ii : fInfoForServer )
+    for (auto&& ii : fInfoForServer)
     {
-        if ( !ii.second->isValid() )
+        if (!ii.second->isValid())
             continue;;
         auto serverInfo = ii.second->toJson();
-        serverInfo[ "server_url" ] = ii.first;
-        serverInfos.push_back( serverInfo );
+        serverInfo["server_url"] = ii.first;
+        serverInfos.push_back(serverInfo);
     }
-    retVal[ "server_infos" ] = serverInfos;
+    retVal["server_infos"] = serverInfos;
 
-    if ( includeSearchURL )
-        retVal[ "searchurl" ] = getSearchURL( ETorrentSite::eRARBG ).toString();
+    if (includeSearchURL)
+        retVal["searchurl"] = getSearchURL(ETorrentSite::eRARBG).toString();
 
     return retVal;
 }
@@ -509,59 +509,59 @@ bool CMediaData::onServer() const
     return !this->fInfoForServer.empty();
 }
 
-void CMediaData::updateFromOther( const QString & otherServerName, std::shared_ptr< CMediaData > other )
+void CMediaData::updateFromOther(const QString& otherServerName, std::shared_ptr< CMediaData > other)
 {
-    auto otherMediaData = other->userMediaData( otherServerName );
-    if ( !otherMediaData )
+    auto otherMediaData = other->userMediaData(otherServerName);
+    if (!otherMediaData)
         return;
 
-    fInfoForServer[ otherServerName ] = otherMediaData;
+    fInfoForServer[otherServerName] = otherMediaData;
     updateCanBeSynced();
 }
 
 
-bool CMediaData::needsUpdating( const QString & serverName ) const
+bool CMediaData::needsUpdating(const QString& serverName) const
 {
     // TODO: When Emby supports last modified use that
 
-    auto mediaData = userMediaData( serverName );
-    if ( !mediaData )
+    auto mediaData = userMediaData(serverName);
+    if (!mediaData)
         return false;
-    return ( mediaData != newestMediaData() );
+    return (mediaData != newestMediaData());
 }
 
 std::shared_ptr<SMediaServerData> CMediaData::newestMediaData() const
 {
     std::shared_ptr<SMediaServerData> retVal;
-    for ( auto && ii : fInfoForServer )
+    for (auto&& ii : fInfoForServer)
     {
-        if ( !ii.second->isValid() )
+        if (!ii.second->isValid())
             continue;
 
-        if ( !retVal )
+        if (!retVal)
             retVal = ii.second;
         else
         {
-            if ( ii.second->fLastPlayedDate > retVal->fLastPlayedDate )
+            if (ii.second->fLastPlayedDate > retVal->fLastPlayedDate)
                 retVal = ii.second;
         }
     }
     return retVal;
 }
 
-bool CMediaData::isValidForServer( const QString & serverName ) const
+bool CMediaData::isValidForServer(const QString& serverName) const
 {
-    auto mediaInfo = userMediaData( serverName );
-    if ( !mediaInfo )
+    auto mediaInfo = userMediaData(serverName);
+    if (!mediaInfo)
         return false;
     return mediaInfo->isValid();
 }
 
 bool CMediaData::isValidForAllServers() const
 {
-    for ( auto && ii : fInfoForServer )
+    for (auto&& ii : fInfoForServer)
     {
-        if ( !ii.second->isValid() )
+        if (!ii.second->isValid())
             return false;
     }
     return true;
@@ -574,10 +574,10 @@ bool CMediaData::canBeSynced() const
 
 EMediaSyncStatus CMediaData::syncStatus() const
 {
-    if ( !canBeSynced() )
+    if (!canBeSynced())
         return EMediaSyncStatus::eNoServerPairs;
 
-    if ( validUserDataEqual() )
+    if (validUserDataEqual())
         return EMediaSyncStatus::eMediaEqualOnValidServers;
     return EMediaSyncStatus::eMediaNeedsUpdating;
 }
@@ -585,94 +585,94 @@ EMediaSyncStatus CMediaData::syncStatus() const
 bool CMediaData::validUserDataEqual() const
 {
     std::list< std::pair< QString, std::shared_ptr< SMediaServerData > > > validServerData;
-    for ( auto && ii : fInfoForServer )
+    for (auto&& ii : fInfoForServer)
     {
-        if ( ii.second->isValid() )
-            validServerData.push_back( ii );
+        if (ii.second->isValid())
+            validServerData.push_back(ii);
     }
 
     auto pos = validServerData.begin();
     auto nextPos = validServerData.begin();
     nextPos++;
-    for ( ; ( pos != validServerData.end() ) && ( nextPos != validServerData.end() ); ++pos, ++nextPos )
+    for (; (pos != validServerData.end()) && (nextPos != validServerData.end()); ++pos, ++nextPos)
     {
-        if ( !( *pos ).second->userDataEqual( *( ( *nextPos ).second ) ) )
+        if (!(*pos).second->userDataEqual(*((*nextPos).second)))
             return false;
     }
     return true;
 }
 
-bool CMediaData::isMatch( const QString & name, int year ) const
+bool CMediaData::isMatch(const QString& name, int year) const
 {
-    bool isMatch = ( ( year >= premiereDate().year() - 3 ) && ( year <= premiereDate().year() + 3 ) );
+    bool isMatch = ((year >= premiereDate().year() - 3) && (year <= premiereDate().year() + 3));
 
-    if ( !isMatch )
+    if (!isMatch)
         return false;
 
-    if ( SDummyMovie::nameKey( name ) == SDummyMovie::nameKey( fName ) )
+    if (SDummyMovie::nameKey(name) == SDummyMovie::nameKey(fName))
         return true;
-    if (SDummyMovie::nameKey(name) == SDummyMovie::nameKey( fOriginalTitle ))
+    if (SDummyMovie::nameKey(name) == SDummyMovie::nameKey(fOriginalTitle))
         return true;
-    if ( NSABUtils::NStringUtils::isSimilar( fName, name, true ) )
+    if (NSABUtils::NStringUtils::isSimilar(fName, name, true))
         return true;
-    if ( NSABUtils::NStringUtils::isSimilar( fOriginalTitle, name, true) )
+    if (NSABUtils::NStringUtils::isSimilar(fOriginalTitle, name, true))
         return true;
     return false;
 }
 
-bool CMediaData::isMissingProvider( EMissingProviderIDs missingIdsType ) const
+bool CMediaData::isMissingProvider(EMissingProviderIDs missingIdsType) const
 {
-    if ( missingIdsType == EMissingProviderIDs::eNone )
+    if (missingIdsType == EMissingProviderIDs::eNone)
         return true;
 
-    if ( ( missingIdsType & EMissingProviderIDs::eIMDBid ) != 0 )
+    if ((missingIdsType & EMissingProviderIDs::eIMDBid) != 0)
     {
-        auto pos = fProviders.find( "Imdb" );
-        if ( pos == fProviders.end() )
+        auto pos = fProviders.find("Imdb");
+        if (pos == fProviders.end())
             return true;
-        return ( *pos ).second.isEmpty();
+        return (*pos).second.isEmpty();
     }
 
-    if ( ( missingIdsType & EMissingProviderIDs::eTVRageid ) != 0 )
+    if ((missingIdsType & EMissingProviderIDs::eTVRageid) != 0)
     {
-        auto pos = fProviders.find( "TvRage" );
-        if ( pos == fProviders.end() )
+        auto pos = fProviders.find("TvRage");
+        if (pos == fProviders.end())
             return true;
-        return ( *pos ).second.isEmpty();
+        return (*pos).second.isEmpty();
     }
 
-    if ( ( missingIdsType & EMissingProviderIDs::eTMDBid ) != 0 )
+    if ((missingIdsType & EMissingProviderIDs::eTMDBid) != 0)
     {
-        auto pos = fProviders.find( "Tmdb" );
-        if ( pos == fProviders.end() )
+        auto pos = fProviders.find("Tmdb");
+        if (pos == fProviders.end())
             return true;
-        return ( *pos ).second.isEmpty();
+        return (*pos).second.isEmpty();
     }
 
-    if ( ( missingIdsType & EMissingProviderIDs::eTVDBid ) != 0 )
+    if ((missingIdsType & EMissingProviderIDs::eTVDBid) != 0)
     {
-        auto pos = fProviders.find( "Tvdb" );
-        if ( pos == fProviders.end() )
+        auto pos = fProviders.find("Tvdb");
+        if (pos == fProviders.end())
             return true;
-        return ( *pos ).second.isEmpty();
+        return (*pos).second.isEmpty();
     }
     return false;
 }
 
-CMediaCollection::CMediaCollection( const QString & serverName, const QString & name, const QString & id, int pos ) :
-    fName( name ),
-    fServerName( serverName ),
-    fPosition( pos )
+CMediaCollection::CMediaCollection(const QString& serverName, const QString& name, const QString& id, int pos) :
+    fName(name),
+    fServerName(serverName),
+    fPosition(pos)
 {
-    fCollectionInfo = std::make_shared< SCollectionServerInfo >( id );
-    fCollectionInfo->setId( id );
+    fCollectionInfo = std::make_shared< SCollectionServerInfo >(id);
+    fCollectionInfo->setId(id);
 }
 
 bool SCollectionServerInfo::missingMedia() const
 {
-    for ( auto && ii : fItems )
+    for (auto&& ii : fItems)
     {
-        if ( !ii->fData || !ii->fData->onServer() )
+        if (!ii->fData || !ii->fData->onServer())
             return true;
     }
     return false;
@@ -681,9 +681,9 @@ bool SCollectionServerInfo::missingMedia() const
 int SCollectionServerInfo::numMissing() const
 {
     int retVal = 0;
-    for ( auto && ii : fItems )
+    for (auto&& ii : fItems)
     {
-        if ( !ii->fData || !ii->fData->onServer() )
+        if (!ii->fData || !ii->fData->onServer())
             ++retVal;
     }
     return retVal;
@@ -691,53 +691,53 @@ int SCollectionServerInfo::numMissing() const
 
 
 
-void SCollectionServerInfo::createCollection( std::shared_ptr<const CServerInfo> serverInfo, const QString & collectionName, std::shared_ptr< CSyncSystem > syncSystem )
+void SCollectionServerInfo::createCollection(std::shared_ptr<const CServerInfo> serverInfo, const QString& collectionName, std::shared_ptr< CSyncSystem > syncSystem)
 {
-    if ( collectionExists() )
+    if (collectionExists())
         return;
 
     std::list< std::shared_ptr< CMediaData > > media;
-    for ( auto && ii : fItems )
+    for (auto&& ii : fItems)
     {
-        if ( ii->fData )
-            media.emplace_back( ii->fData );
+        if (ii->fData)
+            media.emplace_back(ii->fData);
     }
 
-    syncSystem->createCollection( serverInfo, collectionName, media );
+    syncSystem->createCollection(serverInfo, collectionName, media);
 }
 
-QVariant CMediaCollection::data( int column, int role ) const
+QVariant CMediaCollection::data(int column, int role) const
 {
-    if ( role == Qt::DisplayRole )
+    if (role == Qt::DisplayRole)
     {
-        switch ( column )
+        switch (column)
         {
-            case 0: return fName;
-            case 1: return {};
-            case 2: return fCollectionInfo->collectionExists() ? QObject::tr( "Yes" ) : QString( "No" );
-            case 3: return missingMedia() ? QObject::tr( "Yes" ) : QString();
+        case 0: return fName;
+        case 1: return {};
+        case 2: return fCollectionInfo->collectionExists() ? QObject::tr("Yes") : QString("No");
+        case 3: return missingMedia() ? QObject::tr("Yes") : QString();
         }
     }
     return {};
 }
 
-std::shared_ptr< SMediaCollectionData > CMediaCollection::addMovie( const QString & name, int year, int rank )
+std::shared_ptr< SMediaCollectionData > CMediaCollection::addMovie(const QString& name, int year, int rank)
 {
-    return fCollectionInfo->addMovie( name, year, this, rank );
+    return fCollectionInfo->addMovie(name, year, this, rank);
 }
 
-void CMediaCollection::setItems( const std::list< std::shared_ptr< CMediaData > > & items )
+void CMediaCollection::setItems(const std::list< std::shared_ptr< CMediaData > >& items)
 {
     fCollectionInfo->fItems.clear();
-    fCollectionInfo->fItems.reserve( items.size() );
-    for ( auto && ii : items )
+    fCollectionInfo->fItems.reserve(items.size());
+    for (auto&& ii : items)
     {
-        auto curr = std::make_shared< SMediaCollectionData >( ii, this );
-        fCollectionInfo->fItems.push_back( curr );
+        auto curr = std::make_shared< SMediaCollectionData >(ii, this);
+        fCollectionInfo->fItems.push_back(curr);
     }
 }
 
-bool CMediaCollection::updateWithRealCollection( std::shared_ptr< CMediaCollection > realCollection )
+bool CMediaCollection::updateWithRealCollection(std::shared_ptr< CMediaCollection > realCollection)
 {
     (void)realCollection;
     return false;
@@ -748,73 +748,73 @@ QString CMediaCollection::fileBaseName() const
     return QFileInfo(fFileName).baseName();
 }
 
-SCollectionServerInfo::SCollectionServerInfo( const QString & id ) :
-    fCollectionID( id )
+SCollectionServerInfo::SCollectionServerInfo(const QString& id) :
+    fCollectionID(id)
 {
 
 }
 
-bool SCollectionServerInfo::updateMedia( std::shared_ptr< CMediaModel > mediaModel )
+bool SCollectionServerInfo::updateMedia(std::shared_ptr< CMediaModel > mediaModel)
 {
     bool retVal = false;
-    for ( auto && ii : fItems )
+    for (auto&& ii : fItems)
     {
-        if ( ii->fData && !ii->fData->onServer() )
+        if (ii->fData && !ii->fData->onServer())
         {
-            retVal = ii->updateMedia( mediaModel ) || retVal;
+            retVal = ii->updateMedia(mediaModel) || retVal;
         }
     }
     return retVal;
 }
 
-std::shared_ptr< SMediaCollectionData > SCollectionServerInfo::addMovie( const QString & name, int year, CMediaCollection * parent, int rank )
+std::shared_ptr< SMediaCollectionData > SCollectionServerInfo::addMovie(const QString& name, int year, CMediaCollection* parent, int rank)
 {
-    auto retVal = std::make_shared< SMediaCollectionData >( std::make_shared< CMediaData >( name, year, "Movie" ), parent );
+    auto retVal = std::make_shared< SMediaCollectionData >(std::make_shared< CMediaData >(name, year, "Movie"), parent);
 
-    if ( ( rank > 0 ) && ( rank - 1 ) >= fItems.size() )
+    if ((rank > 0) && (rank - 1) >= fItems.size())
     {
-        fItems.resize( rank );
+        fItems.resize(rank);
     }
     if (rank == -1)
         fItems.push_back(retVal);
     else
-        fItems[ rank - 1 ] = retVal;
-    for ( size_t ii = 0; ii < fItems.size(); ++ii )
+        fItems[rank - 1] = retVal;
+    for (size_t ii = 0; ii < fItems.size(); ++ii)
     {
-        if ( !fItems[ ii ] )
+        if (!fItems[ii])
         {
-            auto tmp = std::make_shared < SMediaCollectionData >( nullptr, parent );
-            fItems[ ii ] = tmp;
+            auto tmp = std::make_shared < SMediaCollectionData >(nullptr, parent);
+            fItems[ii] = tmp;
         }
 
     }
     return retVal;
 }
 
-QVariant SMediaCollectionData::data( int column, int role ) const
+QVariant SMediaCollectionData::data(int column, int role) const
 {
-    if ( !fData )
+    if (!fData)
         return {};
 
-    if ( role == Qt::DisplayRole )
+    if (role == Qt::DisplayRole)
     {
-        switch ( column )
+        switch (column)
         {
-            case 0: return fData->name();
-            case 1: return fData->premiereDate().year();
-            case 3: return fData->onServer() ? QString() : QObject::tr( "Yes" );
+        case 0: return fData->name();
+        case 1: return fData->premiereDate().year();
+        case 3: return fData->onServer() ? QString() : QObject::tr("Yes");
         }
     }
     return {};
 }
 
-bool SMediaCollectionData::updateMedia( std::shared_ptr< CMediaModel > mediaModel )
+bool SMediaCollectionData::updateMedia(std::shared_ptr< CMediaModel > mediaModel)
 {
-    if ( fData->onServer() )
+    if (fData->onServer())
         return false;
 
-    auto data = mediaModel->findMedia( fData->name(), fData->premiereDate().year() );
-    if ( data )
+    auto data = mediaModel->findMedia(fData->name(), fData->premiereDate().year());
+    if (data)
     {
         fData = data;
         return true;
