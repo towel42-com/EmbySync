@@ -319,10 +319,6 @@ CCollectionsFilterModel::CCollectionsFilterModel(QObject* parent) :
 bool CCollectionsFilterModel::filterAcceptsRow(int /*source_row*/, const QModelIndex& /*source_parent*/) const
 {
     return true;
-    //if (!sourceModel())
-    //    return true;
-    //auto childIdx = sourceModel()->index(source_row, 0, source_parent);
-    //return childIdx.data(CMediaModel::eShowItemRole).toBool();
 }
 
 void CCollectionsFilterModel::sort(int column, Qt::SortOrder order /*= Qt::AscendingOrder */)
