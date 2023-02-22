@@ -33,34 +33,34 @@ namespace Ui
     class CMediaWindow;
 }
 
-
 class CMediaWindow : public QWidget
 {
     Q_OBJECT
 public:
-    CMediaWindow(std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CSyncSystem > syncSystem, QWidget* parent = nullptr);
+    CMediaWindow( std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CSyncSystem > syncSystem, QWidget *parent = nullptr );
     virtual ~CMediaWindow() override;
 
-    void setMedia(std::shared_ptr< CMediaData > media);
+    void setMedia( std::shared_ptr< CMediaData > media );
     void reloadMedia();
 
     bool okToClose();
-    virtual void closeEvent(QCloseEvent* event) override;
+    virtual void closeEvent( QCloseEvent *event ) override;
 Q_SIGNALS:
     void sigChanged();
 public Q_SLOTS:
 private Q_SLOTS:
     void slotUploadUserMediaData();
-    void slotApplyFromServer(CMediaDataWidget* which);
-    void slotProcessToServer(CMediaDataWidget* which);
+    void slotApplyFromServer( CMediaDataWidget *which );
+    void slotProcessToServer( CMediaDataWidget *which );
+
 private:
-    void loadMedia(std::shared_ptr<CMediaData>& mediaInfo);
+    void loadMedia( std::shared_ptr< CMediaData > &mediaInfo );
 
     bool fChanged{ false };
     std::unique_ptr< Ui::CMediaWindow > fImpl;
     std::shared_ptr< CSyncSystem > fSyncSystem;
 
-    std::map< QString, CMediaDataWidget* > fUserDataWidgets;
+    std::map< QString, CMediaDataWidget * > fUserDataWidgets;
     std::shared_ptr< CMediaData > fMediaInfo;
 };
-#endif 
+#endif

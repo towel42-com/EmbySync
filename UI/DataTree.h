@@ -41,51 +41,51 @@ class CDataTree : public QWidget
 {
     Q_OBJECT
 public:
-    CDataTree(const std::shared_ptr< const CServerInfo >& serverInfo, QWidget* parent = nullptr);
+    CDataTree( const std::shared_ptr< const CServerInfo > &serverInfo, QWidget *parent = nullptr );
 
     virtual ~CDataTree() override;
 
-    void setModel(QAbstractItemModel* model);
-    QAbstractItemModel* model() const;
+    void setModel( QAbstractItemModel *model );
+    QAbstractItemModel *model() const;
 
-    void setServer(const std::shared_ptr< const CServerInfo >& serverInfo, bool hideColumns);
+    void setServer( const std::shared_ptr< const CServerInfo > &serverInfo, bool hideColumns );
     void hideColumns();
-    void sort(int column, Qt::SortOrder order); // if the user hasnt changed the sort, use column and order, otherwise use existing settings
+    void sort( int column, Qt::SortOrder order );   // if the user hasnt changed the sort, use column and order, otherwise use existing settings
 
-    void addPeerDataTree(CDataTree* peer);
+    void addPeerDataTree( CDataTree *peer );
     QModelIndex currentIndex() const;
-    QModelIndex indexAt(const QPoint& pt) const;
+    QModelIndex indexAt( const QPoint &pt ) const;
     void autoSize();
 
-    virtual bool eventFilter(QObject* obj, QEvent* event) override;
+    virtual bool eventFilter( QObject *obj, QEvent *event ) override;
 
     bool hasCurrentItem() const;
 
-    QTreeView* dataTree() const;
+    QTreeView *dataTree() const;
     std::shared_ptr< const CServerInfo > serverInfo() const { return fServerInfo; }
 Q_SIGNALS:
-    void sigCurrChanged(const QModelIndex& idx);
-    void sigViewData(const QModelIndex& idx);
-    void sigVSliderMoved(int position);
-    void sigHSliderMoved(int position);
-    void sigHScrollTo(int value, int max);
-    void sigDataContextMenuRequested(CDataTree* tree, const QPoint& pos);
+    void sigCurrChanged( const QModelIndex &idx );
+    void sigViewData( const QModelIndex &idx );
+    void sigVSliderMoved( int position );
+    void sigHSliderMoved( int position );
+    void sigHScrollTo( int value, int max );
+    void sigDataContextMenuRequested( CDataTree *tree, const QPoint &pos );
 private Q_SLOTS:
-    void slotSetCurrentMediaItem(const QModelIndex& idx);
-    void slotSetVSlider(int position);
-    void slotSetHSlider(int position);
-    void slotHScrollTo(int value, int max);
-    void slotUpdateHorizontalScroll(int);
-    void slotVActionTriggered(int action);
+    void slotSetCurrentMediaItem( const QModelIndex &idx );
+    void slotSetVSlider( int position );
+    void slotSetHSlider( int position );
+    void slotHScrollTo( int value, int max );
+    void slotUpdateHorizontalScroll( int );
+    void slotVActionTriggered( int action );
     void slotServerInfoChanged();
-    void slotContextMenuRequested(const QPoint& pos);
+    void slotContextMenuRequested( const QPoint &pos );
     void slotHeaderClicked();
 
 private:
     std::unique_ptr< Ui::CDataTree > fImpl;
-    std::vector< CDataTree* > fPeers;
+    std::vector< CDataTree * > fPeers;
 
     bool fUserSort{ false };
     std::shared_ptr< const CServerInfo > fServerInfo;
 };
-#endif 
+#endif

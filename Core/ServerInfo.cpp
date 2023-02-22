@@ -26,47 +26,41 @@
 #include <QJsonArray>
 #include <QPixmap>
 
-CServerInfo::CServerInfo(const QString& name, const QString& url, const QString& apiKey, bool enabled) :
-    fName({ name, false }),
-    fURL(url),
-    fAPIKey(apiKey),
-    fIsEnabled(enabled)
+CServerInfo::CServerInfo( const QString &name, const QString &url, const QString &apiKey, bool enabled ) :
+    fName( { name, false } ),
+    fURL( url ),
+    fAPIKey( apiKey ),
+    fIsEnabled( enabled )
 {
-
 }
 
-CServerInfo::CServerInfo(const QString& name) :
-    fName({ name, false })
+CServerInfo::CServerInfo( const QString &name ) :
+    fName( { name, false } )
 {
-
 }
 
-bool CServerInfo::operator==(const CServerInfo& rhs) const
+bool CServerInfo::operator==( const CServerInfo &rhs ) const
 {
-    return fName == rhs.fName
-        && fURL == rhs.fURL
-        && fAPIKey == rhs.fAPIKey
-        && fIsEnabled == rhs.fIsEnabled
-        ;
+    return fName == rhs.fName && fURL == rhs.fURL && fAPIKey == rhs.fAPIKey && fIsEnabled == rhs.fIsEnabled;
 }
 
-bool CServerInfo::setUrl(const QString& url)
+bool CServerInfo::setUrl( const QString &url )
 {
-    if (url == fURL)
+    if ( url == fURL )
         return false;
     fURL = url;
     return true;
 }
 
-QString CServerInfo::url(bool clean) const
+QString CServerInfo::url( bool clean ) const
 {
     auto retVal = fURL;
-    if (clean)
+    if ( clean )
     {
-        if (retVal.isEmpty())
+        if ( retVal.isEmpty() )
             return {};
 
-        if (retVal.indexOf("://") == -1)
+        if ( retVal.indexOf( "://" ) == -1 )
             retVal = "http://" + retVal;
     }
     return retVal;
@@ -74,95 +68,95 @@ QString CServerInfo::url(bool clean) const
 
 QUrl CServerInfo::getUrl() const
 {
-    return getUrl(QString(), std::list< std::pair< QString, QString > >());
+    return getUrl( QString(), std::list< std::pair< QString, QString > >() );
 }
 
-QUrl CServerInfo::getUrl(const QString& extraPath, const std::list< std::pair< QString, QString > >& queryItems) const
+QUrl CServerInfo::getUrl( const QString &extraPath, const std::list< std::pair< QString, QString > > &queryItems ) const
 {
-    if (extraPath.isEmpty() && queryItems.empty())
+    if ( extraPath.isEmpty() && queryItems.empty() )
     {
-        if (fDefaultURL.has_value())
+        if ( fDefaultURL.has_value() )
             return fDefaultURL.value();
-        auto path = url(true);
-        fDefaultURL = QUrl(path);
+        auto path = url( true );
+        fDefaultURL = QUrl( path );
         return fDefaultURL.value();
     }
-    auto path = url(true);
+    auto path = url( true );
 
-    if (!extraPath.isEmpty())
+    if ( !extraPath.isEmpty() )
     {
-        if (!path.endsWith("/"))
+        if ( !path.endsWith( "/" ) )
             path += "/";
         path += extraPath;
     }
 
-    auto retVal = QUrl(path);
+    auto retVal = QUrl( path );
 
     QUrlQuery query;
-    for (auto&& ii : queryItems)
+    for ( auto &&ii : queryItems )
     {
-        query.addQueryItem(ii.first, ii.second);
+        query.addQueryItem( ii.first, ii.second );
     }
-    query.addQueryItem("api_key", fAPIKey);
-    retVal.setQuery(query);
+    query.addQueryItem( "api_key", fAPIKey );
+    retVal.setQuery( query );
 
-    //qDebug() << retVal;
+    // qDebug() << retVal;
 
     return retVal;
 }
 
-QString CServerInfo::displayName(bool verbose) const
+QString CServerInfo::displayName( bool verbose ) const
 {
     QString name;
 
-    if (!fServerName.isEmpty())
+    if ( !fServerName.isEmpty() )
         name = fServerName;
-    else if (!fName.first.isEmpty())
+    else if ( !fName.first.isEmpty() )
         name = fName.first;
     else
         name = keyName();
-    if (!verbose)
+    if ( !verbose )
         return name;
-    name += tr(" - %1").arg(getUrl().toString(QUrl::RemoveUserInfo | QUrl::RemoveQuery));
+    name += tr( " - %1" ).arg( getUrl().toString( QUrl::RemoveUserInfo | QUrl::RemoveQuery ) );
     return name;
 }
 
 QString CServerInfo::keyName() const
 {
-    if (fKeyName.isEmpty())
-        fKeyName = getUrl().toString(QUrl::RemoveUserInfo | QUrl::RemoveQuery);
+    if ( fKeyName.isEmpty() )
+        fKeyName = getUrl().toString( QUrl::RemoveUserInfo | QUrl::RemoveQuery );
     return fKeyName;
 }
 
-bool CServerInfo::isServer(const QString& serverName) const
+bool CServerInfo::isServer( const QString &serverName ) const
 {
-    if (keyName() == serverName)
+    if ( keyName() == serverName )
         return true;
-    if (displayName(false) == serverName)
+    if ( displayName( false ) == serverName )
         return true;
-    if (displayName(true) == serverName)
+    if ( displayName( true ) == serverName )
         return true;
-    if (!fServerName.isEmpty() && (fServerName == serverName))
+    if ( !fServerName.isEmpty() && ( fServerName == serverName ) )
         return true;
-    if (!fName.first.isEmpty() && (fName.first == serverName))
+    if ( !fName.first.isEmpty() && ( fName.first == serverName ) )
         return true;
-    if (getUrl().host() == serverName)
+    if ( getUrl().host() == serverName )
         return true;
     return false;
 }
 
-void CServerInfo::autoSetDisplayName(bool usePort)
+void CServerInfo::autoSetDisplayName( bool usePort )
 {
     auto url = getUrl();
     QString retVal = url.host();
-    if (usePort)
-        retVal += QString::number(url.port());
-    setDisplayName(retVal, true);
+    if ( usePort )
+        retVal += QString::number( url.port() );
+    setDisplayName( retVal, true );
 }
 
-bool CServerInfo::setDisplayName(const QString& name, bool generated)
+bool CServerInfo::setDisplayName( const QString &name, bool generated )
 {
-    if ((name == fName.first) && (generated == fName.second))
+    if ( ( name == fName.first ) && ( generated == fName.second ) )
         return false;
     fName = { name, generated };
     return true;
@@ -173,9 +167,9 @@ bool CServerInfo::canSync() const
     return getUrl().isValid() && !fAPIKey.isEmpty();
 }
 
-bool CServerInfo::setAPIKey(const QString& key)
+bool CServerInfo::setAPIKey( const QString &key )
 {
-    if (key != fAPIKey)
+    if ( key != fAPIKey )
         return false;
     fAPIKey = key;
     return true;
@@ -185,88 +179,87 @@ QJsonObject CServerInfo::toJson() const
 {
     QJsonObject retVal;
 
-    retVal["url"] = fURL;
-    retVal["api_key"] = fAPIKey;
-    if (!fName.second)
-        retVal["name"] = fName.first;
-    retVal["enabled"] = fIsEnabled;
+    retVal[ "url" ] = fURL;
+    retVal[ "api_key" ] = fAPIKey;
+    if ( !fName.second )
+        retVal[ "name" ] = fName.first;
+    retVal[ "enabled" ] = fIsEnabled;
     return retVal;
 }
 
-std::shared_ptr< CServerInfo > CServerInfo::fromJson(const QJsonObject& obj, QString& errorMsg)
+std::shared_ptr< CServerInfo > CServerInfo::fromJson( const QJsonObject &obj, QString &errorMsg )
 {
-    bool generated = !obj.contains("name") || obj["name"].toString().isEmpty();
+    bool generated = !obj.contains( "name" ) || obj[ "name" ].toString().isEmpty();
     QString serverName;
-    if (generated)
-        serverName = obj["url"].toString();
+    if ( generated )
+        serverName = obj[ "url" ].toString();
     else
-        serverName = obj["name"].toString();
+        serverName = obj[ "name" ].toString();
 
-    if (serverName.isEmpty())
+    if ( serverName.isEmpty() )
     {
-        errorMsg = QString("Missing name and url");
+        errorMsg = QString( "Missing name and url" );
         return false;
     }
 
-    if (!obj.contains("url"))
+    if ( !obj.contains( "url" ) )
     {
-        errorMsg = QString("Missing url");
+        errorMsg = QString( "Missing url" );
         return false;
     }
 
-    if (!obj.contains("api_key"))
+    if ( !obj.contains( "api_key" ) )
     {
-        errorMsg = QString("Missing api_key");
+        errorMsg = QString( "Missing api_key" );
         return false;
     }
     bool enabled = true;
-    if (obj.contains("enabled"))
-        enabled = obj["enabled"].toBool();
+    if ( obj.contains( "enabled" ) )
+        enabled = obj[ "enabled" ].toBool();
 
-    auto retVal = std::make_shared< CServerInfo >(serverName, obj["url"].toString(), obj["api_key"].toString(), enabled);
+    auto retVal = std::make_shared< CServerInfo >( serverName, obj[ "url" ].toString(), obj[ "api_key" ].toString(), enabled );
     retVal->fName.second = generated;
 
     return retVal;
 }
 
-bool CServerInfo::setIsEnabled(bool isEnabled)
+bool CServerInfo::setIsEnabled( bool isEnabled )
 {
-    if (fIsEnabled == isEnabled)
+    if ( fIsEnabled == isEnabled )
         return false;
     fIsEnabled = isEnabled;
     return true;
 }
 
-void CServerInfo::update(const QJsonObject& serverData)
+void CServerInfo::update( const QJsonObject &serverData )
 {
-    fLocalAddress = serverData["LocalAddress"].toString();
-    auto addresses = serverData["LocalAddresses"].toArray();
-    for (auto&& ii : addresses)
-        fLocalAddresses.push_back(ii.toString());
-    fWANAddress = serverData["WANAddress"].toString();
-    addresses = serverData["WANAddresses"].toArray();
-    for (auto&& ii : addresses)
-        fWANAddresses.push_back(ii.toString());
+    fLocalAddress = serverData[ "LocalAddress" ].toString();
+    auto addresses = serverData[ "LocalAddresses" ].toArray();
+    for ( auto &&ii : addresses )
+        fLocalAddresses.push_back( ii.toString() );
+    fWANAddress = serverData[ "WANAddress" ].toString();
+    addresses = serverData[ "WANAddresses" ].toArray();
+    for ( auto &&ii : addresses )
+        fWANAddresses.push_back( ii.toString() );
 
-    fServerName = serverData["ServerName"].toString();
-    fVersion = serverData["Version"].toString();
-    fID = serverData["Id"].toString();
+    fServerName = serverData[ "ServerName" ].toString();
+    fVersion = serverData[ "Version" ].toString();
+    fID = serverData[ "Id" ].toString();
 
     emit sigServerInfoChanged();
 }
 
-void CServerInfo::setIcon(const QByteArray& data, const QString& type)
+void CServerInfo::setIcon( const QByteArray &data, const QString &type )
 {
     (void)type;
     QPixmap pm;
-    pm.loadFromData(data);
-    if (pm.isNull())
+    pm.loadFromData( data );
+    if ( pm.isNull() )
     {
-        //qDebug() << data << type;
+        // qDebug() << data << type;
         return;
     }
 
-    fIcon = QIcon(pm);
+    fIcon = QIcon( pm );
     emit sigServerInfoChanged();
 }
-

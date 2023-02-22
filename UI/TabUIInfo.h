@@ -38,20 +38,20 @@ class CTabUIInfo
 {
 public:
     void clear();
-    void cleanupUI(QMainWindow* mainWindow);
-    void setupUI(QMainWindow* mainWindow, QMenu* inserBeforeMenu);
+    void cleanupUI( QMainWindow *mainWindow );
+    void setupUI( QMainWindow *mainWindow, QMenu *inserBeforeMenu );
 
-    QAction* findInsertBefore(QWidget* container, bool insertBefore);
+    QAction *findInsertBefore( QWidget *container, bool insertBefore );
 
-    QMenu* findMenu(QMainWindow* mainWindow, const QString& text);
-    QToolBar* findToolBar(QMainWindow* mainWindow, const QString& text);
+    QMenu *findMenu( QMainWindow *mainWindow, const QString &text );
+    QToolBar *findToolBar( QMainWindow *mainWindow, const QString &text );
 
-    void removeFromContainer(QWidget* container, const std::pair< bool, QList< QPointer< QAction > > >& ii);
-    void addToContainer(QWidget* container, const std::pair< bool, QList< QPointer< QAction > > >& ii);
+    void removeFromContainer( QWidget *container, const std::pair< bool, QList< QPointer< QAction > > > &ii );
+    void addToContainer( QWidget *container, const std::pair< bool, QList< QPointer< QAction > > > &ii );
 
     QList< QPointer< QMenu > > fMenus;
-    QList< QPointer< QToolBar > > fToolBars; // do not include Reload actions on the tool bar, they are added to the main windows own toolbar
-    std::map< QString, std::pair< bool, QList< QPointer< QAction > > > > fActions;  // if there is a toolbar that matches the menu name, add the actiosn there as well
+    QList< QPointer< QToolBar > > fToolBars;   // do not include Reload actions on the tool bar, they are added to the main windows own toolbar
+    std::map< QString, std::pair< bool, QList< QPointer< QAction > > > > fActions;   // if there is a toolbar that matches the menu name, add the actiosn there as well
 private:
     QList< QPointer< QMenu > > fCreatedMenus;
 };

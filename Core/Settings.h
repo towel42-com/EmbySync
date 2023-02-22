@@ -47,177 +47,118 @@ namespace Ui
 class CSettings
 {
 public:
-    CSettings(std::shared_ptr< CServerModel > serverModel);
-    CSettings(bool saveOnDelete, std::shared_ptr< CServerModel > serverModel);
+    CSettings( std::shared_ptr< CServerModel > serverModel );
+    CSettings( bool saveOnDelete, std::shared_ptr< CServerModel > serverModel );
     virtual ~CSettings();
 
     // global settings store in the registry
     static bool checkForLatest();
-    static void setCheckForLatest(bool value);
+    static void setCheckForLatest( bool value );
 
     static bool loadLastProject();
-    static void setLoadLastProject(bool value);
+    static void setLoadLastProject( bool value );
 
     // settings stored in the json settings file
-    QString fileName() const
-    {
-        return fFileName;
-    }
+    QString fileName() const { return fFileName; }
 
-    bool load(bool addToRecentFileList, QWidget* parent);
-    bool load(const QString& fileName, bool addToRecentFileList, QWidget* parent);
-    bool load(const QString& fileName, std::function<void(const QString& title, const QString& msg)> errorFunc, bool addToRecentFileList);
+    bool load( bool addToRecentFileList, QWidget *parent );
+    bool load( const QString &fileName, bool addToRecentFileList, QWidget *parent );
+    bool load( const QString &fileName, std::function< void( const QString &title, const QString &msg ) > errorFunc, bool addToRecentFileList );
 
     bool save();
 
-    bool save(QWidget* parent);
-    bool saveAs(QWidget* parent);
-    bool maybeSave(QWidget* parent);
-    bool save(QWidget* parent, std::function<QString()> selectFileFunc, std::function<void(const QString& title, const QString& msg)> errorFunc);
-    bool save(std::function<void(const QString& title, const QString& msg)> errorFunc);
+    bool save( QWidget *parent );
+    bool saveAs( QWidget *parent );
+    bool maybeSave( QWidget *parent );
+    bool save( QWidget *parent, std::function< QString() > selectFileFunc, std::function< void( const QString &title, const QString &msg ) > errorFunc );
+    bool save( std::function< void( const QString &title, const QString &msg ) > errorFunc );
 
-    bool changed() const
-    {
-        return fChanged;
-    }
+    bool changed() const { return fChanged; }
     void reset();
 
     // other settings
-    QColor mediaSourceColor(bool forBackground = true) const;
-    void setMediaSourceColor(const QColor& color);
+    QColor mediaSourceColor( bool forBackground = true ) const;
+    void setMediaSourceColor( const QColor &color );
 
-    QColor mediaDestColor(bool forBackground = true) const;
-    void setMediaDestColor(const QColor& color);
+    QColor mediaDestColor( bool forBackground = true ) const;
+    void setMediaDestColor( const QColor &color );
 
-    QColor dataMissingColor(bool forBackground = true) const;
-    void setDataMissingColor(const QColor& color);
+    QColor dataMissingColor( bool forBackground = true ) const;
+    void setDataMissingColor( const QColor &color );
 
-    int maxItems() const
-    {
-        return fMaxItems;
-    }
-    void setMaxItems(int maxItems);
+    int maxItems() const { return fMaxItems; }
+    void setMaxItems( int maxItems );
 
-    bool syncAudio() const
-    {
-        return fSyncAudio;
-    }
-    void setSyncAudio(bool value);
+    bool syncAudio() const { return fSyncAudio; }
+    void setSyncAudio( bool value );
 
-    bool syncVideo() const
-    {
-        return fSyncVideo;
-    }
-    void setSyncVideo(bool value);
+    bool syncVideo() const { return fSyncVideo; }
+    void setSyncVideo( bool value );
 
-    bool syncEpisode() const
-    {
-        return fSyncEpisode;
-    }
-    void setSyncEpisode(bool value);
+    bool syncEpisode() const { return fSyncEpisode; }
+    void setSyncEpisode( bool value );
 
-    bool syncMovie() const
-    {
-        return fSyncMovie;
-    }
-    void setSyncMovie(bool value);
+    bool syncMovie() const { return fSyncMovie; }
+    void setSyncMovie( bool value );
 
-    bool syncTrailer() const
-    {
-        return fSyncTrailer;
-    }
-    void setSyncTrailer(bool value);
+    bool syncTrailer() const { return fSyncTrailer; }
+    void setSyncTrailer( bool value );
 
-    bool syncAdultVideo() const
-    {
-        return fSyncAdultVideo;
-    }
-    void setSyncAdultVideo(bool value);
+    bool syncAdultVideo() const { return fSyncAdultVideo; }
+    void setSyncAdultVideo( bool value );
 
-    bool syncMusicVideo() const
-    {
-        return fSyncMusicVideo;
-    }
-    void setSyncMusicVideo(bool value);
+    bool syncMusicVideo() const { return fSyncMusicVideo; }
+    void setSyncMusicVideo( bool value );
 
-    bool syncGame() const
-    {
-        return fSyncGame;
-    }
-    void setSyncGame(bool value);
+    bool syncGame() const { return fSyncGame; }
+    void setSyncGame( bool value );
 
-    bool syncBook() const
-    {
-        return fSyncBook;
-    }
-    void setSyncBook(bool value);
+    bool syncBook() const { return fSyncBook; }
+    void setSyncBook( bool value );
 
     QString getSyncItemTypes() const;
-    bool onlyShowSyncableUsers()
-    {
-        return fOnlyShowSyncableUsers;
-    };
-    void setOnlyShowSyncableUsers(bool value);
+    bool onlyShowSyncableUsers() { return fOnlyShowSyncableUsers; };
+    void setOnlyShowSyncableUsers( bool value );
 
-    bool onlyShowMediaWithDifferences()
-    {
-        return fOnlyShowMediaWithDifferences;
-    };
-    void setOnlyShowMediaWithDifferences(bool value);
+    bool onlyShowMediaWithDifferences() { return fOnlyShowMediaWithDifferences; };
+    void setOnlyShowMediaWithDifferences( bool value );
 
-    bool showMediaWithIssues()
-    {
-        return fShowMediaWithIssues;
-    };
-    void setShowMediaWithIssues(bool value);
+    bool showMediaWithIssues() { return fShowMediaWithIssues; };
+    void setShowMediaWithIssues( bool value );
 
-    bool onlyShowUsersWithDifferences()
-    {
-        return fOnlyShowUsersWithDifferences;
-    };
-    void setOnlyShowUsersWithDifferences(bool value);
+    bool onlyShowUsersWithDifferences() { return fOnlyShowUsersWithDifferences; };
+    void setOnlyShowUsersWithDifferences( bool value );
 
-    bool showUsersWithIssues()
-    {
-        return fShowUsersWithIssues;
-    };
-    void setShowUsersWithIssues(bool value);
+    bool showUsersWithIssues() { return fShowUsersWithIssues; };
+    void setShowUsersWithIssues( bool value );
 
-    bool onlyShowEnabledServers()
-    {
-        return fOnlyShowEnabledServers;
-    };
-    void setOnlyShowEnabledServers(bool value);
+    bool onlyShowEnabledServers() { return fOnlyShowEnabledServers; };
+    void setOnlyShowEnabledServers( bool value );
 
-    QStringList syncUserList() const
-    {
-        return fSyncUserList;
-    }
-    void setSyncUserList(const QStringList& value);
+    QStringList syncUserList() const { return fSyncUserList; }
+    void setSyncUserList( const QStringList &value );
 
-    std::set< QString > ignoreShowList() const
-    {
-        return fIgnoreShowList;
-    }
+    std::set< QString > ignoreShowList() const { return fIgnoreShowList; }
     QRegularExpression ignoreShowRegEx() const;
 
-    void setIgnoreShowList(const QStringList& value);
+    void setIgnoreShowList( const QStringList &value );
 
-    void addRecentProject(const QString& fileName);
+    void addRecentProject( const QString &fileName );
     QStringList recentProjectList() const;
 
-    void setPrimaryServer(const QString& serverName);
+    void setPrimaryServer( const QString &serverName );
     QString primaryServer() const;
-private:
-    QVariant getValue(const QJsonObject& data, const QString& fieldName, const QVariant& defaultValue) const;
 
-    QColor getColor(const QColor& clr, bool forBackground /*= true */) const;
-    bool maybeSave(QWidget* parent, std::function<QString()> selectFileFunc, std::function<void(const QString& title, const QString& msg)> errorFunc);
+private:
+    QVariant getValue( const QJsonObject &data, const QString &fieldName, const QVariant &defaultValue ) const;
+
+    QColor getColor( const QColor &clr, bool forBackground /*= true */ ) const;
+    bool maybeSave( QWidget *parent, std::function< QString() > selectFileFunc, std::function< void( const QString &title, const QString &msg ) > errorFunc );
 
     template< typename T >
-    void updateValue(T& lhs, const T& rhs)
+    void updateValue( T &lhs, const T &rhs )
     {
-        if (lhs != rhs)
+        if ( lhs != rhs )
         {
             lhs = rhs;
             fChanged = true;
@@ -261,4 +202,4 @@ private:
     bool fSaveOnDelete{ true };
 };
 
-#endif 
+#endif

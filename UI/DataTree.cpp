@@ -31,65 +31,64 @@
 #include <QScrollBar>
 #include <QHeaderView>
 
-CDataTree::CDataTree(const std::shared_ptr< const CServerInfo >& serverInfo, QWidget* parentWidget)
-    : QWidget(parentWidget),
-    fImpl(new Ui::CDataTree)
+CDataTree::CDataTree( const std::shared_ptr< const CServerInfo > &serverInfo, QWidget *parentWidget ) :
+    QWidget( parentWidget ),
+    fImpl( new Ui::CDataTree )
 {
-    fImpl->setupUi(this);
-    fImpl->data->setExpandsOnDoubleClick(false);
-    installEventFilter(this);
-    fImpl->data->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
-    connect(fImpl->data, &QTreeView::customContextMenuRequested, this, &CDataTree::slotContextMenuRequested);
-    connect(fImpl->data->header(), &QHeaderView::sectionClicked, this, &CDataTree::slotHeaderClicked);
-    setServer(serverInfo, false);
+    fImpl->setupUi( this );
+    fImpl->data->setExpandsOnDoubleClick( false );
+    installEventFilter( this );
+    fImpl->data->setContextMenuPolicy( Qt::ContextMenuPolicy::CustomContextMenu );
+    connect( fImpl->data, &QTreeView::customContextMenuRequested, this, &CDataTree::slotContextMenuRequested );
+    connect( fImpl->data->header(), &QHeaderView::sectionClicked, this, &CDataTree::slotHeaderClicked );
+    setServer( serverInfo, false );
 }
 
 CDataTree::~CDataTree()
 {
 }
 
-void CDataTree::setModel(QAbstractItemModel* model)
+void CDataTree::setModel( QAbstractItemModel *model )
 {
-    fImpl->data->setModel(model);
+    fImpl->data->setModel( model );
 
-    connect(fImpl->data->verticalScrollBar(), &QScrollBar::sliderMoved, this, &CDataTree::sigVSliderMoved);
-    connect(fImpl->data->verticalScrollBar(), &QScrollBar::actionTriggered, this, &CDataTree::slotVActionTriggered);
-    connect(fImpl->data->horizontalScrollBar(), &QScrollBar::sliderMoved, this, &CDataTree::slotUpdateHorizontalScroll);
-    connect(fImpl->data->horizontalScrollBar(), &QScrollBar::actionTriggered, this, &CDataTree::slotUpdateHorizontalScroll);
-    connect(fImpl->data->selectionModel(), &QItemSelectionModel::currentChanged, this, &CDataTree::sigCurrChanged);
-    connect(fImpl->data, &QTreeView::doubleClicked, this, &CDataTree::sigViewData);
+    connect( fImpl->data->verticalScrollBar(), &QScrollBar::sliderMoved, this, &CDataTree::sigVSliderMoved );
+    connect( fImpl->data->verticalScrollBar(), &QScrollBar::actionTriggered, this, &CDataTree::slotVActionTriggered );
+    connect( fImpl->data->horizontalScrollBar(), &QScrollBar::sliderMoved, this, &CDataTree::slotUpdateHorizontalScroll );
+    connect( fImpl->data->horizontalScrollBar(), &QScrollBar::actionTriggered, this, &CDataTree::slotUpdateHorizontalScroll );
+    connect( fImpl->data->selectionModel(), &QItemSelectionModel::currentChanged, this, &CDataTree::sigCurrChanged );
+    connect( fImpl->data, &QTreeView::doubleClicked, this, &CDataTree::sigViewData );
 }
 
-QAbstractItemModel* CDataTree::model() const
+QAbstractItemModel *CDataTree::model() const
 {
     return fImpl->data->model();
 }
 
-void CDataTree::setServer(const std::shared_ptr< const CServerInfo >& serverInfo, bool hideColumns)
+void CDataTree::setServer( const std::shared_ptr< const CServerInfo > &serverInfo, bool hideColumns )
 {
-    if (fServerInfo)
-        disconnect(fServerInfo.get(), &CServerInfo::sigServerInfoChanged, this, &CDataTree::slotServerInfoChanged);
+    if ( fServerInfo )
+        disconnect( fServerInfo.get(), &CServerInfo::sigServerInfoChanged, this, &CDataTree::slotServerInfoChanged );
 
     fServerInfo = serverInfo;
-    if (fServerInfo)
-        connect(fServerInfo.get(), &CServerInfo::sigServerInfoChanged, this, &CDataTree::slotServerInfoChanged);
+    if ( fServerInfo )
+        connect( fServerInfo.get(), &CServerInfo::sigServerInfoChanged, this, &CDataTree::slotServerInfoChanged );
     slotServerInfoChanged();
-    if (hideColumns)
+    if ( hideColumns )
         this->hideColumns();
 }
 
-void CDataTree::addPeerDataTree(CDataTree* peer)
+void CDataTree::addPeerDataTree( CDataTree *peer )
 {
-    fPeers.push_back(peer);
-    connect(this, &CDataTree::sigCurrChanged, peer, &CDataTree::slotSetCurrentMediaItem);
+    fPeers.push_back( peer );
+    connect( this, &CDataTree::sigCurrChanged, peer, &CDataTree::slotSetCurrentMediaItem );
 
-    connect(this, &CDataTree::sigVSliderMoved, peer, &CDataTree::slotSetVSlider);
-    connect(peer, &CDataTree::sigVSliderMoved, this, &CDataTree::slotSetVSlider);
+    connect( this, &CDataTree::sigVSliderMoved, peer, &CDataTree::slotSetVSlider );
+    connect( peer, &CDataTree::sigVSliderMoved, this, &CDataTree::slotSetVSlider );
 
-
-    connect(this, &CDataTree::sigHScrollTo, peer, &CDataTree::slotHScrollTo);
-    connect(this, &CDataTree::sigHSliderMoved, peer, &CDataTree::slotSetHSlider);
-    connect(peer, &CDataTree::sigHSliderMoved, this, &CDataTree::slotSetHSlider);
+    connect( this, &CDataTree::sigHScrollTo, peer, &CDataTree::slotHScrollTo );
+    connect( this, &CDataTree::sigHSliderMoved, peer, &CDataTree::slotSetHSlider );
+    connect( peer, &CDataTree::sigHSliderMoved, this, &CDataTree::slotSetHSlider );
 }
 
 QModelIndex CDataTree::currentIndex() const
@@ -97,126 +96,127 @@ QModelIndex CDataTree::currentIndex() const
     return fImpl->data->selectionModel()->currentIndex();
 }
 
-QModelIndex CDataTree::indexAt(const QPoint& pt) const
+QModelIndex CDataTree::indexAt( const QPoint &pt ) const
 {
-    return fImpl->data->indexAt(pt);
+    return fImpl->data->indexAt( pt );
 }
 
 void CDataTree::autoSize()
 {
-    NSABUtils::autoSize(fImpl->data);
+    NSABUtils::autoSize( fImpl->data );
 }
 
-void CDataTree::slotSetCurrentMediaItem(const QModelIndex& idx)
+void CDataTree::slotSetCurrentMediaItem( const QModelIndex &idx )
 {
-    fImpl->data->setCurrentIndex(idx);
+    fImpl->data->setCurrentIndex( idx );
 }
 
-void CDataTree::slotSetVSlider(int position)
+void CDataTree::slotSetVSlider( int position )
 {
-    fImpl->data->verticalScrollBar()->setValue(position);
+    fImpl->data->verticalScrollBar()->setValue( position );
 }
 
-void CDataTree::slotSetHSlider(int position)
+void CDataTree::slotSetHSlider( int position )
 {
-    fImpl->data->horizontalScrollBar()->setValue(position);
+    fImpl->data->horizontalScrollBar()->setValue( position );
 }
 
-void CDataTree::slotHScrollTo(int value, int max)
+void CDataTree::slotHScrollTo( int value, int max )
 {
-    if (max > 0)
+    if ( max > 0 )
     {
         auto newPos = fImpl->data->horizontalScrollBar()->maximum() * value / max;
-        fImpl->data->horizontalScrollBar()->setValue(newPos);
+        fImpl->data->horizontalScrollBar()->setValue( newPos );
     }
 }
 
-void CDataTree::slotUpdateHorizontalScroll(int /*action*/)
+void CDataTree::slotUpdateHorizontalScroll( int /*action*/ )
 {
     auto value = fImpl->data->horizontalScrollBar()->value();
     auto max = fImpl->data->horizontalScrollBar()->maximum();
-    emit sigHScrollTo(value, max);
+    emit sigHScrollTo( value, max );
 }
 
-void CDataTree::slotVActionTriggered(int action)
+void CDataTree::slotVActionTriggered( int action )
 {
-    if (action == QAbstractSlider::SliderMove)
+    if ( action == QAbstractSlider::SliderMove )
     {
-        emit sigVSliderMoved(fImpl->data->verticalScrollBar()->value());
+        emit sigVSliderMoved( fImpl->data->verticalScrollBar()->value() );
     }
 }
 
 void CDataTree::slotServerInfoChanged()
 {
-    if (!fServerInfo)
+    if ( !fServerInfo )
     {
-        fImpl->serverLabel->setText(tr("Server:"));
+        fImpl->serverLabel->setText( tr( "Server:" ) );
         return;
     }
 
-    fImpl->serverImage->setHidden(fServerInfo->icon().isNull());
-    fImpl->serverImage->setPixmap(fServerInfo->icon().pixmap(fImpl->serverLabel->height()));
-    fImpl->serverLabel->setText(tr("Server: <a href=\"%1\">%2</a>").arg(fServerInfo->getUrl().toString(QUrl::RemoveQuery)).arg(fServerInfo->displayName(true)));
+    fImpl->serverImage->setHidden( fServerInfo->icon().isNull() );
+    fImpl->serverImage->setPixmap( fServerInfo->icon().pixmap( fImpl->serverLabel->height() ) );
+    fImpl->serverLabel->setText( tr( "Server: <a href=\"%1\">%2</a>" ).arg( fServerInfo->getUrl().toString( QUrl::RemoveQuery ) ).arg( fServerInfo->displayName( true ) ) );
 }
 
 void CDataTree::hideColumns()
 {
     auto model = fImpl->data->model();
-    if (!model /*|| ( model->rowCount() == 0 )*/)
+    if ( !model /*|| ( model->rowCount() == 0 )*/ )
         return;
 
-    if (!fServerInfo)
+    if ( !fServerInfo )
         return;
 
-    auto proxyModel = dynamic_cast<QAbstractProxyModel*>(model);
-    if (proxyModel)
+    auto proxyModel = dynamic_cast< QAbstractProxyModel * >( model );
+    if ( proxyModel )
         model = proxyModel->sourceModel();
 
-    if (!model)
+    if ( !model )
         return;
 
-    auto serverModel = dynamic_cast<IServerForColumn*>(model);
-    if (!serverModel)
+    auto serverModel = dynamic_cast< IServerForColumn * >( model );
+    if ( !serverModel )
         return;
 
     auto numColumns = model->columnCount();
-    for (int ii = 0; ii < numColumns; ++ii)
+    for ( int ii = 0; ii < numColumns; ++ii )
     {
-        auto server = serverModel->serverForColumn(ii);
-        bool hide = (server != "<ALL>") && server != fServerInfo->keyName();
-        fImpl->data->setColumnHidden(ii, hide);
+        auto server = serverModel->serverForColumn( ii );
+        bool hide = ( server != "<ALL>" ) && server != fServerInfo->keyName();
+        fImpl->data->setColumnHidden( ii, hide );
     }
 }
 
-void CDataTree::sort(int defColumn, Qt::SortOrder defOrder)
+void CDataTree::sort( int defColumn, Qt::SortOrder defOrder )
 {
     int column = defColumn;
     auto order = defOrder;
-    if (fUserSort)
+    if ( fUserSort )
     {
-        column = fImpl->data->header()->sortIndicatorSection();;
+        column = fImpl->data->header()->sortIndicatorSection();
+        ;
         order = fImpl->data->header()->sortIndicatorOrder();
     }
 
-    fImpl->data->sortByColumn(column, order);
+    fImpl->data->sortByColumn( column, order );
 }
 
-bool CDataTree::eventFilter(QObject* obj, QEvent* event)
+bool CDataTree::eventFilter( QObject *obj, QEvent *event )
 {
-    if (obj == fImpl->data->horizontalScrollBar())
+    if ( obj == fImpl->data->horizontalScrollBar() )
     {
-        if (event->type() == QEvent::Show)
+        if ( event->type() == QEvent::Show )
         {
-            for (auto&& ii : fPeers)
-                ii->fImpl->data->horizontalScrollBar()->setVisible(true);
+            for ( auto &&ii : fPeers )
+                ii->fImpl->data->horizontalScrollBar()->setVisible( true );
         }
-        else if (event->type() == QEvent::Hide)
+        else if ( event->type() == QEvent::Hide )
         {
-            for (auto&& ii : fPeers)
-                ii->fImpl->data->horizontalScrollBar()->setHidden(true);
+            for ( auto &&ii : fPeers )
+                ii->fImpl->data->horizontalScrollBar()->setHidden( true );
         }
     }
-    return QWidget::eventFilter(obj, event);
+    return QWidget::eventFilter( obj, event );
 }
 
 bool CDataTree::hasCurrentItem() const
@@ -224,14 +224,14 @@ bool CDataTree::hasCurrentItem() const
     return currentIndex().isValid();
 }
 
-QTreeView* CDataTree::dataTree() const
+QTreeView *CDataTree::dataTree() const
 {
     return fImpl->data;
 }
 
-void CDataTree::slotContextMenuRequested(const QPoint& pos)
+void CDataTree::slotContextMenuRequested( const QPoint &pos )
 {
-    emit sigDataContextMenuRequested(this, pos);
+    emit sigDataContextMenuRequested( this, pos );
 }
 
 void CDataTree::slotHeaderClicked()

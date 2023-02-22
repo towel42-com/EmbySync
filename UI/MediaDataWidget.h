@@ -37,32 +37,32 @@ class CMediaDataWidget : public QGroupBox
 {
     Q_OBJECT
 public:
-    CMediaDataWidget(QWidget* parentWidget = nullptr);
-    CMediaDataWidget(const QString& title, QWidget* parentWidget = nullptr);
-    CMediaDataWidget(std::shared_ptr< SMediaServerData > mediaData, QWidget* parentWidget = nullptr);
+    CMediaDataWidget( QWidget *parentWidget = nullptr );
+    CMediaDataWidget( const QString &title, QWidget *parentWidget = nullptr );
+    CMediaDataWidget( std::shared_ptr< SMediaServerData > mediaData, QWidget *parentWidget = nullptr );
 
     virtual ~CMediaDataWidget() override;
 
-    void setMediaUserData(std::shared_ptr< SMediaServerData > mediaData);
-    void applyMediaUserData(std::shared_ptr< SMediaServerData > mediaData);  // mediaData is not owned, mediaID is NOT changed
+    void setMediaUserData( std::shared_ptr< SMediaServerData > mediaData );
+    void applyMediaUserData( std::shared_ptr< SMediaServerData > mediaData );   // mediaData is not owned, mediaID is NOT changed
 
-    void setServerName(const QString& serverName) { fServerName = serverName; }
+    void setServerName( const QString &serverName ) { fServerName = serverName; }
     QString serverName() const { return fServerName; }
 
-    std::shared_ptr< SMediaServerData > createMediaUserData() const; // creates a new user data based on current settings
+    std::shared_ptr< SMediaServerData > createMediaUserData() const;   // creates a new user data based on current settings
 
 public Q_SLOTS:
     void slotApplyFromServer();
     void slotProcessToServer();
 Q_SIGNALS:
-    void sigApplyFromServer(CMediaDataWidget* which);
-    void sigProcessToServer(CMediaDataWidget* which);
+    void sigApplyFromServer( CMediaDataWidget *which );
+    void sigProcessToServer( CMediaDataWidget *which );
 
 private:
-    void load(std::shared_ptr< SMediaServerData > mediaData);
+    void load( std::shared_ptr< SMediaServerData > mediaData );
 
     std::unique_ptr< Ui::CMediaDataWidget > fImpl;
     std::shared_ptr< SMediaServerData > fMediaUserData;
     QString fServerName;
 };
-#endif 
+#endif
