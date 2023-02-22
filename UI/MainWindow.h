@@ -39,6 +39,7 @@ class CSyncSystem;
 class CUsersFilterModel;
 class CTabPageBase;
 class CMediaModel;
+class CCollectionsModel;
 class CTabUIInfo;
 class CServerModel;
 
@@ -116,6 +117,8 @@ private:
     std::shared_ptr< CSyncSystem > fSyncSystem;
     std::shared_ptr< CUsersModel > fUsersModel;
     std::shared_ptr< CMediaModel > fMediaModel;
+    std::shared_ptr< CCollectionsModel > fCollectionsModel;
+
     std::shared_ptr< CServerModel > fServerModel;
     std::shared_ptr< CProgressSystem > fProgressSystem;
 

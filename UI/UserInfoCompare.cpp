@@ -66,9 +66,9 @@ CUserInfoCompare::CUserInfoCompare( QWidget * parent )
     connect( this, &CTabPageBase::sigViewData, this, &CUserInfoCompare::slotViewUser );
 }
 
-void CUserInfoCompare::setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem )
+void CUserInfoCompare::setupPage(std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem)
 {
-    CTabPageBase::setupPage( settings, syncSystem, mediaModel, userModel, serverModel, progressSystem );
+    CTabPageBase::setupPage(settings, syncSystem, mediaModel, collectionsModel, userModel, serverModel, progressSystem);
 
     fUsersFilterModel = new CUsersFilterModel( false, fUsersModel.get() );
     fUsersFilterModel->setSourceModel( fUsersModel.get() );

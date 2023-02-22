@@ -3,7 +3,7 @@ set(USE_QT TRUE)
 set(FOLDER_NAME Libs)
 
 set(qtproject_SRCS
-    CreateCollections.cpp
+    CollectionsManager.cpp
     EditServerDlg.cpp
     MainWindow.cpp
     SettingsDlg.cpp
@@ -22,7 +22,7 @@ set(qtproject_SRCS
 )
 
 set(qtproject_H
-    CreateCollections.h
+    CollectionsManager.h
     EditServerDlg.h
     MainWindow.h
     SettingsDlg.h
@@ -44,7 +44,7 @@ set(project_H
 )
 
 set(qtproject_UIS
-    CreateCollections.ui
+    CollectionsManager.ui
     EditServerDlg.ui
     MainWindow.ui
     SettingsDlg.ui

@@ -31,6 +31,7 @@
 #include "Core/SyncSystem.h"
 #include "Core/UsersModel.h"
 #include "Core/MediaModel.h"
+#include "Core/CollectionsModel.h"
 #include "Core/ServerModel.h"
 
 #include "SABUtils/DownloadFile.h"
@@ -65,7 +66,10 @@ CMainWindow::CMainWindow( QWidget * parent )
     fMediaModel = std::make_shared< CMediaModel >( fSettings, fServerModel );
     NSABUtils::setupModelChanged( fMediaModel.get(), this, QMetaMethod::fromSignal( &CMainWindow::sigModelDataChanged ) );
 
-    fSyncSystem = std::make_shared< CSyncSystem >( fSettings, fUsersModel, fMediaModel, fServerModel );
+    fCollectionsModel = std::make_shared< CCollectionsModel >( fMediaModel );
+
+
+    fSyncSystem = std::make_shared< CSyncSystem >( fSettings, fUsersModel, fMediaModel, fCollectionsModel, fServerModel );
     connect( fSyncSystem.get(), &CSyncSystem::sigAddToLog, this, &CMainWindow::slotAddToLog );
     connect( fSyncSystem.get(), &CSyncSystem::sigAddInfoToLog, this, &CMainWindow::slotAddInfoToLog );
     connect( fSyncSystem.get(), &CSyncSystem::sigLoadingUsersFinished, this, &CMainWindow::slotLoadingUsersFinished );
@@ -499,7 +503,7 @@ void CMainWindow::setupPage( int index )
 
     fPages[ index ] = page;
     
-    page->setupPage( fSettings, fSyncSystem, fMediaModel, fUsersModel, fServerModel, fProgressSystem );
+    page->setupPage( fSettings, fSyncSystem, fMediaModel, fCollectionsModel, fUsersModel, fServerModel, fProgressSystem );
     connect( page, &CTabPageBase::sigAddToLog, this, &CMainWindow::slotAddToLog );
     connect( page, &CTabPageBase::sigAddInfoToLog, this, &CMainWindow::slotAddInfoToLog );
 

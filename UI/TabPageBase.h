@@ -37,6 +37,7 @@ class CSyncSystem;
 class CTabUIInfo;
 class CDataTree;
 class QAbstractItemModel;
+class CCollectionsModel;
 class QSplitter;
 class CServerInfo;
 class CServerModel;
@@ -48,11 +49,12 @@ public:
     CTabPageBase( QWidget * parent = nullptr );
     virtual ~CTabPageBase() override;
 
-    virtual void setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem )
+    virtual void setupPage(std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem)
     {
         fSettings = settings;
         fSyncSystem = syncSystem;
         fMediaModel = mediaModel;
+        fCollectionsModel = collectionsModel;
         fUsersModel = userModel;
         fServerModel = serverModel;
         fProgressSystem = progressSystem;
@@ -109,6 +111,7 @@ protected:
     std::shared_ptr< CServerModel > fServerModel;
     std::shared_ptr< CUsersModel > fUsersModel;
     std::shared_ptr< CMediaModel > fMediaModel;
+    std::shared_ptr < CCollectionsModel > fCollectionsModel;
     std::shared_ptr< CProgressSystem > fProgressSystem;
     std::shared_ptr< CSyncSystem > fSyncSystem;
 

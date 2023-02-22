@@ -39,6 +39,11 @@
          <string>Missing Episodes</string>
         </attribute>
        </widget>
+       <widget class="CCollectionsManager" name="collectionsManager">
+        <attribute name="title">
+         <string>Collections Manager</string>
+        </attribute>
+       </widget>
        <widget class="CMissingTVDBid" name="missingTVDBid">
         <attribute name="title">
          <string>Missing TVDBid</string>
@@ -47,11 +52,6 @@
        <widget class="CMissingMovies" name="missingMovies">
         <attribute name="title">
          <string>Missing Movies</string>
-        </attribute>
-       </widget>
-       <widget class="CCreateCollections" name="createCollections">
-        <attribute name="title">
-         <string>Create Collections</string>
         </attribute>
        </widget>
       </widget>
@@ -252,9 +252,9 @@
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>CCreateCollections</class>
+   <class>CCollectionsManager</class>
    <extends>QWidget</extends>
-   <header>CreateCollections.h</header>
+   <header>CollectionsManager.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
