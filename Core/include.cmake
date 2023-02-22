@@ -25,8 +25,8 @@ set(USE_QT TRUE)
 set(FOLDER_NAME Libs)
 
 set(qtproject_SRCS
+    CollectionsModel.cpp
     MediaData.cpp
-    MediaCollection.cpp
     MediaServerData.cpp
     MediaModel.cpp
     MergeMedia.cpp
@@ -41,6 +41,7 @@ set(qtproject_SRCS
 )
 
 set(qtproject_H
+    CollectionsModel.h
     MediaModel.h
     ServerInfo.h
     SyncSystem.h
@@ -50,7 +51,6 @@ set(qtproject_H
 
 set(project_H
     MediaData.h
-    MediaCollection.h
     MediaServerData.h
     MergeMedia.h
     ProgressSystem.h
