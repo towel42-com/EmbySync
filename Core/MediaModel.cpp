@@ -9,10 +9,14 @@
 #include "ProgressSystem.h"
 
 #include <QJsonObject>
+#include <QJsonArray>
+
 #include <QColor>
 #include <QInputDialog>
+#include <QTimer>
 
 #include <optional>
+
 CMediaModel::CMediaModel( std::shared_ptr< CSettings > settings, std::shared_ptr< CServerModel > serverModel, QObject *parent ) :
     QAbstractTableModel( parent ),
     fSettings( settings ),
@@ -116,6 +120,8 @@ QVariant CMediaModel::data( const QModelIndex &index, int role /*= Qt::DisplayRo
         return static_cast< int >( fDirSort );
     if ( role == ECustomRoles::ePremiereDateRole )
         return mediaData->premiereDate();
+    if ( role == ECustomRoles::eColumnsPerServerRole )
+        return columnsPerServer( false );
     if ( role == ECustomRoles::eIsProviderColumnRole )
     {
         auto providerInfo = getProviderInfoForColumn( index.column() );
@@ -486,6 +492,42 @@ void CMediaModel::addMedia( const std::shared_ptr< CMediaData > &media, bool emi
         endInsertRows();
 }
 
+void CMediaModel::removeMovieStub( const QString & name, int year )
+{
+    auto pos = fDataMap.find( SDummyMovie::nameKey( name ) );
+    if ( pos == fDataMap.end() )
+        return;
+
+    auto media = ( *pos ).second;
+    if ( media->premiereDate().year() != year )
+        return;
+
+    removeMovieStub( media );
+}
+
+void CMediaModel::removeMovieStub( const std::shared_ptr< CMediaData > & media )
+{
+    if ( media->onServer() )
+        return;
+
+    auto pos = fDataMap.find( SDummyMovie::nameKey( media->name() ) );
+    if ( pos == fDataMap.end() )
+        return;
+
+    fDataMap.erase( pos );
+    for ( auto && ii = fData.begin(); ii != fData.end(); ++ii )
+    {
+        if ( *ii == media )
+        {
+            fData.erase( ii );
+            break;
+        }
+    }
+}
+
+
+
+
 void CMediaModel::addMovieStub( const QString &name, int year )
 {
     auto pos = fDataMap.find( SDummyMovie::nameKey( name ) );
@@ -776,17 +818,36 @@ CMovieSearchFilterModel::CMovieSearchFilterModel( std::shared_ptr< CSettings > s
     fSettings( settings )
 {
     setDynamicSortFilter( false );
-    connect( this, &QSortFilterProxyModel::sourceModelChanged, [ this ]() { connect( dynamic_cast< CMediaModel * >( sourceModel() ), &CMediaModel::sigSettingsChanged, [ this ]() { invalidateFilter(); } ); } );
+    connect( this, &QSortFilterProxyModel::sourceModelChanged, [ this ]() { connect( dynamic_cast< CMediaModel * >( sourceModel() ), &CMediaModel::sigSettingsChanged, [ this ]() { startInvalidateTimer(); } ); } );
 }
 
-void CMovieSearchFilterModel::addSearchMovie( const QString &name, int year, bool invalidate )
+void CMovieSearchFilterModel::addSearchMovie( const QString &name, int year, bool postLoad )
 {
     fSearchForMovies.insert( { name, year } );
-    if ( invalidate )
-        invalidateFilter();
+    if ( postLoad )
+    {
+        auto mediaModel = dynamic_cast<CMediaModel *>( sourceModel() );
+        if ( mediaModel )
+            mediaModel->addMovieStub( name, year );
+    }
+
+    startInvalidateTimer();
 }
 
-void CMovieSearchFilterModel::finishedAddingSearchMovies()
+void CMovieSearchFilterModel::startInvalidateTimer()
+{
+    if ( !fTimer )
+    {
+        fTimer = new QTimer( this );
+        fTimer->setInterval( 50 );
+        fTimer->setSingleShot( true );
+        connect( fTimer, &QTimer::timeout, this, &CMovieSearchFilterModel::slotInvalidateFilter );
+    }
+    fTimer->stop();
+    fTimer->start();
+}
+
+void CMovieSearchFilterModel::slotInvalidateFilter()
 {
     invalidateFilter();
 }
@@ -801,6 +862,40 @@ void CMovieSearchFilterModel::addMissingMoviesToSourceModel()
     {
         mediaModel->addMovieStub( ii.fName, ii.fYear );
     }
+    startInvalidateTimer();
+}
+
+void CMovieSearchFilterModel::removeSearchMovie( const std::shared_ptr< CMediaData > & data )
+{
+    auto mediaModel = dynamic_cast<CMediaModel *>( sourceModel() );
+    if ( !mediaModel )
+        return;
+
+    auto name = data->name();
+    auto year = data->premiereDate().year();
+    auto pos = fSearchForMovies.find( { name, year } );
+    if ( pos == fSearchForMovies.end() )
+        return;
+    fSearchForMovies.erase( pos );
+
+    dynamic_cast<CMediaModel *>( sourceModel() )->removeMovieStub( data );
+
+    startInvalidateTimer();
+}
+
+void CMovieSearchFilterModel::removeSearchMovie( const QModelIndex & idx )
+{
+    auto name = idx.data( CMediaModel::eMediaNameRole ).toString();
+    auto year = idx.data( CMediaModel::ePremiereDateRole ).toDate().year();
+    auto pos = fSearchForMovies.find( { name, year } );
+    if ( pos == fSearchForMovies.end() )
+        return;
+
+    fSearchForMovies.erase( pos );
+
+    dynamic_cast< CMediaModel * >( sourceModel() )->removeMovieStub( name, year );
+
+    startInvalidateTimer();
 }
 
 bool CMovieSearchFilterModel::inSearchForMovie( const QString &name, int year ) const
@@ -842,15 +937,10 @@ bool CMovieSearchFilterModel::filterAcceptsRow( int source_row, const QModelInde
 bool CMovieSearchFilterModel::filterAcceptsColumn( int source_column, const QModelIndex &source_parent ) const
 {
     auto idx = sourceModel()->index( 0, source_column, source_parent );
-    if ( idx.isValid() )
-    {
-        bool retVal = ( source_column != 1 ) && !idx.data( CMediaModel::ECustomRoles::eIsProviderColumnRole ).toBool();
-        if ( retVal )
-            retVal = idx.data( CMediaModel::ECustomRoles::eIsNameColumnRole ).toBool() || idx.data( CMediaModel::ECustomRoles::eIsPremiereDateColumnRole ).toBool();
-        // qDebug() << source_column << retVal;
-        return retVal;
-    }
-    return true;
+    if ( !idx.isValid() )
+        return false;
+
+    return ( source_column < idx.data( CMediaModel::ECustomRoles::eColumnsPerServerRole ).toInt() ) && ( idx.data( CMediaModel::ECustomRoles::eIsNameColumnRole ).toBool() || idx.data( CMediaModel::ECustomRoles::eIsPremiereDateColumnRole ).toBool() );
 }
 
 void CMovieSearchFilterModel::sort( int column, Qt::SortOrder order /*= Qt::AscendingOrder */ )
@@ -896,6 +986,19 @@ QString CMovieSearchFilterModel::summary() const
     return tr( "Searching for: %1 Missing: %2" ).arg( static_cast< int >( fSearchForMovies.size() ) ).arg( rowCount() );
 }
 
+QJsonObject CMovieSearchFilterModel::toJSON() const
+{
+    QJsonArray moviesArray;
+    for ( auto && ii : fSearchForMovies )
+    {
+        auto curr = ii.toJSON();
+        moviesArray.push_back( curr );
+    }
+    QJsonObject retVal;
+    retVal[ "movies" ] = moviesArray;
+    return retVal;
+}
+
 QString SDummyMovie::nameKey( const QString &name )
 {
     static std::unordered_map< QString, QString > sCache;
@@ -919,5 +1022,12 @@ QString SDummyMovie::nameKey( const QString &name )
     retVal = retVal.trimmed().replace( QRegularExpression( "[ ]{2,}" ), " " );
 
     sCache[ name ] = retVal;
+    return retVal;
+}
+QJsonObject SDummyMovie::toJSON() const
+{
+    QJsonObject retVal;
+    retVal[ "name" ] = fName;
+    retVal[ "year" ] = fYear;
     return retVal;
 }

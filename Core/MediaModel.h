@@ -22,6 +22,7 @@ class CMergeMedia;
 class CServerModel;
 class CSyncSystem;
 class CServerInfo;
+class QJsonObject;
 
 using TMediaIDToMediaData = std::map< QString, std::shared_ptr< CMediaData > >;
 
@@ -41,7 +42,8 @@ public:
         eIsNameColumnRole,
         eIsPremiereDateColumnRole,
         eSeriesNameRole,
-        eOnServerRole
+        eOnServerRole,
+        eColumnsPerServerRole
     };
 
     enum EColumns
@@ -115,6 +117,9 @@ public:
     const_iterator end() const { return fAllMedia.cend(); }
 
     void addMovieStub( const QString &name, int year );
+    void removeMovieStub( const QString & name, int year );
+    void removeMovieStub( const std::shared_ptr< CMediaData > & media );
+
 Q_SIGNALS:
     void sigPendingMediaUpdate();
     void sigSettingsChanged();
@@ -204,6 +209,8 @@ struct SDummyMovie
     static QString nameKey( const QString &name );
 
     bool operator==( const SDummyMovie &r ) const { return nameKey() == r.nameKey(); }
+    QJsonObject toJSON() const;
+
 };
 
 namespace std
@@ -228,11 +235,12 @@ class CMovieSearchFilterModel : public QSortFilterProxyModel
 public:
     CMovieSearchFilterModel( std::shared_ptr< CSettings > settings, QObject *parent );
 
-    void addSearchMovie( const QString &name, int year, bool invalidate );
-    void finishedAddingSearchMovies();
+    void addSearchMovie( const QString &name, int year, bool postLoad );
 
     void addMissingMoviesToSourceModel();
-    ;
+    void removeSearchMovie( const QModelIndex & idx );
+    void removeSearchMovie( const std::shared_ptr< CMediaData > & data );
+
     virtual bool filterAcceptsRow( int source_row, const QModelIndex &source_parent ) const override;
     virtual bool filterAcceptsColumn( int source_column, const QModelIndex &source_parent ) const override;
     virtual void sort( int column, Qt::SortOrder order = Qt::AscendingOrder ) override;
@@ -242,11 +250,17 @@ public:
 
     QString summary() const;
 
+    QJsonObject toJSON() const;
+private Q_SLOTS:
+    void slotInvalidateFilter();
 private:
+    void startInvalidateTimer();
+
     bool inSearchForMovie( const QString &name, int year ) const;
     bool inSearchForMovie( const QString &name ) const;
 
     std::shared_ptr< CSettings > fSettings;
     std::unordered_set< SDummyMovie > fSearchForMovies;
+    QTimer * fTimer{ nullptr };
 };
 #endif
