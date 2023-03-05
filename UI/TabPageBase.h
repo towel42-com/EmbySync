@@ -89,7 +89,7 @@ Q_SIGNALS:
     void sigSetCurrentDataItem( const QModelIndex &current );
     void sigViewData( const QModelIndex &idx );
     void sigDataContextMenuRequested( CDataTree *tree, const QPoint &pos );
-
+    void sigItemDoubleClicked( CDataTree * tree, const QModelIndex & idx );
 public Q_SLOTS:
     virtual void slotCanceled(){};
     virtual void slotModelDataChanged(){};

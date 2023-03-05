@@ -117,23 +117,19 @@ void CTabPageBase::bulkSearch( std::function< std::pair< bool, QUrl >( const QMo
         auto treeModel = currTree->model();
 
         auto rowCount = treeModel->rowCount();
-        bool add = false;
         for ( int ii = 0; ii < rowCount; ++ii )
         {
             auto index = treeModel->index( ii, 0 );
             auto text = index.data().toString();
-            if ( add )
+            auto curr = addItemFunc( index );
+            if ( curr.first )
             {
-                auto curr = addItemFunc( index );
-                if ( curr.first )
-                {
-                    fBulkSearchURLs.emplace_back( curr.second );
-                }
+                fBulkSearchURLs.emplace_back( curr.second );
             }
         }
     }
-    while ( fBulkSearchURLs.size() > 10 )
-        fBulkSearchURLs.pop_back();
+    //while ( fBulkSearchURLs.size() > 10 )
+    //    fBulkSearchURLs.pop_back();
 
     slotNextSearchURL();
 }
@@ -147,7 +143,7 @@ void CTabPageBase::slotNextSearchURL()
     fBulkSearchURLs.pop_front();
     QDesktopServices::openUrl( url );
 
-    QTimer::singleShot( 250, this, &CTabPageBase::slotNextSearchURL );
+    QTimer::singleShot( 500, this, &CTabPageBase::slotNextSearchURL );
 }
 
 void CTabPageBase::loadServers( QAbstractItemModel *model )
@@ -191,6 +187,7 @@ CDataTree *CTabPageBase::addDataTreeForServer( std::shared_ptr< const CServerInf
     connect( dataTree, &CDataTree::sigCurrChanged, this, &CTabPageBase::sigSetCurrentDataItem );
     connect( dataTree, &CDataTree::sigViewData, this, &CTabPageBase::sigViewData );
     connect( dataTree, &CDataTree::sigDataContextMenuRequested, this, &CTabPageBase::sigDataContextMenuRequested );
+    connect( dataTree, &CDataTree::sigItemDoubleClicked, this, &CTabPageBase::sigItemDoubleClicked );
 
     fDataTrees.push_back( dataTree );
     return dataTree;
