@@ -70,6 +70,7 @@ Q_SIGNALS:
     void sigHSliderMoved( int position );
     void sigHScrollTo( int value, int max );
     void sigDataContextMenuRequested( CDataTree *tree, const QPoint &pos );
+    void sigItemDoubleClicked( CDataTree * tree, const QModelIndex & idx );
 private Q_SLOTS:
     void slotSetCurrentMediaItem( const QModelIndex &idx );
     void slotSetVSlider( int position );
@@ -79,6 +80,7 @@ private Q_SLOTS:
     void slotVActionTriggered( int action );
     void slotServerInfoChanged();
     void slotContextMenuRequested( const QPoint &pos );
+    void slotDoubleClicked( const QModelIndex & idx );
     void slotHeaderClicked();
 
 private:

@@ -40,6 +40,7 @@ CDataTree::CDataTree( const std::shared_ptr< const CServerInfo > &serverInfo, QW
     installEventFilter( this );
     fImpl->data->setContextMenuPolicy( Qt::ContextMenuPolicy::CustomContextMenu );
     connect( fImpl->data, &QTreeView::customContextMenuRequested, this, &CDataTree::slotContextMenuRequested );
+    connect( fImpl->data, &QTreeView::doubleClicked, this, &CDataTree::slotDoubleClicked );
     connect( fImpl->data->header(), &QHeaderView::sectionClicked, this, &CDataTree::slotHeaderClicked );
     setServer( serverInfo, false );
 }
@@ -232,6 +233,11 @@ QTreeView *CDataTree::dataTree() const
 void CDataTree::slotContextMenuRequested( const QPoint &pos )
 {
     emit sigDataContextMenuRequested( this, pos );
+}
+
+void CDataTree::slotDoubleClicked( const QModelIndex & idx )
+{
+    emit sigItemDoubleClicked( this, idx );
 }
 
 void CDataTree::slotHeaderClicked()
