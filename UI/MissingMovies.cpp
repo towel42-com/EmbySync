@@ -21,6 +21,7 @@
 // SOFTWARE.
 
 #include "MissingMovies.h"
+#include "AddMovieForSearch.h"
 #include "ui_MissingMovies.h"
 
 #include "DataTree.h"
@@ -39,8 +40,10 @@
 #include "Core/ServerModel.h"
 
 #include "SABUtils/AutoWaitCursor.h"
+#include "SABUtils/ButtonEnabler.h"
 #include "SABUtils/QtUtils.h"
 #include "SABUtils/WidgetChanged.h"
+#include "SABUtils/FileUtils.h"
 
 #include <QAction>
 #include <QApplication>
@@ -67,6 +70,7 @@ CMissingMovies::CMissingMovies( QWidget *parent ) :
 
     connect( this, &CMissingMovies::sigModelDataChanged, this, &CMissingMovies::slotModelDataChanged );
     connect( this, &CMissingMovies::sigDataContextMenuRequested, this, &CMissingMovies::slotMediaContextMenu );
+    connect( this, &CMissingMovies::sigItemDoubleClicked, this, &CMissingMovies::slotItemDoubleClicked );
 
     connect(
         fImpl->listFileBtn, &QToolButton::clicked,
@@ -77,9 +81,9 @@ CMissingMovies::CMissingMovies( QWidget *parent ) :
                 return;
             fImpl->listFile->setText( QFileInfo( fileName ).absoluteFilePath() );
         } );
-    connect( fImpl->listFile, &NSABUtils::CPathBasedDelayLineEdit::sigTextEditedAfterDelay, this, &CMissingMovies::slotLoadFile );
-    connect( fImpl->listFile, &NSABUtils::CPathBasedDelayLineEdit::sigFinishedEditingAfterDelay, this, &CMissingMovies::slotLoadFile );
-    connect( fImpl->listFile, &NSABUtils::CPathBasedDelayLineEdit::sigTextChangedAfterDelay, this, &CMissingMovies::slotLoadFile );
+    connect( fImpl->listFile, &NSABUtils::CPathBasedDelayLineEdit::sigTextEditedAfterDelay, this, &CMissingMovies::slotSetMovieSearchFile );
+    connect( fImpl->listFile, &NSABUtils::CPathBasedDelayLineEdit::sigFinishedEditingAfterDelay, this, &CMissingMovies::slotSetMovieSearchFile );
+    connect( fImpl->listFile, &NSABUtils::CPathBasedDelayLineEdit::sigTextChangedAfterDelay, this, &CMissingMovies::slotSetMovieSearchFile );
 
     QSettings settings;
     settings.beginGroup( "MissingMovies" );
@@ -136,12 +140,41 @@ void CMissingMovies::setupActions()
     fActionSearchForAll->setText( QCoreApplication::translate( "CMissingMovies", "Search for All Missing", nullptr ) );
     fActionSearchForAll->setToolTip( QCoreApplication::translate( "CMissingMovies", "Search for All Missing", nullptr ) );
 
+    fAddMovieToSearchFor = new QAction( this );
+    fAddMovieToSearchFor->setObjectName( QString::fromUtf8( "fAddMovieToSearchFor" ) );
+    QIcon icon;
+    icon.addFile( QString::fromUtf8( ":/SABUtilsResources/add.png" ), QSize(), QIcon::Normal, QIcon::Off );
+    Q_ASSERT( !icon.isNull() );
+    fAddMovieToSearchFor->setIcon( icon );
+    fAddMovieToSearchFor->setText( QCoreApplication::translate( "CMissingMovies", "Add Movie to Search For", nullptr ) );
+    fAddMovieToSearchFor->setToolTip( QCoreApplication::translate( "CMissingMovies", "Add Movie to Search For", nullptr ) );
+
+    fRemoveMovieToSearchFor = new QAction( this );
+    fRemoveMovieToSearchFor->setObjectName( QString::fromUtf8( "fRemoveMovieToSearchFor" ) );
+    {
+        QIcon icon;
+        icon.addFile( QString::fromUtf8( ":/SABUtilsResources/delete.png" ), QSize(), QIcon::Normal, QIcon::Off );
+        Q_ASSERT( !icon.isNull() );
+        fRemoveMovieToSearchFor->setIcon( icon );
+    }
+    fRemoveMovieToSearchFor->setText( QCoreApplication::translate( "CMissingMovies", "Remove Movie to Search For", nullptr ) );
+    fRemoveMovieToSearchFor->setToolTip( QCoreApplication::translate( "CMissingMovies", "Remove Movie to Search For", nullptr ) );
+
+
     fToolBar = new QToolBar( this );
     fToolBar->setObjectName( QString::fromUtf8( "fToolBar" ) );
 
+    fToolBar->addAction( fAddMovieToSearchFor );
+    fToolBar->addAction( fRemoveMovieToSearchFor );
+    fToolBar->addSeparator();
     fToolBar->addAction( fActionSearchForAll );
 
+    connect( fAddMovieToSearchFor, &QAction::triggered, this, &CMissingMovies::slotAddMovieToSearchFor );
+    connect( fRemoveMovieToSearchFor, &QAction::triggered, this, &CMissingMovies::slotRemoveMovieToSearchFor );
     connect( fActionSearchForAll, &QAction::triggered, this, &CMissingMovies::slotSearchForAllMissing );
+
+    if ( !fDataTrees.empty() )
+        new NSABUtils::CButtonEnabler( fDataTrees[ 0 ]->dataTree(), fRemoveMovieToSearchFor );
 }
 
 bool CMissingMovies::prepForClose()
@@ -227,9 +260,9 @@ void CMissingMovies::slotCurrentServerChanged( const QModelIndex &index )
         QMessageBox::critical( this, tr( "No Admin User Found" ), tr( "No user found with Administrator Privileges on server '%1'" ).arg( serverInfo->displayName() ) );
     }
     if ( !fImpl->listFile->text().isEmpty() )
-        setMovieSearchFile( fImpl->listFile->text(), true );
+        slotSetMovieSearchFile( fImpl->listFile->text() );
     else if ( !fFileName.isEmpty() )
-        setMovieSearchFile( fFileName, true );
+        slotSetMovieSearchFile( fFileName );
 }
 
 std::shared_ptr< CServerInfo > CMissingMovies::getCurrentServerInfo() const
@@ -334,12 +367,69 @@ void CMissingMovies::slotMediaContextMenu( CDataTree *dataTree, const QPoint &po
     menu.exec( dataTree->dataTree()->mapToGlobal( pos ) );
 }
 
-void CMissingMovies::slotLoadFile( const QString &fileName )
+void CMissingMovies::slotItemDoubleClicked( CDataTree * /*dataTree*/, const QModelIndex & idx )
+{
+    if ( !idx.isValid() )
+        return;
+
+    auto mediaData = getMediaData( idx );
+    if ( !mediaData )
+        return;
+
+    CAddMovieForSearch dlg( this );
+    dlg.setName( mediaData->name() );
+    dlg.setYear( mediaData->premiereDate().year() );
+    if ( dlg.exec() != QDialog::Accepted )
+        return;
+
+    fMoviesModel->removeSearchMovie( mediaData );
+
+    auto name = dlg.name();
+    auto year = dlg.year();
+    fMoviesModel->addSearchMovie( name, year, true );
+    saveJSON();
+
+
+}
+
+
+void CMissingMovies::slotSetMovieSearchFile( const QString &fileName )
 {
     setMovieSearchFile( fileName, true );
 }
 
-void CMissingMovies::setMovieSearchFile( const QString &fileName, bool force )
+void CMissingMovies::saveJSON()
+{
+    if ( !fMediaModel )
+        return;
+    auto fileName = fFileName;
+    if ( fileName.isEmpty() )
+        fileName = fImpl->listFile->text();
+    if ( fileName.isEmpty() )
+        fileName = QFileDialog::getSaveFileName( this, "Filename" );
+    if ( fileName.isEmpty() )
+        return;
+    saveJSON( fileName );
+}
+
+void CMissingMovies::saveJSON( const QString & fileName )
+{
+    if ( fileName.isEmpty() )
+        return;
+    auto obj = fMoviesModel->toJSON();
+
+    if ( QFileInfo( fileName ).exists() )
+        NSABUtils::NFileUtils::backup( fileName );
+
+    QFile fi( fileName );
+    if ( !fi.open( QFile::WriteOnly | QFile::Truncate ) )
+        return;
+
+    QJsonDocument doc( obj );
+    fi.write( doc.toJson() );
+}
+
+void CMissingMovies::setMovieSearchFile( const QString & fileName, bool force )
 {
     if ( !fMediaModel )
         return;
@@ -385,7 +475,35 @@ void CMissingMovies::setMovieSearchFile( const QString &fileName, bool force )
         auto year = movie.toObject()[ "year" ].toInt();
         fMoviesModel->addSearchMovie( name, year, false );
     }
-    fMoviesModel->finishedAddingSearchMovies();
+}
+
+void CMissingMovies::slotAddMovieToSearchFor()
+{
+    CAddMovieForSearch dlg( this );
+    if ( dlg.exec() != QDialog::Accepted )
+        return;
+
+    auto name = dlg.name();
+    auto year = dlg.year();
+    fMoviesModel->addSearchMovie( name, year, true );
+    saveJSON();
+}
+
+void CMissingMovies::slotRemoveMovieToSearchFor()
+{
+    if ( fDataTrees.empty() )
+        return;
+
+    auto dt = fDataTrees[ 0 ]->dataTree();
+    if ( !dt )
+        return;
+
+    auto curr = dt->currentIndex();
+    if ( !curr.isValid() )
+        return;
+
+    fMoviesModel->removeSearchMovie( curr );
+    saveJSON();
 }
 
 void CMissingMovies::slotSearchForAllMissing()

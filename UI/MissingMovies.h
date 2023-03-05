@@ -86,17 +86,23 @@ public Q_SLOTS:
     virtual void slotModelDataChanged() override;
     virtual void slotSettingsChanged() override;
     void slotMediaContextMenu( CDataTree *dataTree, const QPoint &pos );
+    void slotItemDoubleClicked( CDataTree * dataTree, const QModelIndex & idx );
     virtual void slotSetCurrentServer( const QModelIndex &index );
+
+    void slotAddMovieToSearchFor();
+    void slotRemoveMovieToSearchFor();
     void slotSearchForAllMissing();
 private Q_SLOTS:
     void slotCurrentServerChanged( const QModelIndex &index );
     void slotAllMoviesLoaded();
     void slotMediaChanged();
-    void slotLoadFile( const QString &fileName );
+    void slotSetMovieSearchFile( const QString &fileName );
 
 private:
+    void saveJSON();
+    void saveJSON( const QString & fileName );
+    void setMovieSearchFile( const QString & fileName, bool force );
     QString fFileName;
-    void setMovieSearchFile( const QString &fileName, bool force );
 
     void showPrimaryServer();
     std::shared_ptr< CServerInfo > getCurrentServerInfo() const;
@@ -110,6 +116,8 @@ private:
     std::unique_ptr< Ui::CMissingMovies > fImpl;
 
     QPointer< QAction > fActionSearchForAll;
+    QPointer< QAction > fAddMovieToSearchFor;
+    QPointer< QAction > fRemoveMovieToSearchFor;
     QPointer< QToolBar > fToolBar{ nullptr };
 
     CServerFilterModel *fServerFilterModel{ nullptr };
