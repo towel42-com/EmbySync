@@ -418,7 +418,7 @@ QUrl CMediaData::getSearchURL( ETorrentSite site ) const
         searchKey = ( *pos ).second;
     }
     if ( searchKey.isEmpty() )
-        searchKey = fName;
+        searchKey = QString( R"("%1")" ).arg( fName );
 
     if ( this->mediaType() == "Episode" )
     {
