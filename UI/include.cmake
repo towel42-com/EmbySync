@@ -3,6 +3,7 @@ set(USE_QT TRUE)
 set(FOLDER_NAME Libs)
 
 set(qtproject_SRCS
+    AddMovieForSearch.cpp
     CollectionsManager.cpp
     EditServerDlg.cpp
     MainWindow.cpp
@@ -22,6 +23,7 @@ set(qtproject_SRCS
 )
 
 set(qtproject_H
+    AddMovieForSearch.h
     CollectionsManager.h
     EditServerDlg.h
     MainWindow.h
@@ -44,6 +46,7 @@ set(project_H
 )
 
 set(qtproject_UIS
+    AddMovieForSearch.ui
     CollectionsManager.ui
     EditServerDlg.ui
     MainWindow.ui
