@@ -76,9 +76,7 @@ CCollectionsManager::~CCollectionsManager()
 {
 }
 
-void CCollectionsManager::setupPage(
-    std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel,
-    std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem )
+void CCollectionsManager::setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem )
 {
     CTabPageBase::setupPage( settings, syncSystem, mediaModel, collectionsModel, userModel, serverModel, progressSystem );
 
@@ -326,27 +324,7 @@ void CCollectionsManager::slotMediaContextMenu( CDataTree *dataTree, const QPoin
         return;
 
     QMenu menu( tr( "Context Menu" ) );
-
-    auto action = new QAction( "Search for Torrent on RARBG", &menu );
-    menu.addAction( action );
-    connect(
-        action, &QAction::triggered,
-        [ mediaData ]()
-        {
-            auto url = mediaData->getSearchURL( CMediaData::ETorrentSite::eRARBG );
-            QDesktopServices::openUrl( url );
-        } );
-
-    action = new QAction( "Search for Torrent on piratebay.org", &menu );
-    menu.addAction( action );
-    connect(
-        action, &QAction::triggered,
-        [ mediaData ]()
-        {
-            auto url = mediaData->getSearchURL( CMediaData::ETorrentSite::ePirateBay );
-            QDesktopServices::openUrl( url );
-        } );
-
+    mediaData->addSearchMenu( &menu );
     menu.exec( dataTree->dataTree()->mapToGlobal( pos ) );
 }
 
@@ -360,80 +338,35 @@ void CCollectionsManager::setCollectionsFile( const QString &fileName, bool forc
     if ( !fMediaModel )
         return;
 
-    if ( fileName.isEmpty() )
-        return;
-
     if ( !force )
         return;
+
+    QString msg;
+    auto collections = NJSON::CCollections::fromJSON( fileName, &msg );
+    if ( !collections.has_value() )
+    {
+        QMessageBox::critical( this, tr( "Error Reading File" ), msg );
+        return;
+    }
 
     auto serverInfo = getCurrentServerInfo();
     if ( !serverInfo )
         return;
 
-    QFile fi( fileName );
-    if ( !fi.open( QFile::ReadOnly ) )
-    {
-        return;
-    }
-
-    auto data = fi.readAll();
-    QJsonParseError error;
-    auto doc = QJsonDocument::fromJson( data, &error );
-    if ( error.error != QJsonParseError::NoError )
-    {
-        QMessageBox::critical( this, tr( "Error Reading File" ), tr( "Error: %1 @ %2" ).arg( error.errorString() ).arg( error.offset ) );
-        return;
-    }
-
-    if ( !doc.isObject() )
-    {
-        QMessageBox::critical( this, tr( "Error Reading File" ), tr( "Error: Top level item should be object" ) );
-        return;
-    }
-
-    auto root = doc.object();
-    auto collectionsObj = root[ "collections" ];
-    auto moviesObj = root[ "movies" ];
-    if ( !collectionsObj.isArray() && !moviesObj.isArray() )
-    {
-        QMessageBox::critical( this, tr( "Error Reading File" ), tr( "Error: Top level item should contain an array called movies or collections" ) );
-        return;
-    }
-
-    if ( moviesObj.isArray() )
-    {
-        QJsonObject collectionObj;
-        collectionObj[ "collection" ] = "<Unnamed Collection>";
-        collectionObj[ "movies" ] = moviesObj;
-        auto tmp = QJsonArray();
-        tmp.push_back( collectionObj );
-        collectionsObj = tmp;
-    }
-    QJsonArray collections;
-    if ( !collectionsObj.isArray() )
-    {
-        return;
-    }
-
     fMediaModel->clear();
     fCollectionsModel->clear();
-    collections = collectionsObj.toArray();
-    for ( auto &&curr : collections )
+
+    for ( auto &&ii : collections.value()->collections() )
     {
-        auto collectionName = curr.toObject()[ "collection" ].toString();
-        auto movies = curr.toObject()[ "movies" ].toArray();
         QModelIndex idx;
         std::shared_ptr< CMediaCollection > collection;
-        std::tie( idx, collection ) = fCollectionsModel->addCollection( serverInfo->keyName(), collectionName );
+        std::tie( idx, collection ) = fCollectionsModel->addCollection( serverInfo->keyName(), ii->name() );
         Q_ASSERT( collection.get() == fCollectionsModel->collection( idx ) );
+
+        auto movies = ii->movies();
         for ( auto &&movie : movies )
         {
-            auto rank = movie.toObject()[ "rank" ].toInt();
-            if ( !movie.toObject().contains( "rank" ) )
-                rank = -1;
-            auto movieName = movie.toObject()[ "name" ].toString();
-            auto year = movie.toObject()[ "year" ].toInt();
-            auto currCollection = fCollectionsModel->addMovie( movieName, year, idx, rank );
+            auto currCollection = fCollectionsModel->addMovie( movie->name(), movie->year(), idx, movie->rank() );
             if ( currCollection->fCollection && currCollection->fCollection->isUnNamed() )
             {
                 currCollection->fCollection->setFileName( fileName );
