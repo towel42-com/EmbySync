@@ -266,26 +266,6 @@ void CMissingTVDBid::slotMediaContextMenu( CDataTree *dataTree, const QPoint &po
         return;
 
     QMenu menu( tr( "Context Menu" ) );
-
-    auto action = new QAction( "Search for Torrent on RARBG", &menu );
-    menu.addAction( action );
-    connect(
-        action, &QAction::triggered,
-        [ mediaData ]()
-        {
-            auto url = mediaData->getSearchURL( CMediaData::ETorrentSite::eRARBG );
-            QDesktopServices::openUrl( url );
-        } );
-
-    action = new QAction( "Search for Torrent on piratebay.org", &menu );
-    menu.addAction( action );
-    connect(
-        action, &QAction::triggered,
-        [ mediaData ]()
-        {
-            auto url = mediaData->getSearchURL( CMediaData::ETorrentSite::ePirateBay );
-            QDesktopServices::openUrl( url );
-        } );
-
+    mediaData->addSearchMenu( &menu );
     menu.exec( dataTree->dataTree()->mapToGlobal( pos ) );
 }
