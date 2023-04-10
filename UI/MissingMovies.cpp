@@ -343,27 +343,7 @@ void CMissingMovies::slotMediaContextMenu( CDataTree *dataTree, const QPoint &po
         return;
 
     QMenu menu( tr( "Context Menu" ) );
-
-    auto action = new QAction( "Search for Torrent on RARBG", &menu );
-    menu.addAction( action );
-    connect(
-        action, &QAction::triggered,
-        [ mediaData ]()
-        {
-            auto url = mediaData->getSearchURL( CMediaData::ETorrentSite::eRARBG );
-            QDesktopServices::openUrl( url );
-        } );
-
-    action = new QAction( "Search for Torrent on piratebay.org", &menu );
-    menu.addAction( action );
-    connect(
-        action, &QAction::triggered,
-        [ mediaData ]()
-        {
-            auto url = mediaData->getSearchURL( CMediaData::ETorrentSite::ePirateBay );
-            QDesktopServices::openUrl( url );
-        } );
-
+    mediaData->addSearchMenu( &menu );
     menu.exec( dataTree->dataTree()->mapToGlobal( pos ) );
 }
 
@@ -441,39 +421,19 @@ void CMissingMovies::setMovieSearchFile( const QString & fileName, bool force )
         return;
 
     fFileName.clear();
-    QFile fi( fileName );
-    if ( !fi.open( QFile::ReadOnly ) )
-    {
-        return;
-    }
-    fFileName = fileName;
 
-    auto data = fi.readAll();
-    QJsonParseError error;
-    auto doc = QJsonDocument::fromJson( data, &error );
-    if ( error.error != QJsonParseError::NoError )
+    QString msg;
+    auto collections = NJSON::CCollections::fromJSON( fileName, &msg );
+    if ( !collections.has_value() )
     {
-        QMessageBox::critical( this, tr( "Error Reading File" ), tr( "Error: %1 @ %2" ).arg( error.errorString() ).arg( error.offset ) );
+        QMessageBox::critical( this, tr( "Error Reading File" ), msg );
         return;
     }
-    if ( !doc.isObject() )
+
+    fFileName = fileName;
+    for ( auto &&movie : collections.value()->movies() )
     {
-        QMessageBox::critical( this, tr( "Error Reading File" ), tr( "Error: Top level item should be object" ) );
-        return;
-    }
-    auto root = doc.object();
-    auto moviesObj = root[ "movies" ];
-    if ( !moviesObj.isArray() )
-    {
-        QMessageBox::critical( this, tr( "Error Reading File" ), tr( "Error: Top level item should contain an array called movies" ) );
-        return;
-    }
-    auto movies = moviesObj.toArray();
-    for ( auto &&movie : movies )
-    {
-        auto name = movie.toObject()[ "name" ].toString();
-        auto year = movie.toObject()[ "year" ].toInt();
-        fMoviesModel->addSearchMovie( name, year, false );
+        fMoviesModel->addSearchMovie( movie->name(), movie->year(), false );
     }
 }
 
@@ -522,6 +482,6 @@ void CMissingMovies::slotSearchForAllMissing()
             {
                 return std::make_pair( false, QUrl() );
             }
-            return std::make_pair( true, mediaData->getSearchURL( CMediaData::ETorrentSite::eRARBG ) );
+            return std::make_pair( true, mediaData->getSearchURL( CMediaData::ESearchSite::eRARBG ) );
         } );
 }
