@@ -345,27 +345,7 @@ void CMissingEpisodes::slotMediaContextMenu( CDataTree *dataTree, const QPoint &
         return;
 
     QMenu menu( tr( "Context Menu" ) );
-
-    auto action = new QAction( "Search for Torrent on RARBG", &menu );
-    menu.addAction( action );
-    connect(
-        action, &QAction::triggered,
-        [ mediaData ]()
-        {
-            auto url = mediaData->getSearchURL( CMediaData::ETorrentSite::eRARBG );
-            QDesktopServices::openUrl( url );
-        } );
-
-    action = new QAction( "Search for Torrent on piratebay.org", &menu );
-    menu.addAction( action );
-    connect(
-        action, &QAction::triggered,
-        [ mediaData ]()
-        {
-            auto url = mediaData->getSearchURL( CMediaData::ETorrentSite::ePirateBay );
-            QDesktopServices::openUrl( url );
-        } );
-
+    mediaData->addSearchMenu( &menu );
     menu.exec( dataTree->dataTree()->mapToGlobal( pos ) );
 }
 
@@ -385,6 +365,6 @@ void CMissingEpisodes::slotSearchForAllMissing()
             {
                 return std::make_pair( false, QUrl() );
             }
-            return std::make_pair( true, mediaData->getSearchURL( CMediaData::ETorrentSite::eRARBG ) );
+            return std::make_pair( true, mediaData->getSearchURL( CMediaData::ESearchSite::eRARBG ) );
         } );
 }
