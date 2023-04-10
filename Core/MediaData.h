@@ -37,6 +37,7 @@ class CMediaModel;
 class QJsonObject;
 class CServerModel;
 class CSyncSystem;
+class QMenu;
 struct SMediaServerData;
 
 enum class EMediaSyncStatus
@@ -65,6 +66,7 @@ public:
     CMediaData( const QJsonObject &mediaObj, std::shared_ptr< CServerModel > serverModel );
     CMediaData( const QString &name, int year, const QString &type );   // stub for dummy media
 
+    void addSearchMenu( QMenu * menu ) const;
     static bool isExtra( const QJsonObject &obj );
     bool hasProviderIDs() const;
     void addProvider( const QString &providerName, const QString &providerID );
@@ -127,12 +129,13 @@ public:
 
     QIcon getDirectionIcon( const QString &serverName ) const;
 
-    enum class ETorrentSite
+    enum class ESearchSite
     {
         eRARBG,
-        ePirateBay
+        ePirateBay,
+        eIMDB
     };
-    QUrl getSearchURL( ETorrentSite site ) const;
+    QUrl getSearchURL( ESearchSite site ) const;
 
     QJsonObject toJson( bool includeSearchURL );
 
@@ -255,4 +258,49 @@ private:
     std::shared_ptr< SCollectionServerInfo > fCollectionInfo;
 };
 
+namespace NJSON
+{
+    class CMovie
+    {
+    public:
+        CMovie( const QJsonValue &curr );
+
+        QString name() const { return fName; }
+        int rank() const { return fRank; }
+        int year() const { return fYear; }
+
+        void setRank( int rank ) { fRank = rank; }
+
+    private:
+        QString fName;
+        int fRank{ -1 };
+        int fYear{ -1 };
+    };
+
+    class CCollection
+    {
+    public:
+        CCollection( const QJsonValue & curr );
+        
+        QString name() const { return fName; }
+        const std::list< std::shared_ptr< CMovie > > & movies() const { return fMovies; }
+    private:
+        QString fName;
+        std::list< std::shared_ptr< CMovie > > fMovies;
+    };
+
+    class CCollections
+    {
+    public:
+        CCollections() {}
+        static std::optional< std::shared_ptr< CCollections > > fromJSON( const QString &fileName, QString *msg = nullptr );
+
+        const std::list< std::shared_ptr< CCollection > > &collections() const { return fCollections; }
+        const std::list< std::shared_ptr< CMovie > > &movies() const { return fMovies; }
+
+    private:
+        std::list< std::shared_ptr< CCollection > > fCollections;
+        std::list< std::shared_ptr< CMovie > > fMovies;
+    };
+}
 #endif

@@ -36,10 +36,12 @@
 #include <QObject>
 #include <QVariant>
 #include <QFileInfo>
-
+#include <QDesktopServices>
 #include <chrono>
 #include <optional>
 #include <QDebug>
+#include <QAction>
+#include <QMenu>
 
 QStringList CMediaData::getHeaderLabels()
 {
@@ -77,6 +79,39 @@ CMediaData::CMediaData( const QString &name, int year, const QString &type )
     fOriginalTitle = fName;
     fType = type;
     fPremiereDate = QDate( year, 1, 1 );
+}
+
+void CMediaData::addSearchMenu( QMenu *menu ) const
+{
+    auto action = new QAction( "Search for Torrent on RARBG", menu );
+    menu->addAction( action );
+    QObject::connect(
+        action, &QAction::triggered,
+        [ this ]()
+        {
+            auto url = getSearchURL( CMediaData::ESearchSite::eRARBG );
+            QDesktopServices::openUrl( url );
+        } );
+
+    action = new QAction( "Search for Torrent on piratebay.org", menu );
+    menu->addAction( action );
+    QObject::connect(
+        action, &QAction::triggered,
+        [ this ]()
+        {
+            auto url = getSearchURL( CMediaData::ESearchSite::ePirateBay );
+            QDesktopServices::openUrl( url );
+        } );
+
+    action = new QAction( "Search for Movie on IMDB", menu );
+    menu->addAction( action );
+    QObject::connect(
+        action, &QAction::triggered,
+        [ this ]()
+        {
+            auto url = getSearchURL( CMediaData::ESearchSite::eIMDB );
+            QDesktopServices::openUrl( url );
+        } );
 }
 
 bool CMediaData::isExtra( const QJsonObject &obj )
@@ -399,13 +434,15 @@ QIcon CMediaData::getDirectionIcon( const QString &serverName ) const
     return retVal;
 }
 
-QUrl CMediaData::getSearchURL( ETorrentSite site ) const
+QUrl CMediaData::getSearchURL( ESearchSite site ) const
 {
     QString url;
-    if ( site == ETorrentSite::eRARBG )
+    if ( site == ESearchSite::eRARBG )
         url = "https://rarbg.to/torrents.php";
-    else if ( site == ETorrentSite::ePirateBay )
+    else if ( site == ESearchSite::ePirateBay )
         url = "https://thepiratebay.org/search.php";
+    else if ( site == ESearchSite::eIMDB )
+        url = "https://imdb.com/find";
     else
         return {};
 
@@ -440,7 +477,14 @@ QUrl CMediaData::getSearchURL( ETorrentSite site ) const
         }
     }
     QUrlQuery query;
-    query.addQueryItem( "search", searchKey.replace( " ", "+" ) );
+    if ( site == ESearchSite::eIMDB )
+    {
+        query.addQueryItem( "q", searchKey.replace( " ", "+" ) );
+    }
+    else
+    {
+        query.addQueryItem( "search", searchKey.replace( " ", "+" ) );
+    }
     retVal.setQuery( query );
     return retVal;
 }
@@ -472,7 +516,7 @@ QJsonObject CMediaData::toJson( bool includeSearchURL )
     retVal[ "server_infos" ] = serverInfos;
 
     if ( includeSearchURL )
-        retVal[ "searchurl" ] = getSearchURL( ETorrentSite::eRARBG ).toString();
+        retVal[ "searchurl" ] = getSearchURL( ESearchSite::eRARBG ).toString();
 
     return retVal;
 }
@@ -795,4 +839,104 @@ bool SMediaCollectionData::updateMedia( std::shared_ptr< CMediaModel > mediaMode
         return true;
     }
     return false;
+}
+
+namespace NJSON
+{
+    std::optional< std::shared_ptr< CCollections > > CCollections::fromJSON( const QString &fileName, QString *msg /*= nullptr */ )
+    {
+        if ( fileName.isEmpty() )
+        {
+            if ( msg )
+                *msg = QString( "Filename is empty" );
+            return {};
+        }
+
+        QFile fi( fileName );
+        if ( !fi.open( QFile::ReadOnly ) )
+        {
+            if ( msg )
+                *msg = QString( "Could not open file '%1', please chek permissions" ).arg( fileName );
+
+            return {};
+        }
+
+        auto data = fi.readAll();
+        QJsonParseError error;
+        auto doc = QJsonDocument::fromJson( data, &error );
+        if ( error.error != QJsonParseError::NoError )
+        {
+            if ( msg )
+                *msg = QString( "Error: %1 @ %2" ).arg( error.errorString() ).arg( error.offset );
+            return {};
+        }
+
+        if ( !doc.isObject() )
+        {
+            if ( msg )
+                *msg = QString( "Error: Top level item should be object" );
+            return {};
+        }
+
+        auto root = doc.object();
+        auto collectionsObj = root[ "collections" ];
+        auto moviesObj = root[ "movies" ];
+        if ( !collectionsObj.isArray() && !moviesObj.isArray() )
+        {
+            if ( msg )
+                *msg = QString( "Error: Top level item should contain an array called movies or collections" );
+            return {};
+        }
+
+        if ( moviesObj.isArray() )
+        {
+            QJsonObject collectionObj;
+            collectionObj[ "collection" ] = "<Unnamed Collection>";
+            collectionObj[ "movies" ] = moviesObj;
+            auto tmp = QJsonArray();
+            tmp.push_back( collectionObj );
+            collectionsObj = tmp;
+        }
+        QJsonArray collections;
+        if ( !collectionsObj.isArray() )
+        {
+            if ( msg )
+                *msg = QString( "Error: Top level item 'collections' should be an array" );
+            return {};
+        }
+
+        collections = collectionsObj.toArray();
+        auto retVal = std::make_shared< CCollections >();
+
+        for ( auto &&curr : collections )
+        {
+            auto collection = std::make_shared< CCollection >( curr );
+            retVal->fCollections.push_back( collection );
+            auto movies = collection->movies();
+            retVal->fMovies.insert( retVal->fMovies.end(), movies.begin(), movies.end() );
+        }
+
+        return retVal;
+    }
+
+    CMovie::CMovie( const QJsonValue &curr )
+    {
+        fRank = curr.toObject()[ "rank" ].toInt();
+        if ( !curr.toObject().contains( "rank" ) )
+            fRank = -1;
+        fName = curr.toObject()[ "name" ].toString();
+        fYear = curr.toObject()[ "year" ].toInt();
+    }
+
+    CCollection::CCollection( const QJsonValue &curr )
+    {
+        fName = curr.toObject()[ "collection" ].toString();
+        auto movies = curr.toObject()[ "movies" ].toArray();
+        for ( auto &&curr : movies )
+        {
+            auto movie = std::make_shared< CMovie >( curr );
+            fMovies.push_back( movie );
+        }
+    }
+
 }
