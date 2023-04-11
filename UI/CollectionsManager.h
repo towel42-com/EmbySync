@@ -28,6 +28,7 @@
 #include <QPointer>
 #include <list>
 #include <QUrl>
+#include <QFileInfo>
 #include <QModelIndex>
 class QMenu;
 class QAction;
@@ -95,10 +96,10 @@ private Q_SLOTS:
     void slotAllMoviesLoaded();
     void slotAllCollectionsLoaded();
     void slotMediaChanged();
-    void slotLoadFile( const QString &fileName );
 
 private:
-    void setCollectionsFile( const QString &fileName, bool force );
+    void addCollectionsFile( const QString &fileName, bool force );
+    void addCollectionsFile( const QFileInfo &fi, bool force );
 
     void showPrimaryServer();
     std::shared_ptr< CServerInfo > getCurrentServerInfo( const QModelIndex &index = {} ) const;
@@ -117,5 +118,6 @@ private:
 
     CCollectionsFilterModel *fFilterModel{ nullptr };
     CServerFilterModel *fServerFilterModel{ nullptr };
+    std::list< QFileInfo > fCollectionFiles;
 };
 #endif

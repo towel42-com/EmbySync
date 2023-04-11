@@ -314,21 +314,23 @@ void CSettingsDlg::accept()
 void CSettingsDlg::load()
 {
     fImpl->servers->setColumnCount( 3 );
-    QStringList serverList;
     for ( auto &&serverInfo : *fServerModel )
     {
         auto name = serverInfo->displayName();
         auto url = serverInfo->url();
         auto apiKey = serverInfo->apiKey();
 
-        serverList << name;
+
+        fImpl->primaryServer->addItem( name, url );
+
         auto item = new QTreeWidgetItem( fImpl->servers, QStringList() << name << url << apiKey );
         item->setCheckState( 0, serverInfo->isEnabled() ? Qt::CheckState::Checked : Qt::CheckState::Unchecked );
         item->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/unknownStatus.png" ) ) );
     }
 
-    fImpl->primaryServer->addItems( serverList );
-    fImpl->primaryServer->setCurrentText( fSettings->primaryServer() );
+    auto primServerUrl = fSettings->primaryServer();
+    auto ii = fImpl->primaryServer->findData( primServerUrl );
+    fImpl->primaryServer->setCurrentIndex( ii );
 
     fMediaSourceColor = fSettings->mediaSourceColor();
     fMediaDestColor = fSettings->mediaDestColor();
@@ -366,7 +368,8 @@ void CSettingsDlg::save()
     auto servers = getServerInfos( false );
     fServerModel->setServers( servers );
 
-    fSettings->setPrimaryServer( fImpl->primaryServer->currentText() );
+    auto primServer = fImpl->primaryServer->currentData().toString();
+    fSettings->setPrimaryServer( primServer );
 
     fSettings->setMediaSourceColor( fMediaSourceColor );
     fSettings->setMediaDestColor( fMediaDestColor );
