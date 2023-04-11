@@ -149,7 +149,7 @@ void CCollectionsManager::setupActions()
             auto fileName = QFileDialog::getOpenFileName( this, QObject::tr( "Select File" ), QString(), QObject::tr( "Movie List File (*.json);;All Files (* *.*)" ) );
             if ( fileName.isEmpty() )
                 return;
-            setCollectionsFile( fileName, true );
+            addCollectionsFile( fileName, true );
         } );
 }
 
@@ -225,6 +225,10 @@ void CCollectionsManager::slotCurrentServerChanged( const QModelIndex &index )
 
     fMediaModel->clear();
     fCollectionsModel->clear();
+    for ( auto &&ii : fCollectionFiles )
+    {
+        addCollectionsFile( ii, true );
+    }
     if ( !fSyncSystem->loadAllMovies( serverInfo ) )
     {
         QMessageBox::critical( this, tr( "No Admin User Found" ), tr( "No user found with Administrator Privileges on server '%1'" ).arg( serverInfo->displayName() ) );
@@ -328,12 +332,13 @@ void CCollectionsManager::slotMediaContextMenu( CDataTree *dataTree, const QPoin
     menu.exec( dataTree->dataTree()->mapToGlobal( pos ) );
 }
 
-void CCollectionsManager::slotLoadFile( const QString &fileName )
+
+void CCollectionsManager::addCollectionsFile( const QString &fileName, bool force )
 {
-    setCollectionsFile( fileName, false );
+    return addCollectionsFile( QFileInfo( fileName ), force );
 }
 
-void CCollectionsManager::setCollectionsFile( const QString &fileName, bool force )
+void CCollectionsManager::addCollectionsFile( const QFileInfo &fi, bool force )
 {
     if ( !fMediaModel )
         return;
@@ -341,8 +346,12 @@ void CCollectionsManager::setCollectionsFile( const QString &fileName, bool forc
     if ( !force )
         return;
 
+    auto pos = std::find( fCollectionFiles.begin(), fCollectionFiles.end(), fi );
+    if ( pos == fCollectionFiles.end() )
+        fCollectionFiles.emplace_back( fi );
+
     QString msg;
-    auto collections = NJSON::CCollections::fromJSON( fileName, &msg );
+    auto collections = NJSON::CCollections::fromJSON( fi.absoluteFilePath(), &msg );
     if ( !collections.has_value() )
     {
         QMessageBox::critical( this, tr( "Error Reading File" ), msg );
@@ -352,9 +361,6 @@ void CCollectionsManager::setCollectionsFile( const QString &fileName, bool forc
     auto serverInfo = getCurrentServerInfo();
     if ( !serverInfo )
         return;
-
-    fMediaModel->clear();
-    fCollectionsModel->clear();
 
     for ( auto &&ii : collections.value()->collections() )
     {
@@ -369,7 +375,7 @@ void CCollectionsManager::setCollectionsFile( const QString &fileName, bool forc
             auto currCollection = fCollectionsModel->addMovie( movie->name(), movie->year(), idx, movie->rank() );
             if ( currCollection->fCollection && currCollection->fCollection->isUnNamed() )
             {
-                currCollection->fCollection->setFileName( fileName );
+                currCollection->fCollection->setFileName( fi.absoluteFilePath() );
             }
         }
     }

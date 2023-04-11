@@ -50,7 +50,7 @@ QVariant CServerModel::data( const QModelIndex &index, int role /*= Qt::DisplayR
     }
     else if ( role == ECustomRoles::eIsPrimaryServer )
     {
-        return fSettings->primaryServer() == serverInfo->displayName();
+        return fSettings->primaryServer() == serverInfo->url();
     }
     else if ( role == ECustomRoles::eEnabledRole )
     {
