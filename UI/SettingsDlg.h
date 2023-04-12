@@ -66,12 +66,16 @@ public Q_SLOTS:
     void slotMoveServerUp();
     void slotMoveServerDown();
     void slotCurrServerChanged();
+    void slotServerModelChanged();
 
 private:
     void loadKnownUsers( const std::vector< std::shared_ptr< CUserData > > &knownUsers );
     void loadKnownShows( const std::unordered_set< QString > &knownShows );
     void moveCurrServer( bool up );
     void load();
+
+    void loadPrimaryServers();
+
     void save();
 
     std::vector< std::shared_ptr< CServerInfo > > getServerInfos( bool enabledOnly ) const;
