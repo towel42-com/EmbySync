@@ -28,8 +28,10 @@
 #include "Core/SyncSystem.h"
 #include "Core/ServerModel.h"
 #include "SABUtils/ButtonEnabler.h"
+#include "SABUtils/WidgetChanged.h"
 
 #include <QFileDialog>
+#include <QMetaMethod>
 #include <QMessageBox>
 #include <QColorDialog>
 #include <QInputDialog>
@@ -153,6 +155,8 @@ CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, std::shared_p
             editServer( curr );
         } );
     connect( fImpl->servers, &QTreeWidget::itemDoubleClicked, [ this ]( QTreeWidgetItem *item ) { return editServer( item ); } );
+    connect( fImpl->servers, &QTreeWidget::itemSelectionChanged, this, &CSettingsDlg::slotCurrServerChanged );
+    NSABUtils::setupModelChanged( fImpl->servers->model(), this, SLOT( slotServerModelChanged() ) );
     connect( fImpl->servers, &QTreeWidget::itemSelectionChanged, this, &CSettingsDlg::slotCurrServerChanged );
     connect( fImpl->moveServerUp, &QToolButton::clicked, this, &CSettingsDlg::slotMoveServerUp );
     connect( fImpl->moveServerDown, &QToolButton::clicked, this, &CSettingsDlg::slotMoveServerDown );
@@ -320,17 +324,12 @@ void CSettingsDlg::load()
         auto url = serverInfo->url();
         auto apiKey = serverInfo->apiKey();
 
-
-        fImpl->primaryServer->addItem( name, url );
-
         auto item = new QTreeWidgetItem( fImpl->servers, QStringList() << name << url << apiKey );
         item->setCheckState( 0, serverInfo->isEnabled() ? Qt::CheckState::Checked : Qt::CheckState::Unchecked );
         item->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/unknownStatus.png" ) ) );
     }
 
-    auto primServerUrl = fSettings->primaryServer();
-    auto ii = fImpl->primaryServer->findData( primServerUrl );
-    fImpl->primaryServer->setCurrentIndex( ii );
+    loadPrimaryServers();
 
     fMediaSourceColor = fSettings->mediaSourceColor();
     fMediaDestColor = fSettings->mediaDestColor();
@@ -361,6 +360,39 @@ void CSettingsDlg::load()
 
     fImpl->checkForLatest->setChecked( CSettings::checkForLatest() );
     fImpl->loadLastProject->setChecked( CSettings::loadLastProject() );
+}
+
+void CSettingsDlg::loadPrimaryServers()
+{
+    auto primServerUrl = fSettings->primaryServer();
+    QString primServerName;
+    if ( fImpl->primaryServer->count() )
+    {
+        primServerUrl = fImpl->primaryServer->currentData().toString();
+        primServerName = fImpl->primaryServer->currentText();
+    }
+
+    fImpl->primaryServer->clear();
+
+ 
+    auto servers = getServerInfos( true );
+    for ( auto &&serverInfo : servers )
+    {
+        if ( !serverInfo->isEnabled() )
+            continue;
+
+        auto name = serverInfo->displayName();
+        auto url = serverInfo->url();
+
+        fImpl->primaryServer->addItem( tr( "%1 (%2)" ).arg( name ).arg( url ), url );
+    }
+
+    auto ii = fImpl->primaryServer->findData( primServerUrl );
+    if ( ( ii == -1 ) && !primServerName.isEmpty() )
+    {
+        ii = fImpl->primaryServer->findText( primServerName );
+    }
+    fImpl->primaryServer->setCurrentIndex( ii );
 }
 
 void CSettingsDlg::save()
@@ -656,4 +688,9 @@ void CSettingsDlg::slotTestServerResults( const QString &serverName, bool result
     {
         QMessageBox::critical( this, tr( "Error" ), tr( "Error in Testing: '%1' - %1" ).arg( serverName ).arg( msg ), QMessageBox::StandardButton::Ok );
     }
+}
+
+void CSettingsDlg::slotServerModelChanged()
+{
+    loadPrimaryServers();
 }
