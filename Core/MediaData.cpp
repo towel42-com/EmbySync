@@ -229,19 +229,19 @@ void CMediaData::loadData( const QString &serverName, const QJsonObject &media )
 
 void CMediaData::loadResolution( const QJsonArray &mediaSources )
 {
-    qDebug().noquote().nospace() << QJsonDocument( mediaSources ).toJson( QJsonDocument::Indented );
+    //qDebug().noquote().nospace() << QJsonDocument( mediaSources ).toJson( QJsonDocument::Indented );
 
     for ( auto &&ii : mediaSources )
     {
         auto mediaSource = ii.toObject();
-        qDebug().noquote().nospace() << QJsonDocument( mediaSource ).toJson( QJsonDocument::Indented );
+        //qDebug().noquote().nospace() << QJsonDocument( mediaSource ).toJson( QJsonDocument::Indented );
         if ( mediaSource.contains( "MediaStreams" ) )
         {
             auto streams = mediaSource[ "MediaStreams" ].toArray();
             for ( auto &&jj : streams )
             {
                 auto stream = jj.toObject();
-                qDebug().noquote().nospace() << QJsonDocument( stream ).toJson( QJsonDocument::Indented );
+                //qDebug().noquote().nospace() << QJsonDocument( stream ).toJson( QJsonDocument::Indented );
                 auto type = stream[ "Type" ].toString().toLower();
 
                 if ( type == "video" )
