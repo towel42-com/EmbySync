@@ -27,6 +27,7 @@
 #include "ServerModel.h"
 #include "MediaModel.h"
 #include "SyncSystem.h"
+#include "MovieStub.h"
 #include "SABUtils/StringUtils.h"
 
 #include <QJsonDocument>
@@ -73,12 +74,13 @@ CMediaData::CMediaData( const QJsonObject &mediaObj, std::shared_ptr< CServerMod
     }
 }
 
-CMediaData::CMediaData( const QString &name, int year, const QString &type )
+CMediaData::CMediaData( const SMovieStub &movieStub, const QString &type )
 {
-    fName = name;
+    fName = movieStub.fName;
     fOriginalTitle = fName;
     fType = type;
-    fPremiereDate = QDate( year, 1, 1 );
+    fPremiereDate = QDate( movieStub.fYear, 1, 1 );
+    fResolution = movieStub.fResolution;
 }
 
 void CMediaData::addSearchMenu( QMenu *menu ) const
@@ -191,7 +193,7 @@ void CMediaData::computeName( const QJsonObject &media )
 
 void CMediaData::loadData( const QString &serverName, const QJsonObject &media )
 {
-    // qDebug().noquote().nospace() << QJsonDocument( media ).toJson( QJsonDocument::Indented );
+    //qDebug().noquote().nospace() << QJsonDocument( media ).toJson( QJsonDocument::Indented );
 
     auto externalUrls = media[ "ExternalUrls" ].toArray();
     for ( auto &&ii : externalUrls )
@@ -219,6 +221,36 @@ void CMediaData::loadData( const QString &serverName, const QJsonObject &media )
     }
 
     fPremiereDate = media[ "PremiereDate" ].toVariant().toDate();
+    if ( media.contains( "MediaSources" ) )
+    {
+        loadResolution( media[ "MediaSources" ].toArray() );
+    }
+}
+
+void CMediaData::loadResolution( const QJsonArray &mediaSources )
+{
+    qDebug().noquote().nospace() << QJsonDocument( mediaSources ).toJson( QJsonDocument::Indented );
+
+    for ( auto &&ii : mediaSources )
+    {
+        auto mediaSource = ii.toObject();
+        qDebug().noquote().nospace() << QJsonDocument( mediaSource ).toJson( QJsonDocument::Indented );
+        if ( mediaSource.contains( "MediaStreams" ) )
+        {
+            auto streams = mediaSource[ "MediaStreams" ].toArray();
+            for ( auto &&jj : streams )
+            {
+                auto stream = jj.toObject();
+                qDebug().noquote().nospace() << QJsonDocument( stream ).toJson( QJsonDocument::Indented );
+                auto type = stream[ "Type" ].toString().toLower();
+
+                if ( type == "video" )
+                {
+                    fResolution = { stream[ "Width" ].toInt(), stream[ "Height" ].toInt() };
+                };
+            }
+        }
+    }
 }
 
 QString CMediaData::externalUrlsText() const
@@ -330,6 +362,16 @@ QTime CMediaData::playbackPositionTime( const QString &serverName ) const
     if ( !mediaData )
         return {};
     return mediaData->playbackPositionTime();
+}
+
+QString CMediaData::resolution() const
+{
+    return QString( "%1x%2" ).arg( fResolution.first ).arg( fResolution.second );
+}
+
+std::pair< int, int > CMediaData::resolutionValue() const
+{
+    return fResolution;
 }
 
 bool CMediaData::allPlayedEqual() const
@@ -625,9 +667,9 @@ bool CMediaData::isMatch( const QString &name, int year ) const
     if ( !isMatch )
         return false;
 
-    if ( SDummyMovie::nameKey( name ) == SDummyMovie::nameKey( fName ) )
+    if ( SMovieStub::nameKey( name ) == SMovieStub::nameKey( fName ) )
         return true;
-    if ( SDummyMovie::nameKey( name ) == SDummyMovie::nameKey( fOriginalTitle ) )
+    if ( SMovieStub::nameKey( name ) == SMovieStub::nameKey( fOriginalTitle ) )
         return true;
     if ( NSABUtils::NStringUtils::isSimilar( fName, name, true ) )
         return true;
@@ -739,9 +781,9 @@ QVariant CMediaCollection::data( int column, int role ) const
     return {};
 }
 
-std::shared_ptr< SMediaCollectionData > CMediaCollection::addMovie( const QString &name, int year, int rank )
+std::shared_ptr< SMediaCollectionData > CMediaCollection::addMovie( const QString &name, int year, const std::pair< int, int > &resolution, int rank )
 {
-    return fCollectionInfo->addMovie( name, year, this, rank );
+    return fCollectionInfo->addMovie( name, year, resolution, this, rank );
 }
 
 void CMediaCollection::setItems( const std::list< std::shared_ptr< CMediaData > > &items )
@@ -784,9 +826,9 @@ bool SCollectionServerInfo::updateMedia( std::shared_ptr< CMediaModel > mediaMod
     return retVal;
 }
 
-std::shared_ptr< SMediaCollectionData > SCollectionServerInfo::addMovie( const QString &name, int year, CMediaCollection *parent, int rank )
+std::shared_ptr< SMediaCollectionData > SCollectionServerInfo::addMovie( const QString &name, int year, const std::pair< int, int > &resolution, CMediaCollection *parent, int rank )
 {
-    auto retVal = std::make_shared< SMediaCollectionData >( std::make_shared< CMediaData >( name, year, "Movie" ), parent );
+    auto retVal = std::make_shared< SMediaCollectionData >( std::make_shared< CMediaData >( SMovieStub( name, year, resolution ), "Movie" ), parent );
 
     if ( ( rank > 0 ) && ( rank - 1 ) >= fItems.size() )
     {
@@ -926,6 +968,19 @@ namespace NJSON
             fRank = -1;
         fName = curr.toObject()[ "name" ].toString();
         fYear = curr.toObject()[ "year" ].toInt();
+        Q_ASSERT( fYear != 0 );
+        if ( curr.toObject().contains( "width" ) && curr.toObject().contains( "height" ) )
+            fResolution = { curr.toObject()[ "width" ].toInt(), curr.toObject()[ "width" ].toInt() };
+        else if ( curr.toObject().contains( "type" ) )
+        {
+            auto type = curr.toObject()[ "type" ].toString().toLower();
+            if ( type == "uhd" )
+                fResolution = { 3840, 2160 };
+            else if ( type == "dvd" )
+                fResolution = { 720, 480 };
+            else if ( type.isEmpty() )
+                fResolution = { 1920, 1080 };
+        }
     }
 
     CCollection::CCollection( const QJsonValue &curr )
