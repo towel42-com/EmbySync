@@ -184,17 +184,19 @@ QVariant CMovieSearchFilterModel::data( const QModelIndex &index, int role /*= Q
     bool resolutionMatches = true;
     if ( onServer && fMatchResolution )
     {
+        if ( movieStub.fName.contains( "Swiss" ) )
+            int xyz = 0;
         resolutionMatches = movieStub.equal( searchStub.value(), true, true, true );
     }
 
     if ( role == eResolutionMatches )
-        return onServer && resolutionMatches;
+        return resolutionMatches;
 
     if ( role == Qt::DisplayRole )
     {
         auto retVal = QSortFilterProxyModel::data( index, role );
         auto perServerColumn = index.data( CMediaModel::ECustomRoles::ePerServerColumnRole ).toInt();
-        if ( searchStub.has_value() && ( perServerColumn == CMediaModel::EColumns::eResolution ) && !resolutionMatches )
+        if ( searchStub.has_value() && ( perServerColumn == CMediaModel::EColumns::eResolution ) && onServer )
         {
             retVal = retVal.toString() + QString( " Searching for: %1" ).arg( searchStub.value().resolution() );
         }
