@@ -190,8 +190,8 @@ QJsonObject CServerInfo::toJson() const
 
 std::shared_ptr< CServerInfo > CServerInfo::fromJson( const QJsonObject &obj, QString &errorMsg )
 {
-    auto tmp = QJsonDocument( obj );
-    qDebug().noquote().nospace() << tmp.toJson( QJsonDocument::JsonFormat::Indented );
+    //auto tmp = QJsonDocument( obj );
+    //qDebug().noquote().nospace() << tmp.toJson( QJsonDocument::JsonFormat::Indented );
 
     bool generated = !obj.contains( "name" ) || obj[ "name" ].toString().isEmpty();
     QString serverName;
