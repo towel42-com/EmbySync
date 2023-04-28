@@ -2,9 +2,16 @@
 #include "MediaModel.h"
 #include "MediaData.h"
 #include "Settings.h"
+
+#include "SABUtils/StringUtils.h"
+
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QJsonDocument>
 #include <QTimer>
+#include <QFileDialog>
+#include <QMessageBox>
+#include <QTextStream>
 
 CMovieSearchFilterModel::CMovieSearchFilterModel( std::shared_ptr< CSettings > settings, QObject *parent ) :
     QSortFilterProxyModel( parent ),
@@ -178,17 +185,10 @@ QVariant CMovieSearchFilterModel::data( const QModelIndex &index, int role /*= Q
     if ( ( role != Qt::ForegroundRole ) && ( role != Qt::BackgroundRole ) && ( role != Qt::DisplayRole ) && ( role != eResolutionMatches ) )
         return QSortFilterProxyModel::data( index, role );
 
-    auto movieStub = getMovieStub( index );
-    auto searchStub = inSearchForMovie( movieStub );
-    auto onServer = index.data( CMediaModel::ECustomRoles::eOnServerRole ).toBool();
-    bool resolutionMatches = true;
-    if ( onServer && fMatchResolution )
-    {
-        if ( movieStub.fName.contains( "Swiss" ) )
-            int xyz = 0;
-        resolutionMatches = movieStub.equal( searchStub.value(), true, true, true );
-    }
-
+    bool onServer = false;
+    bool resolutionMatches = false;
+    std::optional< SMovieStub > searchStub;
+    std::tie( onServer, resolutionMatches, searchStub ) = getSearchStatus( index );
     if ( role == eResolutionMatches )
         return resolutionMatches;
 
@@ -225,6 +225,20 @@ QVariant CMovieSearchFilterModel::data( const QModelIndex &index, int role /*= Q
     return {};
 }
 
+std::tuple< bool, bool, std::optional< SMovieStub > > CMovieSearchFilterModel::getSearchStatus( const QModelIndex &index ) const
+{
+    auto movieStub = getMovieStub( index );
+    auto searchStub = inSearchForMovie( movieStub );
+    auto onServer = index.data( CMediaModel::ECustomRoles::eOnServerRole ).toBool();
+    bool resolutionMatches = true;
+    if ( onServer && fMatchResolution )
+    {
+        resolutionMatches = movieStub.equal( searchStub.value(), true, true, true );
+    }
+
+    return std::make_tuple( onServer, resolutionMatches, searchStub );
+}
+
 QString CMovieSearchFilterModel::summary() const
 {
     int missing = 0;
@@ -251,4 +265,74 @@ QJsonObject CMovieSearchFilterModel::toJSON() const
     QJsonObject retVal;
     retVal[ "movies" ] = moviesArray;
     return retVal;
+}
+
+void CMovieSearchFilterModel::saveMissing( QWidget *parent ) const
+{
+    auto fileName = QFileDialog::getSaveFileName( parent, tr( "FileName" ), QString(), "JSON Files (*.json);;CSV Files (*.csv);;All Files (*.*)" );
+    if ( fileName.isEmpty() )
+        return;
+
+    auto isJSON = QFileInfo( fileName ).suffix().toLower() == "json";
+    QJsonArray jsonMovies;
+    std::list< QStringList > stringMovies;
+    stringMovies.push_back(
+        QStringList() << "Movie Name"
+                      << "Year"
+                      << "Reason" );
+    int rowCount = this->rowCount();
+    for ( int ii = 0; ii < rowCount; ++ii )
+    {
+        auto name = index( ii, 0 ).data().toString();
+        auto year = index( ii, 1 ).data().toInt();
+
+        auto status = getSearchStatus( index( ii, 0 ) );
+        bool onServer = std::get< 0 >( status );
+        bool resolutionOK = std::get< 1 >( status );
+        if ( onServer && resolutionOK )
+            continue;
+        QString reason;
+        if ( !onServer )
+            reason = "Missing";
+        else if ( !resolutionOK )
+            reason = "Better Resolution";
+
+        if ( isJSON )
+        {
+            QJsonObject curr;
+            curr[ "name" ] = name;
+            curr[ "year" ] = year;
+            curr[ "reason" ] = reason;
+            jsonMovies.push_back( curr );
+        }
+        else
+        {
+            stringMovies.push_back( QStringList() << name << QString::number( year ) << reason );
+        }
+    }
+
+    QFile fi( fileName );
+    if ( !fi.open( QFile::WriteOnly | QFile::Text ) )
+    {
+        QMessageBox::critical( parent, tr( "Could not create file" ), tr( "Could not create/open file for writing '%1'" ).arg( fileName ) );
+        return;
+    }
+
+    QTextStream ts( &fi );
+
+    if ( isJSON )
+    {
+        QJsonObject root;
+        root[ "movies" ] = jsonMovies;
+
+        QJsonDocument doc( root );
+        ts << doc.toJson( QJsonDocument::JsonFormat::Indented );
+    }
+    else
+    {
+        for ( auto &&ii : stringMovies )
+        {
+            ts << NSABUtils::NStringUtils::toCSV( ii ) << Qt::endl;
+        }
+    }
 }

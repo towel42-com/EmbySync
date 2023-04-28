@@ -531,7 +531,7 @@ QUrl CMediaData::getSearchURL( ESearchSite site ) const
     return retVal;
 }
 
-QJsonObject CMediaData::toJson( bool includeSearchURL )
+QJsonObject CMediaData::toJson( bool includeSearchURL ) const
 {
     QJsonObject retVal;
 

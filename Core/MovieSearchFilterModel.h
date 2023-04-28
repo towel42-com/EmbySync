@@ -7,6 +7,7 @@
 #include <unordered_set>
 #include <optional>
 #include <memory>
+#include <tuple>
 
 class CSettings;
 class CMediaData;
@@ -48,12 +49,15 @@ public:
     QString summary() const;
 
     QJsonObject toJSON() const;
-private Q_SLOTS:
+
+    void saveMissing( QWidget *parent ) const;
+    private Q_SLOTS:
     void slotInvalidateFilter();
 
 private:
     void startInvalidateTimer();
     void addStubToSourceModel( const SMovieStub &movieStub );
+    std::tuple< bool, bool, std::optional< SMovieStub > > getSearchStatus( const QModelIndex &index ) const;
 
     std::optional< SMovieStub > inSearchForMovie( const SMovieStub &movieStub ) const;
 

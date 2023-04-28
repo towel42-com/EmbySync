@@ -142,7 +142,7 @@ public:
     };
     QUrl getSearchURL( ESearchSite site ) const;
 
-    QJsonObject toJson( bool includeSearchURL );
+    QJsonObject toJson( bool includeSearchURL ) const;
 
     bool onServer() const;
     bool isMatch( const QString &name, int year ) const;
