@@ -1,0 +1,2059 @@
+{
+    "movies": [
+        {
+            "name": "21 Jumpstreet",
+            "type": "",
+            "genre": "Comedy",
+            "year": 2012,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "30 Days of Night",
+            "type": "",
+            "genre": "Horror",
+            "year": 2007,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "A Fistful of Dollars",
+            "type": "",
+            "genre": "Spaghetti Western",
+            "year": 1964,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Accountant",
+            "type": "",
+            "genre": "Drama/Suspense ",
+            "year": 2016,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Amadeus",
+            "type": "",
+            "genre": "Drama ",
+            "year": 1984,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Amazing Spider-man",
+            "type": "",
+            "genre": "Action",
+            "year": 2012,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Ant-Man",
+            "type": "",
+            "genre": "Action",
+            "year": 2015,
+            "additional info": "3-D",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The A-Team",
+            "type": "",
+            "genre": "Action",
+            "year": 2010,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Avengers",
+            "type": "",
+            "genre": "Action",
+            "year": 2012,
+            "additional info": "3-D",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Baby Driver",
+            "type": "UHD",
+            "genre": "Crime/Action",
+            "year": 2017,
+            "additional info": "Ultra-HD",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Batman Begins",
+            "type": "",
+            "genre": "Action",
+            "year": 2005,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Beauty and the Beast",
+            "type": "",
+            "genre": "Fantasy",
+            "year": 2017,
+            "additional info": "Live Adaption",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Big Lebowski",
+            "type": "",
+            "genre": "Crime/Comedy",
+            "year": 1998,
+            "additional info": "Limited Edition",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Birdman",
+            "type": "",
+            "genre": "Dark Comedy/Indie",
+            "year": 2014,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Blade Runner 2049",
+            "type": "",
+            "genre": "Sci-Fi/Neo-Noir",
+            "year": 2017,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Blazing Saddles",
+            "type": "",
+            "genre": "Comedy/Western",
+            "year": 1974,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Blue Thunder",
+            "type": "",
+            "genre": "Crime/Action",
+            "year": 1983,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Bodyguard",
+            "type": "",
+            "genre": "Action/Romance",
+            "year": 1992,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Bridge of Spies",
+            "type": "",
+            "genre": "Historical/Drama",
+            "year": 2015,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Captain America: The First Avenger",
+            "type": "",
+            "genre": "Action",
+            "year": 2011,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Captain America: The Winter Soldier",
+            "type": "",
+            "genre": "Action",
+            "year": 2014,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Captain America Civil War",
+            "type": "",
+            "genre": "Action",
+            "year": 2016,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Casablanca",
+            "type": "",
+            "genre": "Romance/War",
+            "year": 1942,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "A Christmas Story",
+            "type": "",
+            "genre": "Christmas/Comedy",
+            "year": 1983,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Christmas Vacation",
+            "type": "",
+            "genre": "Christmas/Comedy",
+            "year": 1989,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Chronicles of Narnia: Prince Caspian",
+            "type": "",
+            "genre": "Action/Adventure",
+            "year": 2008,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Chuck - The Series Seasons 1-5",
+            "type": "",
+            "genre": "Spy/Romance",
+            "year": 2008,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Close Encounters of the Third Kind",
+            "type": "",
+            "genre": "Sci-Fi ",
+            "year": 1977,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Courage Under Fire",
+            "type": "",
+            "genre": "War",
+            "year": 1996,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Daddy's Home",
+            "type": "",
+            "genre": "Comedy/Children's",
+            "year": 2015,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Dances with Wolves",
+            "type": "",
+            "genre": "Western/War",
+            "year": 1990,
+            "additional info": "20th Anniversary",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Dark Knight",
+            "type": "",
+            "genre": "Action",
+            "year": 2008,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Deadpool",
+            "type": "",
+            "genre": "Action/Comedy",
+            "year": 2016,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Deadpool 2",
+            "type": "",
+            "genre": "Action/Comedy",
+            "year": 2018,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Deer Hunter",
+            "type": "",
+            "genre": "War/Drama",
+            "year": 1978,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Django Unchained",
+            "type": "",
+            "genre": "Western/Action",
+            "year": 2012,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Doctor Strange",
+            "type": "",
+            "genre": "Action",
+            "year": 2016,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Edge of Tomorrow",
+            "type": "",
+            "genre": "Sci-Fi/Action",
+            "year": 2014,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Fifth Element",
+            "type": "",
+            "genre": "Sci-Fi/Action",
+            "year": 1997,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "For a Few Dollars More",
+            "type": "",
+            "genre": "Spaghetti Western",
+            "year": 1965,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Fright Night",
+            "type": "",
+            "genre": "Horror/Comedy",
+            "year": 2011,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "From Dusk to Dawn",
+            "type": "",
+            "genre": "Horror",
+            "year": 1996,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Galaxy Quest",
+            "type": "",
+            "genre": "Sci-Fi/Comedy",
+            "year": 1999,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Ghostbusters",
+            "type": "",
+            "genre": "Sci-Fi/Comedy",
+            "year": 1984,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Ghostbusters 2",
+            "type": "",
+            "genre": "Sci-Fi/Comedy",
+            "year": 1989,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Gladiator",
+            "type": "",
+            "genre": "Action/Adventure",
+            "year": 2000,
+            "additional info": "Saphire Edition",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Great Escape",
+            "type": "",
+            "genre": "War/Adventure",
+            "year": 1963,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Green Hornet",
+            "type": "",
+            "genre": "Action/Comedy",
+            "year": 2011,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Grinch",
+            "type": "",
+            "genre": "Animation/Children",
+            "year": 2018,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Harry Potter and the Philosopher's Stone",
+            "type": "",
+            "genre": "Fantasy/Adventure",
+            "year": 2001,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Harry Potter and the Chamber of Secrets",
+            "type": "",
+            "genre": "Fantasy/Adventure",
+            "year": 2002,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Harry Potter and the Prisoner of Azkaban",
+            "type": "",
+            "genre": "Fantasy/Adventure",
+            "year": 2004,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Harry Potter and the Goblet of Fire",
+            "type": "",
+            "genre": "Fantasy/Adventure",
+            "year": 2005,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Harry Potter and the Order of the Phoenix",
+            "type": "",
+            "genre": "Fantasy/Adventure",
+            "year": 2007,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Harry Potter and the Half-Blood Prince",
+            "type": "",
+            "genre": "Fantasy/Adventure",
+            "year": 2009,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Harry Potter and the Deathly Hallows Part 1",
+            "type": "",
+            "genre": "Fantasy/Adventure",
+            "year": 2010,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Harry Potter and the Deathly Hallows Part 2",
+            "type": "",
+            "genre": "Fantasy/Adventure",
+            "year": 2011,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Hateful Eight",
+            "type": "",
+            "genre": "Western/Thriller",
+            "year": 2015,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Hell or High Water",
+            "type": "",
+            "genre": "Crime/Thriller",
+            "year": 2016,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Hercules",
+            "type": "",
+            "genre": "Animation/Children",
+            "year": 1997,
+            "additional info": "Special Edition",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Here Comes the Boom",
+            "type": "",
+            "genre": "Action/Comedy",
+            "year": 2012,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Hitman's Bodyguard",
+            "type": "",
+            "genre": "Action/Comedy",
+            "year": 2017,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Hobbit: An Unexpected Journey",
+            "type": "",
+            "genre": "Action/Adventure",
+            "year": 2012,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Hobbit: The Desolation of Smaug",
+            "type": "",
+            "genre": "Action/Adventure",
+            "year": 2013,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Home Alone",
+            "type": "",
+            "genre": "Christmas/Comedy",
+            "year": 1990,
+            "additional info": "Family Fun Edition",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Hop",
+            "type": "",
+            "genre": "Fantasy/Animation",
+            "year": 2011,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Hotel Transylvania",
+            "type": "",
+            "genre": "Animation/Children",
+            "year": 2012,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "House of Dark Shadows",
+            "type": "",
+            "genre": "Horror",
+            "year": 1970,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Hunt for Red October",
+            "type": "",
+            "genre": "Political/Thriller",
+            "year": 1990,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Hurt Locker",
+            "type": "",
+            "genre": "War/Action",
+            "year": 2008,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Inception",
+            "type": "",
+            "genre": "Sci-Fi/Action",
+            "year": 2010,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Incredibles 2",
+            "type": "",
+            "genre": "Animation/Children",
+            "year": 2018,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Raiders of the Lost Ark",
+            "type": "",
+            "genre": "Action/Adventure",
+            "year": 1981,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Indiana Jones and the Temple of Doom",
+            "type": "",
+            "genre": "Action/Adventure",
+            "year": 1984,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Indiana Jones and the Last Crusade",
+            "type": "",
+            "genre": "Action/Adventure",
+            "year": 1989,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Indiana Jones and the Kingdom of the Crystal Skull",
+            "type": "",
+            "genre": "Action/Adventure",
+            "year": 2008,
+            "additional info": "",
+            "comments": ""
+
+        },
+        {
+            "name": "Inglourious Basterds",
+            "type": "",
+            "genre": "War/Dark Comedy",
+            "year": 2009,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Interstellar",
+            "type": "",
+            "genre": "Sci-Fi/Drama",
+            "year": 2014,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "IT",
+            "type": "",
+            "genre": "Horror",
+            "year": 2017,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Italian Job",
+            "type": "",
+            "genre": "Heist/Action",
+            "year": 2003,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "It's a Wonderful Life",
+            "type": "",
+            "genre": "Fantasy/Drama/Holiday",
+            "year": 1946,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Jack Reacher",
+            "type": "",
+            "genre": "Action/Thriller",
+            "year": 2012,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Jaws",
+            "type": "",
+            "genre": "Thriller/Suspense",
+            "year": 1975,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Jeremiah Johnson",
+            "type": "",
+            "genre": "Western/Adventure",
+            "year": 1972,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Jingle All the Way",
+            "type": "",
+            "genre": "Comedy/Children's",
+            "year": 1996,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "John Wick",
+            "type": "",
+            "genre": "Neo-Noir/Action",
+            "year": 2014,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "John Wick 2",
+            "type": "",
+            "genre": "Neo-Noir/Action",
+            "year": 2017,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Jungle Book",
+            "type": "",
+            "genre": "Children/Fiction",
+            "year": 2016,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Karate Kid",
+            "type": "",
+            "genre": "Martial Arts/Action",
+            "year": 1984,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Kick-Ass",
+            "type": "",
+            "genre": "Superhero/Action",
+            "year": 2010,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Kick-Ass 2",
+            "type": "",
+            "genre": "Superhero/Action",
+            "year": 2013,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Kingsman: The Secret Service",
+            "type": "",
+            "genre": "Action/Spy",
+            "year": 2015,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Knight and Day",
+            "type": "",
+            "genre": "Action/Romance",
+            "year": 2010,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Kronk's New Groove",
+            "type": "",
+            "genre": "Comedy/Action",
+            "year": 2005,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Last Starfighter",
+            "type": "",
+            "genre": "Action/Sci-Fi",
+            "year": 1984,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Laura",
+            "type": "",
+            "genre": "film noir",
+            "year": 1944,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Lawless",
+            "type": "",
+            "genre": "Crime/Drama",
+            "year": 2012,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Lego Movie",
+            "type": "",
+            "genre": "Animation/Children",
+            "year": 2014,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Let Me In",
+            "type": "",
+            "genre": "Horror",
+            "year": 2010,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Life of Pi",
+            "type": "",
+            "genre": "Adventure/Fiction",
+            "year": 2012,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Lion King",
+            "type": "",
+            "genre": "Children/Animation",
+            "year": 1994,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Logan",
+            "type": "",
+            "genre": "Superhero/Action",
+            "year": 2017,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Lone Survivor",
+            "type": "",
+            "genre": "War/Action",
+            "year": 2013,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Looper",
+            "type": "",
+            "genre": "Action/Sci-Fi",
+            "year": 2012,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Love Actually",
+            "type": "",
+            "genre": "Romance/Comedy",
+            "year": 2003,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Magnificent 7",
+            "type": "",
+            "genre": "Western/Action",
+            "year": 2016,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Man of Steel",
+            "type": "",
+            "genre": "Superhero/Action",
+            "year": 2013,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Man on Fire",
+            "type": "",
+            "genre": "Action/Thriller",
+            "year": 2004,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Manchurian Candidate",
+            "type": "",
+            "genre": "Political/Thriller",
+            "year": 1962,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Meet Joe Black",
+            "type": "",
+            "genre": "Romance/Mystery",
+            "year": 1998,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Memento",
+            "type": "",
+            "genre": "Thiller/Mystery",
+            "year": 2000,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Men in Black",
+            "type": "",
+            "genre": "Action/Sci-Fi",
+            "year": 1997,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Men in Black II",
+            "type": "",
+            "genre": "Action/Sci-Fi",
+            "year": 2002,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Men in Black 3",
+            "type": "",
+            "genre": "Action/Sci-Fi",
+            "year": 2012,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Miracle on 34th Street",
+            "type": "",
+            "genre": "Holiday/Children's",
+            "year": 1947,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Mission",
+            "type": "",
+            "genre": "Adventure/Fiction",
+            "year": 1986,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Monty Python and The Holy Grail",
+            "type": "",
+            "genre": "Comedy/Fantasy",
+            "year": 1975,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Moonrise Kingdom",
+            "type": "",
+            "genre": "Romance/Comedy",
+            "year": 2012,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Mouse Hunt",
+            "type": "DVD",
+            "genre": "Slapstick/Dark Comedy",
+            "year": 1997,
+            "additional info": "Not Available on Blu-Ray",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Mr. & Mrs. Smith",
+            "type": "",
+            "genre": "Romance/Action",
+            "year": 2005,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Napolean Dynomite",
+            "type": "",
+            "genre": "Comedy/Indie film",
+            "year": 2004,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "No Country for Old Men",
+            "type": "",
+            "genre": "Thriller/Crime Film",
+            "year": 2007,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Nobody",
+            "type": "UHD",
+            "genre": "Action/Drama",
+            "year": 2021,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Notebook",
+            "type": "",
+            "genre": "Romance/Drama",
+            "year": 2004,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Open Range",
+            "type": "DVD",
+            "genre": "Western/Action",
+            "year": 2003,
+            "additional info": "Blu-Ray only available in Germany",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Out of Time",
+            "type": "",
+            "genre": "Drama/Thriller",
+            "year": 2003,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Pacific Rim",
+            "type": "",
+            "genre": "Action/Sci-Fi",
+            "year": 2013,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Pans Labyrinth",
+            "type": "",
+            "genre": "Fantasy/War",
+            "year": 2006,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Passion of the Christ",
+            "type": "",
+            "genre": "Religious",
+            "year": 2004,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Paul Blart: Mall Cop",
+            "type": "",
+            "genre": "Comedy/Slapstick",
+            "year": 2009,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Paul - Apostle of Christ",
+            "type": "",
+            "genre": "Religious",
+            "year": 2018,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Pitch Black",
+            "type": "",
+            "genre": "Horror/Sci-Fi",
+            "year": 2000,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Polar Express",
+            "type": "",
+            "genre": "Children's Film, Animation",
+            "year": 2004,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Poltergeist",
+            "type": "",
+            "genre": "Supernatural Horror",
+            "year": 1982,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Princess Bride",
+            "type": "",
+            "genre": "Fantasy/Adventure",
+            "year": 1987,
+            "additional info": "25th Anniversary Edition",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Quiet Man",
+            "type": "",
+            "genre": "Romance/Drama",
+            "year": 1952,
+            "additional info": "60th Anniversary - Beautiful Transfer",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Rambo",
+            "type": "",
+            "genre": "War/Action",
+            "year": 2008,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "First Blood",
+            "type": "",
+            "genre": "War/Action",
+            "year": 1982,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Rambo-First Blood part II",
+            "type": "",
+            "genre": "War/Action",
+            "year": 1985,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Rambo III",
+            "type": "",
+            "genre": "War/Action",
+            "year": 1988,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Ready Player One",
+            "type": "",
+            "genre": "Science Fiction/Fantasy",
+            "year": 2018,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Red",
+            "type": "",
+            "genre": "Action/Comedy",
+            "year": 2008,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Red 2",
+            "type": "",
+            "genre": "Action/Comedy",
+            "year": 2013,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Revenant",
+            "type": "",
+            "genre": "Survival/Thriller",
+            "year": 2015,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Rite",
+            "type": "",
+            "genre": "Horror/Thriller",
+            "year": 2011,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Rocky",
+            "type": "",
+            "genre": "Sports/Drama",
+            "year": 1976,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Rocky II",
+            "type": "",
+            "genre": "Sports/Drama",
+            "year": 1979,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Rocky III",
+            "type": "",
+            "genre": "Sports/Drama",
+            "year": 1982,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Rocky IV",
+            "type": "",
+            "genre": "Sports/Drama",
+            "year": 1985,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Rocky Balboa",
+            "type": "",
+            "genre": "Sports/Drama",
+            "year": 2006,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Rogue One: A Star Wars Story",
+            "type": "",
+            "genre": "Space Opera/Action",
+            "year": 2016,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Saving Private Ryan",
+            "type": "",
+            "genre": "War/Drama",
+            "year": 1998,
+            "additional info": "Saphire Edition",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Shoot 'Em Up",
+            "type": "",
+            "genre": "Action/Crime Film ",
+            "year": 2007,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Shooter",
+            "type": "",
+            "genre": "Action/Thriller",
+            "year": 2007,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Silver Linings Playbook",
+            "type": "",
+            "genre": "Romance/Comedy Drama",
+            "year": 2012,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Skyfall",
+            "type": "",
+            "genre": "Action/Spy",
+            "year": 2012,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Source Code",
+            "type": "",
+            "genre": "Sci-Fi/Drama",
+            "year": 2011,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Speed Racer",
+            "type": "DVD",
+            "genre": "Animation/Adventure",
+            "year": 1967,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Spider-Man: Homecoming",
+            "type": "UHD",
+            "genre": "Superhero/Action",
+            "year": 2017,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Spy",
+            "type": "",
+            "genre": "Action/Comedy",
+            "year": 2015,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Star Trek",
+            "type": "",
+            "genre": "Sci-Fi/Action",
+            "year": 2009,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Star Wars: The Force Awakens",
+            "type": "",
+            "genre": "Space Opera/Action",
+            "year": 2015,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Step Brothers",
+            "type": "",
+            "genre": "Comedy",
+            "year": 2008,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Swiss Family Robinson",
+            "type": "",
+            "genre": "Adventure/Fiction",
+            "year": 1960,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Boondock Saints",
+            "type": "",
+            "genre": "Action/Crime",
+            "year": 1999,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Bourne Identity",
+            "type": "",
+            "genre": "Action/Thriller",
+            "year": 2002,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Bourne Supremacy",
+            "type": "",
+            "genre": "Action/Thriller",
+            "year": 2004,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Bourne Ultimatum",
+            "type": "",
+            "genre": "Action/Thriller",
+            "year": 2007,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Emperor's New Groove",
+            "type": "",
+            "genre": "Comedy/Action",
+            "year": 2000,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Expendables",
+            "type": "",
+            "genre": "Action",
+            "year": 2010,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Godfather",
+            "type": "",
+            "genre": "Mob/Crime",
+            "year": 1972,
+            "additional info": "The Coppola Restoration",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Godfather Part II",
+            "type": "",
+            "genre": "Mob/Crime",
+            "year": 1974,
+            "additional info": "The Coppola Restoration",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Godfather Part III",
+            "type": "",
+            "genre": "Mob/Crime",
+            "year": 1990,
+            "additional info": "The Coppola Restoration",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Good, The Bad, and The Ugly",
+            "type": "",
+            "genre": "Spaghetti Western",
+            "year": 1966,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "There Will Be Blood",
+            "type": "",
+            "genre": "Drama",
+            "year": 2007,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Thing",
+            "type": "",
+            "genre": "Horror/Sci-Fi",
+            "year": 1982,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "The Thomas Crown Affair",
+            "type": "",
+            "genre": "Heist/Romance",
+            "year": 1999,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Thor",
+            "type": "",
+            "genre": "Superhero/Action",
+            "year": 2011,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Titantic",
+            "type": "",
+            "genre": "Disaster/Romance",
+            "year": 1997,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "True Grit",
+            "type": "",
+            "genre": "Western/Adventure",
+            "year": 1969,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Up",
+            "type": "",
+            "genre": "Animation/Children",
+            "year": 2009,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Whiplash",
+            "type": "",
+            "genre": "Music/Drama/Indie",
+            "year": 2014,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Winter's Bone",
+            "type": "",
+            "genre": "Drama/Mystery",
+            "year": 2010,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Wonder Woman",
+            "type": "",
+            "genre": "Superhero/Action",
+            "year": 2017,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "X-Men: Days of Future Past",
+            "type": "",
+            "genre": "Superhero/Action",
+            "year": 2014,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "X-Men: First Class",
+            "type": "",
+            "genre": "Superhero/Action",
+            "year": 2011,
+            "additional info": "",
+            "comments": ""
+
+
+
+        },
+        {
+            "name": "Zootopia",
+            "type": "",
+            "genre": "Animation/Children",
+            "year": 2016,
+            "additional info": "",
+            "comments": ""
+
+
+
+        }
+    ]
+}
