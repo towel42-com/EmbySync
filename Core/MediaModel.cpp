@@ -210,12 +210,12 @@ QVariant CMediaModel::data( const QModelIndex &index, int role /*= Qt::DisplayRo
     switch ( perServerColumn( column ) )
     {
         case eName:
-            return ( isValid || !fLabelMissingFromServer ) ? mediaData->name() : tr( "%1 - <Missing from Server>" ).arg( mediaData->name() );
+            return isValid ? mediaData->name() : tr( "%1 - <Missing from Server>" ).arg( mediaData->name() );
         case eType:
             return mediaData->mediaType();
         case ePremiereDate:
             {
-                if ( fOnlyShowPremierYear || ( ( mediaData->premiereDate().month() ) == 1 && ( mediaData->premiereDate().day() == 1 ) ) )
+                if ( ( mediaData->premiereDate().month() ) == 1 && ( mediaData->premiereDate().day() == 1 ) )
                     return mediaData->premiereDate().year();
                 else
                     return mediaData->premiereDate();
@@ -563,20 +563,6 @@ void CMediaModel::clearAllMovieStubs()
         }
         ++ii;
     }
-    endResetModel();
-}
-
-void CMediaModel::setLabelMissingFromServer( bool value )
-{
-    beginResetModel();
-    fLabelMissingFromServer = value;
-    endResetModel();
-}
-
-void CMediaModel::setOnlyShowPremierYear( bool value )
-{
-    beginResetModel();
-    fOnlyShowPremierYear = value;
     endResetModel();
 }
 

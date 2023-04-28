@@ -120,6 +120,8 @@ private:
     QPointer< QAction > fOnlyShowMissingAction; 
     QPointer< QAction > fMatchResolutionAction;
     QPointer< QAction > fRemoveMovieToSearchFor;
+    QPointer< QAction > fActionSaveMissing;
+    
     QPointer< QToolBar > fToolBar{ nullptr };
 
     CServerFilterModel *fServerFilterModel{ nullptr };
