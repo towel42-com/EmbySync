@@ -240,7 +240,7 @@ std::pair< QModelIndex, std::shared_ptr< CMediaCollection > > CCollectionsModel:
 {
     beginInsertRows( QModelIndex(), rowCount(), rowCount() );
 
-    qDebug() << name;
+    //qDebug() << name;
     auto pos = static_cast< int >( fCollectionsMap[ serverName ].size() );
 
     auto collection = std::make_shared< CMediaCollection >( serverName, name, id, pos );
