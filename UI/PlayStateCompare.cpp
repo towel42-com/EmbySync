@@ -63,9 +63,7 @@ CPlayStateCompare::CPlayStateCompare( QWidget *parent ) :
     connect( this, &CTabPageBase::sigViewData, this, &CPlayStateCompare::slotViewMedia );
 }
 
-void CPlayStateCompare::setupPage(
-    std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel,
-    std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem )
+void CPlayStateCompare::setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem )
 {
     CTabPageBase::setupPage( settings, syncSystem, mediaModel, collectionsModel, userModel, serverModel, progressSystem );
 
@@ -94,9 +92,7 @@ void CPlayStateCompare::setupActions()
 {
     fActionReloadCurrentUser = new QAction( this );
     fActionReloadCurrentUser->setObjectName( QString::fromUtf8( "fActionReloadCurrentUser" ) );
-    QIcon icon2;
-    icon2.addFile( QString::fromUtf8( ":/resources/reloadUsers.png" ), QSize(), QIcon::Normal, QIcon::Off );
-    fActionReloadCurrentUser->setIcon( icon2 );
+    setIcon( QString::fromUtf8( ":/resources/reloadUsers.png" ), fActionReloadCurrentUser );
     fActionReloadCurrentUser->setText( QCoreApplication::translate( "CPlayStateCompare", "Reload Current User's Media", nullptr ) );
     fActionReloadCurrentUser->setToolTip( QCoreApplication::translate( "CPlayStateCompare", "Reload Current User", nullptr ) );
 
@@ -106,17 +102,13 @@ void CPlayStateCompare::setupActions()
 
     fActionProcess = new QAction( this );
     fActionProcess->setObjectName( QString::fromUtf8( "fActionProcess" ) );
-    QIcon icon3;
-    icon3.addFile( QString::fromUtf8( ":/resources/process.png" ), QSize(), QIcon::Normal, QIcon::Off );
-    fActionProcess->setIcon( icon3 );
+    setIcon( QString::fromUtf8( ":/resources/process.png" ), fActionProcess );
     fActionProcess->setText( QCoreApplication::translate( "CPlayStateCompare", "Process Media", nullptr ) );
     fActionProcess->setToolTip( QCoreApplication::translate( "CPlayStateCompare", "Process Media", nullptr ) );
 
     fActionSelectiveProcess = new QAction( this );
     fActionSelectiveProcess->setObjectName( QString::fromUtf8( "fActionSelectiveProcess" ) );
-    QIcon icon4;
-    icon4.addFile( QString::fromUtf8( ":/resources/processRight.png" ), QSize(), QIcon::Normal, QIcon::Off );
-    fActionSelectiveProcess->setIcon( icon4 );
+    setIcon( QString::fromUtf8( ":/resources/processRight.png" ), fActionSelectiveProcess );
     fActionSelectiveProcess->setText( QCoreApplication::translate( "CPlayStateCompare", "Select a Server and Update other servers to it..", nullptr ) );
     fActionSelectiveProcess->setToolTip( QCoreApplication::translate( "CPlayStateCompare", "Select a Server and Update other servers to it", nullptr ) );
 
@@ -137,24 +129,18 @@ void CPlayStateCompare::setupActions()
     fActionOnlyShowSyncableUsers->setObjectName( QString::fromUtf8( "fActionOnlyShowSyncableUsers" ) );
     fActionOnlyShowSyncableUsers->setCheckable( true );
     fActionOnlyShowSyncableUsers->setText( QCoreApplication::translate( "CPlayStateCompare", "Only Show Syncable Users?", nullptr ) );
-    QIcon icon6;
-    icon6.addFile( QString::fromUtf8( ":/resources/syncusers.png" ), QSize(), QIcon::Normal, QIcon::Off );
-    fActionOnlyShowSyncableUsers->setIcon( icon6 );
+    setIcon( QString::fromUtf8( ":/resources/syncusers.png" ), fActionOnlyShowSyncableUsers );
 
     fActionOnlyShowMediaWithDifferences = new QAction( this );
     fActionOnlyShowMediaWithDifferences->setObjectName( QString::fromUtf8( "fActionOnlyShowMediaWithDifferences" ) );
     fActionOnlyShowMediaWithDifferences->setCheckable( true );
     fActionOnlyShowMediaWithDifferences->setText( QCoreApplication::translate( "CPlayStateCompare", "Only Show Media with Differences?", nullptr ) );
-    QIcon icon7;
-    icon7.addFile( QString::fromUtf8( ":/resources/syncmedia.png" ), QSize(), QIcon::Normal, QIcon::Off );
-    fActionOnlyShowMediaWithDifferences->setIcon( icon7 );
+    setIcon( QString::fromUtf8( ":/resources/syncmedia.png" ), fActionOnlyShowMediaWithDifferences );
 
     fActionShowMediaWithIssues = new QAction( this );
     fActionShowMediaWithIssues->setObjectName( QString::fromUtf8( "fActionShowMediaWithIssues" ) );
     fActionShowMediaWithIssues->setCheckable( true );
-    QIcon icon5;
-    icon5.addFile( QString::fromUtf8( ":/resources/issues.png" ), QSize(), QIcon::Normal, QIcon::Off );
-    fActionShowMediaWithIssues->setIcon( icon5 );
+    setIcon( QString::fromUtf8( ":/resources/issues.png" ), fActionShowMediaWithIssues );
     fActionShowMediaWithIssues->setText( QCoreApplication::translate( "CPlayStateCompare", "Show Media with Issues?", nullptr ) );
     fActionShowMediaWithIssues->setToolTip( QCoreApplication::translate( "CPlayStateCompare", "Show Media with Issues?", nullptr ) );
 
