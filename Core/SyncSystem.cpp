@@ -130,9 +130,7 @@ QString createMessage( EMsgType msgType, const QString &msg )
     return fullMsg;
 }
 
-CSyncSystem::CSyncSystem(
-    std::shared_ptr< CSettings > settings, std::shared_ptr< CUsersModel > usersModel, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CServerModel > serverModel,
-    QObject *parent ) :
+CSyncSystem::CSyncSystem( std::shared_ptr< CSettings > settings, std::shared_ptr< CUsersModel > usersModel, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CServerModel > serverModel, QObject *parent ) :
     QObject( parent ),
     fSettings( settings ),
     fUsersModel( usersModel ),
@@ -1267,9 +1265,7 @@ void CSyncSystem::requestGetServerHomePage( const QString &serverName )
 
 void CSyncSystem::handleGetServerHomePageResponse( const QString &serverName, const QByteArray &data )
 {
-    static std::list< QRegularExpression > regExs = {
-        QRegularExpression( "\\<link\\s+rel=\"(?<rel>(shortcut |mask-)icon)\" href=\"(?<url>.*)\"\\>" ), QRegularExpression( "\\<link\\s+rel=\"(?<rel>(shortcut |mask-)icon)\" type=\"(?<type>.*)\" href=\"(?<url>.*)\"\\>" ),
-        QRegularExpression( "\\<link\\s+rel=\"(?<rel>(shortcut |mask-)icon)\" href=\"(?<url>.*)\" color=\"(?<color>.*)\"\\>" ) };
+    static std::list< QRegularExpression > regExs = { QRegularExpression( "\\<link\\s+rel=\"(?<rel>(shortcut |mask-)icon)\" href=\"(?<url>.*)\"\\>" ), QRegularExpression( "\\<link\\s+rel=\"(?<rel>(shortcut |mask-)icon)\" type=\"(?<type>.*)\" href=\"(?<url>.*)\"\\>" ), QRegularExpression( "\\<link\\s+rel=\"(?<rel>(shortcut |mask-)icon)\" href=\"(?<url>.*)\" color=\"(?<color>.*)\"\\>" ) };
 
     for ( auto &&ii : regExs )
     {
@@ -1597,7 +1593,19 @@ void CSyncSystem::handleSetConnectedID( const QString &serverName )
 
 QString CSyncSystem::getItemFields() const
 {
-    static QStringList items{ "Path", "ProviderIds", "ExternalUrls", "Missing", "ProductionYear", "PremiereDate", "DateCreated", "PremierDate", "EndDate", "StartDate", "OriginalTitle" };
+    static QStringList items{ //
+                              "Path",   //
+                              "ProviderIds",   //
+                              "ExternalUrls",   //
+                              "Missing",   //
+                              "ProductionYear",   //
+                              "PremiereDate",   //
+                              "DateCreated",   //
+                              "PremierDate",   //
+                              "EndDate",   //
+                              "StartDate",   //
+                              "OriginalTitle",   //
+                              "MediaSources" };
     static auto retVal = items.join( "," );
     return retVal;
 }
@@ -1607,13 +1615,7 @@ void CSyncSystem::requestGetMediaList( const QString &serverName )
     if ( !currUser().second )
         return;
 
-    std::list< std::pair< QString, QString > > queryItems = {
-        std::make_pair( "IncludeItemTypes", fSettings->getSyncItemTypes() ),
-        std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SortName" ),
-        std::make_pair( "SortOrder", "Ascending" ),
-        std::make_pair( "Recursive", "True" ),
-        std::make_pair( "IsMissing", "False" ),
-        std::make_pair( "Fields", getItemFields() ) };
+    std::list< std::pair< QString, QString > > queryItems = { std::make_pair( "IncludeItemTypes", fSettings->getSyncItemTypes() ), std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SortName" ), std::make_pair( "SortOrder", "Ascending" ), std::make_pair( "Recursive", "True" ), std::make_pair( "IsMissing", "False" ), std::make_pair( "Fields", getItemFields() ) };
 
     // ItemsService
     auto &&url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Users/%1/Items" ).arg( currUser().second->getUserID( serverName ) ), queryItems );
@@ -1706,9 +1708,7 @@ void CSyncSystem::handleGetMediaListResponse( const QString &serverName, const Q
 
 void CSyncSystem::requestMissingEpisodes( const QString &serverName, const QDate &minPremiereDate, const QDate &maxPremiereDate )
 {
-    std::list< std::pair< QString, QString > > queryItems = { std::make_pair( "IncludeItemTypes", "Episode" ), std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SortName" ),
-                                                              std::make_pair( "SortOrder", "Ascending" ),      std::make_pair( "Recursive", "True" ),
-                                                              std::make_pair( "IsMissing", "True" ),           std::make_pair( "Fields", getItemFields() ) };
+    std::list< std::pair< QString, QString > > queryItems = { std::make_pair( "IncludeItemTypes", "Episode" ), std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SortName" ), std::make_pair( "SortOrder", "Ascending" ), std::make_pair( "Recursive", "True" ), std::make_pair( "IsMissing", "True" ), std::make_pair( "Fields", getItemFields() ) };
     if ( minPremiereDate.isValid() )
     {
         queryItems.emplace_back( std::make_pair( "MinPremiereDate", minPremiereDate.toString( Qt::ISODate ) ) );
@@ -1773,7 +1773,9 @@ void CSyncSystem::handleAllMoviesResponse( const QString &serverName, const QByt
 void CSyncSystem::requestAllMovies( const QString &serverName )
 {
     std::list< std::pair< QString, QString > > queryItems = {
-        std::make_pair( "IncludeItemTypes", "Movie" ), std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SortName" ), std::make_pair( "SortOrder", "Ascending" ), std::make_pair( "Recursive", "True" ),
+        std::make_pair( "IncludeItemTypes", "Movie" ),   //
+        std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SortName" ),   //
+        std::make_pair( "SortOrder", "Ascending" ), std::make_pair( "Recursive", "True" ),   //
         std::make_pair( "Fields", getItemFields() ) };
 
     // ItemsService
@@ -1962,10 +1964,7 @@ void CSyncSystem::handleAllCollectionsExResponse( const QString &serverName, con
 
 void CSyncSystem::requestGetCollection( const QString &serverName, const QString &collectionName, const QString &collectionId )
 {
-    std::list< std::pair< QString, QString > > queryItems = {
-        std::make_pair( "ParentId", collectionId ),    std::make_pair( "Recursive", "False" ),
-        std::make_pair( "IncludeItemTypes", "Movie" ), std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SortName" ),
-        std::make_pair( "SortOrder", "Ascending" ),    std::make_pair( "Fields", "Path,ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate,OriginalTitle" ) };
+    std::list< std::pair< QString, QString > > queryItems = { std::make_pair( "ParentId", collectionId ), std::make_pair( "Recursive", "False" ), std::make_pair( "IncludeItemTypes", "Movie" ), std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SortName" ), std::make_pair( "SortOrder", "Ascending" ), std::make_pair( "Fields", "Path,ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate,OriginalTitle" ) };
 
     // ItemsService
     auto &&url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Items" ), queryItems );
@@ -1985,9 +1984,7 @@ void CSyncSystem::requestGetCollection( const QString &serverName, const QString
 
 void CSyncSystem::handleGetCollectionResponse( const QString &serverName, const QString &collectionName, const QString &collectionId, const QByteArray &data )
 {
-    auto items = handleGetMediaListResponse(
-        serverName, data, tr( "Loading Movies for Collection '%1(%2)'" ).arg( collectionName ).arg( collectionId ), tr( "There are %4 movies in collection '%1(%2)' on server %3" ).arg( collectionName ).arg( collectionId ),
-        tr( "Loading %2 movies" ) );
+    auto items = handleGetMediaListResponse( serverName, data, tr( "Loading Movies for Collection '%1(%2)'" ).arg( collectionName ).arg( collectionId ), tr( "There are %4 movies in collection '%1(%2)' on server %3" ).arg( collectionName ).arg( collectionId ), tr( "Loading %2 movies" ) );
     fCollectionsModel->addCollection( serverName, collectionName, collectionId, items );
 }
 
