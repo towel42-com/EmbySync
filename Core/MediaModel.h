@@ -1,7 +1,6 @@
 #ifndef __MEDIAMODEL_H
 #define __MEDIAMODEL_H
 
-#include "SABUtils/HashUtils.h"
 #include "IServerForColumn.h"
 
 #include <QAbstractTableModel>
@@ -23,6 +22,7 @@ class CServerModel;
 class CSyncSystem;
 class CServerInfo;
 class QJsonObject;
+struct SMovieStub;
 
 using TMediaIDToMediaData = std::map< QString, std::shared_ptr< CMediaData > >;
 
@@ -38,12 +38,13 @@ public:
         eMediaNameRole,
         eDirSortRole,
         ePremiereDateRole,
+        eResolutionRole,
         eIsProviderColumnRole,
-        eIsNameColumnRole,
-        eIsPremiereDateColumnRole,
         eSeriesNameRole,
         eOnServerRole,
-        eColumnsPerServerRole
+        eColumnsPerServerRole,
+        ePerServerColumnRole,
+        eShowInSearchMovieRole
     };
 
     enum EColumns
@@ -57,7 +58,8 @@ public:
         eLastPlayed,
         ePlayCount,
         ePlaybackPosition,
-        eFirstServerColumn = ePlaybackPosition
+        eResolution,
+        eFirstServerColumn = eResolution
     };
 
     enum EDirSort
@@ -116,9 +118,16 @@ public:
     const_iterator begin() const { return fAllMedia.cbegin(); }
     const_iterator end() const { return fAllMedia.cend(); }
 
-    void addMovieStub( const QString &name, int year );
-    void removeMovieStub( const QString & name, int year );
-    void removeMovieStub( const std::shared_ptr< CMediaData > & media );
+    void addMovieStub( const SMovieStub &movieStub, std::function< bool( std::shared_ptr< CMediaData > mediaData ) > equal );
+    void removeMovieStub( const SMovieStub &movieStub );
+
+    void clearAllMovieStubs();
+
+    void setLabelMissingFromServer( bool value );
+    bool labelMissingFromServer() const { return fLabelMissingFromServer; }
+
+    void setOnlyShowPremierYear( bool value );
+    bool onlyShowPremierYear() const { return fOnlyShowPremierYear; }
 
 Q_SIGNALS:
     void sigPendingMediaUpdate();
@@ -126,6 +135,8 @@ Q_SIGNALS:
     void sigMediaChanged();
 
 private:
+    void removeMovieStub( const std::shared_ptr< CMediaData > &media );
+
     int perServerColumn( int column ) const;
     int columnsPerServer( bool includeProviders = true ) const;
 
@@ -151,6 +162,8 @@ private:
 
     std::shared_ptr< CServerModel > fServerModel;
     std::shared_ptr< CSettings > fSettings;
+    bool fLabelMissingFromServer{ true };
+    bool fOnlyShowPremierYear{ false };
 };
 
 struct SMediaSummary
@@ -198,69 +211,4 @@ private:
     QString fShowFilter;
 };
 
-struct SDummyMovie
-{
-    QString fName;
-    int fYear{ 0 };
-    bool isMovie( const QString &movieName ) const { return nameKey() == nameKey( movieName ); }
-
-    QString nameKey() const { return nameKey( fName ); }
-
-    static QString nameKey( const QString &name );
-
-    bool operator==( const SDummyMovie &r ) const { return nameKey() == r.nameKey(); }
-    QJsonObject toJSON() const;
-
-};
-
-namespace std
-{
-    template<>
-    struct hash< SDummyMovie >
-    {
-        std::size_t operator()( const SDummyMovie &k ) const
-        {
-            return NSABUtils::HashCombine( std::make_pair( k.nameKey(), k.fYear ) );
-            // std::size_t h1 = 0; // std::hash< int >{}( k.second );
-            // std::size_t h2 = qHash( k.fName.toLower().trimmed() );
-            // return h1 & ( h2 << 1 );
-        }
-    };
-}
-
-class CMovieSearchFilterModel : public QSortFilterProxyModel
-{
-    Q_OBJECT;
-
-public:
-    CMovieSearchFilterModel( std::shared_ptr< CSettings > settings, QObject *parent );
-
-    void addSearchMovie( const QString &name, int year, bool postLoad );
-
-    void addMissingMoviesToSourceModel();
-    void removeSearchMovie( const QModelIndex & idx );
-    void removeSearchMovie( const std::shared_ptr< CMediaData > & data );
-
-    virtual bool filterAcceptsRow( int source_row, const QModelIndex &source_parent ) const override;
-    virtual bool filterAcceptsColumn( int source_column, const QModelIndex &source_parent ) const override;
-    virtual void sort( int column, Qt::SortOrder order = Qt::AscendingOrder ) override;
-    virtual bool lessThan( const QModelIndex &source_left, const QModelIndex &source_right ) const override;
-
-    virtual QVariant data( const QModelIndex &index, int role /*= Qt::DisplayRole */ ) const override;
-
-    QString summary() const;
-
-    QJsonObject toJSON() const;
-private Q_SLOTS:
-    void slotInvalidateFilter();
-private:
-    void startInvalidateTimer();
-
-    bool inSearchForMovie( const QString &name, int year ) const;
-    bool inSearchForMovie( const QString &name ) const;
-
-    std::shared_ptr< CSettings > fSettings;
-    std::unordered_set< SDummyMovie > fSearchForMovies;
-    QTimer * fTimer{ nullptr };
-};
 #endif
