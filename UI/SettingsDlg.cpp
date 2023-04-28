@@ -500,7 +500,7 @@ QRegularExpression CSettingsDlg::validateRegExes( QListWidget *list ) const
     QRegularExpression regExp;
     if ( !regExpStr.isEmpty() )
         regExp = QRegularExpression( regExpStr );
-    qDebug() << regExp << regExp.isValid() << regExp.pattern();
+    //qDebug() << regExp << regExp.isValid() << regExp.pattern();
     return regExp;
 }
 
