@@ -116,8 +116,6 @@ void CMissingMovies::setupPage( std::shared_ptr< CSettings > settings, std::shar
 
     connect( fMediaModel.get(), &CMediaModel::sigMediaChanged, this, &CMissingMovies::slotMediaChanged );
 
-    fMediaModel->setLabelMissingFromServer( false );
-    fMediaModel->setOnlyShowPremierYear( true );
     fMoviesModel = new CMovieSearchFilterModel( settings, fMediaModel.get() );
     fMoviesModel->setSourceModel( fMediaModel.get() );
     // connect( fMediaModel.get(), &CMediaModel::sigPendingMediaUpdate, this, &CPlayStateCompare::slotPendingMediaUpdate );
@@ -171,6 +169,12 @@ void CMissingMovies::setupActions()
     fMatchResolutionAction->setToolTip( QCoreApplication::translate( "CMissingMovies", "Match Resolution", nullptr ) );
     fMatchResolutionAction->setCheckable( true );
 
+    fActionSaveMissing = new QAction( this );
+    fActionSaveMissing->setObjectName( QString::fromUtf8( "fSaveMissingAction" ) );
+    setIcon( QString::fromUtf8( ":/resources/save.png" ), fActionSaveMissing );
+    fActionSaveMissing->setText( QCoreApplication::translate( "CMissingMovies", "Save Missing", nullptr ) );
+    fActionSaveMissing->setToolTip( QCoreApplication::translate( "CMissingMovies", "Save Missing", nullptr ) );
+
     fToolBar = new QToolBar( this );
     fToolBar->setObjectName( QString::fromUtf8( "fToolBar" ) );
 
@@ -181,6 +185,8 @@ void CMissingMovies::setupActions()
     fToolBar->addAction( fRemoveMovieToSearchFor );
     fToolBar->addSeparator();
     fToolBar->addAction( fActionSearchForAll );
+    fToolBar->addSeparator();
+    fToolBar->addAction( fActionSaveMissing );
 
     connect( fAddMovieToSearchFor, &QAction::triggered, this, &CMissingMovies::slotAddMovieToSearchFor );
     connect( fRemoveMovieToSearchFor, &QAction::triggered, this, &CMissingMovies::slotRemoveMovieToSearchFor );
@@ -188,6 +194,7 @@ void CMissingMovies::setupActions()
 
     connect( fOnlyShowMissingAction, &QAction::triggered, [ this ]() { fMoviesModel->setOnlyShowMissing( fOnlyShowMissingAction->isChecked() ); } );
     connect( fMatchResolutionAction, &QAction::triggered, [ this ]() { fMoviesModel->setMatchResolution( fMatchResolutionAction->isChecked() ); } );
+    connect( fActionSaveMissing, &QAction::triggered, [ this ]() { fMoviesModel->saveMissing( this ); } );
 
     if ( !fDataTrees.empty() )
         new NSABUtils::CButtonEnabler( fDataTrees[ 0 ]->dataTree(), fRemoveMovieToSearchFor );

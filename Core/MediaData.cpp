@@ -501,7 +501,8 @@ QUrl CMediaData::getSearchURL( ESearchSite site ) const
 
     if ( this->mediaType() == "Episode" )
     {
-        searchKey = QString( R"("%1")" ).arg( fSeriesName ).replace( "(", "" ).replace( ")", "" );
+        searchKey = fSeriesName;
+        searchKey = searchKey.replace( R"((US))", "" ).trimmed();
 
         QString subKey;
         if ( fSeason.has_value() )

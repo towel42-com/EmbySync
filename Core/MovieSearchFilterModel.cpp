@@ -196,9 +196,28 @@ QVariant CMovieSearchFilterModel::data( const QModelIndex &index, int role /*= Q
     {
         auto retVal = QSortFilterProxyModel::data( index, role );
         auto perServerColumn = index.data( CMediaModel::ECustomRoles::ePerServerColumnRole ).toInt();
-        if ( searchStub.has_value() && ( perServerColumn == CMediaModel::EColumns::eResolution ) && onServer )
+        switch ( perServerColumn )
         {
-            retVal = retVal.toString() + QString( " Searching for: %1" ).arg( searchStub.value().resolution() );
+            case CMediaModel::EColumns::eName:
+                {
+                    auto pos = retVal.toString().indexOf( " - <Missing" );
+                    if ( pos != -1 )
+                        retVal = retVal.toString().left( pos ).trimmed();
+                }
+                break;
+            case CMediaModel::EColumns::ePremiereDate:
+                {
+                    if ( retVal.toDate().isValid() )
+                        retVal = retVal.toDate().year();
+                }
+                break;
+            case CMediaModel::EColumns::eResolution:
+                if ( searchStub.has_value() && onServer )
+                {
+                    retVal = retVal.toString() + QString( " Searching for: %1" ).arg( searchStub.value().resolution() );
+                }
+            default:
+                break;
         }
         return retVal;
     }

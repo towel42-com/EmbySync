@@ -123,12 +123,6 @@ public:
 
     void clearAllMovieStubs();
 
-    void setLabelMissingFromServer( bool value );
-    bool labelMissingFromServer() const { return fLabelMissingFromServer; }
-
-    void setOnlyShowPremierYear( bool value );
-    bool onlyShowPremierYear() const { return fOnlyShowPremierYear; }
-
 Q_SIGNALS:
     void sigPendingMediaUpdate();
     void sigSettingsChanged();
@@ -162,8 +156,6 @@ private:
 
     std::shared_ptr< CServerModel > fServerModel;
     std::shared_ptr< CSettings > fSettings;
-    bool fLabelMissingFromServer{ true };
-    bool fOnlyShowPremierYear{ false };
 };
 
 struct SMediaSummary
