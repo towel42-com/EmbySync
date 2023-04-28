@@ -30,6 +30,8 @@ struct SMovieStub
     std::size_t hash( bool useName, bool useYear, bool useResolution ) const;
     bool equal( const SMovieStub &rhs, bool useName, bool useYear, bool useResolution ) const;
     bool equal( std::shared_ptr< CMediaData > mediaData, bool useName, bool useYear, bool useResolution ) const;
+
+    QJsonObject toJson() const;
 };
 
 struct SNameHash
