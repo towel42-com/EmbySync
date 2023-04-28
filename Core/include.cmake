@@ -29,6 +29,8 @@ set(qtproject_SRCS
     MediaData.cpp
     MediaServerData.cpp
     MediaModel.cpp
+    MovieSearchFilterModel.cpp
+    MovieStub.cpp
     MergeMedia.cpp
     ProgressSystem.cpp
     SyncSystem.cpp
@@ -43,6 +45,7 @@ set(qtproject_SRCS
 set(qtproject_H
     CollectionsModel.h
     MediaModel.h
+    MovieSearchFilterModel.h
     ServerInfo.h
     SyncSystem.h
     UsersModel.h
@@ -53,6 +56,7 @@ set(project_H
     MediaData.h
     MediaServerData.h
     MergeMedia.h
+    MovieStub.h
     ProgressSystem.h
     Settings.h
     UserData.h
