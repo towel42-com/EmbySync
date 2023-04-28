@@ -35,9 +35,11 @@
 class CServerInfo;
 class CMediaModel;
 class QJsonObject;
+class QJsonArray;
 class CServerModel;
 class CSyncSystem;
 class QMenu;
+struct SMovieStub;
 struct SMediaServerData;
 
 enum class EMediaSyncStatus
@@ -64,9 +66,9 @@ public:
     static std::function< QString( uint64_t ) > mecsToStringFunc();
 
     CMediaData( const QJsonObject &mediaObj, std::shared_ptr< CServerModel > serverModel );
-    CMediaData( const QString &name, int year, const QString &type );   // stub for dummy media
+    CMediaData( const SMovieStub& movieStub, const QString &type );   // stub for dummy media
 
-    void addSearchMenu( QMenu * menu ) const;
+    void addSearchMenu( QMenu *menu ) const;
     static bool isExtra( const QJsonObject &obj );
     bool hasProviderIDs() const;
     void addProvider( const QString &providerName, const QString &providerID );
@@ -111,6 +113,9 @@ public:
     uint64_t playbackPositionTicks( const QString &serverName ) const;
     QTime playbackPositionTime( const QString &serverName ) const;
 
+    QString resolution() const;
+    std::pair< int, int > resolutionValue() const;
+
     bool allPlaybackPositionTicksEqual() const;
 
     bool allFavoriteEqual() const;
@@ -146,6 +151,8 @@ public:
 
 private:
     void computeName( const QJsonObject &media );
+    void loadResolution( const QJsonArray &mediaSources );
+
     template< typename T >
     bool allEqual( std::function< T( std::shared_ptr< SMediaServerData > ) > func ) const
     {
@@ -172,6 +179,7 @@ private:
     std::optional< int > fEpisode;   // only valid for EpisodeTypes
     std::map< QString, QString > fProviders;
     std::map< QString, QString > fExternalUrls;
+    std::pair< int, int > fResolution;
     QDate fPremiereDate;
 
     bool fCanBeSynced{ false };
@@ -217,7 +225,7 @@ struct SCollectionServerInfo
     void setId( const QString &id ) { fCollectionID = id; }
     bool missingMedia() const;
 
-    std::shared_ptr< SMediaCollectionData > addMovie( const QString &name, int year, CMediaCollection *parent, int rank );
+    std::shared_ptr< SMediaCollectionData > addMovie( const QString &name, int year, const std::pair< int, int > &resolution, CMediaCollection *parent, int rank );
 
     QString fCollectionID;
     std::vector< std::shared_ptr< SMediaCollectionData > > fItems;
@@ -231,7 +239,7 @@ public:
     std::shared_ptr< SMediaCollectionData > child( int pos ) const { return fCollectionInfo->child( pos ); }
     QVariant data( int column, int role ) const;
 
-    std::shared_ptr< SMediaCollectionData > addMovie( const QString &name, int year, int rank );
+    std::shared_ptr< SMediaCollectionData > addMovie( const QString &name, int year, const std::pair< int, int > &resolution, int rank );
     void setItems( const std::list< std::shared_ptr< CMediaData > > &items );
     bool updateMedia( std::shared_ptr< CMediaModel > mediaModel ) { return fCollectionInfo->updateMedia( mediaModel ); }
     bool missingMedia() const { return fCollectionInfo->missingMedia(); }
@@ -268,6 +276,7 @@ namespace NJSON
         QString name() const { return fName; }
         int rank() const { return fRank; }
         int year() const { return fYear; }
+        std::pair< int, int > resolution() const { return fResolution; }
 
         void setRank( int rank ) { fRank = rank; }
 
@@ -275,15 +284,17 @@ namespace NJSON
         QString fName;
         int fRank{ -1 };
         int fYear{ -1 };
+        std::pair< int, int > fResolution{ -1, -1 };
     };
 
     class CCollection
     {
     public:
-        CCollection( const QJsonValue & curr );
-        
+        CCollection( const QJsonValue &curr );
+
         QString name() const { return fName; }
-        const std::list< std::shared_ptr< CMovie > > & movies() const { return fMovies; }
+        const std::list< std::shared_ptr< CMovie > > &movies() const { return fMovies; }
+
     private:
         QString fName;
         std::list< std::shared_ptr< CMovie > > fMovies;
