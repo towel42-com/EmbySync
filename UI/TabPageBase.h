@@ -97,6 +97,8 @@ public Q_SLOTS:
     virtual void slotNextSearchURL() final;
 
 protected:
+    void setIcon( const QString & path, QAction * action );
+
     void bulkSearch( std::function< std::pair< bool, QUrl >( const QModelIndex &idx ) > addItemFunc );
 
     QString selectServer() const;

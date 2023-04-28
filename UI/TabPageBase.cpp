@@ -32,6 +32,7 @@
 #include <QInputDialog>
 #include <QDesktopServices>
 #include <QTimer>
+#include <QAction>
 
 CTabPageBase::CTabPageBase( QWidget *parent ) :
     QWidget( parent )
@@ -107,6 +108,14 @@ QString CTabPageBase::selectServer() const
     if ( pos == servers.end() )
         return QString();
     return ( *pos ).second;
+}
+
+void CTabPageBase::setIcon( const QString &path, QAction *action )
+{
+    QIcon icon;
+    icon.addFile( path, QSize(), QIcon::Normal, QIcon::Off );
+    Q_ASSERT( !icon.isNull() );
+    action->setIcon( icon );
 }
 
 void CTabPageBase::bulkSearch( std::function< std::pair< bool, QUrl >( const QModelIndex &idx ) > addItemFunc )
