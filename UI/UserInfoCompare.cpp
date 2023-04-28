@@ -66,9 +66,7 @@ CUserInfoCompare::CUserInfoCompare( QWidget *parent ) :
     connect( this, &CTabPageBase::sigViewData, this, &CUserInfoCompare::slotViewUser );
 }
 
-void CUserInfoCompare::setupPage(
-    std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel,
-    std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem )
+void CUserInfoCompare::setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem )
 {
     CTabPageBase::setupPage( settings, syncSystem, mediaModel, collectionsModel, userModel, serverModel, progressSystem );
 
@@ -86,17 +84,13 @@ void CUserInfoCompare::setupActions()
 
     fActionProcess = new QAction( this );
     fActionProcess->setObjectName( QString::fromUtf8( "fActionProcess" ) );
-    QIcon icon3;
-    icon3.addFile( QString::fromUtf8( ":/resources/process.png" ), QSize(), QIcon::Normal, QIcon::Off );
-    fActionProcess->setIcon( icon3 );
+    setIcon( QString::fromUtf8( ":/resources/process.png" ), fActionProcess );
     fActionProcess->setText( QCoreApplication::translate( "CUserInfoCompare", "Process Media", nullptr ) );
     fActionProcess->setToolTip( QCoreApplication::translate( "CUserInfoCompare", "Process Media", nullptr ) );
 
     fActionSelectiveProcess = new QAction( this );
     fActionSelectiveProcess->setObjectName( QString::fromUtf8( "fActionSelectiveProcess" ) );
-    QIcon icon4;
-    icon4.addFile( QString::fromUtf8( ":/resources/processRight.png" ), QSize(), QIcon::Normal, QIcon::Off );
-    fActionSelectiveProcess->setIcon( icon4 );
+    setIcon( QString::fromUtf8( ":/resources/processRight.png" ), fActionSelectiveProcess );
     fActionSelectiveProcess->setText( QCoreApplication::translate( "CUserInfoCompare", "Select a Server and Update other servers to it..", nullptr ) );
     fActionSelectiveProcess->setToolTip( QCoreApplication::translate( "CUserInfoCompare", "Select a Server and Update other servers to it", nullptr ) );
 
@@ -125,25 +119,19 @@ void CUserInfoCompare::setupActions()
     fActionOnlyShowSyncableUsers->setObjectName( QString::fromUtf8( "fActionOnlyShowSyncableUsers" ) );
     fActionOnlyShowSyncableUsers->setCheckable( true );
     fActionOnlyShowSyncableUsers->setText( QCoreApplication::translate( "CUserInfoCompare", "Only Show Syncable Users?", nullptr ) );
-    QIcon icon6;
-    icon6.addFile( QString::fromUtf8( ":/resources/syncusers.png" ), QSize(), QIcon::Normal, QIcon::Off );
-    fActionOnlyShowSyncableUsers->setIcon( icon6 );
+    setIcon( QString::fromUtf8( ":/resources/syncusers.png" ), fActionOnlyShowSyncableUsers );
 
     fActionOnlyShowUsersWithDifferences = new QAction( this );
     fActionOnlyShowUsersWithDifferences->setObjectName( QString::fromUtf8( "fActionOnlyShowUsersWithDifferences" ) );
     fActionOnlyShowUsersWithDifferences->setCheckable( true );
     fActionOnlyShowUsersWithDifferences->setText( QCoreApplication::translate( "CUserInfoCompare", "Only Show Users with Differences?", nullptr ) );
     fActionOnlyShowUsersWithDifferences->setToolTip( QCoreApplication::translate( "CUserInfoCompare", "Only Show Users with Differences?", nullptr ) );
-    QIcon icon7;
-    icon7.addFile( QString::fromUtf8( ":/resources/syncmedia.png" ), QSize(), QIcon::Normal, QIcon::Off );
-    fActionOnlyShowUsersWithDifferences->setIcon( icon7 );
+    setIcon( QString::fromUtf8( ":/resources/syncmedia.png" ), fActionOnlyShowUsersWithDifferences );
 
     fActionShowUsersWithIssues = new QAction( this );
     fActionShowUsersWithIssues->setObjectName( QString::fromUtf8( "fActionShowUsersWithIssues" ) );
     fActionShowUsersWithIssues->setCheckable( true );
-    QIcon icon5;
-    icon5.addFile( QString::fromUtf8( ":/resources/issues.png" ), QSize(), QIcon::Normal, QIcon::Off );
-    fActionShowUsersWithIssues->setIcon( icon5 );
+    setIcon( QString::fromUtf8( ":/resources/issues.png" ), fActionShowUsersWithIssues );
     fActionShowUsersWithIssues->setText( QCoreApplication::translate( "CUserInfoCompare", "Show Users with Issues?", nullptr ) );
     fActionShowUsersWithIssues->setToolTip( QCoreApplication::translate( "CUserInfoCompare", "Show Users with Issues?", nullptr ) );
 
