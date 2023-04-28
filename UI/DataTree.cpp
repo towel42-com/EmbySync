@@ -195,7 +195,6 @@ void CDataTree::sort( int defColumn, Qt::SortOrder defOrder )
     if ( fUserSort )
     {
         column = fImpl->data->header()->sortIndicatorSection();
-        ;
         order = fImpl->data->header()->sortIndicatorOrder();
     }
 

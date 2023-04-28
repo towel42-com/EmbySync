@@ -75,7 +75,7 @@ public:
     virtual bool prepForClose() override;
     std::shared_ptr< CMediaData > getMediaData( QModelIndex idx ) const;
 
-    virtual int defaultSortColumn() const override { return 1; }
+    virtual int defaultSortColumn() const override { return 0; }
     virtual Qt::SortOrder defaultSortOrder() const override { return Qt::SortOrder::AscendingOrder; }
 
 Q_SIGNALS:

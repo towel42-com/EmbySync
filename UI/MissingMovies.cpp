@@ -96,6 +96,8 @@ CMissingMovies::~CMissingMovies()
     QSettings settings;
     settings.beginGroup( "MissingMovies" );
     settings.setValue( "MovieListFile", fImpl->listFile->text() );
+    settings.setValue( "MatchResolution", fMatchResolutionAction->isChecked() );
+    settings.setValue( "OnlyShowMissing", fOnlyShowMissingAction->isChecked() );
 }
 
 void CMissingMovies::setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem )
@@ -104,7 +106,6 @@ void CMissingMovies::setupPage( std::shared_ptr< CSettings > settings, std::shar
 
     fServerFilterModel = new CServerFilterModel( fServerModel.get() );
     fServerFilterModel->setSourceModel( fServerModel.get() );
-    fServerFilterModel->sort( 0, Qt::SortOrder::AscendingOrder );
     NSABUtils::setupModelChanged( fMediaModel.get(), this, QMetaMethod::fromSignal( &CMissingMovies::sigModelDataChanged ) );
 
     fImpl->servers->setModel( fServerFilterModel );
@@ -122,8 +123,11 @@ void CMissingMovies::setupPage( std::shared_ptr< CSettings > settings, std::shar
     // connect( fMediaModel.get(), &CMediaModel::sigPendingMediaUpdate, this, &CPlayStateCompare::slotPendingMediaUpdate );
     connect( fSyncSystem.get(), &CSyncSystem::sigAllMoviesLoaded, this, &CMissingMovies::slotAllMoviesLoaded );
 
-    fOnlyShowMissingAction->setChecked( fMoviesModel->onlyShowMissing() );
-    fMatchResolutionAction->setChecked( fMoviesModel->matchResolution() );
+    QSettings regSettings;
+    fMatchResolutionAction->setChecked( regSettings.value( "MatchResolution", true ).toBool() );
+    fOnlyShowMissingAction->setChecked( regSettings.value( "OnlyShowMissing", false ).toBool() );
+    fMoviesModel->setOnlyShowMissing( fOnlyShowMissingAction->isChecked() );
+    fMoviesModel->setMatchResolution( fMatchResolutionAction->isChecked() );
 
     slotSetCurrentServer( QModelIndex() );
     showPrimaryServer();
@@ -331,8 +335,8 @@ void CMissingMovies::slotAllMoviesLoaded()
         return;
 
     hideDataTreeColumns();
-    sortDataTrees();
     fMoviesModel->addMoviesToSourceModel();
+    sortDataTrees();
 }
 
 std::shared_ptr< CMediaData > CMissingMovies::getMediaData( QModelIndex idx ) const
