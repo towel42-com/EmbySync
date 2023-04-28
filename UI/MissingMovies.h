@@ -117,6 +117,8 @@ private:
 
     QPointer< QAction > fActionSearchForAll;
     QPointer< QAction > fAddMovieToSearchFor;
+    QPointer< QAction > fOnlyShowMissingAction; 
+    QPointer< QAction > fMatchResolutionAction;
     QPointer< QAction > fRemoveMovieToSearchFor;
     QPointer< QToolBar > fToolBar{ nullptr };
 

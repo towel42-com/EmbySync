@@ -31,6 +31,7 @@
 #include <QFileDialog>
 
 #include "Core/MediaModel.h"
+#include "Core/MovieSearchFilterModel.h"
 #include "Core/MediaData.h"
 #include "Core/ProgressSystem.h"
 #include "Core/ServerInfo.h"
@@ -97,9 +98,7 @@ CMissingMovies::~CMissingMovies()
     settings.setValue( "MovieListFile", fImpl->listFile->text() );
 }
 
-void CMissingMovies::setupPage(
-    std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel,
-    std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem )
+void CMissingMovies::setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem )
 {
     CTabPageBase::setupPage( settings, syncSystem, mediaModel, collectionsModel, userModel, serverModel, progressSystem );
 
@@ -116,10 +115,15 @@ void CMissingMovies::setupPage(
 
     connect( fMediaModel.get(), &CMediaModel::sigMediaChanged, this, &CMissingMovies::slotMediaChanged );
 
+    fMediaModel->setLabelMissingFromServer( false );
+    fMediaModel->setOnlyShowPremierYear( true );
     fMoviesModel = new CMovieSearchFilterModel( settings, fMediaModel.get() );
     fMoviesModel->setSourceModel( fMediaModel.get() );
     // connect( fMediaModel.get(), &CMediaModel::sigPendingMediaUpdate, this, &CPlayStateCompare::slotPendingMediaUpdate );
     connect( fSyncSystem.get(), &CSyncSystem::sigAllMoviesLoaded, this, &CMissingMovies::slotAllMoviesLoaded );
+
+    fOnlyShowMissingAction->setChecked( fMoviesModel->onlyShowMissing() );
+    fMatchResolutionAction->setChecked( fMoviesModel->matchResolution() );
 
     slotSetCurrentServer( QModelIndex() );
     showPrimaryServer();
@@ -133,37 +137,42 @@ void CMissingMovies::setupActions()
 {
     fActionSearchForAll = new QAction( this );
     fActionSearchForAll->setObjectName( QString::fromUtf8( "fActionSearchForAll" ) );
-    QIcon icon3;
-    icon3.addFile( QString::fromUtf8( ":/SABUtilsResources/search.png" ), QSize(), QIcon::Normal, QIcon::Off );
-    Q_ASSERT( !icon3.isNull() );
-    fActionSearchForAll->setIcon( icon3 );
+    setIcon( QString::fromUtf8( ":/SABUtilsResources/search.png" ), fActionSearchForAll );
     fActionSearchForAll->setText( QCoreApplication::translate( "CMissingMovies", "Search for All Missing", nullptr ) );
     fActionSearchForAll->setToolTip( QCoreApplication::translate( "CMissingMovies", "Search for All Missing", nullptr ) );
 
     fAddMovieToSearchFor = new QAction( this );
     fAddMovieToSearchFor->setObjectName( QString::fromUtf8( "fAddMovieToSearchFor" ) );
-    QIcon icon;
-    icon.addFile( QString::fromUtf8( ":/SABUtilsResources/add.png" ), QSize(), QIcon::Normal, QIcon::Off );
-    Q_ASSERT( !icon.isNull() );
-    fAddMovieToSearchFor->setIcon( icon );
+    setIcon( QString::fromUtf8( ":/SABUtilsResources/add.png" ), fAddMovieToSearchFor );
     fAddMovieToSearchFor->setText( QCoreApplication::translate( "CMissingMovies", "Add Movie to Search For", nullptr ) );
     fAddMovieToSearchFor->setToolTip( QCoreApplication::translate( "CMissingMovies", "Add Movie to Search For", nullptr ) );
 
     fRemoveMovieToSearchFor = new QAction( this );
     fRemoveMovieToSearchFor->setObjectName( QString::fromUtf8( "fRemoveMovieToSearchFor" ) );
-    {
-        QIcon icon;
-        icon.addFile( QString::fromUtf8( ":/SABUtilsResources/delete.png" ), QSize(), QIcon::Normal, QIcon::Off );
-        Q_ASSERT( !icon.isNull() );
-        fRemoveMovieToSearchFor->setIcon( icon );
-    }
+    setIcon( QString::fromUtf8( ":/SABUtilsResources/delete.png" ), fRemoveMovieToSearchFor );
     fRemoveMovieToSearchFor->setText( QCoreApplication::translate( "CMissingMovies", "Remove Movie to Search For", nullptr ) );
     fRemoveMovieToSearchFor->setToolTip( QCoreApplication::translate( "CMissingMovies", "Remove Movie to Search For", nullptr ) );
 
+    fOnlyShowMissingAction = new QAction( this );
+    fOnlyShowMissingAction->setObjectName( QString::fromUtf8( "fOnlyShowMissingAction" ) );
+    setIcon( QString::fromUtf8( ":/resources/issues.png" ), fOnlyShowMissingAction );
+    fOnlyShowMissingAction->setText( QCoreApplication::translate( "CMissingMovies", "Only Show Missing", nullptr ) );
+    fOnlyShowMissingAction->setToolTip( QCoreApplication::translate( "CMissingMovies", "Only Show Missing", nullptr ) );
+    fOnlyShowMissingAction->setCheckable( true );
+
+    fMatchResolutionAction = new QAction( this );
+    fMatchResolutionAction->setObjectName( QString::fromUtf8( "fMatchResolutionAction" ) );
+    setIcon( QString::fromUtf8( ":/SABUtilsResources/resolution.png" ), fMatchResolutionAction );
+    fMatchResolutionAction->setText( QCoreApplication::translate( "CMissingMovies", "Match Resolution", nullptr ) );
+    fMatchResolutionAction->setToolTip( QCoreApplication::translate( "CMissingMovies", "Match Resolution", nullptr ) );
+    fMatchResolutionAction->setCheckable( true );
 
     fToolBar = new QToolBar( this );
     fToolBar->setObjectName( QString::fromUtf8( "fToolBar" ) );
 
+    fToolBar->addAction( fOnlyShowMissingAction );
+    fToolBar->addAction( fMatchResolutionAction );
+    fToolBar->addSeparator();
     fToolBar->addAction( fAddMovieToSearchFor );
     fToolBar->addAction( fRemoveMovieToSearchFor );
     fToolBar->addSeparator();
@@ -172,6 +181,9 @@ void CMissingMovies::setupActions()
     connect( fAddMovieToSearchFor, &QAction::triggered, this, &CMissingMovies::slotAddMovieToSearchFor );
     connect( fRemoveMovieToSearchFor, &QAction::triggered, this, &CMissingMovies::slotRemoveMovieToSearchFor );
     connect( fActionSearchForAll, &QAction::triggered, this, &CMissingMovies::slotSearchForAllMissing );
+
+    connect( fOnlyShowMissingAction, &QAction::triggered, [ this ]() { fMoviesModel->setOnlyShowMissing( fOnlyShowMissingAction->isChecked() ); } );
+    connect( fMatchResolutionAction, &QAction::triggered, [ this ]() { fMoviesModel->setMatchResolution( fMatchResolutionAction->isChecked() ); } );
 
     if ( !fDataTrees.empty() )
         new NSABUtils::CButtonEnabler( fDataTrees[ 0 ]->dataTree(), fRemoveMovieToSearchFor );
@@ -221,6 +233,9 @@ void CMissingMovies::showPrimaryServer()
 
 void CMissingMovies::slotModelDataChanged()
 {
+    if ( !fMoviesModel )
+        return;
+
     fImpl->summaryLabel->setText( fMoviesModel->summary() );
 }
 
@@ -317,7 +332,7 @@ void CMissingMovies::slotAllMoviesLoaded()
 
     hideDataTreeColumns();
     sortDataTrees();
-    fMoviesModel->addMissingMoviesToSourceModel();
+    fMoviesModel->addMoviesToSourceModel();
 }
 
 std::shared_ptr< CMediaData > CMissingMovies::getMediaData( QModelIndex idx ) const
@@ -347,7 +362,7 @@ void CMissingMovies::slotMediaContextMenu( CDataTree *dataTree, const QPoint &po
     menu.exec( dataTree->dataTree()->mapToGlobal( pos ) );
 }
 
-void CMissingMovies::slotItemDoubleClicked( CDataTree * /*dataTree*/, const QModelIndex & idx )
+void CMissingMovies::slotItemDoubleClicked( CDataTree * /*dataTree*/, const QModelIndex &idx )
 {
     if ( !idx.isValid() )
         return;
@@ -366,12 +381,9 @@ void CMissingMovies::slotItemDoubleClicked( CDataTree * /*dataTree*/, const QMod
 
     auto name = dlg.name();
     auto year = dlg.year();
-    fMoviesModel->addSearchMovie( name, year, true );
+    fMoviesModel->addSearchMovie( name, year, { -1, -1 }, true );
     saveJSON();
-
-
 }
-
 
 void CMissingMovies::slotSetMovieSearchFile( const QString &fileName )
 {
@@ -392,7 +404,7 @@ void CMissingMovies::saveJSON()
     saveJSON( fileName );
 }
 
-void CMissingMovies::saveJSON( const QString & fileName )
+void CMissingMovies::saveJSON( const QString &fileName )
 {
     if ( fileName.isEmpty() )
         return;
@@ -409,7 +421,7 @@ void CMissingMovies::saveJSON( const QString & fileName )
     fi.write( doc.toJson() );
 }
 
-void CMissingMovies::setMovieSearchFile( const QString & fileName, bool force )
+void CMissingMovies::setMovieSearchFile( const QString &fileName, bool force )
 {
     if ( !fMediaModel )
         return;
@@ -433,7 +445,7 @@ void CMissingMovies::setMovieSearchFile( const QString & fileName, bool force )
     fFileName = fileName;
     for ( auto &&movie : collections.value()->movies() )
     {
-        fMoviesModel->addSearchMovie( movie->name(), movie->year(), false );
+        fMoviesModel->addSearchMovie( movie->name(), movie->year(), movie->resolution(), false );
     }
 }
 
@@ -445,7 +457,7 @@ void CMissingMovies::slotAddMovieToSearchFor()
 
     auto name = dlg.name();
     auto year = dlg.year();
-    fMoviesModel->addSearchMovie( name, year, true );
+    fMoviesModel->addSearchMovie( name, year, { -1, -1 }, true );
     saveJSON();
 }
 
