@@ -39,7 +39,7 @@ public:
 
     std::pair< QModelIndex, std::shared_ptr< CMediaCollection > > addCollection( const QString &server, const QString &name );
     std::pair< QModelIndex, std::shared_ptr< CMediaCollection > > addCollection( const QString &serverName, const QString &name, const QString &id, const std::list< std::shared_ptr< CMediaData > > &items );
-    std::shared_ptr< SMediaCollectionData > addMovie( const QString &name, int year, const QModelIndex &collectionIndex, int rank );
+    std::shared_ptr< SMediaCollectionData > addMovie( const QString &name, int year, const std::pair< int, int > &resolution, const QModelIndex &collectionIndex, int rank );
 
     CMediaCollection *collection( const QModelIndex &idx ) const;
     SMediaCollectionData *media( const QModelIndex &idx ) const;

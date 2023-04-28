@@ -260,7 +260,7 @@ std::pair< QModelIndex, std::shared_ptr< CMediaCollection > > CCollectionsModel:
     return addCollection( server, name, {}, {} );
 }
 
-std::shared_ptr< SMediaCollectionData > CCollectionsModel::addMovie( const QString &name, int year, const QModelIndex &collectionIndex, int rank )
+std::shared_ptr< SMediaCollectionData > CCollectionsModel::addMovie( const QString &name, int year, const std::pair< int, int > &resolution, const QModelIndex &collectionIndex, int rank )
 {
     Q_ASSERT( collectionIndex.isValid() );
     if ( !collectionIndex.isValid() )
@@ -274,7 +274,7 @@ std::shared_ptr< SMediaCollectionData > CCollectionsModel::addMovie( const QStri
     bool sizeIncreased = ( rank == -1 ) || ( rank >= collection->childCount() );
     if ( sizeIncreased )
         beginInsertRows( collectionIndex, collection->childCount(), ( rank > 0 ) ? ( rank - 1 ) : collection->childCount() );
-    auto retVal = collection->addMovie( name, year, rank );
+    auto retVal = collection->addMovie( name, year, resolution, rank );
     if ( sizeIncreased )
         endInsertRows();
     else
