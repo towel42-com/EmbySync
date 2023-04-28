@@ -99,6 +99,11 @@ std::size_t SMovieStub::hash( bool useName, bool useYear, bool useResolution ) c
     return retVal;
 }
 
+bool resolutionMatches( const std::pair< int, int > &lhs, const std::pair< int, int > &rhs )
+{
+    return ( ( std::abs( lhs.first - rhs.first ) < 5 ) || ( std::abs( lhs.second - rhs.second ) < 5 ) );
+}
+
 bool SMovieStub::equal( const SMovieStub &rhs, bool useName, bool useYear, bool useResolution ) const
 {
     bool retVal = true;
@@ -107,7 +112,7 @@ bool SMovieStub::equal( const SMovieStub &rhs, bool useName, bool useYear, bool 
     if ( useYear )
         retVal = retVal && fYear == rhs.fYear;
     if ( useResolution )
-        retVal = retVal && fResolution.first == rhs.fResolution.first;
+        retVal = retVal && resolutionMatches( fResolution, rhs.fResolution );
     return retVal;
 }
 
@@ -123,8 +128,8 @@ bool SMovieStub::equal( std::shared_ptr< CMediaData > mediaData, bool useName, b
     if ( useYear )
         retVal = retVal && fYear == mediaData->premiereDate().year();
 
-    if ( useResolution && retVal )
-        retVal = retVal && ( fResolution.first == mediaData->resolutionValue().first ) || ( fResolution.second == mediaData->resolutionValue().second );
+    if ( useResolution )
+        retVal = retVal && resolutionMatches( fResolution, mediaData->resolutionValue() );
 
     return retVal;
 }
