@@ -114,26 +114,18 @@ void CCollectionsManager::slotMediaChanged()
 
 void CCollectionsManager::setupActions()
 {
-    {
-        fCreateCollections = new QAction( this );
-        fCreateCollections->setObjectName( QString::fromUtf8( "fCreateCollections" ) );
-        QIcon icon3;
-        icon3.addFile( QString::fromUtf8( ":/SABUtilsResources/run.png" ), QSize(), QIcon::Normal, QIcon::Off );
-        Q_ASSERT( !icon3.isNull() );
-        fCreateCollections->setIcon( icon3 );
-        fCreateCollections->setText( QCoreApplication::translate( "CCollectionsManager", "Create Missing Collections", nullptr ) );
-        fCreateCollections->setToolTip( QCoreApplication::translate( "CCollectionsManager", "Create Missing Collections", nullptr ) );
-    }
-    {
-        fLoadCollections = new QAction( this );
-        fLoadCollections->setObjectName( QString::fromUtf8( "fLoadCollections" ) );
-        QIcon icon3;
-        icon3.addFile( QString::fromUtf8( ":/resources/open.png" ), QSize(), QIcon::Normal, QIcon::Off );
-        Q_ASSERT( !icon3.isNull() );
-        fLoadCollections->setIcon( icon3 );
-        fLoadCollections->setText( QCoreApplication::translate( "CCollectionsManager", "Create Missing Collections", nullptr ) );
-        fLoadCollections->setToolTip( QCoreApplication::translate( "CCollectionsManager", "Create Missing Collections", nullptr ) );
-    }
+    fCreateCollections = new QAction( this );
+    fCreateCollections->setObjectName( QString::fromUtf8( "fCreateCollections" ) );
+    setIcon( QString::fromUtf8( ":/SABUtilsResources/run.png" ), fCreateCollections );
+    fCreateCollections->setText( QCoreApplication::translate( "CCollectionsManager", "Create Missing Collections", nullptr ) );
+    fCreateCollections->setToolTip( QCoreApplication::translate( "CCollectionsManager", "Create Missing Collections", nullptr ) );
+
+    fLoadCollections = new QAction( this );
+    fLoadCollections->setObjectName( QString::fromUtf8( "fLoadCollections" ) );
+    setIcon( QString::fromUtf8( ":/resources/open.png" ), fLoadCollections );
+    fLoadCollections->setText( QCoreApplication::translate( "CCollectionsManager", "Create Missing Collections", nullptr ) );
+    fLoadCollections->setToolTip( QCoreApplication::translate( "CCollectionsManager", "Create Missing Collections", nullptr ) );
+
     fToolBar = new QToolBar( this );
     fToolBar->setObjectName( QString::fromUtf8( "fToolBar" ) );
 
@@ -332,7 +324,6 @@ void CCollectionsManager::slotMediaContextMenu( CDataTree *dataTree, const QPoin
     menu.exec( dataTree->dataTree()->mapToGlobal( pos ) );
 }
 
-
 void CCollectionsManager::addCollectionsFile( const QString &fileName, bool force )
 {
     return addCollectionsFile( QFileInfo( fileName ), force );
@@ -372,7 +363,7 @@ void CCollectionsManager::addCollectionsFile( const QFileInfo &fi, bool force )
         auto movies = ii->movies();
         for ( auto &&movie : movies )
         {
-            auto currCollection = fCollectionsModel->addMovie( movie->name(), movie->year(), idx, movie->rank() );
+            auto currCollection = fCollectionsModel->addMovie( movie->name(), movie->year(), movie->resolution(), idx, movie->rank() );
             if ( currCollection->fCollection && currCollection->fCollection->isUnNamed() )
             {
                 currCollection->fCollection->setFileName( fi.absoluteFilePath() );
