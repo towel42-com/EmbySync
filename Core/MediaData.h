@@ -179,7 +179,7 @@ private:
     std::optional< int > fEpisode;   // only valid for EpisodeTypes
     std::map< QString, QString > fProviders;
     std::map< QString, QString > fExternalUrls;
-    std::pair< int, int > fResolution;
+    std::pair< int, int > fResolution{ 0, 0 };
     QDate fPremiereDate;
 
     bool fCanBeSynced{ false };

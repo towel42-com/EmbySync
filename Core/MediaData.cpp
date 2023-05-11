@@ -80,7 +80,10 @@ CMediaData::CMediaData( const SMovieStub &movieStub, const QString &type )
     fOriginalTitle = fName;
     fType = type;
     fPremiereDate = QDate( movieStub.fYear, 1, 1 );
-    fResolution = movieStub.fResolution;
+    if ( movieStub.hasResolution() )
+        fResolution = movieStub.fResolution.value();
+    else
+        fResolution = { 0, 0 };
 }
 
 void CMediaData::addSearchMenu( QMenu *menu ) const
@@ -366,7 +369,9 @@ QTime CMediaData::playbackPositionTime( const QString &serverName ) const
 
 QString CMediaData::resolution() const
 {
-    return QString( "%1x%2" ).arg( fResolution.first ).arg( fResolution.second );
+    if ( ( fResolution != std::make_pair( 0, 0 ) ) && ( fResolution != std::make_pair( -1, -1 ) ) )
+        return QString( "%1x%2" ).arg( fResolution.first ).arg( fResolution.second );
+    return {};
 }
 
 std::pair< int, int > CMediaData::resolutionValue() const

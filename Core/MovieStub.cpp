@@ -23,7 +23,7 @@ SMovieStub::SMovieStub( const QString &name, int year, const QPoint &resolution 
 {
 }
 
-SMovieStub::SMovieStub( const QString &name, int year, const std::pair< int, int > &resolution ) :
+SMovieStub::SMovieStub( const QString &name, int year, const std::optional< std::pair< int, int > > &resolution ) :
     fName( name ),
     fYear( year ),
     fResolution( resolution )
@@ -79,7 +79,8 @@ QJsonObject SMovieStub::toJSON() const
     QJsonObject retVal;
     retVal[ "name" ] = fName;
     retVal[ "year" ] = fYear;
-    retVal[ "resolution" ] = QString( "%1x%2" ).arg( fResolution.first ).arg( fResolution.second );
+    if ( hasResolution() )
+        retVal[ "resolution" ] = QString( "%1x%2" ).arg( fResolution.value().first ).arg( fResolution.value().second );
     return retVal;
 }
 
@@ -93,15 +94,21 @@ std::size_t SMovieStub::hash( bool useName, bool useYear, bool useResolution ) c
         retVal = NSABUtils::HashCombine( retVal, nameKey() );
     if ( useYear )
         retVal = NSABUtils::HashCombine( retVal, fYear );
-    if ( useResolution )
-        retVal = NSABUtils::HashCombine( retVal, fResolution.first );
+    if ( useResolution && hasResolution() )
+        retVal = NSABUtils::HashCombine( retVal, fResolution.value().first );
 
     return retVal;
 }
 
-bool resolutionMatches( const std::pair< int, int > &lhs, const std::pair< int, int > &rhs )
+bool resolutionMatches( const std::optional< std::pair< int, int > > &lhs, const std::optional< std::pair< int, int > > &rhs )
 {
-    return ( ( std::abs( lhs.first - rhs.first ) < 5 ) || ( std::abs( lhs.second - rhs.second ) < 5 ) );
+    if ( lhs.has_value() != rhs.has_value() )
+        return false;
+
+    if ( lhs.has_value() && rhs.has_value() )
+        return ( ( std::abs( lhs.value().first - rhs.value().first ) < 5 ) || ( std::abs( lhs.value().second - rhs.value().second ) < 5 ) );
+    else
+        return true;
 }
 
 bool SMovieStub::equal( const SMovieStub &rhs, bool useName, bool useYear, bool useResolution ) const
@@ -111,7 +118,7 @@ bool SMovieStub::equal( const SMovieStub &rhs, bool useName, bool useYear, bool 
         retVal = retVal && nameKey() == rhs.nameKey();
     if ( useYear )
         retVal = retVal && fYear == rhs.fYear;
-    if ( useResolution )
+    if ( useResolution && hasResolution() && rhs.hasResolution() )
         retVal = retVal && resolutionMatches( fResolution, rhs.fResolution );
     return retVal;
 }

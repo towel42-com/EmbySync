@@ -21,7 +21,7 @@ CMovieSearchFilterModel::CMovieSearchFilterModel( std::shared_ptr< CSettings > s
     connect( this, &QSortFilterProxyModel::sourceModelChanged, [ this ]() { connect( dynamic_cast< CMediaModel * >( sourceModel() ), &CMediaModel::sigSettingsChanged, [ this ]() { startInvalidateTimer(); } ); } );
 }
 
-void CMovieSearchFilterModel::addSearchMovie( const QString &name, int year, const std::pair< int, int > &resolution, bool postLoad )
+void CMovieSearchFilterModel::addSearchMovie( const QString &name, int year, const std::optional< std::pair< int, int > > &resolution, bool postLoad )
 {
     auto movieStub = SMovieStub( name, year, resolution );
     fSearchForMoviesByName.insert( movieStub );
@@ -212,7 +212,7 @@ QVariant CMovieSearchFilterModel::data( const QModelIndex &index, int role /*= Q
                 }
                 break;
             case CMediaModel::EColumns::eResolution:
-                if ( searchStub.has_value() && onServer )
+                if ( onServer && searchStub.has_value() && searchStub.value().hasResolution() )
                 {
                     retVal = retVal.toString() + QString( " Searching for: %1" ).arg( searchStub.value().resolution() );
                 }
@@ -250,7 +250,7 @@ std::tuple< bool, bool, std::optional< SMovieStub > > CMovieSearchFilterModel::g
     auto searchStub = inSearchForMovie( movieStub );
     auto onServer = index.data( CMediaModel::ECustomRoles::eOnServerRole ).toBool();
     bool resolutionMatches = true;
-    if ( onServer && fMatchResolution )
+    if ( onServer && fMatchResolution && searchStub.has_value() )
     {
         resolutionMatches = movieStub.equal( searchStub.value(), true, true, true );
     }
