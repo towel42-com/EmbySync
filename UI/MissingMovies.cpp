@@ -392,7 +392,7 @@ void CMissingMovies::slotItemDoubleClicked( CDataTree * /*dataTree*/, const QMod
 
     auto name = dlg.name();
     auto year = dlg.year();
-    fMoviesModel->addSearchMovie( name, year, { -1, -1 }, true );
+    fMoviesModel->addSearchMovie( name, year, {}, true );
     saveJSON();
 }
 
@@ -468,7 +468,7 @@ void CMissingMovies::slotAddMovieToSearchFor()
 
     auto name = dlg.name();
     auto year = dlg.year();
-    fMoviesModel->addSearchMovie( name, year, { -1, -1 }, true );
+    fMoviesModel->addSearchMovie( name, year, {}, true );
     saveJSON();
 }
 

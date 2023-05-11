@@ -23,7 +23,7 @@ public:
 
     CMovieSearchFilterModel( std::shared_ptr< CSettings > settings, QObject *parent );
 
-    void addSearchMovie( const QString &name, int year, const std::pair< int, int > &resolution, bool postLoad );
+    void addSearchMovie( const QString &name, int year, const std::optional< std::pair< int, int > > &resolution, bool postLoad );
 
     void addMoviesToSourceModel();
     void removeSearchMovie( const QModelIndex &idx );

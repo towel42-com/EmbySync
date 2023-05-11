@@ -1,0 +1,128 @@
+{
+    "movies": [
+        {
+            "year": 1943,
+            "name": "Sanshiro Sugata"
+        },
+        {
+            "year": 1944,
+            "name": "The Most Beautiful"
+        },
+        {
+            "year": 1945,
+            "name": "Sanshiro Sugata Part II"
+        },
+        {
+            "year": 1945,
+            "name": "The Men Who Tread on the Tiger's Tail"
+        },
+        {
+            "year": 1946,
+            "name": "No Regrets for Our Youth"
+        },
+        {
+            "year": 1946,
+            "name": "Those Who Make Tomorrow"
+        },
+        {
+            "year": 1947,
+            "name": "One Wonderful Sunday"
+        },
+        {
+            "year": 1948,
+            "name": "Drunken Angel"
+        },
+        {
+            "year": 1949,
+            "name": "The Quiet Duel"
+        },
+        {
+            "year": 1949,
+            "name": "Stray Dog"
+        },
+        {
+            "year": 1950,
+            "name": "Scandal"
+        },
+        {
+            "year": 1950,
+            "name": "Rashomon"
+        },
+        {
+            "year": 1951,
+            "name": "The Idiot"
+        },
+        {
+            "year": 1952,
+            "name": "Ikiru"
+        },
+        {
+            "year": 1954,
+            "name": "Seven Samurai"
+        },
+        {
+            "year": 1955,
+            "name": "I Live in Fear"
+        },
+        {
+            "year": 1957,
+            "name": "Throne of Blood"
+        },
+        {
+            "year": 1957,
+            "name": "The Lower Depths"
+        },
+        {
+            "year": 1958,
+            "name": "The Hidden Fortress"
+        },
+        {
+            "year": 1960,
+            "name": "The Bad Sleep Well"
+        },
+        {
+            "year": 1961,
+            "name": "yojimbo"
+        },
+        {
+            "year": 1962,
+            "name": "Sanjurō"
+        },
+        {
+            "year": 1963,
+            "name": "High and Low"
+        },
+        {
+            "year": 1965,
+            "name": "Red Beard"
+        },
+        {
+            "year": 1970,
+            "name": "Dodes'ka-den"
+        },
+        {
+            "year": 1975,
+            "name": "Dersu Uzala"
+        },
+        {
+            "year": 1980,
+            "name": "Kagemusha"
+        },
+        {
+            "year": 1985,
+            "name": "Ran"
+        },
+        {
+            "year": 1990,
+            "name": "Dreams"
+        },
+        {
+            "year": 1991,
+            "name": "Rhapsody in August"
+        },
+        {
+            "year": 1993,
+            "name": "Madadayo"
+        }
+    ]
+}

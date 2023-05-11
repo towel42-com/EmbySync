@@ -4,6 +4,7 @@
 #include <QString>
 #include <utility>
 #include <memory>
+#include <optional>
 class QPoint;
 class QJsonObject;
 class CMediaData;
@@ -11,17 +12,30 @@ struct SMovieStub
 {
     QString fName;
     int fYear{ 0 };
-    std::pair< int, int > fResolution{ 0, 0 };
+    std::optional< std::pair< int, int > > fResolution;
 
     SMovieStub( const QString &name );
     SMovieStub( const QString &name, int year );
-    SMovieStub( const QString &name, int year, const std::pair< int, int > &resolution );
+    SMovieStub( const QString &name, int year, const std::optional< std::pair< int, int > > &resolution );
     SMovieStub( const QString &name, int year, const QPoint &resolution );
     SMovieStub( std::shared_ptr< CMediaData > data );
     bool isMovie( const QString &movieName ) const { return nameKey() == nameKey( movieName ); }
 
     QString nameKey() const { return nameKey( fName ); }
-    QString resolution() const { return QString( "%1x%2" ).arg( fResolution.first ).arg( fResolution.second ); }
+    bool hasResolution() const
+    {
+        if ( !fResolution.has_value() )
+            return false;
+        return ( fResolution.value() != std::make_pair( 0, 0 ) ) && ( fResolution.value() != std::make_pair( -1, -1 ) );
+    }
+
+    QString resolution() const
+    {
+        if ( hasResolution() )
+            return QString( "%1x%2" ).arg( fResolution.value().first ).arg( fResolution.value().second );
+        else
+            return {};
+    }
 
     static QString nameKey( const QString &name );
 
