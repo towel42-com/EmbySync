@@ -55,9 +55,7 @@ public:
 
     virtual ~CMissingEpisodes() override;
 
-    virtual void setupPage(
-        std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel,
-        std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem ) override;
+    virtual void setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem ) override;
 
     virtual void setupActions();
 
@@ -75,7 +73,7 @@ public:
     virtual bool prepForClose() override;
     std::shared_ptr< CMediaData > getMediaData( QModelIndex idx ) const;
 
-    virtual int defaultSortColumn() const override { return 1; }
+    virtual int defaultSortColumn() const override { return 0; }
     virtual Qt::SortOrder defaultSortOrder() const override { return Qt::SortOrder::AscendingOrder; }
 
 Q_SIGNALS:
@@ -88,6 +86,8 @@ public Q_SLOTS:
     void slotMediaContextMenu( CDataTree *dataTree, const QPoint &pos );
     virtual void slotSetCurrentServer( const QModelIndex &index );
     void slotSearchForAllMissing();
+    void slotSelectAll();
+    void slotUnselectAll();
 private Q_SLOTS:
     void slotSearchByShowNameChanged();
     void slotSearchByDateChanged();
@@ -96,6 +96,7 @@ private Q_SLOTS:
     void slotMediaChanged();
 
 private:
+    QStringList getSelectedShows() const;
     void showPrimaryServer();
     std::shared_ptr< CServerInfo > getCurrentServerInfo() const;
     std::shared_ptr< CServerInfo > getServerInfo( QModelIndex idx ) const;

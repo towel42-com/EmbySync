@@ -11,6 +11,8 @@
 #include <unordered_map>
 #include <memory>
 #include <optional>
+#include <set>
+#include <QDate>
 
 class CSettings;
 class CMediaData;
@@ -59,7 +61,8 @@ public:
         ePlayCount,
         ePlaybackPosition,
         eResolution,
-        eFirstServerColumn = eResolution
+        eIsMissing,
+        eFirstServerColumn = eIsMissing
     };
 
     enum EDirSort
@@ -106,7 +109,7 @@ public:
     using TMediaSet = std::unordered_set< std::shared_ptr< CMediaData > >;
 
     TMediaSet getAllMedia() const { return fAllMedia; }
-    std::unordered_set< QString > getKnownShows() const;
+    std::set< QString > getKnownShows() const;
 
     std::shared_ptr< CMediaData > findMedia( const QString &name, int year ) const;
 
@@ -188,8 +191,8 @@ class CMediaMissingFilterModel : public QSortFilterProxyModel
 public:
     CMediaMissingFilterModel( std::shared_ptr< CSettings > settings, QObject *parent );
 
-    void setShowFilter( const QString &filter );
-
+    void setShowFilter( const QStringList &filter );
+    void setDateRange( const QDate &min, const QDate &max );
     virtual bool filterAcceptsRow( int source_row, const QModelIndex &source_parent ) const override;
     virtual bool filterAcceptsColumn( int source_column, const QModelIndex &source_parent ) const override;
     virtual void sort( int column, Qt::SortOrder order = Qt::AscendingOrder ) override;
@@ -199,8 +202,10 @@ public:
 
 private:
     std::shared_ptr< CSettings > fSettings;
-    QRegularExpression fRegEx;
-    QString fShowFilter;
+    std::optional< QRegularExpression > fRegEx;
+    QStringList fShowFilter;
+    QDate fMinDate;
+    QDate fMaxDate;
 };
 
 #endif

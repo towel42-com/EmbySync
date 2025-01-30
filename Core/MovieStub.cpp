@@ -92,12 +92,17 @@ std::size_t SMovieStub::hash( bool useName, bool useYear, bool useResolution ) c
 
     if ( useName )
         retVal = NSABUtils::HashCombine( retVal, nameKey() );
-    if ( useYear )
+    if ( useYear && hasYear() )
         retVal = NSABUtils::HashCombine( retVal, fYear );
     if ( useResolution && hasResolution() )
         retVal = NSABUtils::HashCombine( retVal, fResolution.value().first );
 
     return retVal;
+}
+
+bool SMovieStub::hasYear() const
+{
+    return fYear != 0;
 }
 
 bool resolutionMatches( const std::optional< std::pair< int, int > > &lhs, const std::optional< std::pair< int, int > > &rhs )

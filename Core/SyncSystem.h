@@ -56,6 +56,7 @@ class CProgressSystem;
 class QTimer;
 class CServerInfo;
 struct SUserServerData;
+class QJsonValueRef;
 
 enum class ETool
 {
@@ -147,9 +148,7 @@ class CSyncSystem : public QObject
 {
     Q_OBJECT
 public:
-    CSyncSystem(
-        std::shared_ptr< CSettings > settings, std::shared_ptr< CUsersModel > usersModel, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CServerModel > serverModel,
-        QObject *parent = nullptr );
+    CSyncSystem( std::shared_ptr< CSettings > settings, std::shared_ptr< CUsersModel > usersModel, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CServerModel > serverModel, QObject *parent = nullptr );
 
     void setProcessNewMediaFunc( std::function< void( std::shared_ptr< CMediaData > userData ) > processMediaFunc );
     void setUserMsgFunc( std::function< void( EMsgType msgType, const QString &title, const QString &msg ) > userMsgFunc );
@@ -260,6 +259,7 @@ private:
 
     bool handleError( QNetworkReply *reply, const QString &serverName, QString &errorMsg, bool reportMsg );
     std::list< std::shared_ptr< CMediaData > > handleGetMediaListResponse( const QString &serverName, const QByteArray &data, const QString &progressTitle, const QString &logMsg, const QString &partialLogMsg );
+    std::list< std::shared_ptr< CMediaData > > handleGetMissingMediaListResponse( const QString &serverName, const QByteArray &data, const QString &progressTitle, const QString &logMsg, const QString &partialLogMsg );
 
     void requestGetServerInfo( const QString &serverName );
     void handleGetServerInfoResponse( const QString &serverName, const QByteArray &data );
@@ -282,6 +282,10 @@ private:
     void requestGetMediaList( const QString &serverName );
 
     void handleGetMediaListResponse( const QString &serverName, const QByteArray &data );
+
+    QJsonArray toItemArray( QJsonDocument &doc, const std::function< void( QJsonObject &obj ) > &onObj = {} ) const;
+
+    std::list< std::shared_ptr< CMediaData > > loadMediaArray( QJsonArray &doc, const QString &serverName, const QString &progressTitle, const QString &logMsg, const QString &partialLogMsg );
 
     void requestMissingTVDBid( const QString &serverName );
     void handleMissingTVDBidResponse( const QString &serverName, const QByteArray &data );

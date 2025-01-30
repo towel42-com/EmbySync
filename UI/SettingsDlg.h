@@ -29,6 +29,7 @@
 #include <vector>
 #include <unordered_set>
 #include <QRegularExpression>
+#include <set>
 
 class QListWidget;
 class QTreeWidgetItem;
@@ -58,7 +59,7 @@ public:
     virtual void accept() override;
 
     void setKnownUsers( const std::vector< std::shared_ptr< CUserData > > &knownUsers ) { loadKnownUsers( knownUsers ); }
-    void setKnownShows( const std::unordered_set< QString > &knownShows ) { loadKnownShows( knownShows ); }
+    void setKnownShows( const std::set< QString > &knownShows ) { loadKnownShows( knownShows ); }
 
 public Q_SLOTS:
     void slotTestServers();
@@ -70,7 +71,7 @@ public Q_SLOTS:
 
 private:
     void loadKnownUsers( const std::vector< std::shared_ptr< CUserData > > &knownUsers );
-    void loadKnownShows( const std::unordered_set< QString > &knownShows );
+    void loadKnownShows( const std::set< QString > &knownShows );
     void moveCurrServer( bool up );
     void load();
 

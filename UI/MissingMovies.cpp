@@ -98,6 +98,7 @@ CMissingMovies::~CMissingMovies()
     settings.setValue( "MovieListFile", fImpl->listFile->text() );
     settings.setValue( "MatchResolution", fMatchResolutionAction->isChecked() );
     settings.setValue( "OnlyShowMissing", fOnlyShowMissingAction->isChecked() );
+    settings.setValue( "Filter", fImpl->filter->text() );
 }
 
 void CMissingMovies::setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem )
@@ -126,6 +127,9 @@ void CMissingMovies::setupPage( std::shared_ptr< CSettings > settings, std::shar
     fOnlyShowMissingAction->setChecked( regSettings.value( "OnlyShowMissing", false ).toBool() );
     fMoviesModel->setOnlyShowMissing( fOnlyShowMissingAction->isChecked() );
     fMoviesModel->setMatchResolution( fMatchResolutionAction->isChecked() );
+
+    connect( fImpl->filter, &QLineEdit::textChanged, fMoviesModel, &CMovieSearchFilterModel::slotSetFilter );
+    fImpl->filter->setText( regSettings.value( "Filter", QString() ).toString() );
 
     slotSetCurrentServer( QModelIndex() );
     showPrimaryServer();

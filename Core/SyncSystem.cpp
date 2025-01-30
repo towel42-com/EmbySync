@@ -1132,7 +1132,7 @@ void CSyncSystem::slotRequestFinished( QNetworkReply *reply )
             }
         case ERequestType::eReloadMediaData:
             {
-                handleReloadMediaResponse( serverName, data, extraData.toString() );
+                //handleReloadMediaResponse( serverName, data, extraData.toString() );
                 break;
             }
         case ERequestType::eUpdateUserMediaData:
@@ -1597,7 +1597,7 @@ QString CSyncSystem::getItemFields() const
                               "Path",   //
                               "ProviderIds",   //
                               "ExternalUrls",   //
-                              "Missing",   //
+                              "IsMissing",   //
                               "ProductionYear",   //
                               "PremiereDate",   //
                               "DateCreated",   //
@@ -1605,7 +1605,7 @@ QString CSyncSystem::getItemFields() const
                               "EndDate",   //
                               "StartDate",   //
                               "OriginalTitle",   //
-                              "MediaSources" };
+                              "MediaSources",   "Id" };
     static auto retVal = items.join( "," );
     return retVal;
 }
@@ -1632,6 +1632,77 @@ void CSyncSystem::requestGetMediaList( const QString &serverName )
     setRequestType( reply, ERequestType::eGetMediaList );
 }
 
+void CSyncSystem::handleGetMediaListResponse( const QString &serverName, const QByteArray &data )
+{
+    handleGetMediaListResponse( serverName, data, tr( "Loading Users Media Data" ), tr( "%1 has %2 media items on server '%3'" ), tr( "Loading %2 media items" ) );
+}
+
+QJsonArray CSyncSystem::toItemArray( QJsonDocument &doc, const std::function< void( QJsonObject &obj ) > &onObj /*= {} */ ) const
+{
+    QJsonArray retVal;
+    if ( doc[ "Items" ].isArray() )
+    {
+        retVal = doc[ "Items" ].toArray();
+    }
+    else
+    {
+        retVal.append( doc.object() );
+    }
+
+    if ( onObj )
+    {
+        QJsonArray tmp;
+        for ( auto &&ii : retVal )
+        {
+            auto media = ii.toObject();
+            onObj( media );
+
+            tmp.append( media );
+        }
+        retVal = tmp;
+    }
+    return retVal;
+}
+
+std::list< std::shared_ptr< CMediaData > > CSyncSystem::handleGetMissingMediaListResponse( const QString &serverName, const QByteArray &data, const QString &progressTitle, const QString &logMsg, const QString &partialLogMsg )
+{
+    QJsonParseError error;
+    auto doc = QJsonDocument::fromJson( data, &error );
+    if ( error.error != QJsonParseError::NoError )
+    {
+        if ( fUserMsgFunc )
+            fUserMsgFunc( EMsgType::eError, tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ) );
+        return {};
+    }
+
+    qDebug().noquote().nospace() << doc.toJson();
+    auto mediaArray = toItemArray(
+        doc,
+        []( QJsonObject &media )
+        {
+            media.insert( "IsMissing", true );
+        } );
+    //QJsonArray mediaArray;
+    //if ( doc[ "Items" ].isArray() )
+    //{
+    //    auto mediaList = doc[ "Items" ].toArray();
+
+    //    for ( auto &&ii : mediaList )
+    //    {
+    //        auto media = ii.toObject();
+    //        media.insert( "IsMissing", true );
+    //        mediaArray.append( media );
+    //    }
+    //}
+    //else
+    //{
+    //    auto media = doc.object();
+    //    media.insert( "IsMissing", true );
+    //    mediaArray.append( media );
+    //}
+    return loadMediaArray( mediaArray, serverName, progressTitle, logMsg, partialLogMsg );
+}
+
 std::list< std::shared_ptr< CMediaData > > CSyncSystem::handleGetMediaListResponse( const QString &serverName, const QByteArray &data, const QString &progressTitle, const QString &logMsg, const QString &partialLogMsg )
 {
     QJsonParseError error;
@@ -1643,33 +1714,30 @@ std::list< std::shared_ptr< CMediaData > > CSyncSystem::handleGetMediaListRespon
         return {};
     }
 
-    // qDebug() << doc.toJson();
-    if ( !doc[ "Items" ].isArray() )
-    {
-        if ( CMediaData::isExtra( doc.object() ) )
-            return {};
-        fMediaModel->loadMedia( serverName, doc.object() );
-        return {};
-    }
+    return loadMediaArray( toItemArray( doc ), serverName, progressTitle, logMsg, partialLogMsg );
+}
 
-    auto mediaList = doc[ "Items" ].toArray();
-    auto showProgress = mediaList.count() > 10;
+std::list< std::shared_ptr< CMediaData > > CSyncSystem::loadMediaArray( QJsonArray &mediaArray, const QString &serverName, const QString &progressTitle, const QString &logMsg, const QString &partialLogMsg )
+{
+    qDebug().noquote().nospace() << QJsonDocument( mediaArray ).toJson();
+
+    auto showProgress = mediaArray.count() > 10;
     if ( showProgress )
     {
         fProgressSystem->pushState();
 
         fProgressSystem->resetProgress();
         fProgressSystem->setTitle( progressTitle );
-        fProgressSystem->setMaximum( mediaList.count() );
+        fProgressSystem->setMaximum( mediaArray.count() );
     }
-    emit sigAddToLog( EMsgType::eInfo, logMsg.arg( serverName ).arg( mediaList.count() ) );
+    emit sigAddToLog( EMsgType::eInfo, logMsg.arg( serverName ).arg( mediaArray.count() ) );
     if ( fSettings->maxItems() > 0 )
         emit sigAddToLog( EMsgType::eInfo, partialLogMsg.arg( fSettings->maxItems() ) );
 
     int curr = 0;
     std::list< std::shared_ptr< CMediaData > > retVal;
     // fMediaModel->beginBatchLoad();
-    for ( auto &&ii : mediaList )
+    for ( auto &&ii : mediaArray )
     {
         auto media = ii.toObject();
         if ( CMediaData::isExtra( media ) )
@@ -1701,29 +1769,44 @@ std::list< std::shared_ptr< CMediaData > > CSyncSystem::handleGetMediaListRespon
     return retVal;
 }
 
-void CSyncSystem::handleGetMediaListResponse( const QString &serverName, const QByteArray &data )
-{
-    handleGetMediaListResponse( serverName, data, tr( "Loading Users Media Data" ), tr( "%1 has %2 media items on server '%3'" ), tr( "Loading %2 media items" ) );
-}
-
 void CSyncSystem::requestMissingEpisodes( const QString &serverName, const QDate &minPremiereDate, const QDate &maxPremiereDate )
 {
-    std::list< std::pair< QString, QString > > queryItems = { std::make_pair( "IncludeItemTypes", "Episode" ), std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SortName" ), std::make_pair( "SortOrder", "Ascending" ), std::make_pair( "Recursive", "True" ), std::make_pair( "IsMissing", "True" ), std::make_pair( "Fields", getItemFields() ) };
+    //http://‌‍‍localhost‌:8095/emby/Shows/Missing?
+    // IncludeItemTypes=Episode&
+    // Fields=BasicSyncInfo,CanDelete,CanDownload,PrimaryImageAspectRatio,ProductionYear,Status,EndDate,CommunityRating,OfficialRating,CriticRating,PremiereDate&
+    // StartIndex=0&
+    // SortBy=SeriesSortName,ParentIndexNumber,IndexNumber,SortName&
+    // SortOrder=Ascending&
+    // Recursive=true&
+    // Limit=30&
+    // UserId=USERID
+    std::list< std::pair< QString, QString > > queryItems =   //
+        {
+            std::make_pair( "IncludeItemTypes", "Episode" ),   //
+            std::make_pair( "Fields", "BasicSyncInfo,CanDelete,CanDownload,PrimaryImageAspectRatio,ProductionYear,Status,EndDate,CommunityRating,OfficialRating,CriticRating,PremiereDate" ),   //
+            std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SeriesSortName,SortName" ),   //
+            std::make_pair( "SortOrder", "Ascending" ),   //
+            std::make_pair( "Recursive", "True" )   //
+        };
+
     if ( minPremiereDate.isValid() )
     {
-        queryItems.emplace_back( std::make_pair( "MinPremiereDate", minPremiereDate.toString( Qt::ISODate ) ) );
+        queryItems.emplace_back( "MinPremiereDate", minPremiereDate.toString( Qt::ISODate ) );
+        queryItems.emplace_back( "MinStartDate", minPremiereDate.toString( Qt::ISODate ) );
     }
     if ( maxPremiereDate.isValid() )
     {
-        queryItems.emplace_back( std::make_pair( "MaxPremiereDate", maxPremiereDate.toString( Qt::ISODate ) ) );
+        queryItems.emplace_back( "MaxPremiereDate", maxPremiereDate.toString( Qt::ISODate ) );
+        queryItems.emplace_back( "MaxStartDate", minPremiereDate.toString( Qt::ISODate ) );
     }
+    queryItems.emplace_back( "UserId", currUser().second->getUserID( serverName ) );   //
 
     // ItemsService
-    auto &&url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Users/%1/Items" ).arg( currUser().second->getUserID( serverName ) ), queryItems );
+    auto &&url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Shows/Missing/" ), queryItems );
     if ( !url.isValid() )
         return;
 
-    // qDebug().noquote().nospace() << url;
+    qDebug().noquote().nospace() << url;
     auto request = QNetworkRequest( url );
 
     emit sigAddToLog( EMsgType::eInfo, QString( "Requesting missing episodes from server '%2'" ).arg( serverName ) );
@@ -1762,7 +1845,7 @@ void CSyncSystem::handleMissingTVDBidResponse( const QString &serverName, const 
 
 void CSyncSystem::handleMissingEpisodesResponse( const QString &serverName, const QByteArray &data )
 {
-    handleGetMediaListResponse( serverName, data, tr( "Loading Users Missing Media Data" ), tr( "Server '%1' has %2 missing episodes" ), tr( "Loading %2 missing episodes" ) );
+    handleGetMissingMediaListResponse( serverName, data, tr( "Loading Users Missing Media Data" ), tr( "Server '%1' has %2 missing episodes" ), tr( "Loading %2 missing episodes" ) );
 }
 
 void CSyncSystem::handleAllMoviesResponse( const QString &serverName, const QByteArray &data )

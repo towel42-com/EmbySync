@@ -63,41 +63,74 @@ CMissingEpisodes::CMissingEpisodes( QWidget *parent ) :
     connect( this, &CMissingEpisodes::sigDataContextMenuRequested, this, &CMissingEpisodes::slotMediaContextMenu );
 
     connect( fImpl->searchByDate, &QCheckBox::toggled, this, &CMissingEpisodes::slotSearchByDateChanged );
-    connect( fImpl->searchByShowName, &QCheckBox::toggled, this, &CMissingEpisodes::slotSearchByShowNameChanged );
+    connect( fImpl->minPremiereDate, &QDateEdit::dateChanged, this, &CMissingEpisodes::slotSearchByDateChanged );
+    connect( fImpl->maxPremiereDate, &QDateEdit::dateChanged, this, &CMissingEpisodes::slotSearchByDateChanged );
 
-    connect(
-        fImpl->shows, qOverload< int >( &QComboBox::currentIndexChanged ),
-        [ this ]()
-        {
-            if ( !fMissingMediaModel )
-                return;
-            auto currText = fImpl->shows->currentText();
-            fMissingMediaModel->setShowFilter( currText );
-        } );
+    connect( fImpl->selectAll, &QPushButton::clicked, this, &CMissingEpisodes::slotSelectAll );
+    connect( fImpl->unselectAll, &QPushButton::clicked, this, &CMissingEpisodes::slotUnselectAll );
+    connect( fImpl->showsFilter, &QListWidget::itemChanged, this, &CMissingEpisodes::slotSearchByShowNameChanged );
 
-    QSettings settings;
     fImpl->minPremiereDate->setDate( QDate::currentDate().addDays( -7 ) );
     fImpl->maxPremiereDate->setDate( QDate::currentDate().addDays( 7 ) );
 
+    QSettings settings;
     settings.beginGroup( "MissingEpisodes" );
     fImpl->searchByDate->setChecked( settings.value( "SearchByDate", true ).toBool() );
-    fImpl->searchByShowName->setChecked( settings.value( "SearchByShowName", false ).toBool() );
 
-    NSABUtils::autoSize( fImpl->shows );
     slotSearchByDateChanged();
     slotSearchByShowNameChanged();
 }
 
 void CMissingEpisodes::slotSearchByShowNameChanged()
 {
-    bool hasShows = fImpl->shows->count() != 0;
-    bool enabled = hasShows && fImpl->searchByShowName->isChecked();
-    fImpl->shows->setEnabled( enabled );
-    fImpl->searchByShowName->setEnabled( hasShows );
+    if ( !fMissingMediaModel )
+        return;
+
+    auto selected = getSelectedShows();
+    fMissingMediaModel->setShowFilter( selected );
+
+    QSettings settings;
+    settings.beginGroup( "MissingEpisodes" );
+    settings.setValue( "SelectedShows", selected );
+}
+
+void CMissingEpisodes::slotSelectAll()
+{
+    fImpl->showsFilter->blockSignals( true );
+
+    for ( auto ii = 0; ii < fImpl->showsFilter->count(); ++ii )
+    {
+        auto curr = fImpl->showsFilter->item( ii );
+        curr->setCheckState( Qt::CheckState::Checked );
+    }
+
+    fImpl->showsFilter->blockSignals( false );
+    slotSearchByShowNameChanged();
+}
+
+void CMissingEpisodes::slotUnselectAll()
+{
+    fImpl->showsFilter->blockSignals( true );
+
+    for ( auto ii = 0; ii < fImpl->showsFilter->count(); ++ii )
+    {
+        auto curr = fImpl->showsFilter->item( ii );
+        curr->setCheckState( Qt::CheckState::Unchecked );
+    }
+
+    fImpl->showsFilter->blockSignals( false );
+    slotSearchByShowNameChanged();
 }
 
 void CMissingEpisodes::slotSearchByDateChanged()
 {
+    if ( !fMissingMediaModel )
+        return;
+
+    auto minDate = fImpl->searchByDate->isChecked() ? fImpl->minPremiereDate->date() : QDate();
+    auto maxDate = fImpl->searchByDate->isChecked() ? fImpl->maxPremiereDate->date() : QDate();
+    fMissingMediaModel->setDateRange( minDate, maxDate );
+
     fImpl->minPremiereDate->setEnabled( fImpl->searchByDate->isChecked() );
     fImpl->maxPremiereDate->setEnabled( fImpl->searchByDate->isChecked() );
 }
@@ -107,7 +140,6 @@ CMissingEpisodes::~CMissingEpisodes()
     QSettings settings;
     settings.beginGroup( "MissingEpisodes" );
     settings.setValue( "SearchByDate", fImpl->searchByDate->isChecked() );
-    settings.setValue( "SearchByShowName", fImpl->searchByShowName->isChecked() );
 }
 
 void CMissingEpisodes::setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem )
@@ -129,7 +161,6 @@ void CMissingEpisodes::setupPage( std::shared_ptr< CSettings > settings, std::sh
 
     fMissingMediaModel = new CMediaMissingFilterModel( settings, fMediaModel.get() );
     fMissingMediaModel->setSourceModel( fMediaModel.get() );
-    // connect( fMediaModel.get(), &CMediaModel::sigPendingMediaUpdate, this, &CPlayStateCompare::slotPendingMediaUpdate );
     connect( fSyncSystem.get(), &CSyncSystem::sigMissingEpisodesLoaded, this, &CMissingEpisodes::slotMissingEpisodesLoaded );
 
     slotSetCurrentServer( QModelIndex() );
@@ -138,27 +169,36 @@ void CMissingEpisodes::setupPage( std::shared_ptr< CSettings > settings, std::sh
 
 void CMissingEpisodes::slotMediaChanged()
 {
-    auto tmp = fMediaModel->getKnownShows();
-    QStringList showNames;
-    for ( auto &&ii : tmp )
+    auto selectedShows = getSelectedShows();
+
+    auto showNames = fMediaModel->getKnownShows();
+    fImpl->showsFilter->clear();
+    for ( auto &&ii : showNames )
     {
-        showNames.push_back( ii );
+        auto curr = new QListWidgetItem( ii, fImpl->showsFilter );
+        auto checkState = ( selectedShows.isEmpty() || selectedShows.contains( ii ) ) ? Qt::CheckState::Checked : Qt::CheckState::Unchecked;
+        curr->setCheckState( checkState );
     }
-    showNames.sort();
-    showNames.removeAll( QString() );
-    if ( !showNames.isEmpty() )
-        showNames.push_front( QString() );
-    auto curr = fImpl->shows->currentText();
-    fImpl->shows->clear();
-    fImpl->shows->addItems( showNames );
-    if ( !showNames.isEmpty() )
-    {
-        auto pos = fImpl->shows->findText( curr );
-        if ( pos != -1 )
-            fImpl->shows->setCurrentIndex( pos );
-    }
-    NSABUtils::autoSize( fImpl->shows );
     slotSearchByShowNameChanged();
+    slotSearchByDateChanged();
+}
+
+QStringList CMissingEpisodes::getSelectedShows() const
+{
+    QStringList retVal;
+    for ( auto ii = 0; ii < fImpl->showsFilter->count(); ++ii )
+    {
+        auto curr = fImpl->showsFilter->item( ii );
+        if ( curr->checkState() == Qt::CheckState::Checked )
+            retVal.push_back( curr->text() );
+    }
+    if ( !fImpl->showsFilter->count() )
+    {
+        QSettings settings;
+        settings.beginGroup( "MissingEpisodes" );
+        retVal = settings.value( "SelectedShows" ).toStringList();
+    }
+    return retVal;
 }
 
 void CMissingEpisodes::setupActions()

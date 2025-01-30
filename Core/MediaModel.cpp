@@ -11,6 +11,7 @@
 
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QJsonDocument>
 
 #include <QColor>
 #include <QInputDialog>
@@ -132,7 +133,7 @@ QVariant CMediaModel::data( const QModelIndex &index, int role /*= Qt::DisplayRo
     if ( role == ECustomRoles::eIsProviderColumnRole )
     {
         auto providerInfo = getProviderInfoForColumn( index.column() );
-        return providerInfo.operator bool();
+        return providerInfo.has_value();
     }
 
     if ( role == ECustomRoles::eShowInSearchMovieRole )
@@ -233,7 +234,9 @@ QVariant CMediaModel::data( const QModelIndex &index, int role /*= Qt::DisplayRo
         case ePlaybackPosition:
             return isValid ? mediaData->playbackPosition( serverName ) : QString();
         case eResolution:
-            return mediaData->resolution();
+            return isValid ? ( mediaData->resolution() ) : QString();
+        case eIsMissing:
+            return isValid ? ( mediaData->isMissing() ? "Yes" : "No" ) : QString();
         default:
             return {};
     }
@@ -330,6 +333,9 @@ QVariant CMediaModel::headerData( int section, Qt::Orientation orientation, int 
             case eResolution:
                 retVal = "Resolution";
                 break;
+            case eIsMissing:
+                retVal = "Missing?";
+                break;
         };
     }
     // retVal = QString( "%1 - %2 - %3" ).arg( retVal ).arg( columnNum ).arg( section );
@@ -405,12 +411,20 @@ std::shared_ptr< CMediaData > CMediaModel::getMediaDataForID( const QString &ser
 
 std::shared_ptr< CMediaData > CMediaModel::loadMedia( const QString &serverName, const QJsonObject &media )
 {
-    auto id = media[ "Id" ].toString();
+    qDebug().nospace().noquote() << QJsonDocument( media ).toJson();
+
     std::shared_ptr< CMediaData > mediaData;
 
     auto pos = fMediaMap.find( serverName );
     if ( pos == fMediaMap.end() )
         pos = fMediaMap.insert( std::make_pair( serverName, TMediaIDToMediaData() ) ).first;
+
+    auto seasonID = media[ "ParentIndexNumber" ].toInt();
+    auto episodeID = media[ "IndexNumber" ].toInt();
+    auto id = QString( "S%1E%2" ).arg( seasonID, 2, 10, QChar( '0' ) ).arg( episodeID, 2, 10, QChar( '0' ) );
+
+    if ( !media.contains( "ParentIndexNumber" ) || !media.contains( "IndexNumber" ) )
+        id = QString::number( ( *pos ).second.size() );
 
     auto pos2 = ( *pos ).second.find( id );
     if ( pos2 == ( *pos ).second.end() )
@@ -462,7 +476,7 @@ std::shared_ptr< CMediaData > CMediaModel::reloadMedia( const QString &serverNam
         return {};
 
     addMediaInfo( serverName, mediaData, media );
-    emit sigPendingMediaUpdate();
+    //emit sigPendingMediaUpdate();
     return mediaData;
 }
 
@@ -585,14 +599,17 @@ void CMediaModel::addMovieStub( const SMovieStub &movieStub, std::function< bool
     addMedia( mediaData, true );
 }
 
-std::unordered_set< QString > CMediaModel::getKnownShows() const
+std::set< QString > CMediaModel::getKnownShows() const
 {
-    std::unordered_set< QString > knownShows;
+    std::set< QString > knownShows;
     for ( auto &&ii : fAllMedia )
     {
         if ( ii->mediaType() != "Episode" )
             continue;
-        ;
+        auto name = ii->seriesName();
+        if ( name.isEmpty() )
+            continue;
+
         knownShows.insert( ii->seriesName() );
     }
     return knownShows;
@@ -779,17 +796,21 @@ CMediaMissingFilterModel::CMediaMissingFilterModel( std::shared_ptr< CSettings >
         } );
 }
 
-void CMediaMissingFilterModel::setShowFilter( const QString &filter )
+void CMediaMissingFilterModel::setShowFilter( const QStringList &filter )
 {
     fShowFilter = filter;
     invalidateFilter();
 }
 
+void CMediaMissingFilterModel::setDateRange( const QDate &min, const QDate &max )
+{
+    fMinDate = min;
+    fMaxDate = max;
+    invalidateFilter();
+}
+
 bool CMediaMissingFilterModel::filterAcceptsRow( int source_row, const QModelIndex &source_parent ) const
 {
-    if ( !fRegEx.isValid() )
-        return true;
-
     if ( !sourceModel() )
         return true;
     auto childIdx = sourceModel()->index( source_row, 0, source_parent );
@@ -798,11 +819,30 @@ bool CMediaMissingFilterModel::filterAcceptsRow( int source_row, const QModelInd
         return false;
 
     if ( !fShowFilter.isEmpty() )
-        return seriesName == fShowFilter;
+    {
+        if ( !fShowFilter.contains( seriesName ) )
+            return false;
+    }
 
-    auto match = fRegEx.match( seriesName );
-    bool isMatch = ( match.hasMatch() && ( match.captured( 0 ).length() == seriesName.length() ) );
-    return !isMatch;
+    if ( fRegEx.has_value() && fRegEx.value().isValid() )
+    {
+        auto match = fRegEx.value().match( seriesName );
+        bool isMatch = ( match.hasMatch() && ( match.captured( 0 ).length() == seriesName.length() ) );
+        if ( !isMatch )
+            return false;
+    }
+
+    auto premiereDate = childIdx.data( CMediaModel::ePremiereDateRole ).toDate();
+    if ( fMinDate.isValid() )
+    {
+        return premiereDate >= fMinDate;
+    }
+
+    if ( fMaxDate.isValid() )
+    {
+        return premiereDate <= fMaxDate;
+    }
+    return true;
 }
 
 bool CMediaMissingFilterModel::filterAcceptsColumn( int source_column, const QModelIndex &source_parent ) const

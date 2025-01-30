@@ -42,6 +42,9 @@ struct SMovieStub
     bool operator==( const SMovieStub &r ) const { return nameKey() == r.nameKey(); }
     QJsonObject toJSON() const;
     std::size_t hash( bool useName, bool useYear, bool useResolution ) const;
+
+    bool hasYear() const;
+
     bool equal( const SMovieStub &rhs, bool useName, bool useYear, bool useResolution ) const;
     bool equal( std::shared_ptr< CMediaData > mediaData, bool useName, bool useYear, bool useResolution ) const;
 

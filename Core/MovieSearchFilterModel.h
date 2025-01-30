@@ -51,7 +51,9 @@ public:
     QJsonObject toJSON() const;
 
     void saveMissing( QWidget *parent ) const;
-    private Q_SLOTS:
+public Q_SLOTS:
+    void slotSetFilter( const QString &filter );
+private Q_SLOTS:
     void slotInvalidateFilter();
 
 private:
@@ -68,5 +70,6 @@ private:
     QTimer *fTimer{ nullptr };
     bool fOnlyShowMissing{ false };
     bool fMatchResolution{ false };
+    QString fNameFilter;
 };
 #endif

@@ -139,7 +139,7 @@ public:
     void setSyncUserList( const QStringList &value );
 
     std::set< QString > ignoreShowList() const { return fIgnoreShowList; }
-    QRegularExpression ignoreShowRegEx() const;
+    std::optional< QRegularExpression > ignoreShowRegEx() const;
 
     void setIgnoreShowList( const QStringList &value );
 

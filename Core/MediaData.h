@@ -149,6 +149,8 @@ public:
 
     bool isMissingProvider( EMissingProviderIDs missingIdsType ) const;
 
+    bool isMissing() const { return fIsMissing; }
+
 private:
     void computeName( const QJsonObject &media );
     void loadResolution( const QJsonArray &mediaSources );
@@ -181,6 +183,7 @@ private:
     std::map< QString, QString > fExternalUrls;
     std::pair< int, int > fResolution{ 0, 0 };
     QDate fPremiereDate;
+    bool fIsMissing{ false };
 
     bool fCanBeSynced{ false };
     std::map< QString, std::shared_ptr< SMediaServerData > > fInfoForServer;

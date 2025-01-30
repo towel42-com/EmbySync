@@ -21,58 +21,7 @@
      </property>
      <widget class="QWidget" name="layoutWidget">
       <layout class="QGridLayout" name="gridLayout">
-       <item row="0" column="2" colspan="2">
-        <widget class="QDateEdit" name="minPremiereDate">
-         <property name="calendarPopup">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0" colspan="8">
-        <widget class="QTreeView" name="servers">
-         <property name="alternatingRowColors">
-          <bool>true</bool>
-         </property>
-         <property name="sortingEnabled">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="5">
-        <widget class="QCheckBox" name="searchByShowName">
-         <property name="text">
-          <string>Show Name</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="4">
-        <widget class="QDateEdit" name="maxPremiereDate">
-         <property name="calendarPopup">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="7">
-        <spacer name="horizontalSpacer">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item row="0" column="1">
-        <widget class="QCheckBox" name="searchByDate">
-         <property name="text">
-          <string>Premiere Date Range:</string>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="0" colspan="8">
+       <item row="5" column="0" colspan="6">
         <widget class="QLabel" name="mediaSummaryLabel">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
@@ -85,20 +34,78 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="0" colspan="8">
+       <item row="0" column="4">
+        <widget class="QDateEdit" name="maxPremiereDate">
+         <property name="calendarPopup">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="5">
+        <widget class="QPushButton" name="selectAll">
+         <property name="text">
+          <string>Select All</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0" colspan="6">
         <widget class="QLabel" name="serversLabel">
          <property name="text">
           <string>Servers:</string>
          </property>
         </widget>
        </item>
-       <item row="0" column="6">
-        <widget class="QComboBox" name="shows">
-         <property name="sizeAdjustPolicy">
-          <enum>QComboBox::AdjustToContents</enum>
+       <item row="0" column="2" colspan="2">
+        <widget class="QDateEdit" name="minPremiereDate">
+         <property name="calendarPopup">
+          <bool>true</bool>
          </property>
-         <property name="placeholderText">
-          <string>Shows Must Be Loaded</string>
+        </widget>
+       </item>
+       <item row="1" column="0" colspan="3">
+        <widget class="QLabel" name="label">
+         <property name="text">
+          <string>Select Shows to Filter:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="6">
+        <widget class="QPushButton" name="unselectAll">
+         <property name="text">
+          <string>Unselect All</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0" colspan="7">
+        <widget class="QListWidget" name="showsFilter"/>
+       </item>
+       <item row="4" column="0" colspan="7">
+        <widget class="QTreeView" name="servers">
+         <property name="alternatingRowColors">
+          <bool>true</bool>
+         </property>
+         <property name="sortingEnabled">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="5" colspan="2">
+        <spacer name="horizontalSpacer">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="0" column="0" colspan="2">
+        <widget class="QCheckBox" name="searchByDate">
+         <property name="text">
+          <string>Premiere Date Range:</string>
          </property>
         </widget>
        </item>

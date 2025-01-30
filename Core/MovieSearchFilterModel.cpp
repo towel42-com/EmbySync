@@ -25,7 +25,8 @@ void CMovieSearchFilterModel::addSearchMovie( const QString &name, int year, con
 {
     auto movieStub = SMovieStub( name, year, resolution );
     fSearchForMoviesByName.insert( movieStub );
-    fSearchForMoviesByNameYear.insert( movieStub );
+    if ( movieStub.fName != 0 )
+        fSearchForMoviesByNameYear.insert( movieStub );
     if ( postLoad )
         addStubToSourceModel( movieStub );
 
@@ -37,7 +38,7 @@ void CMovieSearchFilterModel::startInvalidateTimer()
     if ( !fTimer )
     {
         fTimer = new QTimer( this );
-        fTimer->setInterval( 50 );
+        fTimer->setInterval( 250 );
         fTimer->setSingleShot( true );
         connect( fTimer, &QTimer::timeout, this, &CMovieSearchFilterModel::slotInvalidateFilter );
     }
@@ -48,6 +49,12 @@ void CMovieSearchFilterModel::startInvalidateTimer()
 void CMovieSearchFilterModel::slotInvalidateFilter()
 {
     invalidateFilter();
+}
+
+void CMovieSearchFilterModel::slotSetFilter( const QString &filter )
+{
+    fNameFilter = filter;
+    startInvalidateTimer();
 }
 
 void CMovieSearchFilterModel::addMoviesToSourceModel()
@@ -152,12 +159,19 @@ bool CMovieSearchFilterModel::filterAcceptsRow( int source_row, const QModelInde
     if ( !inSearchForMovie( movieStub ).has_value() )
         return false;
 
+    if ( !fNameFilter.isEmpty() )
+    {
+        if ( !movieStub.fName.toLower().contains( fNameFilter.toLower() ) )
+            return false;
+    }
+
     if ( !fOnlyShowMissing )
         return true;
 
     auto onServer = childIdx.data( CMediaModel::ECustomRoles::eOnServerRole ).toBool();
     if ( !onServer )
         return true;
+
     return false;
 }
 
@@ -192,17 +206,17 @@ QVariant CMovieSearchFilterModel::data( const QModelIndex &index, int role /*= Q
     if ( role == eResolutionMatches )
         return resolutionMatches;
 
+    auto perServerColumn = index.data( CMediaModel::ECustomRoles::ePerServerColumnRole ).toInt();
     if ( role == Qt::DisplayRole )
     {
         auto retVal = QSortFilterProxyModel::data( index, role );
-        auto perServerColumn = index.data( CMediaModel::ECustomRoles::ePerServerColumnRole ).toInt();
         switch ( perServerColumn )
         {
             case CMediaModel::EColumns::eName:
                 {
-                    auto pos = retVal.toString().indexOf( " - <Missing" );
-                    if ( pos != -1 )
-                        retVal = retVal.toString().left( pos ).trimmed();
+                    //auto pos = retVal.toString().indexOf( " - <Missing" );
+                    //if ( pos != -1 )
+                    //    retVal = retVal.toString().left( pos ).trimmed();
                 }
                 break;
             case CMediaModel::EColumns::ePremiereDate:
@@ -222,24 +236,27 @@ QVariant CMovieSearchFilterModel::data( const QModelIndex &index, int role /*= Q
         return retVal;
     }
 
-    if ( onServer && resolutionMatches )
-        return {};
+    //if ( onServer && resolutionMatches )
+    //    return {};
 
-    // reverse for black background
-    if ( role == Qt::ForegroundRole )
+    if ( ( !onServer && ( perServerColumn == CMediaModel::EColumns::eName ) ) || ( onServer && !resolutionMatches && ( perServerColumn == CMediaModel::EColumns::eResolution ) ) )
     {
-        auto color = fSettings->dataMissingColor( false );
-        if ( !color.isValid() )
-            return {};
-        return color;
-    }
+        // reverse for black background
+        if ( role == Qt::ForegroundRole )
+        {
+            auto color = fSettings->dataMissingColor( false );
+            if ( !color.isValid() )
+                return {};
+            return color;
+        }
 
-    if ( role == Qt::BackgroundRole )
-    {
-        auto color = fSettings->dataMissingColor( true );
-        if ( !color.isValid() )
-            return {};
-        return color;
+        if ( role == Qt::BackgroundRole )
+        {
+            auto color = fSettings->dataMissingColor( true );
+            if ( !color.isValid() )
+                return {};
+            return color;
+        }
     }
     return {};
 }

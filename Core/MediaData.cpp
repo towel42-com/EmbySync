@@ -62,9 +62,14 @@ std::function< QString( uint64_t ) > CMediaData::mecsToStringFunc()
 
 CMediaData::CMediaData( const QJsonObject &mediaObj, std::shared_ptr< CServerModel > serverModel )
 {
+    // auto tmp = ;
+    // qDebug() << tmp.toJson();
+
     computeName( mediaObj );
+    //qDebug().nospace().noquote() << QJsonDocument( mediaObj ).toJson();
     fType = mediaObj[ "Type" ].toString();
     fOriginalTitle = mediaObj[ "OriginalTitle" ].toString();
+    fIsMissing = mediaObj[ "IsMissing" ].toBool();
 
     for ( auto &&serverInfo : *serverModel )
     {
@@ -178,8 +183,14 @@ void CMediaData::computeName( const QJsonObject &media )
         {
             season.clear();
             fSeason.reset();
+            if ( media.contains( "ParentIndexNumber" ) )
+            {
+                fSeason = media[ "ParentIndexNumber" ].toInt();
+                if ( fSeason.value() == 0 )
+                    fSeason.reset();
+            }
+            season = fSeason.has_value() ? ( QString( "S%1" ).arg( fSeason.value(), 2, 10, QChar( '0' ) ) ) : QString();
         }
-
         fEpisode = media[ "IndexNumber" ].toInt();
         if ( fEpisode.value() == 0 )
             fEpisode.reset();
@@ -974,7 +985,7 @@ namespace NJSON
             fRank = -1;
         fName = curr.toObject()[ "name" ].toString();
         fYear = curr.toObject()[ "year" ].toInt();
-        Q_ASSERT( fYear != 0 );
+        //Q_ASSERT( hasYear() );
         if ( curr.toObject().contains( "width" ) && curr.toObject().contains( "height" ) )
             fResolution = { curr.toObject()[ "width" ].toInt(), curr.toObject()[ "width" ].toInt() };
         else if ( curr.toObject().contains( "type" ) )

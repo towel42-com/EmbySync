@@ -237,15 +237,13 @@ void CSettingsDlg::loadKnownUsers( const std::vector< std::shared_ptr< CUserData
     updateKnownUsers();
 }
 
-void CSettingsDlg::loadKnownShows( const std::unordered_set< QString > &knownShows )
+void CSettingsDlg::loadKnownShows( const std::set< QString > &knownShows )
 {
-    std::set< QString > orderedShows = { knownShows.begin(), knownShows.end() };
-
     auto headerLabels = QStringList() << tr( "Show Name" );
     fImpl->knownShows->setColumnCount( headerLabels.count() );
     fImpl->knownShows->setHeaderLabels( headerLabels );
 
-    for ( auto &&ii : orderedShows )
+    for ( auto &&ii : knownShows )
     {
         auto item = new QTreeWidgetItem( fImpl->knownShows, QStringList() << ii );
         fKnownShows.push_back( std::make_pair( ii, item ) );

@@ -429,7 +429,7 @@ void CSettings::setSyncUserList( const QStringList &value )
     updateValue( fSyncUserList, value );
 }
 
-QRegularExpression CSettings::ignoreShowRegEx() const
+std::optional< QRegularExpression > CSettings::ignoreShowRegEx() const
 {
     QStringList regExList;
     for ( auto &&ii : fIgnoreShowList )
@@ -440,11 +440,13 @@ QRegularExpression CSettings::ignoreShowRegEx() const
             continue;
         regExList << "(" + ii + ")";
     }
+    if ( regExList.empty() )
+        return {};
     auto regExpStr = regExList.join( "|" );
-    QRegularExpression regExp;
     if ( !regExpStr.isEmpty() )
-        regExp = QRegularExpression( regExpStr );
-    return regExp;
+        return {};
+
+    return QRegularExpression( regExpStr );
 }
 
 void CSettings::setIgnoreShowList( const QStringList &value )
