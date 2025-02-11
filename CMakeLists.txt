@@ -52,6 +52,7 @@ file( REAL_PATH ~/bin/EmbySync CMAKE_INSTALL_PREFIX EXPAND_TILDE)
 file( REAL_PATH ~/bin HOME_BIN_DIR EXPAND_TILDE)
 
 SET( SAB_ENABLE_TESTING ON )
+SET( QNETWORK_SUPPORT ON )
 add_subdirectory( SABUtils )
 add_subdirectory( UI )
 add_subdirectory( Core )
