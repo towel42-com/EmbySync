@@ -91,37 +91,64 @@ CMediaData::CMediaData( const SMovieStub &movieStub, const QString &type )
         fResolution = { 0, 0 };
 }
 
-void CMediaData::addSearchMenu( QMenu *menu ) const
+QString CMediaData::searchKey() const
 {
-    auto action = new QAction( "Search for Torrent on RARBG", menu );
-    menu->addAction( action );
-    QObject::connect(
-        action, &QAction::triggered,
-        [ this ]()
-        {
-            auto url = getSearchURL( CMediaData::ESearchSite::eRARBG );
-            QDesktopServices::openUrl( url );
-        } );
+    QString searchKey;
+    auto pos = fProviders.find( "imdb" );
+    if ( pos != fProviders.end() )
+    {
+        searchKey = ( *pos ).second;
+    }
+    if ( searchKey.isEmpty() )
+        searchKey = QString( R"("%1")" ).arg( fName );
 
-    action = new QAction( "Search for Torrent on piratebay.org", menu );
-    menu->addAction( action );
-    QObject::connect(
-        action, &QAction::triggered,
-        [ this ]()
-        {
-            auto url = getSearchURL( CMediaData::ESearchSite::ePirateBay );
-            QDesktopServices::openUrl( url );
-        } );
+    if ( this->mediaType() == "Episode" )
+    {
+        searchKey = fSeriesName;
+        searchKey = searchKey.replace( R"((US))", "" ).trimmed();
 
-    action = new QAction( "Search for Movie on IMDB", menu );
-    menu->addAction( action );
-    QObject::connect(
-        action, &QAction::triggered,
-        [ this ]()
+        QString subKey;
+        if ( fSeason.has_value() )
+            subKey += QString( "S%1" ).arg( fSeason.value(), 2, 10, QChar( '0' ) );
+
+        if ( fEpisode.has_value() )
+            subKey += QString( "E%1" ).arg( fEpisode.value(), 2, 10, QChar( '0' ) );
+        searchKey += " " + subKey;
+    }
+    else if ( this->mediaType() == "Movie" )
+    {
+        if ( fPremiereDate.isValid() )
         {
-            auto url = getSearchURL( CMediaData::ESearchSite::eIMDB );
-            QDesktopServices::openUrl( url );
-        } );
+            searchKey += " " + QString::number( fPremiereDate.year() );
+        }
+    }
+    return searchKey;
+}
+
+QUrl CMediaData::getDefaultSearchURL( const std::shared_ptr< CSettings > &settings ) const
+{
+    auto searchServers = settings->searchServers();
+    if ( searchServers.empty() )
+        return {};
+
+    auto retVal = searchServers.front()->searchUrl( searchKey() );
+    return retVal;
+}
+
+void CMediaData::addSearchMenu( const std::shared_ptr< CSettings > &settings, QMenu *menu ) const
+{
+    auto searchServers = settings->searchServers();
+    for ( auto &&ii : searchServers )
+    {
+        auto action = menu->addAction( ii->displayName() );
+        QObject::connect(
+            action, &QAction::triggered,
+            [ this, ii ]()
+            {
+                auto url = ii->searchUrl( searchKey() );
+                QDesktopServices::openUrl( url );
+            } );
+    }
 }
 
 bool CMediaData::isExtra( const QJsonObject &obj )
@@ -492,63 +519,7 @@ QIcon CMediaData::getDirectionIcon( const QString &serverName ) const
     return retVal;
 }
 
-QUrl CMediaData::getSearchURL( ESearchSite site ) const
-{
-    QString url;
-    if ( site == ESearchSite::eRARBG )
-        url = "https://rarbg.to/torrents.php";
-    else if ( site == ESearchSite::ePirateBay )
-        url = "https://thepiratebay.org/search.php";
-    else if ( site == ESearchSite::eIMDB )
-        url = "https://imdb.com/find";
-    else
-        return {};
-
-    QUrl retVal( url );
-    QString searchKey;
-
-    auto pos = fProviders.find( "imdb" );
-    if ( pos != fProviders.end() )
-    {
-        searchKey = ( *pos ).second;
-    }
-    if ( searchKey.isEmpty() )
-        searchKey = QString( R"("%1")" ).arg( fName );
-
-    if ( this->mediaType() == "Episode" )
-    {
-        searchKey = fSeriesName;
-        searchKey = searchKey.replace( R"((US))", "" ).trimmed();
-
-        QString subKey;
-        if ( fSeason.has_value() )
-            subKey += QString( "S%1" ).arg( fSeason.value(), 2, 10, QChar( '0' ) );
-
-        if ( fEpisode.has_value() )
-            subKey += QString( "E%1" ).arg( fEpisode.value(), 2, 10, QChar( '0' ) );
-        searchKey += " " + subKey;
-    }
-    else if ( this->mediaType() == "Movie" )
-    {
-        if ( fPremiereDate.isValid() )
-        {
-            searchKey += " " + QString::number( fPremiereDate.year() );
-        }
-    }
-    QUrlQuery query;
-    if ( site == ESearchSite::eIMDB )
-    {
-        query.addQueryItem( "q", searchKey.replace( " ", "+" ) );
-    }
-    else
-    {
-        query.addQueryItem( "search", searchKey.replace( " ", "+" ) );
-    }
-    retVal.setQuery( query );
-    return retVal;
-}
-
-QJsonObject CMediaData::toJson( bool includeSearchURL ) const
+QJsonObject CMediaData::toJson( const std::shared_ptr< CSettings > &settings, bool includeSearchURL ) const
 {
     QJsonObject retVal;
 
@@ -575,7 +546,7 @@ QJsonObject CMediaData::toJson( bool includeSearchURL ) const
     retVal[ "server_infos" ] = serverInfos;
 
     if ( includeSearchURL )
-        retVal[ "searchurl" ] = getSearchURL( ESearchSite::eRARBG ).toString();
+        retVal[ "searchurl" ] = getDefaultSearchURL( settings ).toString();
 
     return retVal;
 }

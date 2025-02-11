@@ -320,7 +320,7 @@ void CCollectionsManager::slotMediaContextMenu( CDataTree *dataTree, const QPoin
         return;
 
     QMenu menu( tr( "Context Menu" ) );
-    mediaData->addSearchMenu( &menu );
+    mediaData->addSearchMenu( fSettings, &menu );
     menu.exec( dataTree->dataTree()->mapToGlobal( pos ) );
 }
 

@@ -31,6 +31,7 @@
 #include "SABUtils/WidgetChanged.h"
 
 #include <QFileDialog>
+#include <QDesktopServices>
 #include <QMetaMethod>
 #include <QMessageBox>
 #include <QColorDialog>
@@ -52,13 +53,19 @@ CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, std::shared_p
     new NSABUtils::CButtonEnabler( fImpl->usersList, fImpl->editUser );
     new NSABUtils::CButtonEnabler( fImpl->servers, fImpl->delServer );
     new NSABUtils::CButtonEnabler( fImpl->servers, fImpl->editServer );
+    new NSABUtils::CButtonEnabler( fImpl->searchServers, fImpl->delSearchServer );
+    new NSABUtils::CButtonEnabler( fImpl->searchServers, fImpl->editSearchServer );
     new NSABUtils::CButtonEnabler( fImpl->showsList, fImpl->delShow );
     new NSABUtils::CButtonEnabler( fImpl->showsList, fImpl->editShow );
 
-    fTestButton = fImpl->testButtonBox->addButton( tr( "Test" ), QDialogButtonBox::ButtonRole::ActionRole );
-    fTestButton->setObjectName( "Test Button" );
-    connect( fTestButton, &QPushButton::clicked, this, &CSettingsDlg::slotTestServers );
+    fServerTestButton = fImpl->serverTestButtonBox->addButton( tr( "Test" ), QDialogButtonBox::ButtonRole::ActionRole );
+    fServerTestButton->setObjectName( "Test Server Button" );
+    connect( fServerTestButton, &QPushButton::clicked, this, &CSettingsDlg::slotTestServers );
     connect( fSyncSystem.get(), &CSyncSystem::sigTestServerResults, this, &CSettingsDlg::slotTestServerResults );
+
+    fSearchServerTestButton = fImpl->searchServerTestButtonBox->addButton( tr( "Test Search" ), QDialogButtonBox::ButtonRole::ActionRole );
+    fSearchServerTestButton->setObjectName( "Test Search Server Button" );
+    connect( fSearchServerTestButton, &QPushButton::clicked, this, &CSettingsDlg::slotTestSearchServers );
 
     load();
 
@@ -161,6 +168,29 @@ CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, std::shared_p
     connect( fImpl->moveServerUp, &QToolButton::clicked, this, &CSettingsDlg::slotMoveServerUp );
     connect( fImpl->moveServerDown, &QToolButton::clicked, this, &CSettingsDlg::slotMoveServerDown );
 
+    connect( fImpl->addSearchServer, &QToolButton::clicked, [ this ]() { editSearchServer( nullptr ); } );
+    connect(
+        fImpl->delSearchServer, &QToolButton::clicked,
+        [ this ]()
+        {
+            auto curr = fImpl->searchServers->currentItem();
+            if ( !curr )
+                return;
+            delete curr;
+        } );
+    connect(
+        fImpl->editSearchServer, &QToolButton::clicked,
+        [ this ]()
+        {
+            auto curr = fImpl->searchServers->currentItem();
+            editServer( curr );
+        } );
+    connect( fImpl->searchServers, &QTreeWidget::itemDoubleClicked, [ this ]( QTreeWidgetItem *item ) { return editSearchServer( item ); } );
+    connect( fImpl->searchServers, &QTreeWidget::itemSelectionChanged, this, &CSettingsDlg::slotCurrSearchServerChanged );
+    connect( fImpl->searchServers, &QTreeWidget::itemSelectionChanged, this, &CSettingsDlg::slotCurrSearchServerChanged );
+    connect( fImpl->moveSearchServerUp, &QToolButton::clicked, this, &CSettingsDlg::slotMoveSearchServerUp );
+    connect( fImpl->moveSearchServerDown, &QToolButton::clicked, this, &CSettingsDlg::slotMoveSearchServerDown );
+
     fImpl->tabWidget->setCurrentIndex( 0 );
 }
 
@@ -176,25 +206,52 @@ void CSettingsDlg::slotMoveServerDown()
 
 void CSettingsDlg::slotCurrServerChanged()
 {
-    auto curr = fImpl->servers->currentItem();
+    currServerChanged( fImpl->servers, fImpl->moveServerUp, fImpl->moveServerDown );
+}
+
+void CSettingsDlg::slotCurrSearchServerChanged()
+{
+    currServerChanged( fImpl->searchServers, fImpl->moveSearchServerUp, fImpl->moveSearchServerDown );
+}
+
+void CSettingsDlg::currServerChanged( QTreeWidget *serverTree, QToolButton *up, QToolButton *down )
+{
+    if ( !serverTree || !up || !down )
+        return;
+
+    auto curr = serverTree->currentItem();
     if ( !curr )
         return;
 
-    auto itemAbove = fImpl->servers->itemAbove( curr );
-    fImpl->moveServerUp->setEnabled( itemAbove != nullptr );
+    auto itemAbove = serverTree->itemAbove( curr );
+    up->setEnabled( itemAbove != nullptr );
 
-    auto itemBelow = fImpl->servers->itemBelow( curr );
-    fImpl->moveServerDown->setEnabled( itemBelow != nullptr );
+    auto itemBelow = serverTree->itemBelow( curr );
+    down->setEnabled( itemBelow != nullptr );
+}
+
+void CSettingsDlg::moveCurrSearchServer( bool up )
+{
+    if ( moveCurrServer( fImpl->searchServers, up ) )
+        slotCurrSearchServerChanged();
 }
 
 void CSettingsDlg::moveCurrServer( bool up )
 {
-    auto curr = fImpl->servers->currentItem();
+    if ( moveCurrServer( fImpl->servers, up ) )
+        slotCurrServerChanged();
+}
+
+bool CSettingsDlg::moveCurrServer( QTreeWidget *serverTree, bool up )
+{
+    if ( !serverTree )
+        return false;
+
+    auto curr = serverTree->currentItem();
     if ( !curr )
-        return;
+        return false;
 
     auto parentItem = curr->parent();
-    auto treeWidget = curr->treeWidget();
     if ( parentItem )
     {
         auto currIdx = parentItem->indexOfChild( curr );
@@ -204,15 +261,25 @@ void CSettingsDlg::moveCurrServer( bool up )
     }
     else
     {
-        auto currIdx = treeWidget->indexOfTopLevelItem( curr );
-        treeWidget->takeTopLevelItem( currIdx );
+        auto currIdx = serverTree->indexOfTopLevelItem( curr );
+        serverTree->takeTopLevelItem( currIdx );
         currIdx += up ? -1 : +1;
-        treeWidget->insertTopLevelItem( currIdx, curr );
+        serverTree->insertTopLevelItem( currIdx, curr );
     }
-    treeWidget->selectionModel()->clearSelection();
+    serverTree->selectionModel()->clearSelection();
     curr->setSelected( true );
-    treeWidget->setCurrentItem( curr );
-    slotCurrServerChanged();
+    serverTree->setCurrentItem( curr );
+    return true;
+}
+
+void CSettingsDlg::slotMoveSearchServerUp()
+{
+    moveCurrSearchServer( true );
+}
+
+void CSettingsDlg::slotMoveSearchServerDown()
+{
+    moveCurrSearchServer( false );
 }
 
 void CSettingsDlg::loadKnownUsers( const std::vector< std::shared_ptr< CUserData > > &knownUsers )
@@ -285,16 +352,29 @@ void CSettingsDlg::editShow( QListWidgetItem *item )
 
 void CSettingsDlg::editServer( QTreeWidgetItem *item )
 {
+    editServer( fImpl->servers, item );
+}
+
+void CSettingsDlg::editSearchServer( QTreeWidgetItem *item )
+{
+    editServer( fImpl->searchServers, item );
+}
+
+void CSettingsDlg::editServer( QTreeWidget *serverTree, QTreeWidgetItem *item )
+{
+    if ( !serverTree )
+        return;
+
     auto displayName = item ? item->text( 0 ) : QString();
     auto url = item ? item->text( 1 ) : QString();
     auto apiKey = item ? item->text( 2 ) : QString();
     bool enabled = item ? ( item->checkState( 0 ) == Qt::CheckState::Checked ) : true;
 
-    CEditServerDlg dlg( displayName, url, apiKey, enabled, this );
+    CEditServerDlg dlg( displayName, url, apiKey, enabled, serverTree == fImpl->searchServers, this );
     if ( dlg.exec() == QDialog::Accepted )
     {
         if ( !item )
-            item = new QTreeWidgetItem( fImpl->servers );
+            item = new QTreeWidgetItem( serverTree );
         item->setText( 0, dlg.name() );
         item->setCheckState( 0, dlg.enabled() ? Qt::CheckState::Checked : Qt::CheckState::Unchecked );
         item->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/unknownStatus.png" ) ) );
@@ -316,18 +396,18 @@ void CSettingsDlg::accept()
 void CSettingsDlg::load()
 {
     fImpl->servers->setColumnCount( 3 );
-    for ( auto &&serverInfo : *fServerModel )
+    for ( auto &&ii : *fServerModel )
     {
-        auto name = serverInfo->displayName();
-        auto url = serverInfo->url();
-        auto apiKey = serverInfo->apiKey();
-
-        auto item = new QTreeWidgetItem( fImpl->servers, QStringList() << name << url << apiKey );
-        item->setCheckState( 0, serverInfo->isEnabled() ? Qt::CheckState::Checked : Qt::CheckState::Unchecked );
-        item->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/unknownStatus.png" ) ) );
+        loadServer( fImpl->servers, ii );
     }
 
     loadPrimaryServers();
+
+    auto searchServers = fSettings->searchServers();
+    for ( auto &&ii : searchServers )
+    {
+        loadServer( fImpl->searchServers, ii );
+    }
 
     fMediaSourceColor = fSettings->mediaSourceColor();
     fMediaDestColor = fSettings->mediaDestColor();
@@ -360,6 +440,19 @@ void CSettingsDlg::load()
     fImpl->loadLastProject->setChecked( CSettings::loadLastProject() );
 }
 
+void CSettingsDlg::loadServer( QTreeWidget *serverTree, const std::shared_ptr< CServerInfo > &serverInfo )
+{
+    if ( !serverInfo || !serverTree )
+        return;
+    auto name = serverInfo->displayName();
+    auto url = serverInfo->url();
+    auto apiKey = serverInfo->apiKey();
+
+    auto item = new QTreeWidgetItem( serverTree, QStringList() << name << url << apiKey );
+    item->setCheckState( 0, serverInfo->isEnabled() ? Qt::CheckState::Checked : Qt::CheckState::Unchecked );
+    item->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/unknownStatus.png" ) ) );
+}
+
 void CSettingsDlg::loadPrimaryServers()
 {
     auto primServerUrl = fSettings->primaryServer();
@@ -372,8 +465,7 @@ void CSettingsDlg::loadPrimaryServers()
 
     fImpl->primaryServer->clear();
 
- 
-    auto servers = getServerInfos( true );
+    auto servers = getServerInfos( fImpl->servers, true );
     for ( auto &&serverInfo : servers )
     {
         if ( !serverInfo->isEnabled() )
@@ -395,11 +487,14 @@ void CSettingsDlg::loadPrimaryServers()
 
 void CSettingsDlg::save()
 {
-    auto servers = getServerInfos( false );
+    auto servers = getServerInfos( fImpl->servers, false );
     fServerModel->setServers( servers );
 
     auto primServer = fImpl->primaryServer->currentData().toString();
     fSettings->setPrimaryServer( primServer );
+
+    auto searchServers = getServerInfos( fImpl->searchServers, false );
+    fSettings->setSearchServers( { searchServers.begin(), searchServers.end() } );
 
     fSettings->setMediaSourceColor( fMediaSourceColor );
     fSettings->setMediaDestColor( fMediaDestColor );
@@ -422,21 +517,30 @@ void CSettingsDlg::save()
     CSettings::setLoadLastProject( fImpl->loadLastProject->isChecked() );
 }
 
-std::vector< std::shared_ptr< CServerInfo > > CSettingsDlg::getServerInfos( bool enabledOnly ) const
+std::vector< std::shared_ptr< CServerInfo > > CSettingsDlg::getServerInfos( QTreeWidget *serverTree, bool enabledOnly ) const
 {
-    std::vector< std::shared_ptr< CServerInfo > > servers;
-    for ( int ii = 0; ii < fImpl->servers->topLevelItemCount(); ++ii )
+    if ( !serverTree )
+        return {};
+
+    std::vector< std::shared_ptr< CServerInfo > > retVal;
+    for ( int ii = 0; ii < serverTree->topLevelItemCount(); ++ii )
     {
-        auto curr = getServerInfo( ii );
+        auto curr = getServerInfo( serverTree, ii );
+        if ( !curr )
+            continue;
+
         if ( !enabledOnly || curr->isEnabled() )
-            servers.push_back( curr );
+            retVal.push_back( curr );
     }
-    return std::move( servers );
+    return retVal;
 }
 
-std::shared_ptr< CServerInfo > CSettingsDlg::getServerInfo( int ii ) const
+std::shared_ptr< CServerInfo > CSettingsDlg::getServerInfo( QTreeWidget *serverTree, int ii ) const
 {
-    auto item = fImpl->servers->topLevelItem( ii );
+    if ( !serverTree )
+        return {};
+
+    auto item = serverTree->topLevelItem( ii );
 
     auto name = item->text( 0 );
     auto url = item->text( 1 );
@@ -660,7 +764,7 @@ void CSettingsDlg::slotTestServers()
         fImpl->servers->topLevelItem( ii )->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/unknownStatus.png" ) ) );
     }
 
-    auto tmp = getServerInfos( true );
+    auto tmp = getServerInfos( fImpl->servers, true );
     std::vector< std::shared_ptr< const CServerInfo > > servers;
     for ( auto &&ii : tmp )
         servers.push_back( std::const_pointer_cast< const CServerInfo >( ii ) );
@@ -672,7 +776,7 @@ void CSettingsDlg::slotTestServerResults( const QString &serverName, bool result
 {
     for ( int ii = 0; ii < fImpl->servers->topLevelItemCount(); ++ii )
     {
-        auto serverInfo = getServerInfo( ii );
+        auto serverInfo = getServerInfo( fImpl->servers, ii );
         if ( serverInfo->keyName() == serverName )
         {
             auto item = fImpl->servers->topLevelItem( ii );
@@ -685,6 +789,24 @@ void CSettingsDlg::slotTestServerResults( const QString &serverName, bool result
     if ( !results )
     {
         QMessageBox::critical( this, tr( "Error" ), tr( "Error in Testing: '%1' - %1" ).arg( serverName ).arg( msg ), QMessageBox::StandardButton::Ok );
+    }
+}
+
+void CSettingsDlg::slotTestSearchServers()
+{
+    for ( int ii = 0; ii < fImpl->searchServers->topLevelItemCount(); ++ii )
+    {
+        auto item = fImpl->searchServers->topLevelItem( ii );
+
+        auto serverInfo = getServerInfo( fImpl->searchServers, ii );
+        auto url = serverInfo->searchUrl( "the empire strikes back" );
+        if ( url.isValid() )
+        {
+            item->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/ok.png" ) ) );
+            QDesktopServices::openUrl( url );
+        }
+        else
+            item->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/error.png" ) ) );
     }
 }
 

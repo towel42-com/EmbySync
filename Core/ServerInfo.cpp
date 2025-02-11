@@ -72,7 +72,7 @@ QUrl CServerInfo::getUrl() const
     return getUrl( QString(), std::list< std::pair< QString, QString > >() );
 }
 
-QUrl CServerInfo::getUrl( const QString &extraPath, const std::list< std::pair< QString, QString > > &queryItems ) const
+QUrl CServerInfo::getUrl( const QString &extraPath, const std::list< std::pair< QString, QString > > &queryItems, bool includeAPIKey ) const
 {
     if ( extraPath.isEmpty() && queryItems.empty() )
     {
@@ -98,12 +98,18 @@ QUrl CServerInfo::getUrl( const QString &extraPath, const std::list< std::pair< 
     {
         query.addQueryItem( ii.first, ii.second );
     }
-    query.addQueryItem( "api_key", fAPIKey );
+    if ( includeAPIKey )
+        query.addQueryItem( "api_key", fAPIKey );
     retVal.setQuery( query );
 
     // qDebug() << retVal;
 
     return retVal;
+}
+
+QUrl CServerInfo::searchUrl( const QString &searchKey ) const
+{
+    return getUrl( {}, { std::make_pair( apiKey(), QString( searchKey ).replace( " ", "%20" ) ) }, false );
 }
 
 QString CServerInfo::displayName( bool verbose ) const
@@ -188,7 +194,7 @@ QJsonObject CServerInfo::toJson() const
     return retVal;
 }
 
-std::shared_ptr< CServerInfo > CServerInfo::fromJson( const QJsonObject &obj, QString &errorMsg )
+std::shared_ptr< CServerInfo > CServerInfo::fromJson( const QJsonObject &obj, bool emptyAPIKeyOK, QString &errorMsg )
 {
     //auto tmp = QJsonDocument( obj );
     //qDebug().noquote().nospace() << tmp.toJson( QJsonDocument::JsonFormat::Indented );
@@ -214,8 +220,11 @@ std::shared_ptr< CServerInfo > CServerInfo::fromJson( const QJsonObject &obj, QS
 
     if ( !obj.contains( "api_key" ) )
     {
-        errorMsg = QString( "Missing api_key" );
-        return false;
+        if ( !emptyAPIKeyOK )
+        {
+            errorMsg = QString( "Missing api_key" );
+            return false;
+        }
     }
     bool enabled = true;
     if ( obj.contains( "enabled" ) )

@@ -320,7 +320,7 @@ void CMainObj::slotMissingEpisodesLoaded()
 
     for ( auto &&mediaInfo : *fMediaModel )
     {
-        shows.push_back( mediaInfo->toJson( true ) );
+        shows.push_back( mediaInfo->toJson( fSettings, true ) );
     }
     QJsonDocument doc( shows );
     std::cout << doc.toJson( QJsonDocument::JsonFormat::Indented ).toStdString() << "\n";

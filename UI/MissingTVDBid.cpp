@@ -266,6 +266,6 @@ void CMissingTVDBid::slotMediaContextMenu( CDataTree *dataTree, const QPoint &po
         return;
 
     QMenu menu( tr( "Context Menu" ) );
-    mediaData->addSearchMenu( &menu );
+    mediaData->addSearchMenu( fSettings, &menu );
     menu.exec( dataTree->dataTree()->mapToGlobal( pos ) );
 }

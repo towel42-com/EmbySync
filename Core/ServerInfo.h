@@ -47,7 +47,9 @@ public:
     bool setUrl( const QString &url );
     QString url( bool clean = false ) const;
     QUrl getUrl() const;   // includes the query for apikey
-    QUrl getUrl( const QString &extraPath, const std::list< std::pair< QString, QString > > &queryItems ) const;
+    QUrl getUrl( const QString &extraPath, const std::list< std::pair< QString, QString > > &queryItems, bool includeApiKey = true ) const;
+
+    QUrl searchUrl( const QString &searchKey ) const;
 
     QString displayName( bool verbose = false ) const;   // returns the name, if empty returns the fqdn, if the same fqdn is used more than once, it use fqdn:port, verbose includes the url
     bool setDisplayName( const QString &name, bool generated );
@@ -55,7 +57,7 @@ public:
 
     bool displayNameGenerated() const { return fName.second; }
 
-    QString keyName() const;   // getUrl().toString()
+    QString keyName() const;
 
     bool isServer( const QString &serverName ) const;
 
@@ -65,7 +67,7 @@ public:
     bool setAPIKey( const QString &key );
 
     QJsonObject toJson() const;
-    static std::shared_ptr< CServerInfo > fromJson( const QJsonObject &obj, QString &errorMsg );
+    static std::shared_ptr< CServerInfo > fromJson( const QJsonObject &obj, bool emptyAPIKeyOK, QString &errorMsg );
 
     bool isEnabled() const { return fIsEnabled && canSync(); }
     bool setIsEnabled( bool isEnabled );

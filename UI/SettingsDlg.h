@@ -33,6 +33,7 @@
 
 class QListWidget;
 class QTreeWidgetItem;
+class QToolButton;
 
 namespace Ui
 {
@@ -41,6 +42,7 @@ namespace Ui
 
 class QListWidgetItem;
 class QTreeWidgetItem;
+class QTreeWidget;
 class QLabel;
 class CSettings;
 class CUserData;
@@ -63,26 +65,39 @@ public:
 
 public Q_SLOTS:
     void slotTestServers();
+    void slotTestSearchServers();
+
     void slotTestServerResults( const QString &serverName, bool results, const QString &msg );
     void slotMoveServerUp();
     void slotMoveServerDown();
     void slotCurrServerChanged();
     void slotServerModelChanged();
 
+    void slotMoveSearchServerUp();
+    void slotMoveSearchServerDown();
+    void slotCurrSearchServerChanged();
 private:
+    void currServerChanged( QTreeWidget *serverTree, QToolButton *up, QToolButton *down );
+
     void loadKnownUsers( const std::vector< std::shared_ptr< CUserData > > &knownUsers );
     void loadKnownShows( const std::set< QString > &knownShows );
     void moveCurrServer( bool up );
+    void moveCurrSearchServer( bool up );
+    bool moveCurrServer( QTreeWidget *serverTree, bool up );
+
     void load();
 
+    void loadServer( QTreeWidget *serverTree, const std::shared_ptr< CServerInfo > &serverInfo );
     void loadPrimaryServers();
 
     void save();
 
-    std::vector< std::shared_ptr< CServerInfo > > getServerInfos( bool enabledOnly ) const;
-    std::shared_ptr< CServerInfo > getServerInfo( int ii ) const;
+    std::vector< std::shared_ptr< CServerInfo > > getServerInfos( QTreeWidget *serverTree, bool enabledOnly ) const;
+    std::shared_ptr< CServerInfo > getServerInfo( QTreeWidget *serverTree, int ii ) const;
 
+    void editServer( QTreeWidget *serverTree, QTreeWidgetItem *item );
     void editServer( QTreeWidgetItem *item );
+    void editSearchServer( QTreeWidgetItem *item );
     void editUser( QListWidgetItem *item );
     void editShow( QListWidgetItem *item );
     void updateColors();
@@ -107,6 +122,7 @@ private:
     QColor fDataMissingColor;
     std::vector< std::pair< std::shared_ptr< CUserData >, QTreeWidgetItem * > > fKnownUsers;
     std::vector< std::pair< QString, QTreeWidgetItem * > > fKnownShows;
-    QPushButton *fTestButton{ nullptr };
+    QPushButton *fServerTestButton{ nullptr };
+    QPushButton *fSearchServerTestButton{ nullptr };
 };
 #endif

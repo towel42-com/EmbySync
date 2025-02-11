@@ -264,7 +264,7 @@ void CServerModel::updateServerMap()
 
 bool CServerModel::loadServer( const QJsonObject &obj, QString &errorMsg, bool lastServer )
 {
-    auto serverInfo = CServerInfo::fromJson( obj, errorMsg );
+    auto serverInfo = CServerInfo::fromJson( obj, false, errorMsg );
     if ( !serverInfo )
         return false;
 

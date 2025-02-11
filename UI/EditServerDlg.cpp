@@ -30,15 +30,17 @@
 #include <QMetaMethod>
 #include <QMessageBox>
 
-CEditServerDlg::CEditServerDlg( const QString &name, const QString &url, const QString &apiKey, bool enabled, QWidget *parent ) :
+CEditServerDlg::CEditServerDlg( const QString &name, const QString &url, const QString &apiKey, bool enabled, bool searchServer, QWidget *parent ) :
     QDialog( parent ),
-    fImpl( new Ui::CEditServerDlg )
+    fImpl( new Ui::CEditServerDlg ),
+    fSearchServer( searchServer )
 {
     fImpl->setupUi( this );
     fImpl->name->setText( name );
     fImpl->url->setText( url );
     fImpl->apiKey->setText( apiKey );
     fImpl->enabled->setChecked( enabled );
+    fImpl->apiLabel->setText( searchServer ? "Search Key Query Name:" : "API Key:" );
 
     QObject::connect( fImpl->name, &QLineEdit::textChanged, this, &CEditServerDlg::slotChanged );
     QObject::connect( fImpl->apiKey, &QLineEdit::textChanged, this, &CEditServerDlg::slotChanged );
@@ -72,8 +74,7 @@ QString CEditServerDlg::apiKey() const
 
 bool CEditServerDlg::okToTest()
 {
-    bool aOK = !fImpl->url->text().isEmpty();
-    aOK = aOK && !fImpl->apiKey->text().isEmpty();
+    bool aOK = fSearchServer && !fImpl->url->text().isEmpty() && !fImpl->apiKey->text().isEmpty();
     return aOK;
 }
 
@@ -84,5 +85,6 @@ void CEditServerDlg::slotChanged()
 
 void CEditServerDlg::updateButtons()
 {
-    fImpl->buttonBox->button( QDialogButtonBox::StandardButton::Ok )->setEnabled( okToTest() );
+    if ( !fSearchServer )
+        fImpl->buttonBox->button( QDialogButtonBox::StandardButton::Ok )->setEnabled( okToTest() );
 }

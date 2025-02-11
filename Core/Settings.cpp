@@ -22,6 +22,7 @@
 
 #include "Settings.h"
 #include "ServerModel.h"
+#include "Core/ServerInfo.h"
 
 #include <QJsonDocument>
 #include <QFile>
@@ -148,6 +149,9 @@ bool CSettings::load( const QString &fileName, std::function< void( const QStrin
         }
     }
 
+    if ( !loadSearchServers( json, errorFunc ) )
+        return false;
+
     setOnlyShowSyncableUsers( getValue( json.object(), "OnlyShowSyncableUsers", true ).toBool() );
     setOnlyShowMediaWithDifferences( getValue( json.object(), "OnlyShowSyncableUsers", true ).toBool() );
     setShowMediaWithIssues( getValue( json.object(), "ShowMediaWithIssues", false ).toBool() );
@@ -174,6 +178,32 @@ bool CSettings::load( const QString &fileName, std::function< void( const QStrin
 
     if ( addToRecentFileList )
         addRecentProject( fFileName );
+    return true;
+}
+
+bool CSettings::loadSearchServers( QJsonDocument &json, const std::function< void( const QString &title, const QString &msg ) > & errorFunc )
+{
+    auto searchServers = json[ "searchServers" ].toArray();
+    for ( int ii = 0; ii < searchServers.count(); ++ii )
+    {
+        QString errorMsg;
+        auto serverInfo = CServerInfo::fromJson( searchServers[ ii ].toObject(), true, errorMsg );
+        if ( !serverInfo )
+        {
+            if ( errorFunc )
+                errorFunc( QObject::tr( "Could not read" ), QObject::tr( "Could not read file '%1' - '%2' for search server[%3]" ).arg( fFileName ).arg( errorMsg ).arg( ii ) );
+            fFileName.clear();
+            return false;
+        }
+        fSearchServers.push_back( serverInfo );
+    }
+    if ( fSearchServers.empty() )
+    {
+        fSearchServers.push_back( std::make_shared< CServerInfo >( "Search for Torrent on piratebay.org", "https://thepiratebay.org/search.php", "search", true ) );
+        fSearchServers.back()->setAPIKey( "search" );
+        fSearchServers.push_back( std::make_shared< CServerInfo >( "Search for media on IMDB", "https://imdb.com/find", "q", true ) );
+        fSearchServers.back()->setAPIKey( "q" );
+    }
     return true;
 }
 
@@ -250,6 +280,13 @@ bool CSettings::save( std::function< void( const QString &title, const QString &
     root[ "IgnoreShowList" ] = showList;
 
     fServerModel->save( root );
+
+    auto searchServers = QJsonDocument().array();
+    for ( auto &&ii : fSearchServers )
+    {
+        searchServers.push_back( ii->toJson() );
+    }
+    root[ "searchServers" ] = searchServers;
 
     json = QJsonDocument( root );
 

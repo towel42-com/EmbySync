@@ -39,6 +39,7 @@
 class QWidget;
 class QJsonObject;
 class CServerModel;
+class CServerInfo;
 namespace Ui
 {
     class CSettings;
@@ -49,6 +50,9 @@ class CSettings
 public:
     CSettings( std::shared_ptr< CServerModel > serverModel );
     CSettings( bool saveOnDelete, std::shared_ptr< CServerModel > serverModel );
+
+    void loadSearchServers();
+
     virtual ~CSettings();
 
     // global settings store in the registry
@@ -149,7 +153,11 @@ public:
     void setPrimaryServer( const QString &serverName );
     QString primaryServer() const;
 
+    std::list< std::shared_ptr< CServerInfo > > searchServers() const { return fSearchServers; }
+    void setSearchServers( const std::list< std::shared_ptr< CServerInfo > > &servers ) { fSearchServers = servers; }
+
 private:
+    bool loadSearchServers( QJsonDocument &json, const std::function< void( const QString &title, const QString &msg ) > &errorFunc );
     QVariant getValue( const QJsonObject &data, const QString &fieldName, const QVariant &defaultValue ) const;
 
     QColor getColor( const QColor &clr, bool forBackground /*= true */ ) const;
@@ -197,6 +205,7 @@ private:
     QString fPrimaryServer;
 
     std::shared_ptr< CServerModel > fServerModel;
+    std::list< std::shared_ptr< CServerInfo > > fSearchServers;
     bool fChanged{ false };
 
     bool fSaveOnDelete{ true };

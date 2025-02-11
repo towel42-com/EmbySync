@@ -32,6 +32,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+class CSettings;
 class CServerInfo;
 class CMediaModel;
 class QJsonObject;
@@ -68,7 +69,6 @@ public:
     CMediaData( const QJsonObject &mediaObj, std::shared_ptr< CServerModel > serverModel );
     CMediaData( const SMovieStub& movieStub, const QString &type );   // stub for dummy media
 
-    void addSearchMenu( QMenu *menu ) const;
     static bool isExtra( const QJsonObject &obj );
     bool hasProviderIDs() const;
     void addProvider( const QString &providerName, const QString &providerID );
@@ -134,15 +134,10 @@ public:
 
     QIcon getDirectionIcon( const QString &serverName ) const;
 
-    enum class ESearchSite
-    {
-        eRARBG,
-        ePirateBay,
-        eIMDB
-    };
-    QUrl getSearchURL( ESearchSite site ) const;
+    void addSearchMenu( const std::shared_ptr< CSettings > &settings, QMenu *menu ) const;
+    QUrl getDefaultSearchURL( const std::shared_ptr< CSettings > &settings ) const;   // returns the first one in the list from settings
 
-    QJsonObject toJson( bool includeSearchURL ) const;
+    QJsonObject toJson( const std::shared_ptr< CSettings > &settings, bool includeSearchURL ) const;
 
     bool onServer() const;
     bool isMatch( const QString &name, int year ) const;
@@ -152,6 +147,7 @@ public:
     bool isMissing() const { return fIsMissing; }
 
 private:
+    QString searchKey() const;
     void computeName( const QJsonObject &media );
     void loadResolution( const QJsonArray &mediaSources );
 

@@ -380,7 +380,7 @@ void CMissingEpisodes::slotMediaContextMenu( CDataTree *dataTree, const QPoint &
         return;
 
     QMenu menu( tr( "Context Menu" ) );
-    mediaData->addSearchMenu( &menu );
+    mediaData->addSearchMenu( fSettings, &menu );
     menu.exec( dataTree->dataTree()->mapToGlobal( pos ) );
 }
 
@@ -400,6 +400,6 @@ void CMissingEpisodes::slotSearchForAllMissing()
             {
                 return std::make_pair( false, QUrl() );
             }
-            return std::make_pair( true, mediaData->getSearchURL( CMediaData::ESearchSite::eRARBG ) );
+            return std::make_pair( true, mediaData->getDefaultSearchURL( fSettings ) );
         } );
 }
