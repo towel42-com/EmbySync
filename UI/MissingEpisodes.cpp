@@ -51,6 +51,23 @@
 #include <QToolBar>
 #include <QSettings>
 #include <QDesktopServices>
+#include <QStyledItemDelegate>
+
+
+class CEditDelegate : public QStyledItemDelegate
+{
+public:
+    CEditDelegate( QObject *parent = 0 ) :
+        QStyledItemDelegate( parent )
+    {
+    }
+    virtual QWidget *createEditor( QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index ) const 
+    { 
+        if ( index.column() == 0 )
+            return nullptr;
+        return QStyledItemDelegate::createEditor( parent, option, index );
+    }
+};
 
 CMissingEpisodes::CMissingEpisodes( QWidget *parent ) :
     CTabPageBase( parent ),
@@ -62,22 +79,13 @@ CMissingEpisodes::CMissingEpisodes( QWidget *parent ) :
     connect( this, &CMissingEpisodes::sigModelDataChanged, this, &CMissingEpisodes::slotModelDataChanged );
     connect( this, &CMissingEpisodes::sigDataContextMenuRequested, this, &CMissingEpisodes::slotMediaContextMenu );
 
-    connect( fImpl->searchByDate, &QCheckBox::toggled, this, &CMissingEpisodes::slotSearchByDateChanged );
-    connect( fImpl->minPremiereDate, &QDateEdit::dateChanged, this, &CMissingEpisodes::slotSearchByDateChanged );
-    connect( fImpl->maxPremiereDate, &QDateEdit::dateChanged, this, &CMissingEpisodes::slotSearchByDateChanged );
-
     connect( fImpl->selectAll, &QPushButton::clicked, this, &CMissingEpisodes::slotSelectAll );
     connect( fImpl->unselectAll, &QPushButton::clicked, this, &CMissingEpisodes::slotUnselectAll );
-    connect( fImpl->showsFilter, &QListWidget::itemChanged, this, &CMissingEpisodes::slotSearchByShowNameChanged );
+    connect( fImpl->showsFilter, &QTreeWidget::itemChanged, this, &CMissingEpisodes::slotSearchByShowNameChanged );
+    fImpl->showsFilter->setItemDelegate( new CEditDelegate( this ) );
 
-    fImpl->minPremiereDate->setDate( QDate::currentDate().addDays( -7 ) );
-    fImpl->maxPremiereDate->setDate( QDate::currentDate().addDays( 7 ) );
 
-    QSettings settings;
-    settings.beginGroup( "MissingEpisodes" );
-    fImpl->searchByDate->setChecked( settings.value( "SearchByDate", true ).toBool() );
-
-    slotSearchByDateChanged();
+    fOrigFilter = loadShowFilter();
     slotSearchByShowNameChanged();
 }
 
@@ -89,19 +97,69 @@ void CMissingEpisodes::slotSearchByShowNameChanged()
     auto selected = getSelectedShows();
     fMissingMediaModel->setShowFilter( selected );
 
+    saveShowFilter();
+}
+
+std::list< std::shared_ptr< SShowFilter > > CMissingEpisodes::loadShowFilter() const
+{
+    std::list< std::shared_ptr< SShowFilter > > retVal;
+
     QSettings settings;
     settings.beginGroup( "MissingEpisodes" );
-    settings.setValue( "SelectedShows", selected );
+    int cnt = settings.beginReadArray( "Show" );
+    for ( int ii = 0; ii < cnt; ++ii )
+    {
+        settings.setArrayIndex( ii );
+        auto name = settings.value( "Name" ).toString();
+        QVariant minSeason;
+        if ( settings.contains( "MinSeason" ) )
+            minSeason = settings.value( "MinSeason" );
+
+        QVariant maxSeason;
+        if ( settings.contains( "MinSeason" ) )
+            maxSeason = settings.value( "MaxSeason" );
+
+        auto enabled = settings.value( "Enabled", true ).toBool();
+
+        retVal.push_back( std::make_shared< SShowFilter >( name, minSeason, maxSeason, enabled ) );
+    }
+    settings.endArray();
+    settings.endGroup();
+
+    return retVal;
+}
+
+void CMissingEpisodes::saveShowFilter()
+{
+    auto selected = getSelectedShows();
+    if ( selected == fOrigFilter )
+        return;
+
+    QSettings settings;
+    settings.beginGroup( "MissingEpisodes" );
+    settings.beginWriteArray( "Show", static_cast< int >( selected.size() ) );
+    int showNum = 0;
+    for ( auto &&ii : selected )
+    {
+        settings.setArrayIndex( showNum++ );
+        settings.setValue( "Name", ii->fSeriesName );
+        settings.setValue( "MinSeason", ii->fMinSeason.has_value() ? ii->fMinSeason.value() : QVariant() );
+        settings.setValue( "MaxSeason", ii->fMaxSeason.has_value() ? ii->fMaxSeason.value() : QVariant() );
+        settings.setValue( "Enabled", ii->fEnabled );
+    }
+    settings.endArray();
+    settings.endGroup();
+    fOrigFilter = selected;
 }
 
 void CMissingEpisodes::slotSelectAll()
 {
     fImpl->showsFilter->blockSignals( true );
 
-    for ( auto ii = 0; ii < fImpl->showsFilter->count(); ++ii )
+    for ( auto ii = 0; ii < fImpl->showsFilter->topLevelItemCount(); ++ii )
     {
-        auto curr = fImpl->showsFilter->item( ii );
-        curr->setCheckState( Qt::CheckState::Checked );
+        auto curr = fImpl->showsFilter->topLevelItem( ii );
+        curr->setCheckState( 0, Qt::CheckState::Checked );
     }
 
     fImpl->showsFilter->blockSignals( false );
@@ -112,34 +170,19 @@ void CMissingEpisodes::slotUnselectAll()
 {
     fImpl->showsFilter->blockSignals( true );
 
-    for ( auto ii = 0; ii < fImpl->showsFilter->count(); ++ii )
+    for ( auto ii = 0; ii < fImpl->showsFilter->topLevelItemCount(); ++ii )
     {
-        auto curr = fImpl->showsFilter->item( ii );
-        curr->setCheckState( Qt::CheckState::Unchecked );
+        auto curr = fImpl->showsFilter->topLevelItem( ii );
+        curr->setCheckState( 0, Qt::CheckState::Unchecked );
     }
 
     fImpl->showsFilter->blockSignals( false );
     slotSearchByShowNameChanged();
 }
 
-void CMissingEpisodes::slotSearchByDateChanged()
-{
-    if ( !fMissingMediaModel )
-        return;
-
-    auto minDate = fImpl->searchByDate->isChecked() ? fImpl->minPremiereDate->date() : QDate();
-    auto maxDate = fImpl->searchByDate->isChecked() ? fImpl->maxPremiereDate->date() : QDate();
-    fMissingMediaModel->setDateRange( minDate, maxDate );
-
-    fImpl->minPremiereDate->setEnabled( fImpl->searchByDate->isChecked() );
-    fImpl->maxPremiereDate->setEnabled( fImpl->searchByDate->isChecked() );
-}
-
 CMissingEpisodes::~CMissingEpisodes()
 {
-    QSettings settings;
-    settings.beginGroup( "MissingEpisodes" );
-    settings.setValue( "SearchByDate", fImpl->searchByDate->isChecked() );
+    saveShowFilter();
 }
 
 void CMissingEpisodes::setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem )
@@ -169,34 +212,54 @@ void CMissingEpisodes::setupPage( std::shared_ptr< CSettings > settings, std::sh
 
 void CMissingEpisodes::slotMediaChanged()
 {
+    if ( !fMissingMediaModel || !fMediaModel->hasMedia() )
+        return;
+
     auto selectedShows = getSelectedShows();
 
     auto showNames = fMediaModel->getKnownShows();
+    disconnect( fImpl->showsFilter, &QTreeWidget::itemChanged, this, &CMissingEpisodes::slotSearchByShowNameChanged );
+
     fImpl->showsFilter->clear();
-    for ( auto &&ii : showNames )
+
+
+    for ( auto &&name : showNames )
     {
-        auto curr = new QListWidgetItem( ii, fImpl->showsFilter );
-        auto checkState = ( selectedShows.isEmpty() || selectedShows.contains( ii ) ) ? Qt::CheckState::Checked : Qt::CheckState::Unchecked;
-        curr->setCheckState( checkState );
+        std::shared_ptr< SShowFilter > filterForShow;
+        for ( auto &&jj : selectedShows )
+        {
+            if ( jj->fSeriesName == name )
+            {
+                filterForShow = jj;
+                break;
+            }
+        }
+
+        auto minSeason = ( filterForShow && filterForShow->fMinSeason.has_value() ) ? QString::number( filterForShow->fMinSeason.value() ) : QString();
+        auto maxSeason = ( filterForShow && filterForShow->fMaxSeason.has_value() ) ? QString::number( filterForShow->fMaxSeason.value() ) : QString();
+        bool enabled = filterForShow ? filterForShow->fEnabled : true;
+
+        auto curr = new QTreeWidgetItem( fImpl->showsFilter, { name, minSeason, maxSeason } );
+        curr->setFlags( curr->flags() | Qt::ItemIsEditable );
+        curr->setCheckState( 0, enabled ? Qt::CheckState::Checked : Qt::CheckState::Unchecked );
     }
+    fImpl->showsFilter->resizeColumnToContents( 0 );
+    connect( fImpl->showsFilter, &QTreeWidget::itemChanged, this, &CMissingEpisodes::slotSearchByShowNameChanged );
     slotSearchByShowNameChanged();
-    slotSearchByDateChanged();
 }
 
-QStringList CMissingEpisodes::getSelectedShows() const
+std::list< std::shared_ptr< SShowFilter > > CMissingEpisodes::getSelectedShows() const
 {
-    QStringList retVal;
-    for ( auto ii = 0; ii < fImpl->showsFilter->count(); ++ii )
+    if ( !fImpl->showsFilter->topLevelItemCount() )
     {
-        auto curr = fImpl->showsFilter->item( ii );
-        if ( curr->checkState() == Qt::CheckState::Checked )
-            retVal.push_back( curr->text() );
+        return fOrigFilter;
     }
-    if ( !fImpl->showsFilter->count() )
+
+    std::list< std::shared_ptr< SShowFilter > > retVal;
+    for ( auto ii = 0; ii < fImpl->showsFilter->topLevelItemCount(); ++ii )
     {
-        QSettings settings;
-        settings.beginGroup( "MissingEpisodes" );
-        retVal = settings.value( "SelectedShows" ).toStringList();
+        auto curr = fImpl->showsFilter->topLevelItem( ii );
+        retVal.push_back( std::make_shared< SShowFilter >( curr->text( 0 ), curr->text( 1 ), curr->text( 2 ), curr->checkState( 0 ) == Qt::CheckState::Checked ) );
     }
     return retVal;
 }
@@ -295,9 +358,7 @@ void CMissingEpisodes::slotCurrentServerChanged( const QModelIndex &index )
 
     fMediaModel->clear();
 
-    auto minDate = fImpl->searchByDate->isChecked() ? fImpl->minPremiereDate->date() : QDate();
-    auto maxDate = fImpl->searchByDate->isChecked() ? fImpl->maxPremiereDate->date() : QDate();
-    if ( !fSyncSystem->loadMissingEpisodes( serverInfo, minDate, maxDate ) )
+    if ( !fSyncSystem->loadMissingEpisodes( serverInfo ) )
     {
         QMessageBox::critical( this, tr( "No Admin User Found" ), tr( "No user found with Administrator Privileges on server '%1'" ).arg( serverInfo->displayName() ) );
     }

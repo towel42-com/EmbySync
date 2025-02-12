@@ -28,9 +28,11 @@
 #include <QPointer>
 #include <QUrl>
 #include <list>
+#include <tuple>
 class QMenu;
 class QAction;
 class QToolBar;
+struct SShowFilter;
 namespace Ui
 {
     class CMissingEpisodes;
@@ -90,13 +92,17 @@ public Q_SLOTS:
     void slotUnselectAll();
 private Q_SLOTS:
     void slotSearchByShowNameChanged();
-    void slotSearchByDateChanged();
+
     void slotCurrentServerChanged( const QModelIndex &index );
     void slotMissingEpisodesLoaded();
     void slotMediaChanged();
 
 private:
-    QStringList getSelectedShows() const;
+    std::list< std::shared_ptr< SShowFilter > > getSelectedShows() const;
+
+    std::list< std::shared_ptr< SShowFilter > > loadShowFilter() const;
+    void saveShowFilter();
+
     void showPrimaryServer();
     std::shared_ptr< CServerInfo > getCurrentServerInfo() const;
     std::shared_ptr< CServerInfo > getServerInfo( QModelIndex idx ) const;
@@ -110,6 +116,7 @@ private:
 
     QPointer< QAction > fActionSearchForAll;
     QPointer< QToolBar > fToolBar{ nullptr };
+    std::list< std::shared_ptr< SShowFilter > > fOrigFilter;
 
     CServerFilterModel *fServerFilterModel{ nullptr };
     CMediaMissingFilterModel *fMissingMediaModel{ nullptr };

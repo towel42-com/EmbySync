@@ -43,6 +43,8 @@ public:
         eResolutionRole,
         eIsProviderColumnRole,
         eSeriesNameRole,
+        eSeasonNumRole,
+        eEpisodeNumRole,
         eOnServerRole,
         eColumnsPerServerRole,
         ePerServerColumnRole,
@@ -110,6 +112,7 @@ public:
 
     TMediaSet getAllMedia() const { return fAllMedia; }
     std::set< QString > getKnownShows() const;
+    bool hasMedia() const { return !fAllMedia.empty(); }
 
     std::shared_ptr< CMediaData > findMedia( const QString &name, int year ) const;
 
@@ -184,6 +187,48 @@ public:
     virtual bool lessThan( const QModelIndex &source_left, const QModelIndex &source_right ) const override;
 };
 
+struct SShowFilter
+{
+    SShowFilter() = default;
+    SShowFilter( const QString &name, const QString &min, const QString &max, bool enabled ) :
+        fSeriesName( name ),
+        fEnabled( enabled )
+    {
+        if ( !min.isEmpty() )
+        {
+            bool aOK = false;
+            auto tmp = min.toInt( &aOK );
+            if ( aOK )
+                fMinSeason = tmp;
+        }
+        if ( !max.isEmpty() )
+        {
+            bool aOK = false;
+            auto tmp = max.toInt( &aOK );
+            if ( aOK )
+                fMaxSeason = tmp;
+        }
+    }
+    SShowFilter( const QString &name, const QVariant &min, const QVariant &max, bool enabled ) :
+        fSeriesName( name ),
+        fEnabled( enabled )
+    {
+        if ( min.isValid() && min.canConvert< int >() )
+        {
+            fMinSeason = min.toInt();
+        }
+        if ( max.isValid() && max.canConvert< int >() )
+        {
+            fMaxSeason = max.toInt();
+        }
+    }
+
+    QString fSeriesName;
+    std::optional< int > fMinSeason;
+    std::optional< int > fMaxSeason;
+    bool fEnabled{ true };
+};
+
 class CMediaMissingFilterModel : public QSortFilterProxyModel
 {
     Q_OBJECT;
@@ -191,8 +236,7 @@ class CMediaMissingFilterModel : public QSortFilterProxyModel
 public:
     CMediaMissingFilterModel( std::shared_ptr< CSettings > settings, QObject *parent );
 
-    void setShowFilter( const QStringList &filter );
-    void setDateRange( const QDate &min, const QDate &max );
+    void setShowFilter( const std::list< std::shared_ptr< SShowFilter > > &filter );
     virtual bool filterAcceptsRow( int source_row, const QModelIndex &source_parent ) const override;
     virtual bool filterAcceptsColumn( int source_column, const QModelIndex &source_parent ) const override;
     virtual void sort( int column, Qt::SortOrder order = Qt::AscendingOrder ) override;
@@ -203,9 +247,7 @@ public:
 private:
     std::shared_ptr< CSettings > fSettings;
     std::optional< QRegularExpression > fRegEx;
-    QStringList fShowFilter;
-    QDate fMinDate;
-    QDate fMaxDate;
+    std::map< QString, std::shared_ptr< SShowFilter > > fShowFilter;
 };
 
 #endif

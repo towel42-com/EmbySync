@@ -167,6 +167,14 @@ QVariant CMediaModel::data( const QModelIndex &index, int role /*= Qt::DisplayRo
     {
         return mediaData->seriesName();
     }
+    if ( role == ECustomRoles::eSeasonNumRole )
+    {
+        return mediaData->season().has_value() ? mediaData->season().value() : QVariant();
+    }
+    if ( role == ECustomRoles::eEpisodeNumRole )
+    {
+        return mediaData->episode().has_value() ? mediaData->episode().value() : QVariant();
+    }
     if ( role == ECustomRoles::eOnServerRole )
     {
         return mediaData->onServer();
@@ -796,17 +804,17 @@ CMediaMissingFilterModel::CMediaMissingFilterModel( std::shared_ptr< CSettings >
         } );
 }
 
-void CMediaMissingFilterModel::setShowFilter( const QStringList &filter )
+void CMediaMissingFilterModel::setShowFilter( const std::list< std::shared_ptr< SShowFilter > > &filter )
 {
-    fShowFilter = filter;
+    fShowFilter.clear();
+    for (auto&& ii : filter)
+    {
+        fShowFilter[ ii->fSeriesName ] = ii;
+    }
+    auto col = sortColumn();
+    auto order = sortOrder();
     invalidateFilter();
-}
-
-void CMediaMissingFilterModel::setDateRange( const QDate &min, const QDate &max )
-{
-    fMinDate = min;
-    fMaxDate = max;
-    invalidateFilter();
+    sort( col, order );
 }
 
 bool CMediaMissingFilterModel::filterAcceptsRow( int source_row, const QModelIndex &source_parent ) const
@@ -818,10 +826,28 @@ bool CMediaMissingFilterModel::filterAcceptsRow( int source_row, const QModelInd
     if ( seriesName.isEmpty() )
         return false;
 
-    if ( !fShowFilter.isEmpty() )
+    if ( !fShowFilter.empty() )
     {
-        if ( !fShowFilter.contains( seriesName ) )
+        auto pos = fShowFilter.find( seriesName );
+        if ( pos == fShowFilter.end() )
             return false;
+
+        auto &&filter = ( *pos ).second;
+        if ( !filter->fEnabled )
+            return false;
+
+        int seasonNum = childIdx.data( CMediaModel::eSeasonNumRole ).toInt();
+        if ( filter->fMinSeason.has_value() )
+        {
+            if ( seasonNum < filter->fMinSeason.value() )
+                return false;
+        }
+
+        if ( filter->fMaxSeason.has_value() )
+        {
+            if ( seasonNum > filter->fMaxSeason.value() )
+                return false;
+        }
     }
 
     if ( fRegEx.has_value() && fRegEx.value().isValid() )
@@ -832,16 +858,6 @@ bool CMediaMissingFilterModel::filterAcceptsRow( int source_row, const QModelInd
             return false;
     }
 
-    auto premiereDate = childIdx.data( CMediaModel::ePremiereDateRole ).toDate();
-    if ( fMinDate.isValid() )
-    {
-        return premiereDate >= fMinDate;
-    }
-
-    if ( fMaxDate.isValid() )
-    {
-        return premiereDate <= fMaxDate;
-    }
     return true;
 }
 
