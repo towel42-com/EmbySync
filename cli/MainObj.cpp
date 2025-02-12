@@ -288,7 +288,7 @@ void CMainObj::slotProcessNextUser()
     }
     else if ( fMode == EMode::eCheckMissing )
     {
-        if ( !fSyncSystem->loadMissingEpisodes( currUser, fSelectedServer, fMinDate, fMaxDate ) )
+        if ( !fSyncSystem->loadMissingEpisodes( currUser, fSelectedServer ) )
         {
             fErrorString = tr( "No user found with Administrator Privileges on server '%1'" ).arg( fSelectedServer->displayName() );
         }

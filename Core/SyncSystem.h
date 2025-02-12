@@ -166,8 +166,8 @@ public:
     void loadUsers();
     void loadUsersMedia( ETool tool, std::shared_ptr< CUserData > user );
 
-    bool loadMissingEpisodes( std::shared_ptr< const CServerInfo > serverInfo, const QDate &minPremiereDate, const QDate &maxPremiereDate );   // return false if no admin user found on server
-    bool loadMissingEpisodes( std::shared_ptr< CUserData > userData, std::shared_ptr< const CServerInfo > serverInfo, const QDate &minPremiereDate, const QDate &maxPremiereDate );
+    bool loadMissingEpisodes( std::shared_ptr< const CServerInfo > serverInfo );   // return false if no admin user found on server
+    bool loadMissingEpisodes( std::shared_ptr< CUserData > userData, std::shared_ptr< const CServerInfo > serverInfo );
 
     bool loadMissingTVDBid( std::shared_ptr< const CServerInfo > serverInfo );   // return false if no admin user found on server
     bool loadMissingTVDBid( std::shared_ptr< CUserData > userData, std::shared_ptr< const CServerInfo > serverInfo );
@@ -290,7 +290,7 @@ private:
     void requestMissingTVDBid( const QString &serverName );
     void handleMissingTVDBidResponse( const QString &serverName, const QByteArray &data );
 
-    void requestMissingEpisodes( const QString &serverName, const QDate &minPremiereDate, const QDate &maxPremiereDate );
+    void requestMissingEpisodes( const QString &serverName );
     void handleMissingEpisodesResponse( const QString &serverName, const QByteArray &data );
 
     void requestAllMovies( const QString &serverName );

@@ -257,16 +257,16 @@ std::shared_ptr< CUserData > CSyncSystem::findFirstAdminUser( std::shared_ptr< c
     return {};
 }
 
-bool CSyncSystem::loadMissingEpisodes( std::shared_ptr< const CServerInfo > serverInfo, const QDate &minPremiereDate, const QDate &maxPremiereDate )
+bool CSyncSystem::loadMissingEpisodes( std::shared_ptr< const CServerInfo > serverInfo )
 {
     auto adminUser = findFirstAdminUser( serverInfo );
     if ( !adminUser )
         return false;
 
-    return loadMissingEpisodes( adminUser, serverInfo, minPremiereDate, maxPremiereDate );
+    return loadMissingEpisodes( adminUser, serverInfo );
 }
 
-bool CSyncSystem::loadMissingEpisodes( std::shared_ptr< CUserData > userData, std::shared_ptr< const CServerInfo > serverInfo, const QDate &minPremiereDate, const QDate &maxPremiereDate )
+bool CSyncSystem::loadMissingEpisodes( std::shared_ptr< CUserData > userData, std::shared_ptr< const CServerInfo > serverInfo )
 {
     if ( !serverInfo || !serverInfo->isEnabled() )
         return false;
@@ -278,7 +278,7 @@ bool CSyncSystem::loadMissingEpisodes( std::shared_ptr< CUserData > userData, st
         return false;
 
     emit sigAddToLog( EMsgType::eInfo, QString( "Loading Missing Episodes on server '%1' using admin user '%2'" ).arg( serverInfo->displayName() ).arg( userData->userName( serverInfo->keyName() ) ) );
-    requestMissingEpisodes( serverInfo->keyName(), minPremiereDate, maxPremiereDate );
+    requestMissingEpisodes( serverInfo->keyName() );
     return true;
 }
 
@@ -1676,12 +1676,7 @@ std::list< std::shared_ptr< CMediaData > > CSyncSystem::handleGetMissingMediaLis
     }
 
     qDebug().noquote().nospace() << doc.toJson();
-    auto mediaArray = toItemArray(
-        doc,
-        []( QJsonObject &media )
-        {
-            media.insert( "IsMissing", true );
-        } );
+    auto mediaArray = toItemArray( doc, []( QJsonObject &media ) { media.insert( "IsMissing", true ); } );
     //QJsonArray mediaArray;
     //if ( doc[ "Items" ].isArray() )
     //{
@@ -1769,7 +1764,7 @@ std::list< std::shared_ptr< CMediaData > > CSyncSystem::loadMediaArray( QJsonArr
     return retVal;
 }
 
-void CSyncSystem::requestMissingEpisodes( const QString &serverName, const QDate &minPremiereDate, const QDate &maxPremiereDate )
+void CSyncSystem::requestMissingEpisodes( const QString &serverName  )
 {
     //http://‌‍‍localhost‌:8095/emby/Shows/Missing?
     // IncludeItemTypes=Episode&
@@ -1789,16 +1784,6 @@ void CSyncSystem::requestMissingEpisodes( const QString &serverName, const QDate
             std::make_pair( "Recursive", "True" )   //
         };
 
-    if ( minPremiereDate.isValid() )
-    {
-        queryItems.emplace_back( "MinPremiereDate", minPremiereDate.toString( Qt::ISODate ) );
-        queryItems.emplace_back( "MinStartDate", minPremiereDate.toString( Qt::ISODate ) );
-    }
-    if ( maxPremiereDate.isValid() )
-    {
-        queryItems.emplace_back( "MaxPremiereDate", maxPremiereDate.toString( Qt::ISODate ) );
-        queryItems.emplace_back( "MaxStartDate", minPremiereDate.toString( Qt::ISODate ) );
-    }
     queryItems.emplace_back( "UserId", currUser().second->getUserID( serverName ) );   //
 
     // ItemsService
