@@ -146,6 +146,9 @@ public:
 
     bool isMissing() const { return fIsMissing; }
 
+    std::optional< int > season() const { return fSeason; }
+    std::optional< int > episode() const { return fEpisode; }
+
 private:
     QString searchKey() const;
     void computeName( const QJsonObject &media );
