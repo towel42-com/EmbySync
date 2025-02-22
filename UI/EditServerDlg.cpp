@@ -74,7 +74,7 @@ QString CEditServerDlg::apiKey() const
 
 bool CEditServerDlg::okToTest()
 {
-    bool aOK = fSearchServer && !fImpl->url->text().isEmpty() && !fImpl->apiKey->text().isEmpty();
+    auto aOK = !fImpl->url->text().isEmpty() && !fImpl->apiKey->text().isEmpty();
     return aOK;
 }
 
