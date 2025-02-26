@@ -50,9 +50,9 @@ QString SMovieStub::nameKey( const QString &name )
     retVal = retVal.replace( QRegularExpression( "[^a-zA-Z0-9 ]" ), " " );
     retVal = retVal.replace( QRegularExpression( R"(\b(chapter|part)\b)" ), " " );
 
-    auto startsWith = QStringList() << "the "
-                                    << "national lampoons "
-                                    << "monty pythons ";
+    auto startsWith = QStringList() << "the"
+                                    << "national lampoons"
+                                    << "monty pythons";
     for ( auto &&ii : startsWith )
     {
         if ( retVal.startsWith( ii ) )
@@ -122,7 +122,7 @@ bool SMovieStub::equal( const SMovieStub &rhs, bool useName, bool useYear, bool 
     if ( useName )
         retVal = retVal && nameKey() == rhs.nameKey();
     if ( useYear )
-        retVal = retVal && fYear == rhs.fYear;
+        retVal = retVal && ( std::abs( fYear - rhs.fYear ) < 2 );
     if ( useResolution && hasResolution() && rhs.hasResolution() )
         retVal = retVal && resolutionMatches( fResolution, rhs.fResolution );
     return retVal;
@@ -138,7 +138,7 @@ bool SMovieStub::equal( std::shared_ptr< CMediaData > mediaData, bool useName, b
             retVal = nameKey() == SMovieStub::nameKey( mediaData->originalTitle() );
     }
     if ( useYear )
-        retVal = retVal && fYear == mediaData->premiereDate().year();
+        retVal = retVal && ( std::abs( fYear - mediaData->premiereDate().year() ) < 2 );
 
     if ( useResolution )
         retVal = retVal && resolutionMatches( fResolution, mediaData->resolutionValue() );
