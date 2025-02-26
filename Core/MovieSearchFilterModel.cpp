@@ -75,7 +75,11 @@ void CMovieSearchFilterModel::addStubToSourceModel( const SMovieStub &movieStub 
     auto mediaModel = dynamic_cast< CMediaModel * >( sourceModel() );
     if ( mediaModel )
     {
-        mediaModel->addMovieStub( movieStub, [ this, movieStub ]( std::shared_ptr< CMediaData > mediaData ) { return movieStub.equal( mediaData, true, true, false ); } );
+        mediaModel->addMovieStub( movieStub, [ this, movieStub ]( std::shared_ptr< CMediaData > mediaData ) 
+            { 
+                auto retVal = movieStub.equal( mediaData, true, true, false );  // match by name and year
+                return retVal;
+            } );
     }
 }
 
@@ -191,6 +195,9 @@ void CMovieSearchFilterModel::sort( int column, Qt::SortOrder order /*= Qt::Asce
 
 bool CMovieSearchFilterModel::lessThan( const QModelIndex &source_left, const QModelIndex &source_right ) const
 {
+    bool usePremierDate = ( source_left.column() == 1 ) && ( source_right.column() == 1 );
+    if( usePremierDate )
+        return source_left.data( CMediaModel::ePremiereDateRole ).toDate() < source_right.data( CMediaModel::ePremiereDateRole ).toDate();
     return QSortFilterProxyModel::lessThan( source_left, source_right );
 }
 
@@ -269,7 +276,9 @@ std::tuple< bool, bool, std::optional< SMovieStub > > CMovieSearchFilterModel::g
     bool resolutionMatches = true;
     if ( onServer && fMatchResolution && searchStub.has_value() )
     {
-        resolutionMatches = movieStub.equal( searchStub.value(), true, true, true );
+        auto movieMatches = movieStub.equal( searchStub.value(), true, true, false );
+        if ( movieMatches )
+            resolutionMatches = movieStub.equal( searchStub.value(), true, true, true );
     }
 
     return std::make_tuple( onServer, resolutionMatches, searchStub );
