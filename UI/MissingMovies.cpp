@@ -77,7 +77,7 @@ CMissingMovies::CMissingMovies( QWidget *parent ) :
         fImpl->listFileBtn, &QToolButton::clicked,
         [ this ]()
         {
-            auto fileName = QFileDialog::getOpenFileName( this, QObject::tr( "Select File" ), QString(), QObject::tr( "Movie List File (*.json);;All Files (* *.*)" ) );
+            auto fileName = QFileDialog::getOpenFileName( this, QObject::tr( "Select File" ), fImpl->listFile->text(), QObject::tr( "Movie List File (*.json);;All Files (* *.*)" ) );
             if ( fileName.isEmpty() )
                 return;
             fImpl->listFile->setText( QFileInfo( fileName ).absoluteFilePath() );
@@ -449,11 +449,21 @@ void CMissingMovies::setMovieSearchFile( const QString &fileName, bool force )
 
     fFileName.clear();
 
+    std::optional< std::shared_ptr< NJSON::CCollections > > collections;
+    auto ext = QFileInfo( fileName ).suffix().toLower();
     QString msg;
-    auto collections = NJSON::CCollections::fromJSON( fileName, &msg );
+    if ( ext == "txt" )
+    {
+        collections = NJSON::CCollections::fromWikipediaText( fileName, true, &msg );
+    }
+    else
+    {
+        collections = NJSON::CCollections::fromJSON( fileName, &msg );
+    }
+
     if ( !collections.has_value() )
     {
-        QMessageBox::critical( this, tr( "Error Reading File" ), msg );
+        QMessageBox::critical( this, tr( "Error Reading File: %1" ).arg( fileName ), msg );
         return;
     }
 

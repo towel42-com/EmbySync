@@ -42,6 +42,7 @@ class CSyncSystem;
 class QMenu;
 struct SMovieStub;
 struct SMediaServerData;
+class QJsonDocument;
 
 enum class EMediaSyncStatus
 {
@@ -293,6 +294,7 @@ namespace NJSON
     {
     public:
         CCollection( const QJsonValue &curr );
+        CCollection( const QString &name );
 
         QString name() const { return fName; }
         const std::list< std::shared_ptr< CMovie > > &movies() const { return fMovies; }
@@ -307,11 +309,13 @@ namespace NJSON
     public:
         CCollections() {}
         static std::optional< std::shared_ptr< CCollections > > fromJSON( const QString &fileName, QString *msg = nullptr );
+        static std::optional< std::shared_ptr< CCollections > > fromWikipediaText( const QString &fileName, bool convertToJSON, QString *msg = nullptr );
 
         const std::list< std::shared_ptr< CCollection > > &collections() const { return fCollections; }
         const std::list< std::shared_ptr< CMovie > > &movies() const { return fMovies; }
 
     private:
+        static std::optional< std::shared_ptr< CCollections > > fromJSONData( QJsonDocument &doc, QString * msg );
         std::list< std::shared_ptr< CCollection > > fCollections;
         std::list< std::shared_ptr< CMovie > > fMovies;
     };

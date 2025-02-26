@@ -33,10 +33,12 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QRegularExpression>
 
 #include <QObject>
 #include <QVariant>
 #include <QFileInfo>
+#include <QDir>
 #include <QDesktopServices>
 #include <chrono>
 #include <optional>
@@ -873,6 +875,94 @@ bool SMediaCollectionData::updateMedia( std::shared_ptr< CMediaModel > mediaMode
 
 namespace NJSON
 {
+    std::optional< std::shared_ptr< CCollections > > CCollections::fromWikipediaText( const QString &fileName, bool convertToJSON, QString *msg /*= nullptr */ )
+    {
+        if ( fileName.isEmpty() )
+        {
+            if ( msg )
+                *msg = QString( "Filename is empty" );
+            return {};
+        }
+
+        QFile fi( fileName );
+        if ( !fi.open( QFile::ReadOnly ) )
+        {
+            if ( msg )
+                *msg = QString( "Could not open file '%1', please check permissions" ).arg( fileName );
+
+            return {};
+        }
+
+        QJsonArray moviesArray;
+
+        auto data = QString( fi.readAll() ).split( "\r\n" );
+        QRegularExpression yearRegEx( R"((?<year>\d{4})(\/\d{2})?)" );
+        std::optional< int > currYear;
+
+        for ( auto &&currLine : data )
+        {
+            currLine = currLine.trimmed();
+            if ( currLine.isEmpty() )
+                continue;
+
+            auto match = yearRegEx.match( currLine );
+            bool isYear = false;
+            if ( match.hasMatch() )
+            {
+                auto year = match.captured( "year" );
+                bool aOK;
+                auto value = year.toInt( &aOK );
+                if ( !aOK )
+                {
+                    *msg = QString( "Invalid year: %1" ).arg( year );
+                    return {};
+                }
+                if ( !currYear.has_value() || ( value > currYear.value() ) )
+                {
+                    currYear = value;
+                    isYear = true;
+                }
+            }
+            
+            if ( !isYear && currYear.has_value() )
+            {
+                QJsonObject movie;
+                movie[ "name" ] = currLine;
+                movie[ "year" ] = currYear.value();
+                moviesArray.append( movie );
+            }
+        }
+
+        
+        QJsonObject root;
+        root[ "movies" ] = moviesArray;
+        QJsonDocument doc( root );
+
+        if ( convertToJSON )
+        {
+            QFileInfo fi( fileName );
+            QString newFileName;
+            int num = 0;
+            do
+            {
+                auto fn = fi.baseName();
+                if ( num > 0 )
+                    fn += "_" + QString::number( num );
+                fn += ".json";
+                newFileName = fi.absoluteDir().absoluteFilePath( fn );
+                num++;
+            }
+            while ( QFileInfo( newFileName ).exists() );
+            QFile newFI( newFileName );
+            newFI.open( QFile::WriteOnly );
+
+            newFI.write( doc.toJson( QJsonDocument::JsonFormat::Indented ) );
+        }
+
+        auto retVal = fromJSONData( doc, msg );
+        return retVal;
+    }
+
     std::optional< std::shared_ptr< CCollections > > CCollections::fromJSON( const QString &fileName, QString *msg /*= nullptr */ )
     {
         if ( fileName.isEmpty() )
@@ -886,7 +976,7 @@ namespace NJSON
         if ( !fi.open( QFile::ReadOnly ) )
         {
             if ( msg )
-                *msg = QString( "Could not open file '%1', please chek permissions" ).arg( fileName );
+                *msg = QString( "Could not open file '%1', please check permissions" ).arg( fileName );
 
             return {};
         }
@@ -901,6 +991,11 @@ namespace NJSON
             return {};
         }
 
+        return fromJSONData( doc, msg );
+    }
+
+    std::optional< std::shared_ptr< NJSON::CCollections > > CCollections::fromJSONData( QJsonDocument &doc, QString *msg )
+    {
         if ( !doc.isObject() )
         {
             if ( msg )
@@ -980,6 +1075,11 @@ namespace NJSON
             auto movie = std::make_shared< CMovie >( curr );
             fMovies.push_back( movie );
         }
+    }
+
+    CCollection::CCollection( const QString &name ) :
+        fName( name )
+    {
     }
 
 }
