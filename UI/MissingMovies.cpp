@@ -53,6 +53,7 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QMetaMethod>
+#include <QDate>
 #include <QTimer>
 #include <QToolBar>
 #include <QSettings>
@@ -98,6 +99,12 @@ CMissingMovies::~CMissingMovies()
     settings.setValue( "MovieListFile", fImpl->listFile->text() );
     settings.setValue( "MatchResolution", fMatchResolutionAction->isChecked() );
     settings.setValue( "OnlyShowMissing", fOnlyShowMissingAction->isChecked() );
+
+    settings.setValue( "PremierMin", fImpl->premierMin->value() );
+    settings.setValue( "PremierMinEnable", fImpl->premierMinEnable->isChecked() );
+    settings.setValue( "PremierMax", fImpl->premierMax->value() );
+    settings.setValue( "PremierMaxEnable", fImpl->premierMaxEnable->isChecked() );
+
     settings.setValue( "Filter", fImpl->filter->text() );
 }
 
@@ -127,6 +134,42 @@ void CMissingMovies::setupPage( std::shared_ptr< CSettings > settings, std::shar
     fOnlyShowMissingAction->setChecked( regSettings.value( "OnlyShowMissing", false ).toBool() );
     fMoviesModel->setOnlyShowMissing( fOnlyShowMissingAction->isChecked() );
     fMoviesModel->setMatchResolution( fMatchResolutionAction->isChecked() );
+
+    connect( fImpl->premierMin, &QSpinBox::textChanged, [ = ]() { fMoviesModel->setMinPremier( fImpl->premierMin->value() ); } );
+    connect( fImpl->premierMax, &QSpinBox::textChanged, [ = ]() { fMoviesModel->setMaxPremier( fImpl->premierMax->value() ); } );
+    connect(
+        fImpl->premierMinEnable, &QCheckBox::toggled,
+        [ = ]()
+        {
+            fImpl->premierMin->setEnabled( fImpl->premierMinEnable->isChecked() );
+            if ( fImpl->premierMinEnable->isChecked() )
+                fMoviesModel->setMinPremier( fImpl->premierMin->value() );
+            else
+                fMoviesModel->setMinPremier( {} );
+        } );
+    connect(
+        fImpl->premierMaxEnable, &QCheckBox::toggled,
+        [ = ]()
+        {
+            fImpl->premierMax->setEnabled( fImpl->premierMaxEnable->isChecked() );
+            if ( fImpl->premierMaxEnable->isChecked() )
+                fMoviesModel->setMaxPremier( fImpl->premierMax->value() );
+            else
+                fMoviesModel->setMaxPremier( {} );
+        } );
+
+    regSettings.beginGroup( "MissingMovies" );
+    fImpl->premierMin->setValue( regSettings.value( "PremierMin", 1927 ).toInt() );
+    fImpl->premierMinEnable->setChecked( regSettings.value( "PremierMinEnable", false ).toBool() );
+    fImpl->premierMin->setEnabled( fImpl->premierMinEnable->isChecked() );
+    fMoviesModel->setMinPremier( fImpl->premierMinEnable->isChecked() ? std::optional< int >( fImpl->premierMin->value() ) : std::optional< int >() );
+
+    fImpl->premierMax->setValue( regSettings.value( "PremierMax", QDate::currentDate().year() ).toInt() );
+    fImpl->premierMaxEnable->setChecked( regSettings.value( "PremierMinEnable", false ).toBool() );
+    fImpl->premierMax->setEnabled( fImpl->premierMaxEnable->isChecked() );
+    fMoviesModel->setMaxPremier( fImpl->premierMaxEnable->isChecked() ? std::optional< int >( fImpl->premierMax->value() ) : std::optional< int >() );
+
+    regSettings.endGroup();
 
     connect( fImpl->filter, &QLineEdit::textChanged, fMoviesModel, &CMovieSearchFilterModel::slotSetFilter );
     fImpl->filter->setText( regSettings.value( "Filter", QString() ).toString() );

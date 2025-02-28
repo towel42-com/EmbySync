@@ -51,6 +51,18 @@ void CMovieSearchFilterModel::slotInvalidateFilter()
     invalidateFilter();
 }
 
+void CMovieSearchFilterModel::setMinPremier(std::optional< int > year)
+{
+    fMinPremier = year;
+    startInvalidateTimer();
+}
+
+void CMovieSearchFilterModel::setMaxPremier( std::optional< int > year )
+{
+    fMaxPremier = year;
+    startInvalidateTimer();
+}
+
 void CMovieSearchFilterModel::slotSetFilter( const QString &filter )
 {
     fNameFilter = filter;
@@ -166,6 +178,18 @@ bool CMovieSearchFilterModel::filterAcceptsRow( int source_row, const QModelInde
     if ( !fNameFilter.isEmpty() )
     {
         if ( !movieStub.fName.toLower().contains( fNameFilter.toLower() ) )
+            return false;
+    }
+
+    if (fMinPremier.has_value())
+    {
+        if ( movieStub.hasYear() && ( movieStub.fYear < fMinPremier.value() ) )
+            return false;
+    }
+
+    if ( fMaxPremier.has_value() )
+    {
+        if ( movieStub.hasYear() && ( movieStub.fYear > fMaxPremier.value() ) )
             return false;
     }
 

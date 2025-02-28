@@ -51,6 +51,9 @@ public:
     QJsonObject toJSON() const;
 
     void saveMissing( QWidget *parent ) const;
+    void setMinPremier( std::optional< int > year );
+    void setMaxPremier( std::optional< int > year );
+
 public Q_SLOTS:
     void slotSetFilter( const QString &filter );
 private Q_SLOTS:
@@ -70,6 +73,9 @@ private:
     QTimer *fTimer{ nullptr };
     bool fOnlyShowMissing{ false };
     bool fMatchResolution{ false };
+    std::optional< int > fMinPremier;
+    std::optional< int > fMaxPremier;
+
     QString fNameFilter;
 };
 #endif
