@@ -25,7 +25,7 @@ void CMovieSearchFilterModel::addSearchMovie( const QString &name, const std::op
 {
     auto movieStub = SMovieStub( name, year, resolution );
     fSearchForMoviesByName.insert( movieStub );
-    if ( movieStub.fName != 0 )
+    if ( movieStub.hasYear() )
         fSearchForMoviesByNameYear.insert( movieStub );
     if ( postLoad )
         addStubToSourceModel( movieStub );
