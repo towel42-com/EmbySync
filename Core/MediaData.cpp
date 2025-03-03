@@ -894,12 +894,14 @@ namespace NJSON
             return {};
         }
 
-        QJsonArray moviesArray;
-
         auto data = QString( fi.readAll() ).split( "\r\n" );
-        QRegularExpression yearRegEx( R"((?<year>\d{4})(\/\d{2})?)" );
+        QRegularExpression yearRegEx( R"(^(?<year>\d{4})(\/\d{2})?$)" );
+
         std::optional< int > currYear;
 
+        QJsonArray collections;
+        QJsonArray moviesArray;
+        std::optional< int > yearChange;
         for ( auto &&currLine : data )
         {
             currLine = currLine.trimmed();
@@ -908,6 +910,7 @@ namespace NJSON
 
             auto match = yearRegEx.match( currLine );
             bool isYear = false;
+            yearChange = {};
             if ( match.hasMatch() )
             {
                 auto year = match.captured( "year" );
@@ -918,6 +921,9 @@ namespace NJSON
                     *msg = QString( "Invalid year: %1" ).arg( year );
                     return {};
                 }
+                if ( currYear.has_value() && ( value != currYear.value() ) )
+                    yearChange = currYear;
+
                 if ( !currYear.has_value() || ( value > currYear.value() ) )
                 {
                     currYear = value;
@@ -925,6 +931,17 @@ namespace NJSON
                 }
             }
 
+            if ( isYear )
+            {
+                if ( yearChange.has_value() && moviesArray.count() != 0 )
+                {
+                    QJsonObject collection;
+                    collection[ "collection" ] = QString( "%1 Best Picture Nominees" ).arg( yearChange.value() );
+                    collection[ "movies" ] = moviesArray;
+                    collections.push_back( collection );
+                    moviesArray = QJsonArray();
+                }
+            }
             if ( !isYear && currYear.has_value() )
             {
                 QJsonObject movie;
@@ -935,7 +952,7 @@ namespace NJSON
         }
 
         QJsonObject root;
-        root[ "movies" ] = moviesArray;
+        root[ "collections" ] = collections;
         QJsonDocument doc( root );
 
         if ( convertToJSON )
