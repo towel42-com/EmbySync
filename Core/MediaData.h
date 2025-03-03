@@ -68,7 +68,7 @@ public:
     static std::function< QString( uint64_t ) > mecsToStringFunc();
 
     CMediaData( const QJsonObject &mediaObj, std::shared_ptr< CServerModel > serverModel );
-    CMediaData( const SMovieStub& movieStub, const QString &type );   // stub for dummy media
+    CMediaData( const SMovieStub &movieStub, const QString &type );   // stub for dummy media
 
     static bool isExtra( const QJsonObject &obj );
     bool hasProviderIDs() const;
@@ -228,7 +228,7 @@ struct SCollectionServerInfo
     void setId( const QString &id ) { fCollectionID = id; }
     bool missingMedia() const;
 
-    std::shared_ptr< SMediaCollectionData > addMovie( const QString &name, int year, const std::pair< int, int > &resolution, CMediaCollection *parent, int rank );
+    std::shared_ptr< SMediaCollectionData > addMovie( const QString &name, const std::optional< int > &year, const std::optional< std::pair< int, int > > &resolution, CMediaCollection *parent, const std::optional< int > &rank );
 
     QString fCollectionID;
     std::vector< std::shared_ptr< SMediaCollectionData > > fItems;
@@ -242,7 +242,7 @@ public:
     std::shared_ptr< SMediaCollectionData > child( int pos ) const { return fCollectionInfo->child( pos ); }
     QVariant data( int column, int role ) const;
 
-    std::shared_ptr< SMediaCollectionData > addMovie( const QString &name, int year, const std::pair< int, int > &resolution, int rank );
+    std::shared_ptr< SMediaCollectionData > addMovie( const QString &name, const std::optional< int > &year, const std::optional< std::pair< int, int > > &resolution, const std::optional< int > &rank );
     void setItems( const std::list< std::shared_ptr< CMediaData > > &items );
     bool updateMedia( std::shared_ptr< CMediaModel > mediaModel ) { return fCollectionInfo->updateMedia( mediaModel ); }
     bool missingMedia() const { return fCollectionInfo->missingMedia(); }
@@ -277,17 +277,17 @@ namespace NJSON
         CMovie( const QJsonValue &curr );
 
         QString name() const { return fName; }
-        int rank() const { return fRank; }
-        int year() const { return fYear; }
-        std::pair< int, int > resolution() const { return fResolution; }
+        std::optional< int > rank() const { return fRank; }
+        std::optional< int > year() const { return fYear; }
+        std::optional< std::pair< int, int > > resolution() const { return fResolution; }
 
-        void setRank( int rank ) { fRank = rank; }
+        void setRank( const std::optional< int > & rank ) { fRank = rank; }
 
     private:
         QString fName;
-        int fRank{ -1 };
-        int fYear{ -1 };
-        std::pair< int, int > fResolution{ -1, -1 };
+        std::optional< int > fRank;
+        std::optional< int > fYear;
+        std::optional< std::pair< int, int > > fResolution;
     };
 
     class CCollection
@@ -315,7 +315,7 @@ namespace NJSON
         const std::list< std::shared_ptr< CMovie > > &movies() const { return fMovies; }
 
     private:
-        static std::optional< std::shared_ptr< CCollections > > fromJSONData( QJsonDocument &doc, QString * msg );
+        static std::optional< std::shared_ptr< CCollections > > fromJSONData( QJsonDocument &doc, QString *msg );
         std::list< std::shared_ptr< CCollection > > fCollections;
         std::list< std::shared_ptr< CMovie > > fMovies;
     };

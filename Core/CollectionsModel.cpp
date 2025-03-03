@@ -260,7 +260,7 @@ std::pair< QModelIndex, std::shared_ptr< CMediaCollection > > CCollectionsModel:
     return addCollection( server, name, {}, {} );
 }
 
-std::shared_ptr< SMediaCollectionData > CCollectionsModel::addMovie( const QString &name, int year, const std::pair< int, int > &resolution, const QModelIndex &collectionIndex, int rank )
+std::shared_ptr< SMediaCollectionData > CCollectionsModel::addMovie( const QString &name, const std::optional< int > &year, const std::optional< std::pair< int, int > > &resolution, const QModelIndex &collectionIndex, const std::optional< int > & rank )
 {
     Q_ASSERT( collectionIndex.isValid() );
     if ( !collectionIndex.isValid() )
@@ -271,23 +271,23 @@ std::shared_ptr< SMediaCollectionData > CCollectionsModel::addMovie( const QStri
     if ( !collection )
         return {};
 
-    bool sizeIncreased = ( rank == -1 ) || ( rank >= collection->childCount() );
+    bool sizeIncreased = !rank.has_value() || ( rank.value() >= collection->childCount() );
     if ( sizeIncreased )
-        beginInsertRows( collectionIndex, collection->childCount(), ( rank > 0 ) ? ( rank - 1 ) : collection->childCount() );
+        beginInsertRows( collectionIndex, collection->childCount(), ( rank.has_value() && ( rank.value() > 0 ) ) ? ( rank.value() - 1 ) : collection->childCount() );
     auto retVal = collection->addMovie( name, year, resolution, rank );
     if ( sizeIncreased )
         endInsertRows();
     else
-        emit dataChanged( index( rank - 1, 0, collectionIndex ), index( rank - 1, columnCount( collectionIndex ) - 1, collectionIndex ) );
+        emit dataChanged( index( rank.value() - 1, 0, collectionIndex ), index( rank.value() - 1, columnCount( collectionIndex ) - 1, collectionIndex ) );
     Q_ASSERT( hasChildren( collectionIndex ) );
 
     auto rc = rowCount( collectionIndex );
     if ( sizeIncreased )
     {
-        Q_ASSERT( ( rank == -1 ) || ( rc == ( rank ) ) );
+        Q_ASSERT( !rank.has_value() || ( rc == ( rank.value() ) ) );
     }
     else
-        Q_ASSERT( ( rank + 1 ) <= rc );
+        Q_ASSERT( ( rank.value() + 1 ) <= rc );
     return retVal;
 }
 

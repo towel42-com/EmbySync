@@ -11,13 +11,13 @@ class CMediaData;
 struct SMovieStub
 {
     QString fName;
-    int fYear{ 0 };
+    std::optional< int > fYear;
     std::optional< std::pair< int, int > > fResolution;
 
     SMovieStub( const QString &name );
-    SMovieStub( const QString &name, int year );
-    SMovieStub( const QString &name, int year, const std::optional< std::pair< int, int > > &resolution );
-    SMovieStub( const QString &name, int year, const QPoint &resolution );
+    SMovieStub( const QString &name, const std::optional< int > &year, const std::optional< QPoint > &resolution );
+    SMovieStub( const QString &name, const std::optional< int > &year );
+    SMovieStub( const QString &name, const std::optional< int > &year, const std::optional< std::pair< int, int > > &resolution );
     SMovieStub( std::shared_ptr< CMediaData > data );
     bool isMovie( const QString &movieName ) const { return nameKey() == nameKey( movieName ); }
 

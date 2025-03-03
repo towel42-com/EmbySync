@@ -21,7 +21,7 @@ CMovieSearchFilterModel::CMovieSearchFilterModel( std::shared_ptr< CSettings > s
     connect( this, &QSortFilterProxyModel::sourceModelChanged, [ this ]() { connect( dynamic_cast< CMediaModel * >( sourceModel() ), &CMediaModel::sigSettingsChanged, [ this ]() { startInvalidateTimer(); } ); } );
 }
 
-void CMovieSearchFilterModel::addSearchMovie( const QString &name, int year, const std::optional< std::pair< int, int > > &resolution, bool postLoad )
+void CMovieSearchFilterModel::addSearchMovie( const QString &name, const std::optional< int > & year, const std::optional< std::pair< int, int > > &resolution, bool postLoad )
 {
     auto movieStub = SMovieStub( name, year, resolution );
     fSearchForMoviesByName.insert( movieStub );
@@ -51,7 +51,7 @@ void CMovieSearchFilterModel::slotInvalidateFilter()
     invalidateFilter();
 }
 
-void CMovieSearchFilterModel::setMinPremier(std::optional< int > year)
+void CMovieSearchFilterModel::setMinPremier( std::optional< int > year )
 {
     fMinPremier = year;
     startInvalidateTimer();
@@ -87,9 +87,11 @@ void CMovieSearchFilterModel::addStubToSourceModel( const SMovieStub &movieStub 
     auto mediaModel = dynamic_cast< CMediaModel * >( sourceModel() );
     if ( mediaModel )
     {
-        mediaModel->addMovieStub( movieStub, [ this, movieStub ]( std::shared_ptr< CMediaData > mediaData ) 
-            { 
-                auto retVal = movieStub.equal( mediaData, true, true, false );  // match by name and year
+        mediaModel->addMovieStub(
+            movieStub,
+            [ this, movieStub ]( std::shared_ptr< CMediaData > mediaData )
+            {
+                auto retVal = movieStub.equal( mediaData, true, true, false );   // match by name and year
                 return retVal;
             } );
     }
@@ -130,7 +132,10 @@ SMovieStub CMovieSearchFilterModel::getMovieStub( const QModelIndex &idx ) const
 {
     auto name = idx.data( CMediaModel::eMediaNameRole ).toString();
     auto year = idx.data( CMediaModel::ePremiereDateRole ).toDate().year();
-    auto resolution = idx.data( CMediaModel::eResolutionRole ).toPoint();
+    auto res = idx.data( CMediaModel::eResolutionRole );
+    std::optional< QPoint > resolution;
+    if ( res.isValid() && res.canConvert< QPoint >() && !res.toPoint().isNull() && ( res != QPoint( 0, 0 ) ) )
+        resolution = res.toPoint();
 
     auto movieStub = SMovieStub( name, year, resolution );
     return movieStub;
@@ -181,7 +186,7 @@ bool CMovieSearchFilterModel::filterAcceptsRow( int source_row, const QModelInde
             return false;
     }
 
-    if (fMinPremier.has_value())
+    if ( fMinPremier.has_value() )
     {
         if ( movieStub.hasYear() && ( movieStub.fYear < fMinPremier.value() ) )
             return false;
@@ -220,7 +225,7 @@ void CMovieSearchFilterModel::sort( int column, Qt::SortOrder order /*= Qt::Asce
 bool CMovieSearchFilterModel::lessThan( const QModelIndex &source_left, const QModelIndex &source_right ) const
 {
     bool usePremierDate = ( source_left.column() == 1 ) && ( source_right.column() == 1 );
-    if( usePremierDate )
+    if ( usePremierDate )
         return source_left.data( CMediaModel::ePremiereDateRole ).toDate() < source_right.data( CMediaModel::ePremiereDateRole ).toDate();
     return QSortFilterProxyModel::lessThan( source_left, source_right );
 }

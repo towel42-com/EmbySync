@@ -86,7 +86,8 @@ CMediaData::CMediaData( const SMovieStub &movieStub, const QString &type )
     fName = movieStub.fName;
     fOriginalTitle = fName;
     fType = type;
-    fPremiereDate = QDate( movieStub.fYear, 1, 1 );
+    if ( movieStub.hasYear() )
+        fPremiereDate = QDate( movieStub.fYear.value(), 1, 1 );
     if ( movieStub.hasResolution() )
         fResolution = movieStub.fResolution.value();
     else
@@ -771,7 +772,7 @@ QVariant CMediaCollection::data( int column, int role ) const
     return {};
 }
 
-std::shared_ptr< SMediaCollectionData > CMediaCollection::addMovie( const QString &name, int year, const std::pair< int, int > &resolution, int rank )
+std::shared_ptr< SMediaCollectionData > CMediaCollection::addMovie( const QString &name, const std::optional< int > &year, const std::optional< std::pair< int, int > > &resolution, const std::optional< int > &rank )
 {
     return fCollectionInfo->addMovie( name, year, resolution, this, rank );
 }
@@ -816,18 +817,18 @@ bool SCollectionServerInfo::updateMedia( std::shared_ptr< CMediaModel > mediaMod
     return retVal;
 }
 
-std::shared_ptr< SMediaCollectionData > SCollectionServerInfo::addMovie( const QString &name, int year, const std::pair< int, int > &resolution, CMediaCollection *parent, int rank )
+std::shared_ptr< SMediaCollectionData > SCollectionServerInfo::addMovie( const QString &name, const std::optional< int > &year, const std::optional< std::pair< int, int > > &resolution, CMediaCollection *parent, const std::optional< int > &rank )
 {
     auto retVal = std::make_shared< SMediaCollectionData >( std::make_shared< CMediaData >( SMovieStub( name, year, resolution ), "Movie" ), parent );
 
-    if ( ( rank > 0 ) && ( rank - 1 ) >= fItems.size() )
+    if ( rank.has_value() && ( rank.value() - 1 ) >= fItems.size() )
     {
-        fItems.resize( rank );
+        fItems.resize( rank.value() );
     }
-    if ( rank == -1 )
+    if ( !rank.has_value() )
         fItems.push_back( retVal );
     else
-        fItems[ rank - 1 ] = retVal;
+        fItems[ rank.value() - 1 ] = retVal;
     for ( size_t ii = 0; ii < fItems.size(); ++ii )
     {
         if ( !fItems[ ii ] )
@@ -923,7 +924,7 @@ namespace NJSON
                     isYear = true;
                 }
             }
-            
+
             if ( !isYear && currYear.has_value() )
             {
                 QJsonObject movie;
@@ -933,7 +934,6 @@ namespace NJSON
             }
         }
 
-        
         QJsonObject root;
         root[ "movies" ] = moviesArray;
         QJsonDocument doc( root );
@@ -1046,17 +1046,22 @@ namespace NJSON
 
     CMovie::CMovie( const QJsonValue &curr )
     {
-        fRank = curr.toObject()[ "rank" ].toInt();
-        if ( !curr.toObject().contains( "rank" ) )
+        auto currObj = curr.toObject();
+
+        fRank = currObj[ "rank" ].toInt();
+        if ( !currObj.contains( "rank" ) )
             fRank = -1;
-        fName = curr.toObject()[ "name" ].toString();
-        fYear = curr.toObject()[ "year" ].toInt();
-        //Q_ASSERT( hasYear() );
-        if ( curr.toObject().contains( "width" ) && curr.toObject().contains( "height" ) )
-            fResolution = { curr.toObject()[ "width" ].toInt(), curr.toObject()[ "width" ].toInt() };
-        else if ( curr.toObject().contains( "type" ) )
+
+        fName = currObj[ "name" ].toString();
+
+        if ( currObj.contains( "year" ) )
+            fYear = currObj[ "year" ].toInt();
+
+        if ( currObj.contains( "width" ) && currObj.contains( "height" ) )
+            fResolution = { currObj[ "width" ].toInt(), currObj[ "width" ].toInt() };
+        else if ( currObj.contains( "type" ) )
         {
-            auto type = curr.toObject()[ "type" ].toString().toLower();
+            auto type = currObj[ "type" ].toString().toLower();
             if ( type == "uhd" )
                 fResolution = { 3840, 2160 };
             else if ( type == "dvd" )
