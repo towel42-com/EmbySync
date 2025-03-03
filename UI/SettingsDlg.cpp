@@ -542,6 +542,14 @@ std::shared_ptr< CServerInfo > CSettingsDlg::getServerInfo( QTreeWidget *serverT
 
     auto item = serverTree->topLevelItem( ii );
 
+    return getServerInfo( item );
+}
+
+std::shared_ptr< CServerInfo > CSettingsDlg::getServerInfo( QTreeWidgetItem *item ) const
+{
+    if ( !item )
+        return {};
+
     auto name = item->text( 0 );
     auto url = item->text( 1 );
     auto apiKey = item->text( 2 );
@@ -794,20 +802,35 @@ void CSettingsDlg::slotTestServerResults( const QString &serverName, bool result
 
 void CSettingsDlg::slotTestSearchServers()
 {
-    for ( int ii = 0; ii < fImpl->searchServers->topLevelItemCount(); ++ii )
+    if ( fImpl->searchServers->currentItem() )
     {
-        auto item = fImpl->searchServers->topLevelItem( ii );
-
-        auto serverInfo = getServerInfo( fImpl->searchServers, ii );
-        auto url = serverInfo->searchUrl( "the empire strikes back" );
-        if ( url.isValid() )
-        {
-            item->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/ok.png" ) ) );
-            QDesktopServices::openUrl( url );
-        }
-        else
-            item->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/error.png" ) ) );
+        auto item = fImpl->searchServers->currentItem();
+        testSearchServer( item );
     }
+    else
+    {
+        for ( int ii = 0; ii < fImpl->searchServers->topLevelItemCount(); ++ii )
+        {
+            auto item = fImpl->searchServers->topLevelItem( ii );
+            testSearchServer( item );
+        }
+    }
+}
+
+void CSettingsDlg::testSearchServer( QTreeWidgetItem *item )
+{
+    auto serverInfo = getServerInfo( item );
+    if ( !serverInfo )
+        return;
+
+    auto url = serverInfo->searchUrl( "the empire strikes back" );
+    if ( url.isValid() )
+    {
+        item->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/ok.png" ) ) );
+        QDesktopServices::openUrl( url );
+    }
+    else
+        item->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/error.png" ) ) );
 }
 
 void CSettingsDlg::slotServerModelChanged()

@@ -76,7 +76,9 @@ public Q_SLOTS:
     void slotMoveSearchServerUp();
     void slotMoveSearchServerDown();
     void slotCurrSearchServerChanged();
+
 private:
+    void testSearchServer( QTreeWidgetItem *item );
     void currServerChanged( QTreeWidget *serverTree, QToolButton *up, QToolButton *down );
 
     void loadKnownUsers( const std::vector< std::shared_ptr< CUserData > > &knownUsers );
@@ -94,6 +96,7 @@ private:
 
     std::vector< std::shared_ptr< CServerInfo > > getServerInfos( QTreeWidget *serverTree, bool enabledOnly ) const;
     std::shared_ptr< CServerInfo > getServerInfo( QTreeWidget *serverTree, int ii ) const;
+    std::shared_ptr< CServerInfo > getServerInfo( QTreeWidgetItem *item ) const;
 
     void editServer( QTreeWidget *serverTree, QTreeWidgetItem *item );
     void editServer( QTreeWidgetItem *item );
