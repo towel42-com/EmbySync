@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>720</width>
-    <height>267</height>
+    <width>724</width>
+    <height>276</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -36,9 +36,9 @@
         </widget>
        </item>
        <item row="0" column="3">
-        <widget class="QPushButton" name="unselectAll">
+        <widget class="QPushButton" name="disableAll">
          <property name="text">
-          <string>Unselect All</string>
+          <string>Disable All</string>
          </property>
         </widget>
        </item>
@@ -59,7 +59,17 @@
         <widget class="QTreeWidget" name="showsFilter">
          <column>
           <property name="text">
-           <string notr="true">Show</string>
+           <string>Show Filter?</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string>Hide Filter?</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
+           <string notr="true">Show Name</string>
           </property>
          </column>
          <column>
@@ -85,9 +95,9 @@
         </widget>
        </item>
        <item row="0" column="2">
-        <widget class="QPushButton" name="selectAll">
+        <widget class="QPushButton" name="enableAll">
          <property name="text">
-          <string>Select All</string>
+          <string>Enable All</string>
          </property>
         </widget>
        </item>

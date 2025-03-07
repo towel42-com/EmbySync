@@ -12,6 +12,7 @@
 #include <memory>
 #include <optional>
 #include <set>
+#include <map>
 #include <QDate>
 
 class CSettings;
@@ -187,12 +188,19 @@ public:
     virtual bool lessThan( const QModelIndex &source_left, const QModelIndex &source_right ) const override;
 };
 
+enum class EShowFilterType
+{
+    eShow,
+    eHide,
+    eDisabled
+};
+
 struct SShowFilter
 {
     SShowFilter() = default;
-    SShowFilter( const QString &name, const QString &min, const QString &max, bool enabled ) :
+    SShowFilter( const QString &name, const QString &min, const QString &max, EShowFilterType filterType ) :
         fSeriesName( name ),
-        fEnabled( enabled )
+        fFilterType( filterType )
     {
         if ( !min.isEmpty() )
         {
@@ -209,24 +217,16 @@ struct SShowFilter
                 fMaxSeason = tmp;
         }
     }
-    SShowFilter( const QString &name, const QVariant &min, const QVariant &max, bool enabled ) :
-        fSeriesName( name ),
-        fEnabled( enabled )
+    SShowFilter( const QString &name, const QVariant &min, const QVariant &max, EShowFilterType filterType ) :
+        SShowFilter( name, ( min.isValid() && min.canConvert< QString >() && min.canConvert< int >() ) ? min.toString() : QString(), ( max.isValid() && max.canConvert< QString >() && max.canConvert< int >() ) ? max.toString() : QString(), filterType )
     {
-        if ( min.isValid() && min.canConvert< int >() )
-        {
-            fMinSeason = min.toInt();
-        }
-        if ( max.isValid() && max.canConvert< int >() )
-        {
-            fMaxSeason = max.toInt();
-        }
     }
 
     QString fSeriesName;
     std::optional< int > fMinSeason;
     std::optional< int > fMaxSeason;
-    bool fEnabled{ true };
+
+    EShowFilterType fFilterType{ EShowFilterType::eShow };
 };
 
 class CMediaMissingFilterModel : public QSortFilterProxyModel
@@ -236,7 +236,7 @@ class CMediaMissingFilterModel : public QSortFilterProxyModel
 public:
     CMediaMissingFilterModel( std::shared_ptr< CSettings > settings, QObject *parent );
 
-    void setShowFilter( const std::list< std::shared_ptr< SShowFilter > > &filter );
+    void setShowFilter( const std::map< QString, std::shared_ptr< SShowFilter > > &filter );
     virtual bool filterAcceptsRow( int source_row, const QModelIndex &source_parent ) const override;
     virtual bool filterAcceptsColumn( int source_column, const QModelIndex &source_parent ) const override;
     virtual void sort( int column, Qt::SortOrder order = Qt::AscendingOrder ) override;

@@ -29,6 +29,7 @@
 #include <QUrl>
 #include <list>
 #include <tuple>
+#include <map>
 class QMenu;
 class QAction;
 class QToolBar;
@@ -82,14 +83,14 @@ Q_SIGNALS:
     void sigModelDataChanged();
 
 public Q_SLOTS:
+    virtual void slotSetCurrentServer( const QModelIndex &index );
     virtual void slotCanceled() override;
     virtual void slotModelDataChanged() override;
     virtual void slotSettingsChanged() override;
     void slotMediaContextMenu( CDataTree *dataTree, const QPoint &pos );
-    virtual void slotSetCurrentServer( const QModelIndex &index );
     void slotSearchForAllMissing();
-    void slotSelectAll();
-    void slotUnselectAll();
+    void slotEnableAll();
+    void slotDisableAll();
 private Q_SLOTS:
     void slotSearchByShowNameChanged();
 
@@ -98,9 +99,9 @@ private Q_SLOTS:
     void slotMediaChanged();
 
 private:
-    std::list< std::shared_ptr< SShowFilter > > getSelectedShows() const;
+    std::map< QString, std::shared_ptr< SShowFilter > > getShowFilters() const;
 
-    std::list< std::shared_ptr< SShowFilter > > loadShowFilter() const;
+    std::map< QString, std::shared_ptr< SShowFilter > > loadShowFilter() const;
     void saveShowFilter();
 
     void showPrimaryServer();
@@ -116,7 +117,7 @@ private:
 
     QPointer< QAction > fActionSearchForAll;
     QPointer< QToolBar > fToolBar{ nullptr };
-    std::list< std::shared_ptr< SShowFilter > > fOrigFilter;
+    std::map< QString, std::shared_ptr< SShowFilter > > fOrigFilter;
 
     CServerFilterModel *fServerFilterModel{ nullptr };
     CMediaMissingFilterModel *fMissingMediaModel{ nullptr };

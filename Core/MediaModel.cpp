@@ -804,13 +804,10 @@ CMediaMissingFilterModel::CMediaMissingFilterModel( std::shared_ptr< CSettings >
         } );
 }
 
-void CMediaMissingFilterModel::setShowFilter( const std::list< std::shared_ptr< SShowFilter > > &filter )
+void CMediaMissingFilterModel::setShowFilter( const std::map< QString, std::shared_ptr< SShowFilter > > &filter )
 {
-    fShowFilter.clear();
-    for (auto&& ii : filter)
-    {
-        fShowFilter[ ii->fSeriesName ] = ii;
-    }
+    fShowFilter = filter;
+
     auto col = sortColumn();
     auto order = sortOrder();
     invalidateFilter();
@@ -826,29 +823,53 @@ bool CMediaMissingFilterModel::filterAcceptsRow( int source_row, const QModelInd
     if ( seriesName.isEmpty() )
         return false;
 
-    if ( !fShowFilter.empty() )
+    auto pos = fShowFilter.find( seriesName );
+    bool hasShowFilter = pos != fShowFilter.end();
+    if ( hasShowFilter )
     {
-        auto pos = fShowFilter.find( seriesName );
-        if ( pos == fShowFilter.end() )
-            return false;
-
         auto &&filter = ( *pos ).second;
-        if ( !filter->fEnabled )
-            return false;
 
         int seasonNum = childIdx.data( CMediaModel::eSeasonNumRole ).toInt();
+
+        std::optional< bool > seasonMatch;  // 3 states, not set by the filter, set and the season num matches, set and the season num doesnt
         if ( filter->fMinSeason.has_value() )
         {
-            if ( seasonNum < filter->fMinSeason.value() )
-                return false;
+            seasonMatch = ( seasonNum >= filter->fMinSeason.value() );
         }
 
         if ( filter->fMaxSeason.has_value() )
         {
-            if ( seasonNum > filter->fMaxSeason.value() )
-                return false;
+            if ( seasonMatch.has_value() )
+                seasonMatch = seasonMatch.value();
+            else
+                seasonMatch = ( seasonNum <= filter->fMaxSeason.value() );
+        }
+
+        bool isSeasonMatch = !seasonMatch.has_value() || seasonMatch.value();
+
+        switch ( filter->fFilterType )
+        {
+            case EShowFilterType::eShow:
+                {
+                    if ( seasonMatch.has_value() && !isSeasonMatch ) // if the season doesnt match eitehr because there was a season filter and its outside the range, dont show
+                        return false;
+                }
+                break;
+            case EShowFilterType::eHide:
+                {
+                    if ( !seasonMatch.has_value() || isSeasonMatch ) // if there is not season matching or there is and its inside, then the filter applies and we hide
+                        return false;
+                }
+                break;
+            case EShowFilterType::eDisabled:
+            default:
+                {
+                    hasShowFilter = false;  // the filter is disabled so ignore this
+                }
         }
     }
+
+    // seasonal filter failed to remove the show
 
     if ( fRegEx.has_value() && fRegEx.value().isValid() )
     {

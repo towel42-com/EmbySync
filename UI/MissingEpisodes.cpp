@@ -53,7 +53,6 @@
 #include <QDesktopServices>
 #include <QStyledItemDelegate>
 
-
 class CEditDelegate : public QStyledItemDelegate
 {
 public:
@@ -61,9 +60,9 @@ public:
         QStyledItemDelegate( parent )
     {
     }
-    virtual QWidget *createEditor( QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index ) const 
-    { 
-        if ( index.column() == 0 )
+    virtual QWidget *createEditor( QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index ) const
+    {
+        if ( index.column() <= 2 )
             return nullptr;
         return QStyledItemDelegate::createEditor( parent, option, index );
     }
@@ -79,11 +78,10 @@ CMissingEpisodes::CMissingEpisodes( QWidget *parent ) :
     connect( this, &CMissingEpisodes::sigModelDataChanged, this, &CMissingEpisodes::slotModelDataChanged );
     connect( this, &CMissingEpisodes::sigDataContextMenuRequested, this, &CMissingEpisodes::slotMediaContextMenu );
 
-    connect( fImpl->selectAll, &QPushButton::clicked, this, &CMissingEpisodes::slotSelectAll );
-    connect( fImpl->unselectAll, &QPushButton::clicked, this, &CMissingEpisodes::slotUnselectAll );
+    connect( fImpl->enableAll, &QPushButton::clicked, this, &CMissingEpisodes::slotEnableAll );
+    connect( fImpl->disableAll, &QPushButton::clicked, this, &CMissingEpisodes::slotDisableAll );
     connect( fImpl->showsFilter, &QTreeWidget::itemChanged, this, &CMissingEpisodes::slotSearchByShowNameChanged );
     fImpl->showsFilter->setItemDelegate( new CEditDelegate( this ) );
-
 
     fOrigFilter = loadShowFilter();
     slotSearchByShowNameChanged();
@@ -94,15 +92,14 @@ void CMissingEpisodes::slotSearchByShowNameChanged()
     if ( !fMissingMediaModel )
         return;
 
-    auto selected = getSelectedShows();
-    fMissingMediaModel->setShowFilter( selected );
+    fMissingMediaModel->setShowFilter( getShowFilters() );
 
     saveShowFilter();
 }
 
-std::list< std::shared_ptr< SShowFilter > > CMissingEpisodes::loadShowFilter() const
+std::map< QString, std::shared_ptr< SShowFilter > > CMissingEpisodes::loadShowFilter() const
 {
-    std::list< std::shared_ptr< SShowFilter > > retVal;
+    std::map< QString, std::shared_ptr< SShowFilter > > retVal;
 
     QSettings settings;
     settings.beginGroup( "MissingEpisodes" );
@@ -119,9 +116,13 @@ std::list< std::shared_ptr< SShowFilter > > CMissingEpisodes::loadShowFilter() c
         if ( settings.contains( "MinSeason" ) )
             maxSeason = settings.value( "MaxSeason" );
 
-        auto enabled = settings.value( "Enabled", true ).toBool();
+        EShowFilterType filterType = EShowFilterType::eDisabled;
+        if ( settings.contains( "FilterType" ) )
+            filterType = static_cast< EShowFilterType >( settings.value( "FilterType", static_cast< int >( EShowFilterType::eShow ) ).toInt() );
+        else if ( settings.contains( "Enabled" ) )
+            filterType = settings.value( "Enabled" ).toBool() ? EShowFilterType::eShow : EShowFilterType::eHide;
 
-        retVal.push_back( std::make_shared< SShowFilter >( name, minSeason, maxSeason, enabled ) );
+        retVal[ name ] = std::make_shared< SShowFilter >( name, minSeason, maxSeason, filterType );
     }
     settings.endArray();
     settings.endGroup();
@@ -131,7 +132,7 @@ std::list< std::shared_ptr< SShowFilter > > CMissingEpisodes::loadShowFilter() c
 
 void CMissingEpisodes::saveShowFilter()
 {
-    auto selected = getSelectedShows();
+    auto selected = getShowFilters();
     if ( selected == fOrigFilter )
         return;
 
@@ -139,20 +140,20 @@ void CMissingEpisodes::saveShowFilter()
     settings.beginGroup( "MissingEpisodes" );
     settings.beginWriteArray( "Show", static_cast< int >( selected.size() ) );
     int showNum = 0;
-    for ( auto &&ii : selected )
+    for ( auto &&[ name, curr ] : selected )
     {
         settings.setArrayIndex( showNum++ );
-        settings.setValue( "Name", ii->fSeriesName );
-        settings.setValue( "MinSeason", ii->fMinSeason.has_value() ? ii->fMinSeason.value() : QVariant() );
-        settings.setValue( "MaxSeason", ii->fMaxSeason.has_value() ? ii->fMaxSeason.value() : QVariant() );
-        settings.setValue( "Enabled", ii->fEnabled );
+        settings.setValue( "Name", curr->fSeriesName );
+        settings.setValue( "MinSeason", curr->fMinSeason.has_value() ? curr->fMinSeason.value() : QVariant() );
+        settings.setValue( "MaxSeason", curr->fMaxSeason.has_value() ? curr->fMaxSeason.value() : QVariant() );
+        settings.setValue( "FilterType", static_cast< int >( curr->fFilterType ) );
     }
     settings.endArray();
     settings.endGroup();
     fOrigFilter = selected;
 }
 
-void CMissingEpisodes::slotSelectAll()
+void CMissingEpisodes::slotEnableAll()
 {
     fImpl->showsFilter->blockSignals( true );
 
@@ -160,13 +161,14 @@ void CMissingEpisodes::slotSelectAll()
     {
         auto curr = fImpl->showsFilter->topLevelItem( ii );
         curr->setCheckState( 0, Qt::CheckState::Checked );
+        curr->setCheckState( 1, Qt::CheckState::Unchecked );
     }
 
     fImpl->showsFilter->blockSignals( false );
     slotSearchByShowNameChanged();
 }
 
-void CMissingEpisodes::slotUnselectAll()
+void CMissingEpisodes::slotDisableAll()
 {
     fImpl->showsFilter->blockSignals( true );
 
@@ -174,6 +176,7 @@ void CMissingEpisodes::slotUnselectAll()
     {
         auto curr = fImpl->showsFilter->topLevelItem( ii );
         curr->setCheckState( 0, Qt::CheckState::Unchecked );
+        curr->setCheckState( 1, Qt::CheckState::Checked );
     }
 
     fImpl->showsFilter->blockSignals( false );
@@ -215,51 +218,51 @@ void CMissingEpisodes::slotMediaChanged()
     if ( !fMissingMediaModel || !fMediaModel->hasMedia() )
         return;
 
-    auto selectedShows = getSelectedShows();
+    auto selectedShows = getShowFilters();
 
     auto showNames = fMediaModel->getKnownShows();
     disconnect( fImpl->showsFilter, &QTreeWidget::itemChanged, this, &CMissingEpisodes::slotSearchByShowNameChanged );
 
     fImpl->showsFilter->clear();
 
-
     for ( auto &&name : showNames )
     {
         std::shared_ptr< SShowFilter > filterForShow;
-        for ( auto &&jj : selectedShows )
-        {
-            if ( jj->fSeriesName == name )
-            {
-                filterForShow = jj;
-                break;
-            }
-        }
+        auto pos = selectedShows.find( name );
+        if ( pos != selectedShows.end() )
+            filterForShow = ( *pos ).second;
 
         auto minSeason = ( filterForShow && filterForShow->fMinSeason.has_value() ) ? QString::number( filterForShow->fMinSeason.value() ) : QString();
         auto maxSeason = ( filterForShow && filterForShow->fMaxSeason.has_value() ) ? QString::number( filterForShow->fMaxSeason.value() ) : QString();
-        bool enabled = filterForShow ? filterForShow->fEnabled : true;
+        auto filterType = filterForShow ? filterForShow->fFilterType : EShowFilterType::eShow;
 
-        auto curr = new QTreeWidgetItem( fImpl->showsFilter, { name, minSeason, maxSeason } );
+        auto curr = new QTreeWidgetItem( fImpl->showsFilter, { ( filterType == EShowFilterType::eShow ) ? "Yes" : "No", ( filterType == EShowFilterType::eHide ) ? "Yes" : "No", name, minSeason, maxSeason } );
         curr->setFlags( curr->flags() | Qt::ItemIsEditable );
-        curr->setCheckState( 0, enabled ? Qt::CheckState::Checked : Qt::CheckState::Unchecked );
+        curr->setCheckState( 0, ( filterType == EShowFilterType::eShow ) ? Qt::CheckState::Checked : Qt::CheckState::Unchecked );
+        curr->setCheckState( 1, ( filterType == EShowFilterType::eHide ) ? Qt::CheckState::Checked : Qt::CheckState::Unchecked );
     }
     fImpl->showsFilter->resizeColumnToContents( 0 );
     connect( fImpl->showsFilter, &QTreeWidget::itemChanged, this, &CMissingEpisodes::slotSearchByShowNameChanged );
     slotSearchByShowNameChanged();
 }
 
-std::list< std::shared_ptr< SShowFilter > > CMissingEpisodes::getSelectedShows() const
+std::map< QString, std::shared_ptr< SShowFilter > > CMissingEpisodes::getShowFilters() const
 {
     if ( !fImpl->showsFilter->topLevelItemCount() )
     {
         return fOrigFilter;
     }
 
-    std::list< std::shared_ptr< SShowFilter > > retVal;
+    std::map< QString, std::shared_ptr< SShowFilter > > retVal;
     for ( auto ii = 0; ii < fImpl->showsFilter->topLevelItemCount(); ++ii )
     {
         auto curr = fImpl->showsFilter->topLevelItem( ii );
-        retVal.push_back( std::make_shared< SShowFilter >( curr->text( 0 ), curr->text( 1 ), curr->text( 2 ), curr->checkState( 0 ) == Qt::CheckState::Checked ) );
+        auto filterType = EShowFilterType::eDisabled;
+        if ( curr->checkState( 0 ) == Qt::CheckState::Checked )
+            filterType = EShowFilterType::eShow;
+        else if ( curr->checkState( 1 ) == Qt::CheckState::Checked )
+            filterType = EShowFilterType::eHide;
+        retVal[ curr->text( 2 ) ] = std::make_shared< SShowFilter >( curr->text( 2 ), curr->text( 3 ), curr->text( 4 ), filterType );
     }
     return retVal;
 }
