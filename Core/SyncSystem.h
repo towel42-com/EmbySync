@@ -27,7 +27,9 @@
 #include <QMap>
 #include <QDateTime>
 #include <QNetworkRequest>
-#include <unordered_set>
+#include <QSslError>
+
+#include< unordered_set >
 #include <unordered_map>
 #include <optional>
 #include <functional>
@@ -46,7 +48,6 @@ class QNetworkReply;
 class QAuthenticator;
 class QSslPreSharedKeyAuthenticator;
 class QNetworkProxy;
-class QSslError;
 class QNetworkAccessManager;
 class CUserData;
 class CMediaData;
@@ -285,7 +286,7 @@ private:
 
     QJsonArray toItemArray( QJsonDocument &doc, const std::function< void( QJsonObject &obj ) > &onObj = {} ) const;
 
-    std::list< std::shared_ptr< CMediaData > > loadMediaArray( QJsonArray &doc, const QString &serverName, const QString &progressTitle, const QString &logMsg, const QString &partialLogMsg );
+    std::list< std::shared_ptr< CMediaData > > loadMediaArray( const QJsonArray &doc, const QString &serverName, const QString &progressTitle, const QString &logMsg, const QString &partialLogMsg );
 
     void requestMissingTVDBid( const QString &serverName );
     void handleMissingTVDBidResponse( const QString &serverName, const QByteArray &data );
