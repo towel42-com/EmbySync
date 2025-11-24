@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>301</width>
-    <height>344</height>
+    <width>503</width>
+    <height>435</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="tab">
       <attribute name="title">
@@ -70,7 +70,7 @@
          <item>
           <spacer name="horizontalSpacer_4">
            <property name="orientation">
-            <enum>Qt::Horizontal</enum>
+            <enum>Qt::Orientation::Horizontal</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
@@ -139,16 +139,13 @@
             <bool>false</bool>
            </property>
            <property name="currentSection">
-            <enum>QDateTimeEdit::MonthSection</enum>
+            <enum>QDateTimeEdit::Section::MonthSection</enum>
            </property>
            <property name="displayFormat">
             <string>M/d/yyyy hh:mm</string>
            </property>
            <property name="calendarPopup">
             <bool>true</bool>
-           </property>
-           <property name="timeSpec">
-            <enum>Qt::UTC</enum>
            </property>
           </widget>
          </item>
@@ -177,16 +174,13 @@
          <item>
           <widget class="QDateTimeEdit" name="lastLoginDate">
            <property name="currentSection">
-            <enum>QDateTimeEdit::MonthSection</enum>
+            <enum>QDateTimeEdit::Section::MonthSection</enum>
            </property>
            <property name="displayFormat">
             <string>M/d/yyyy hh:mm</string>
            </property>
            <property name="calendarPopup">
             <bool>true</bool>
-           </property>
-           <property name="timeSpec">
-            <enum>Qt::UTC</enum>
            </property>
           </widget>
          </item>
@@ -215,16 +209,13 @@
          <item>
           <widget class="QDateTimeEdit" name="lastActivityDate">
            <property name="currentSection">
-            <enum>QDateTimeEdit::MonthSection</enum>
+            <enum>QDateTimeEdit::Section::MonthSection</enum>
            </property>
            <property name="displayFormat">
             <string>M/d/yyyy hh:mm</string>
            </property>
            <property name="calendarPopup">
             <bool>true</bool>
-           </property>
-           <property name="timeSpec">
-            <enum>Qt::UTC</enum>
            </property>
           </widget>
          </item>
@@ -373,7 +364,7 @@
           <number>360</number>
          </property>
          <property name="stepType">
-          <enum>QAbstractSpinBox::AdaptiveDecimalStepType</enum>
+          <enum>QAbstractSpinBox::StepType::AdaptiveDecimalStepType</enum>
          </property>
         </widget>
        </item>
@@ -461,7 +452,7 @@
      <item>
       <spacer name="horizontalSpacer">
        <property name="orientation">
-        <enum>Qt::Horizontal</enum>
+        <enum>Qt::Orientation::Horizontal</enum>
        </property>
        <property name="sizeHint" stdset="0">
         <size>
