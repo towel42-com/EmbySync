@@ -188,19 +188,12 @@ public:
     virtual bool lessThan( const QModelIndex &source_left, const QModelIndex &source_right ) const override;
 };
 
-enum class EShowFilterType
-{
-    eShow,
-    eHide,
-    eDisabled
-};
-
 struct SShowFilter
 {
     SShowFilter() = default;
-    SShowFilter( const QString &name, const QString &min, const QString &max, EShowFilterType filterType ) :
+    SShowFilter( const QString &name, const QString &min, const QString &max, bool trackEpisodes ) :
         fSeriesName( name ),
-        fFilterType( filterType )
+        fTrackEpisodes( trackEpisodes )
     {
         if ( !min.isEmpty() )
         {
@@ -217,8 +210,8 @@ struct SShowFilter
                 fMaxSeason = tmp;
         }
     }
-    SShowFilter( const QString &name, const QVariant &min, const QVariant &max, EShowFilterType filterType ) :
-        SShowFilter( name, ( min.isValid() && min.canConvert< QString >() && min.canConvert< int >() ) ? min.toString() : QString(), ( max.isValid() && max.canConvert< QString >() && max.canConvert< int >() ) ? max.toString() : QString(), filterType )
+    SShowFilter( const QString &name, const QVariant &min, const QVariant &max, bool trackEpisodes ) :
+        SShowFilter( name, ( min.isValid() && min.canConvert< QString >() && min.canConvert< int >() ) ? min.toString() : QString(), ( max.isValid() && max.canConvert< QString >() && max.canConvert< int >() ) ? max.toString() : QString(), trackEpisodes )
     {
     }
 
@@ -226,7 +219,7 @@ struct SShowFilter
     std::optional< int > fMinSeason;
     std::optional< int > fMaxSeason;
 
-    EShowFilterType fFilterType{ EShowFilterType::eShow };
+    bool fTrackEpisodes{ true };
 };
 
 class CMediaMissingFilterModel : public QSortFilterProxyModel

@@ -6,16 +6,11 @@
 #include "Settings.h"
 #include "ServerInfo.h"
 #include "ServerModel.h"
-#include "SABUtils/StringUtils.h"
 #include "ProgressSystem.h"
 
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QJsonDocument>
-
-#include <QColor>
-#include <QInputDialog>
-#include <QTimer>
 
 #include <optional>
 #include <vector>
@@ -116,7 +111,7 @@ QVariant CMediaModel::data( const QModelIndex &index, int role /*= Qt::DisplayRo
     if ( !index.isValid() || index.parent().isValid() || ( index.row() >= rowCount() ) )
         return {};
 
-    auto mediaData = fData[ index.row() ];
+    auto &&mediaData = fData[ index.row() ];
 
     if ( role == ECustomRoles::eMediaNameRole )
         return mediaData->name();
@@ -376,7 +371,7 @@ void CMediaModel::updateProviderColumns( std::shared_ptr< CMediaData > mediaData
         auto pos = fProviderNames.find( ii.first );
         if ( pos == fProviderNames.end() )
         {
-            auto serverModel = fServerModel;
+            auto &&serverModel = fServerModel;
             beginInsertColumns( QModelIndex(), colCount, colCount + serverModel->serverCnt() - 1 );
             fProviderNames.insert( ii.first );
             for ( int jj = 0; jj < serverModel->serverCnt(); ++jj )
@@ -427,12 +422,18 @@ std::shared_ptr< CMediaData > CMediaModel::loadMedia( const QString &serverName,
     if ( pos == fMediaMap.end() )
         pos = fMediaMap.insert( std::make_pair( serverName, TMediaIDToMediaData() ) ).first;
 
-    auto seasonID = media[ "ParentIndexNumber" ].toInt();
-    auto episodeID = media[ "IndexNumber" ].toInt();
-    auto id = QString( "S%1E%2" ).arg( seasonID, 2, 10, QChar( '0' ) ).arg( episodeID, 2, 10, QChar( '0' ) );
-
+    QString id;
     if ( !media.contains( "ParentIndexNumber" ) || !media.contains( "IndexNumber" ) )
+    {
         id = QString::number( ( *pos ).second.size() );
+    }
+    else
+    {
+        auto seriesID = media[ "SeriesId" ].toString();
+        auto seasonID = media[ "ParentIndexNumber" ].toInt();
+        auto episodeID = media[ "IndexNumber" ].toInt();
+        id = QString( "SID%1-S%2E%3" ).arg( seriesID, 8, QChar( '0' ) ).arg( seasonID, 2, 10, QChar( '0' ) ).arg( episodeID, 2, 10, QChar( '0' ) );
+    }
 
     auto pos2 = ( *pos ).second.find( id );
     if ( pos2 == ( *pos ).second.end() )
@@ -640,7 +641,7 @@ QVariant CMediaModel::getColor( const QModelIndex &index, const QString &serverN
 
     if ( index.column() > fServerModel->serverCnt() * columnsPerServer( false ) )
         return {};
-    auto mediaData = fData[ index.row() ];
+    auto &&mediaData = fData[ index.row() ];
 
     if ( !mediaData->isValidForServer( serverName ) )
     {
@@ -708,7 +709,7 @@ QVariant CMediaModel::getColor( const QModelIndex &index, const QString &serverN
 
 SMediaSummary::SMediaSummary( std::shared_ptr< CMediaModel > model )
 {
-    auto serverModel = model->fServerModel;
+    auto &&serverModel = model->fServerModel;
     for ( auto &&ii : model->fData )
     {
         fTotalMedia++;
@@ -824,14 +825,16 @@ bool CMediaMissingFilterModel::filterAcceptsRow( int source_row, const QModelInd
         return false;
 
     auto pos = fShowFilter.find( seriesName );
-    bool hasShowFilter = pos != fShowFilter.end();
+    auto hasShowFilter = pos != fShowFilter.end();
     if ( hasShowFilter )
     {
         auto &&filter = ( *pos ).second;
+        if ( !filter->fTrackEpisodes )
+            return false;
 
         int seasonNum = childIdx.data( CMediaModel::eSeasonNumRole ).toInt();
 
-        std::optional< bool > seasonMatch;  // 3 states, not set by the filter, set and the season num matches, set and the season num doesnt
+        std::optional< bool > seasonMatch;   // 3 states, not set by the filter, set and the season num matches, set and the season num doesnt
         if ( filter->fMinSeason.has_value() )
         {
             seasonMatch = ( seasonNum >= filter->fMinSeason.value() );
@@ -845,28 +848,8 @@ bool CMediaMissingFilterModel::filterAcceptsRow( int source_row, const QModelInd
                 seasonMatch = ( seasonNum <= filter->fMaxSeason.value() );
         }
 
-        bool isSeasonMatch = !seasonMatch.has_value() || seasonMatch.value();
-
-        switch ( filter->fFilterType )
-        {
-            case EShowFilterType::eShow:
-                {
-                    if ( seasonMatch.has_value() && !isSeasonMatch ) // if the season doesnt match eitehr because there was a season filter and its outside the range, dont show
-                        return false;
-                }
-                break;
-            case EShowFilterType::eHide:
-                {
-                    if ( !seasonMatch.has_value() || isSeasonMatch ) // if there is not season matching or there is and its inside, then the filter applies and we hide
-                        return false;
-                }
-                break;
-            case EShowFilterType::eDisabled:
-            default:
-                {
-                    hasShowFilter = false;  // the filter is disabled so ignore this
-                }
-        }
+        if ( seasonMatch.has_value() && !seasonMatch.value() )   // if the season doesnt match either because there was a season filter and its outside the range, dont show
+            return false;
     }
 
     // seasonal filter failed to remove the show

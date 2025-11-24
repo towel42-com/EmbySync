@@ -33,6 +33,8 @@
 class QMenu;
 class QAction;
 class QToolBar;
+class QTreeWidgetItem;
+
 struct SShowFilter;
 namespace Ui
 {
@@ -83,6 +85,7 @@ Q_SIGNALS:
     void sigModelDataChanged();
 
 public Q_SLOTS:
+    void slotFilterItemChanged( QTreeWidgetItem *item, int column );
     virtual void slotSetCurrentServer( const QModelIndex &index );
     virtual void slotCanceled() override;
     virtual void slotModelDataChanged() override;
@@ -91,6 +94,7 @@ public Q_SLOTS:
     void slotSearchForAllMissing();
     void slotEnableAll();
     void slotDisableAll();
+
 private Q_SLOTS:
     void slotSearchByShowNameChanged();
 
@@ -99,8 +103,8 @@ private Q_SLOTS:
     void slotMediaChanged();
 
 private:
+    void setAllShowsEnabled( bool enabled );
     std::map< QString, std::shared_ptr< SShowFilter > > getShowFilters() const;
-
     std::map< QString, std::shared_ptr< SShowFilter > > loadShowFilter() const;
     void saveShowFilter();
 

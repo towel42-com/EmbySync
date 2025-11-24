@@ -59,12 +59,7 @@
         <widget class="QTreeWidget" name="showsFilter">
          <column>
           <property name="text">
-           <string>Show Filter?</string>
-          </property>
-         </column>
-         <column>
-          <property name="text">
-           <string>Hide Filter?</string>
+           <string>Track Show's Episodes?</string>
           </property>
          </column>
          <column>
