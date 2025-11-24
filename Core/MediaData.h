@@ -281,7 +281,7 @@ namespace NJSON
         std::optional< int > year() const { return fYear; }
         std::optional< std::pair< int, int > > resolution() const { return fResolution; }
 
-        void setRank( const std::optional< int > & rank ) { fRank = rank; }
+        void setRank( const std::optional< int > &rank ) { fRank = rank; }
 
     private:
         QString fName;
@@ -304,17 +304,28 @@ namespace NJSON
         std::list< std::shared_ptr< CMovie > > fMovies;
     };
 
+    enum class ETextType
+    {
+        eJSON,
+        eWikiBestPicture,
+        eWikiBestPictureByYear,
+        eWideScreeningsBestActor,
+        eWideScreeningsBestActorByYear
+    };
+
     class CCollections
     {
     public:
         CCollections() {}
         static std::optional< std::shared_ptr< CCollections > > fromJSON( const QString &fileName, QString *msg = nullptr );
-        static std::optional< std::shared_ptr< CCollections > > fromWikipediaText( const QString &fileName, bool convertToJSON, QString *msg = nullptr );
+        static std::optional< std::shared_ptr< CCollections > > fromText( const QString &fileName, bool convertToJSON, ETextType textType, QString *msg = nullptr );
 
         const std::list< std::shared_ptr< CCollection > > &collections() const { return fCollections; }
         const std::list< std::shared_ptr< CMovie > > &movies() const { return fMovies; }
 
     private:
+        static bool fromWikipediaBestPicture( QJsonDocument &doc, const QStringList &data, bool groupByYear, QString *msg = nullptr );
+        static bool fromWideScreeningsBestActor( QJsonDocument &doc, const QStringList &data, bool groupByYear, QString *msg = nullptr );
         static std::optional< std::shared_ptr< CCollections > > fromJSONData( QJsonDocument &doc, QString *msg );
         std::list< std::shared_ptr< CCollection > > fCollections;
         std::list< std::shared_ptr< CMovie > > fMovies;

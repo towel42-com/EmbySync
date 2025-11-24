@@ -21,6 +21,7 @@ struct SMovieStub
     SMovieStub( std::shared_ptr< CMediaData > data );
     bool isMovie( const QString &movieName ) const { return nameKey() == nameKey( movieName ); }
 
+    static bool compareYear( int64_t lhs, int64_t rhs );
     QString nameKey() const { return nameKey( fName ); }
     bool hasResolution() const
     {

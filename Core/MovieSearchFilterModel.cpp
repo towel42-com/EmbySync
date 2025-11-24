@@ -24,6 +24,7 @@ CMovieSearchFilterModel::CMovieSearchFilterModel( std::shared_ptr< CSettings > s
 void CMovieSearchFilterModel::addSearchMovie( const QString &name, const std::optional< int > & year, const std::optional< std::pair< int, int > > &resolution, bool postLoad )
 {
     auto movieStub = SMovieStub( name, year, resolution );
+
     fSearchForMoviesByName.insert( movieStub );
     if ( movieStub.hasYear() )
         fSearchForMoviesByNameYear.insert( movieStub );
@@ -156,8 +157,6 @@ void CMovieSearchFilterModel::setMatchResolution( bool value )
 
 std::optional< SMovieStub > CMovieSearchFilterModel::inSearchForMovie( const SMovieStub &movieStub ) const
 {
-    bool found = false;
-
     auto pos1 = fSearchForMoviesByNameYear.find( movieStub );
     if ( pos1 != fSearchForMoviesByNameYear.end() )
         return ( *pos1 );

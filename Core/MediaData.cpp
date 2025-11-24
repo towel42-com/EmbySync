@@ -653,7 +653,7 @@ bool CMediaData::validUserDataEqual() const
 
 bool CMediaData::isMatch( const QString &name, int year ) const
 {
-    bool isMatch = ( ( year >= premiereDate().year() - 3 ) && ( year <= premiereDate().year() + 3 ) );
+    bool isMatch = SMovieStub::compareYear( year, premiereDate().year() );
 
     if ( !isMatch )
         return false;
@@ -876,7 +876,7 @@ bool SMediaCollectionData::updateMedia( std::shared_ptr< CMediaModel > mediaMode
 
 namespace NJSON
 {
-    std::optional< std::shared_ptr< CCollections > > CCollections::fromWikipediaText( const QString &fileName, bool convertToJSON, QString *msg /*= nullptr */ )
+    std::optional< std::shared_ptr< CCollections > > CCollections::fromText( const QString &fileName, bool convertToJSON, ETextType textType, QString *msg )
     {
         if ( fileName.isEmpty() )
         {
@@ -895,6 +895,120 @@ namespace NJSON
         }
 
         auto data = QString( fi.readAll() ).split( "\r\n" );
+        for ( auto &&currLine : data )
+            currLine = currLine.trimmed();
+
+        QJsonDocument doc;
+        bool aOK = false;
+        bool groupByYear = ( textType == ETextType::eWikiBestPictureByYear ) || ( textType == ETextType::eWideScreeningsBestActorByYear );
+        if ( ( textType == ETextType::eWikiBestPicture ) || ( textType == ETextType::eWikiBestPictureByYear ) )
+            aOK = fromWikipediaBestPicture( doc, data, groupByYear, msg );
+        else if ( ( textType == ETextType::eWideScreeningsBestActor ) || ( textType == ETextType::eWideScreeningsBestActorByYear ) )
+            aOK = fromWideScreeningsBestActor( doc, data, groupByYear, msg );
+
+        if ( !aOK )
+            return {};
+
+        auto retVal = fromJSONData( doc, msg );
+
+        if ( convertToJSON )
+        {
+            QFileInfo fi( fileName );
+            QString newFileName;
+            int num = 0;
+            do
+            {
+                auto fn = fi.baseName();
+                if ( groupByYear )
+                    fn += "_byyear";
+                if ( num > 0 )
+                    fn += "_" + QString::number( num );
+                fn += ".json";
+                newFileName = fi.absoluteDir().absoluteFilePath( fn );
+                num++;
+            }
+            while ( QFileInfo( newFileName ).exists() );
+            QFile newFI( newFileName );
+            newFI.open( QFile::WriteOnly );
+
+            newFI.write( doc.toJson( QJsonDocument::JsonFormat::Indented ) );
+        }
+
+        return retVal;
+    }
+
+    bool CCollections::fromWideScreeningsBestActor( QJsonDocument &doc, const QStringList &data, bool groupByYear, QString *msg )
+    {
+        (void)groupByYear;
+        (void)doc;
+        QRegularExpression yearRegEx( R"(^(?<year>\d{4})(\-\d{2})?\s*\:)" );
+
+        QJsonArray collections;
+        QJsonArray moviesArray;
+
+        int lineNum = 0;
+        for ( auto &&currLine : data )
+        {
+            lineNum++;
+            if ( currLine.isEmpty() )
+                continue;
+            auto match = yearRegEx.match( currLine );
+            if ( !match.hasMatch() )
+            {
+                if ( msg )
+                    *msg = QObject::tr( "Invalid format at line %1" ).arg( lineNum );
+                return false;
+            }
+
+            auto year = match.captured( "year" );
+            bool aOK;
+            auto yearValue = year.toInt( &aOK );
+            if ( !aOK )
+            {
+                *msg = QString( "Invalid year: %1" ).arg( year );
+                return false;
+            }
+
+            auto regExp = QRegularExpression( R"(\((?<title>[^)]*)\))" );
+            auto pos = regExp.globalMatch( currLine, match.capturedLength() );
+            QStringList titles;
+            while ( pos.hasNext() )
+            {
+                auto match = pos.next();
+                auto title = match.captured( "title" ).trimmed();
+                titles << title;
+            }
+
+            for ( auto &&currTitle : titles )
+            {
+                QJsonObject movie;
+                movie[ "name" ] = currTitle;
+                movie[ "year" ] = yearValue;
+                moviesArray.append( movie );
+            }
+
+            if ( groupByYear )
+            {
+                QJsonObject collection;
+                collection[ "collection" ] = QString( "%1 Best Picture Nominees" ).arg( yearValue );
+                collection[ "movies" ] = moviesArray;
+                collections.push_back( collection );
+                moviesArray = QJsonArray();
+            }
+        }
+
+        QJsonObject root;
+        if ( groupByYear )
+            root[ "collections" ] = collections;
+        else
+            root[ "movies" ] = moviesArray;
+        doc = QJsonDocument( root );
+
+        return true;
+    }
+
+    bool CCollections::fromWikipediaBestPicture( QJsonDocument &doc, const QStringList &data, bool groupByYear, QString *msg )
+    {
         QRegularExpression yearRegEx( R"(^(?<year>\d{4})(\/\d{2})?$)" );
 
         std::optional< int > currYear;
@@ -904,7 +1018,6 @@ namespace NJSON
         std::optional< int > yearChange;
         for ( auto &&currLine : data )
         {
-            currLine = currLine.trimmed();
             if ( currLine.isEmpty() )
                 continue;
 
@@ -935,11 +1048,14 @@ namespace NJSON
             {
                 if ( yearChange.has_value() && moviesArray.count() != 0 )
                 {
-                    QJsonObject collection;
-                    collection[ "collection" ] = QString( "%1 Best Picture Nominees" ).arg( yearChange.value() );
-                    collection[ "movies" ] = moviesArray;
-                    collections.push_back( collection );
-                    moviesArray = QJsonArray();
+                    if ( groupByYear )
+                    {
+                        QJsonObject collection;
+                        collection[ "collection" ] = QString( "%1 Best Picture Nominees" ).arg( yearChange.value() );
+                        collection[ "movies" ] = moviesArray;
+                        collections.push_back( collection );
+                        moviesArray = QJsonArray();
+                    }
                 }
             }
             if ( !isYear && currYear.has_value() )
@@ -952,32 +1068,12 @@ namespace NJSON
         }
 
         QJsonObject root;
-        root[ "collections" ] = collections;
-        QJsonDocument doc( root );
-
-        if ( convertToJSON )
-        {
-            QFileInfo fi( fileName );
-            QString newFileName;
-            int num = 0;
-            do
-            {
-                auto fn = fi.baseName();
-                if ( num > 0 )
-                    fn += "_" + QString::number( num );
-                fn += ".json";
-                newFileName = fi.absoluteDir().absoluteFilePath( fn );
-                num++;
-            }
-            while ( QFileInfo( newFileName ).exists() );
-            QFile newFI( newFileName );
-            newFI.open( QFile::WriteOnly );
-
-            newFI.write( doc.toJson( QJsonDocument::JsonFormat::Indented ) );
-        }
-
-        auto retVal = fromJSONData( doc, msg );
-        return retVal;
+        if ( groupByYear )
+            root[ "collections" ] = collections;
+        else
+            root[ "movies" ] = moviesArray;
+        doc = QJsonDocument( root );
+        return true;
     }
 
     std::optional< std::shared_ptr< CCollections > > CCollections::fromJSON( const QString &fileName, QString *msg /*= nullptr */ )
