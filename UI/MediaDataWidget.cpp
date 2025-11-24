@@ -26,6 +26,7 @@
 #include "ui_MediaDataWidget.h"
 
 #include <QDebug>
+#include <QTimeZone>
 
 CMediaDataWidget::CMediaDataWidget( QWidget *parentWidget /*= nullptr */ ) :
     QGroupBox( parentWidget ),
@@ -33,6 +34,8 @@ CMediaDataWidget::CMediaDataWidget( QWidget *parentWidget /*= nullptr */ ) :
 
 {
     fImpl->setupUi( this );
+    fImpl->lastPlayedDate->setTimeZone( QTimeZone::utc() );
+
     connect( fImpl->setTimeToNowBtn, &QToolButton::clicked, [ this ]() { fImpl->lastPlayedDate->setDateTime( QDateTime::currentDateTimeUtc() ); } );
 
     connect(

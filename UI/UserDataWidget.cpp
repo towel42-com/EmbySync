@@ -29,6 +29,7 @@
 #include <QDebug>
 #include <QFileDialog>
 #include <QImageReader>
+#include <QTimeZone>
 
 CUserDataWidget::CUserDataWidget( QWidget *parentWidget /*= nullptr */ ) :
     QGroupBox( parentWidget ),
@@ -36,6 +37,10 @@ CUserDataWidget::CUserDataWidget( QWidget *parentWidget /*= nullptr */ ) :
 
 {
     fImpl->setupUi( this );
+    fImpl->creationDate->setTimeZone( QTimeZone::utc() );
+    fImpl->lastLoginDate->setTimeZone( QTimeZone::utc() );
+    fImpl->lastActivityDate->setTimeZone( QTimeZone::utc() );
+
     connect( fImpl->setLastLoginDateToNow, &QToolButton::clicked, [ this ]() { fImpl->lastLoginDate->setDateTime( QDateTime::currentDateTimeUtc() ); } );
     connect( fImpl->setLastActivityDateToNow, &QToolButton::clicked, [ this ]() { fImpl->lastActivityDate->setDateTime( QDateTime::currentDateTimeUtc() ); } );
     connect( fImpl->setCreatedDateToNow, &QToolButton::clicked, [ this ]() { fImpl->creationDate->setDateTime( QDateTime::currentDateTimeUtc() ); } );
