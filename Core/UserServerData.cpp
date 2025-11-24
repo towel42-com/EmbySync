@@ -99,9 +99,9 @@ QJsonObject SUserServerData::userDataJSON() const
     configObj[ "DisplayMissingEpisodes" ] = fDisplayMissingEpisodes;
     configObj[ "SubtitleMode" ] = fSubtitleMode;
     configObj[ "EnableLocalPassword" ] = fEnableLocalPassword;
-    NSABUtils::ToJson( fOrderedViews, configObj[ "OrderedViews" ] );
-    NSABUtils::ToJson( fLatestItemsExcludes, configObj[ "LatestItemsExcludes" ] );
-    NSABUtils::ToJson( fMyMediaExcludes, configObj[ "MyMediaExcludes" ] );
+    configObj[ "OrderedViews" ] = NSABUtils::toJson( fOrderedViews );
+    configObj[ "LatestItemsExcludes" ] = NSABUtils::toJson( fLatestItemsExcludes );
+    configObj[ "MyMediaExcludes" ] = NSABUtils::toJson( fMyMediaExcludes );
     configObj[ "HidePlayedInLatest" ] = fHidePlayedInLatest;
     configObj[ "RememberAudioSelections" ] = fRememberAudioSelections;
     configObj[ "RememberSubtitleSelections" ] = fRememberSubtitleSelections;
@@ -160,9 +160,9 @@ void SUserServerData::loadFromJSON( const QJsonObject &userObj )
     fDisplayMissingEpisodes = config[ "DisplayMissingEpisodes" ].toBool();
     fSubtitleMode = config[ "SubtitleMode" ].toString();
     fEnableLocalPassword = config[ "EnableLocalPassword" ].toBool();
-    NSABUtils::FromJson( fOrderedViews, config[ "OrderedViews" ] );
-    NSABUtils::FromJson( fLatestItemsExcludes, config[ "LatestItemsExcludes" ] );
-    NSABUtils::FromJson( fMyMediaExcludes, config[ "MyMediaExcludes" ] );
+    NSABUtils::fromJson( fOrderedViews, config[ "OrderedViews" ] );
+    NSABUtils::fromJson( fLatestItemsExcludes, config[ "LatestItemsExcludes" ] );
+    NSABUtils::fromJson( fMyMediaExcludes, config[ "MyMediaExcludes" ] );
     fHidePlayedInLatest = config[ "HidePlayedInLatest" ].toBool();
     fRememberAudioSelections = config[ "RememberAudioSelections" ].toBool();
     fRememberSubtitleSelections = config[ "RememberSubtitleSelections" ].toBool();
