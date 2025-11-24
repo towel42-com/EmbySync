@@ -334,7 +334,7 @@ std::shared_ptr< CServerInfo > CServerModel::enableServer( const QString &server
         if ( isServer && retVal )
         {
             msg = QString( "Multiple servers match '%1'." ).arg( serverName );
-            return false;
+            return {};
         }
         if ( isServer )
             retVal = ii;

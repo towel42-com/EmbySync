@@ -684,7 +684,7 @@ void CSyncSystem::setServerName( QNetworkReply *reply, const QString &serverName
 QString CSyncSystem::serverName( QNetworkReply *reply )
 {
     if ( !reply )
-        return false;
+        return {};
     return fAttributes[ reply ][ kServerName ].toString();
 }
 
@@ -1712,7 +1712,7 @@ std::list< std::shared_ptr< CMediaData > > CSyncSystem::handleGetMediaListRespon
     return loadMediaArray( toItemArray( doc ), serverName, progressTitle, logMsg, partialLogMsg );
 }
 
-std::list< std::shared_ptr< CMediaData > > CSyncSystem::loadMediaArray( QJsonArray &mediaArray, const QString &serverName, const QString &progressTitle, const QString &logMsg, const QString &partialLogMsg )
+std::list< std::shared_ptr< CMediaData > > CSyncSystem::loadMediaArray( const QJsonArray &mediaArray, const QString &serverName, const QString &progressTitle, const QString &logMsg, const QString &partialLogMsg )
 {
     qDebug().noquote().nospace() << QJsonDocument( mediaArray ).toJson();
 

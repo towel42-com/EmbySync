@@ -209,13 +209,13 @@ std::shared_ptr< CServerInfo > CServerInfo::fromJson( const QJsonObject &obj, bo
     if ( serverName.isEmpty() )
     {
         errorMsg = QString( "Missing name and url" );
-        return false;
+        return {};
     }
 
     if ( !obj.contains( "url" ) )
     {
         errorMsg = QString( "Missing url" );
-        return false;
+        return {};
     }
 
     if ( !obj.contains( "api_key" ) )
@@ -223,7 +223,7 @@ std::shared_ptr< CServerInfo > CServerInfo::fromJson( const QJsonObject &obj, bo
         if ( !emptyAPIKeyOK )
         {
             errorMsg = QString( "Missing api_key" );
-            return false;
+            return {};
         }
     }
     bool enabled = true;
