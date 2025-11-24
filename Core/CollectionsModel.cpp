@@ -291,7 +291,7 @@ std::shared_ptr< SMediaCollectionData > CCollectionsModel::addMovie( const QStri
     return retVal;
 }
 
-void CCollectionsModel::updateCollections( const QString & /*serverName*/, std::shared_ptr< CMediaModel > model )
+void CCollectionsModel::updateCollections( const QString & /*serverName*/, std::shared_ptr< CMediaModel > /*model*/ )
 {
     auto update = false;
     for ( auto &&ii : fCollections )
