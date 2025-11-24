@@ -71,5 +71,5 @@ set(qtproject_QRC
 file(GLOB qtproject_QRC_SOURCES "resources/*")
 
 set( project_pub_DEPS
-    Qt5::Test
+    Qt6::Test
 )

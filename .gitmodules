@@ -1,3 +1,7 @@
 [submodule "SABUtils"]
 	path = SABUtils
 	url = https://github.com/towel42-com/SABUtils
+[submodule "T42-CMakeUtils"]
+	path = T42-CMakeUtils
+	url = https://github.com/towel42-com/T42-CMakeUtils
+	branch = trunk
