@@ -61,6 +61,7 @@
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QInputDialog>
 #include <QJsonParseError>
 
 CMissingMovies::CMissingMovies( QWidget *parent ) :
@@ -334,8 +335,8 @@ void CMissingMovies::slotCurrentServerChanged( const QModelIndex &index )
     }
     if ( !fImpl->listFile->text().isEmpty() )
         slotSetMovieSearchFile( fImpl->listFile->text() );
-    else if ( !fFileName.isEmpty() )
-        slotSetMovieSearchFile( fFileName );
+    else if ( !fFileName.first.isEmpty() )
+        slotSetMovieSearchFile( fFileName.first );
 }
 
 std::shared_ptr< CServerInfo > CMissingMovies::getCurrentServerInfo() const
@@ -452,7 +453,8 @@ void CMissingMovies::saveJSON()
 {
     if ( !fMediaModel )
         return;
-    auto fileName = fFileName;
+
+    auto fileName = fFileName.first;
     if ( fileName.isEmpty() )
         fileName = fImpl->listFile->text();
     if ( fileName.isEmpty() )
@@ -487,21 +489,46 @@ void CMissingMovies::setMovieSearchFile( const QString &fileName, bool force )
     if ( fileName.isEmpty() )
         return;
 
-    if ( !force && ( QFileInfo( fileName ) == QFileInfo( fFileName ) ) )
+    if ( !force && ( QFileInfo( fileName ) == QFileInfo( fFileName.first ) ) )
         return;
 
-    fFileName.clear();
+    if ( force )
+        fFileName = { QString(), NJSON::ETextType::eJSON };
 
     std::optional< std::shared_ptr< NJSON::CCollections > > collections;
     auto ext = QFileInfo( fileName ).suffix().toLower();
     QString msg;
     if ( ext == "txt" )
     {
-        collections = NJSON::CCollections::fromWikipediaText( fileName, true, &msg );
+        NJSON::ETextType textType;
+        if ( force && !fFileName.first.isEmpty() )
+            textType = fFileName.second;
+        else
+        {
+            textType = NJSON::ETextType::eJSON; 
+            bool aOK = false;
+            auto fileType = QInputDialog::getItem( this, tr( "Select TXT File Type" ), tr( "File Type" ), { "Wikipedia Best Picture", "Wikipedia Best Picture (Group By Year)", "Widescreenings Best Actor", "Widescreenings Best Actor (Group By Year)" }, 0, false, &aOK ).toLower();
+            if ( !aOK )
+                return;
+
+            if ( fileType == "wikipedia best picture" )
+                textType = NJSON::ETextType::eWikiBestPicture;
+            else if ( fileType == "wikipedia best picture (group by year)" )
+                textType = NJSON::ETextType::eWikiBestPictureByYear;
+            else if ( fileType == "widescreenings best actor" )
+                textType = NJSON::ETextType::eWideScreeningsBestActor;
+            else if ( fileType == "widescreenings best actor (group by year)" )
+                textType = NJSON::ETextType::eWideScreeningsBestActorByYear;
+            else
+                return;
+        }
+        collections = NJSON::CCollections::fromText( fileName, true, textType, &msg );
+        fFileName = { fileName, textType };
     }
     else
     {
         collections = NJSON::CCollections::fromJSON( fileName, &msg );
+        fFileName = { fileName, NJSON::ETextType::eJSON };
     }
 
     if ( !collections.has_value() )
@@ -510,7 +537,6 @@ void CMissingMovies::setMovieSearchFile( const QString &fileName, bool force )
         return;
     }
 
-    fFileName = fileName;
     for ( auto &&movie : collections.value()->movies() )
     {
         fMoviesModel->addSearchMovie( movie->name(), movie->year(), movie->resolution(), false );

@@ -47,6 +47,11 @@ class CTabUIInfo;
 class CServerFilterModel;
 class CMovieSearchFilterModel;
 
+namespace NJSON
+{
+    enum class ETextType;
+}
+
 class CMissingMovies : public CTabPageBase
 {
     Q_OBJECT
@@ -55,9 +60,7 @@ public:
 
     virtual ~CMissingMovies() override;
 
-    virtual void setupPage(
-        std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel,
-        std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem ) override;
+    virtual void setupPage( std::shared_ptr< CSettings > settings, std::shared_ptr< CSyncSystem > syncSystem, std::shared_ptr< CMediaModel > mediaModel, std::shared_ptr< CCollectionsModel > collectionsModel, std::shared_ptr< CUsersModel > userModel, std::shared_ptr< CServerModel > serverModel, std::shared_ptr< CProgressSystem > progressSystem ) override;
 
     virtual void setupActions();
 
@@ -86,7 +89,7 @@ public Q_SLOTS:
     virtual void slotModelDataChanged() override;
     virtual void slotSettingsChanged() override;
     void slotMediaContextMenu( CDataTree *dataTree, const QPoint &pos );
-    void slotItemDoubleClicked( CDataTree * dataTree, const QModelIndex & idx );
+    void slotItemDoubleClicked( CDataTree *dataTree, const QModelIndex &idx );
     virtual void slotSetCurrentServer( const QModelIndex &index );
 
     void slotAddMovieToSearchFor();
@@ -100,9 +103,9 @@ private Q_SLOTS:
 
 private:
     void saveJSON();
-    void saveJSON( const QString & fileName );
-    void setMovieSearchFile( const QString & fileName, bool force );
-    QString fFileName;
+    void saveJSON( const QString &fileName );
+    void setMovieSearchFile( const QString &fileName, bool force );
+    std::pair< QString, NJSON::ETextType > fFileName;
 
     void showPrimaryServer();
     std::shared_ptr< CServerInfo > getCurrentServerInfo() const;
@@ -117,11 +120,11 @@ private:
 
     QPointer< QAction > fActionSearchForAll;
     QPointer< QAction > fAddMovieToSearchFor;
-    QPointer< QAction > fOnlyShowMissingAction; 
+    QPointer< QAction > fOnlyShowMissingAction;
     QPointer< QAction > fMatchResolutionAction;
     QPointer< QAction > fRemoveMovieToSearchFor;
     QPointer< QAction > fActionSaveMissing;
-    
+
     QPointer< QToolBar > fToolBar{ nullptr };
 
     CServerFilterModel *fServerFilterModel{ nullptr };
