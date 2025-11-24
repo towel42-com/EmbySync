@@ -38,8 +38,6 @@ int main( int argc, char **argv )
     Q_INIT_RESOURCE( EmbySync );
     Q_INIT_RESOURCE( Token );
 
-    QApplication::setAttribute( Qt::AA_EnableHighDpiScaling );
-    QApplication::setAttribute( Qt::AA_UseHighDpiPixmaps );
     QApplication appl( argc, argv );
     NVersion::setupApplication( appl, true );
 
