@@ -105,7 +105,11 @@ QString CMediaData::searchKey() const
     if ( searchKey.isEmpty() )
         searchKey = QString( R"("%1")" ).arg( fName );
 
-    if ( this->mediaType() == "Episode" )
+    if ( this->mediaType() == "Series" )
+    {
+        searchKey = QString( "%1-%2" ).arg( fName ).arg( fSeriesID );
+    }
+    else if ( this->mediaType() == "Episode" )
     {
         searchKey = fSeriesName;
         searchKey = searchKey.replace( R"((US))", "" ).trimmed();
@@ -186,6 +190,11 @@ QString CMediaData::seriesName() const
     return fSeriesName;
 }
 
+QString CMediaData::seriesID() const
+{
+    return fSeriesID;
+}
+
 QString CMediaData::mediaType() const
 {
     return fType;
@@ -194,12 +203,17 @@ QString CMediaData::mediaType() const
 void CMediaData::computeName( const QJsonObject &media )
 {
     auto name = fName = media[ "Name" ].toString();
-    if ( media[ "Type" ] == "Episode" )
+    if ( media[ "Type" ] == "Series" )
+    {
+        fSeriesID = media[ "Id" ].toString();
+    }
+    else if ( media[ "Type" ] == "Episode" )
     {
         // auto tmp = QJsonDocument( media );
         // qDebug() << tmp.toJson();
 
         fSeriesName = media[ "SeriesName" ].toString();
+        fSeriesID = media[ "SeriesId" ].toString();
         auto season = media[ "SeasonName" ].toString();
         auto pos = season.lastIndexOf( ' ' );
         bool aOK = false;

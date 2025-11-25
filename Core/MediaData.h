@@ -77,6 +77,7 @@ public:
     QString name() const;
     QString originalTitle() const { return fOriginalTitle; }
     QString seriesName() const;
+    QString seriesID() const;
     QString mediaType() const;
     bool beenLoaded( const QString &serverName ) const;
 
@@ -150,8 +151,8 @@ public:
     std::optional< int > season() const { return fSeason; }
     std::optional< int > episode() const { return fEpisode; }
 
-private:
     QString searchKey() const;
+private:
     void computeName( const QJsonObject &media );
     void loadResolution( const QJsonArray &mediaSources );
 
@@ -177,6 +178,7 @@ private:
     QString fName;
     QString fOriginalTitle;
     QString fSeriesName;   // only valid for EpisodeTypes
+    QString fSeriesID; // valid for episodes AND series types
     std::optional< int > fSeason;   // only valid for EpisodeTypes
     std::optional< int > fEpisode;   // only valid for EpisodeTypes
     std::map< QString, QString > fProviders;
