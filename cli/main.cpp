@@ -29,7 +29,7 @@
 
 void showVersion()
 {
-    std::cout << NVersion::APP_NAME.toStdString() << " - " << NVersion::getVersionString( true ).toStdString() << "\n";
+    std::cout << NVersion::APP_NAME.toStdString() << " - " << NVersion::getVersionString( true, false ).toStdString() << "\n";
 }
 
 int main( int argc, char **argv )
@@ -89,7 +89,7 @@ int main( int argc, char **argv )
         return 0;
     }
 
-    std::cout << NVersion::APP_NAME.toStdString() << " - " << NVersion::getVersionString( true ).toStdString() << "\n";
+    std::cout << NVersion::APP_NAME.toStdString() << " - " << NVersion::getVersionString( true, false ).toStdString() << "\n";
     if ( !parser.isSet( modeOption ) )
     {
         showVersion();

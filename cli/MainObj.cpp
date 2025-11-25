@@ -52,8 +52,7 @@ CMainObj::CMainObj( const QString &settingsFile, const QString &mode, QObject *p
 
     fServerModel = std::make_shared< CServerModel >();
     fSettings = std::make_shared< CSettings >( false, fServerModel );
-    if ( !fSettings->load(
-             settingsFile, [ this, settingsFile ]( const QString & /*title*/, const QString &msg ) { fErrorString = QString( "--settings file '%1' could not be loaded: %2" ).arg( settingsFile ).arg( msg ); }, false ) )
+    if ( !fSettings->load( settingsFile, [ this, settingsFile ]( const QString & /*title*/, const QString &msg ) { fErrorString = QString( "--settings file '%1' could not be loaded: %2" ).arg( settingsFile ).arg( msg ); }, false ) )
     {
         fSettings.reset();
         return;
@@ -94,6 +93,7 @@ CMainObj::CMainObj( const QString &settingsFile, const QString &mode, QObject *p
     connect( fSyncSystem.get(), &CSyncSystem::sigLoadingUsersFinished, this, &CMainObj::slotLoadingUsersFinished );
     connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaLoaded, this, &CMainObj::slotProcessMedia );
     connect( fSyncSystem.get(), &CSyncSystem::sigMissingEpisodesLoaded, this, &CMainObj::slotMissingEpisodesLoaded );
+    connect( fSyncSystem.get(), &CSyncSystem::sigAllShowsLoaded, this, &CMainObj::slotAllShowsLoaded );
 
     connect( fSyncSystem.get(), &CSyncSystem::sigProcessingFinished, this, &CMainObj::slotProcessingFinished );
     connect( fSyncSystem.get(), &CSyncSystem::sigUserMediaLoaded, this, &CMainObj::slotUserMediaCompletelyLoaded );
@@ -311,6 +311,10 @@ void CMainObj::slotProcessMedia()
 {
     if ( fMode == EMode::eSync )
         fSyncSystem->selectiveProcessMedia( fSelectedServerToProcess );
+}
+
+void CMainObj::slotAllShowsLoaded()
+{
 }
 
 void CMainObj::slotMissingEpisodesLoaded()

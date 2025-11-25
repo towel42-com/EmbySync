@@ -76,6 +76,7 @@ public Q_SLOTS:
     void slotUserMediaCompletelyLoaded();
     void slotProcessingFinished( const QString &userName );
     void slotMissingEpisodesLoaded();
+    void slotAllShowsLoaded();
     void slotProcessMedia();
 
 private:
