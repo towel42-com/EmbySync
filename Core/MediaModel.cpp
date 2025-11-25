@@ -432,7 +432,17 @@ std::shared_ptr< CMediaData > CMediaModel::loadMedia( const QString &serverName,
         auto seriesID = media[ "SeriesId" ].toString();
         auto seasonID = media[ "ParentIndexNumber" ].toInt();
         auto episodeID = media[ "IndexNumber" ].toInt();
-        id = QString( "SID%1-S%2E%3" ).arg( seriesID, 8, QChar( '0' ) ).arg( seasonID, 2, 10, QChar( '0' ) ).arg( episodeID, 2, 10, QChar( '0' ) );
+        std::optional< int > endEpisodeID;
+        if ( media.contains( "IndexNumberEnd" ) )
+        {
+            endEpisodeID = media[ "IndexNumberEnd" ].toInt();
+        }
+
+        id = QString( "SID%1-S%2%3E%4" )   //
+                .arg( seriesID, 8, QChar( '0' ) )   //
+                .arg( seasonID, 2, 10, QChar( '0' ) )   //
+                .arg( endEpisodeID.has_value() ? QString( "%1" ).arg( endEpisodeID.value(), 2, 10, QChar( '0' ) ) : QString() )   //
+                .arg( episodeID, 2, 10, QChar( '0' ) );
     }
 
     auto pos2 = ( *pos ).second.find( id );
