@@ -83,7 +83,6 @@ CMissingEpisodes::CMissingEpisodes( QWidget *parent ) :
     connect( fImpl->showsFilter, &QTreeWidget::itemChanged, this, &CMissingEpisodes::slotFilterItemChanged );
     fImpl->showsFilter->setItemDelegate( new CEditDelegate( this ) );
 
-    fCurrFilter = loadShowFilter();
     slotSearchByShowNameChanged();
 }
 
@@ -106,48 +105,6 @@ void CMissingEpisodes::slotSearchByShowNameChanged()
     saveShowFilter();
 }
 
-std::map< QString, std::shared_ptr< SShowFilter > > CMissingEpisodes::loadShowFilter() const
-{
-    std::map< QString, std::shared_ptr< SShowFilter > > retVal;
-
-    QSettings settings;
-    settings.beginGroup( "MissingEpisodes" );
-    int cnt = settings.beginReadArray( "Show" );
-    for ( int ii = 0; ii < cnt; ++ii )
-    {
-        settings.setArrayIndex( ii );
-        auto name = settings.value( "Name" ).toString();
-        QVariant minSeason;
-        if ( settings.contains( "MinSeason" ) )
-            minSeason = settings.value( "MinSeason" );
-
-        QVariant maxSeason;
-        if ( settings.contains( "MaxSeason" ) )
-            maxSeason = settings.value( "MaxSeason" );
-
-        // show = 0, hide = 1, disabled = 2
-        bool trackEpisodes = false;
-        std::optional< int > filterType;
-        if ( settings.contains( "TrackEpisodes" ) )
-            trackEpisodes = settings.value( "TrackEpisodes", true ).toBool();
-        else
-        {
-            if ( settings.contains( "FilterType" ) )
-                filterType = settings.value( "FilterType", 0 ).toInt();
-            else if ( settings.contains( "Enabled" ) )
-                filterType = settings.value( "Enabled" ).toBool() ? 0 : 1;
-            if ( filterType.has_value() )
-                trackEpisodes = filterType.value() == 0;
-        }
-
-        retVal[ name ] = std::make_shared< SShowFilter >( name, minSeason, maxSeason, trackEpisodes );
-    }
-    settings.endArray();
-    settings.endGroup();
-
-    return retVal;
-}
-
 void CMissingEpisodes::saveShowFilter()
 {
     auto currFilter = getShowFilters();
@@ -162,6 +119,8 @@ void CMissingEpisodes::saveShowFilter()
     {
         settings.setArrayIndex( showNum++ );
         settings.setValue( "Name", curr->fSeriesName );
+        settings.setValue( "SeriesID", curr->fSeriesID );
+        settings.setValue( "Premier Year", curr->fPremierYear );
         settings.setValue( "MinSeason", curr->fMinSeason.has_value() ? curr->fMinSeason.value() : QVariant() );
         settings.setValue( "MaxSeason", curr->fMaxSeason.has_value() ? curr->fMaxSeason.value() : QVariant() );
         settings.setValue( "TrackEpisodes", curr->fTrackEpisodes );
@@ -171,15 +130,15 @@ void CMissingEpisodes::saveShowFilter()
     fCurrFilter = currFilter;
 }
 
-bool CMissingEpisodes::filterChanged( const std::map< QString, std::shared_ptr< SShowFilter > > &nextFilter )
+bool CMissingEpisodes::filterChanged( const TFilterMap &nextFilter )
 {
-    if ( fCurrFilter.size() != nextFilter.size() )
+    if ( !fCurrFilter.has_value() || ( fCurrFilter.value().size() != nextFilter.size() ) )
         return true;
 
     for ( auto &&currFilter : nextFilter )
     {
-        auto pos = fCurrFilter.find( currFilter.first );
-        if ( pos == fCurrFilter.end() )
+        auto pos = fCurrFilter.value().find( currFilter.first );
+        if ( pos == fCurrFilter.value().end() )
             return true;
 
         if ( *( currFilter.second ) != *( ( *pos ).second ) )
@@ -190,15 +149,15 @@ bool CMissingEpisodes::filterChanged( const std::map< QString, std::shared_ptr< 
 
 void CMissingEpisodes::slotEnableAll()
 {
-    setAllShowsEnabled( true );
+    setAllShowFiltersEnabled( true );
 }
 
 void CMissingEpisodes::slotDisableAll()
 {
-    setAllShowsEnabled( false );
+    setAllShowFiltersEnabled( false );
 }
 
-void CMissingEpisodes::setAllShowsEnabled( bool enabled )
+void CMissingEpisodes::setAllShowFiltersEnabled( bool enabled )
 {
     fImpl->showsFilter->blockSignals( true );
 
@@ -237,6 +196,7 @@ void CMissingEpisodes::setupPage( std::shared_ptr< CSettings > settings, std::sh
     fMissingMediaModel = new CMediaMissingFilterModel( settings, fMediaModel.get() );
     fMissingMediaModel->setSourceModel( fMediaModel.get() );
     connect( fSyncSystem.get(), &CSyncSystem::sigMissingEpisodesLoaded, this, &CMissingEpisodes::slotMissingEpisodesLoaded );
+    connect( fSyncSystem.get(), &CSyncSystem::sigAllShowsLoaded, this, &CMissingEpisodes::slotAllShowsLoaded );
 
     slotSetCurrentServer( QModelIndex() );
     showPrimaryServer();
@@ -244,51 +204,64 @@ void CMissingEpisodes::setupPage( std::shared_ptr< CSettings > settings, std::sh
 
 void CMissingEpisodes::slotMediaChanged()
 {
-    if ( !fMissingMediaModel || !fMediaModel->hasMedia() )
-        return;
-
-    auto selectedShows = getShowFilters();
-
-    auto showNames = fMediaModel->getKnownShows();
-    disconnect( fImpl->showsFilter, &QTreeWidget::itemChanged, this, &CMissingEpisodes::slotSearchByShowNameChanged );
-
-    fImpl->showsFilter->blockSignals( true );
-    fImpl->showsFilter->clear();
-
-    for ( auto &&name : showNames )
-    {
-        std::shared_ptr< SShowFilter > filterForShow;
-        auto pos = selectedShows.find( name );
-        if ( pos != selectedShows.end() )
-            filterForShow = ( *pos ).second;
-
-        auto minSeason = ( filterForShow && filterForShow->fMinSeason.has_value() ) ? QString::number( filterForShow->fMinSeason.value() ) : QString();
-        auto maxSeason = ( filterForShow && filterForShow->fMaxSeason.has_value() ) ? QString::number( filterForShow->fMaxSeason.value() ) : QString();
-        auto trackEpisodes = filterForShow ? filterForShow->fTrackEpisodes : true;
-
-        auto curr = new QTreeWidgetItem( fImpl->showsFilter, { trackEpisodes ? "Yes" : "No", name, minSeason, maxSeason } );
-        curr->setFlags( curr->flags() | Qt::ItemIsEditable );
-        curr->setCheckState( 0, trackEpisodes ? Qt::CheckState::Checked : Qt::CheckState::Unchecked );
-    }
-    fImpl->showsFilter->resizeColumnToContents( 0 );
-    fImpl->showsFilter->blockSignals( false );
-    connect( fImpl->showsFilter, &QTreeWidget::itemChanged, this, &CMissingEpisodes::slotSearchByShowNameChanged );
     slotSearchByShowNameChanged();
 }
 
-std::map< QString, std::shared_ptr< SShowFilter > > CMissingEpisodes::getShowFilters() const
+void CMissingEpisodes::initShowFilter()
 {
+    if ( fCurrFilter.has_value() )
+        return;
+
+    TFilterMap filterMap;
+
+    QSettings settings;
+    settings.beginGroup( "MissingEpisodes" );
+    int cnt = settings.beginReadArray( "Show" );
+    for ( int ii = 0; ii < cnt; ++ii )
+    {
+        settings.setArrayIndex( ii );
+        auto name = settings.value( "Name" ).toString();
+        auto premierYear = settings.value( "Premier Year" ).toInt();
+        auto seriesID = settings.value( "SeriesID" ).toString();
+
+        QVariant minSeason;
+        if ( settings.contains( "MinSeason" ) )
+            minSeason = settings.value( "MinSeason" );
+
+        QVariant maxSeason;
+        if ( settings.contains( "MaxSeason" ) )
+            maxSeason = settings.value( "MaxSeason" );
+
+        auto trackEpisodes = settings.value( "TrackEpisodes", true ).toBool();
+
+        auto key = QString( "%1-%2" ).arg( name ).arg( seriesID );
+        filterMap[ key ] = std::make_shared< SShowFilter >( seriesID, name, premierYear, minSeason, maxSeason, trackEpisodes );
+    }
+    settings.endArray();
+    settings.endGroup();
+
+    fCurrFilter = filterMap;
+}
+
+TFilterMap CMissingEpisodes::getShowFilters()
+{
+    initShowFilter();
     if ( !fImpl->showsFilter->topLevelItemCount() )
     {
-        return fCurrFilter;
+        if ( fCurrFilter.has_value() )
+            return fCurrFilter.value();
+        return {};
     }
 
-    std::map< QString, std::shared_ptr< SShowFilter > > retVal;
+    TFilterMap retVal;
     for ( auto ii = 0; ii < fImpl->showsFilter->topLevelItemCount(); ++ii )
     {
         auto curr = fImpl->showsFilter->topLevelItem( ii );
+        auto seriesID = curr->data( 0, Qt::UserRole + 1 ).toString();
+        auto key = QString( "%1-%2" ).arg( curr->text( 1 ) ).arg( seriesID );
+
         auto trackEpisodes = curr->checkState( 0 ) == Qt::CheckState::Checked;
-        retVal[ curr->text( 1 ) ] = std::make_shared< SShowFilter >( curr->text( 1 ), curr->text( 2 ), curr->text( 3 ), trackEpisodes );
+        retVal[ key ] = std::make_shared< SShowFilter >( seriesID, curr->text( 1 ), curr->text( 2 ).toInt(), curr->text( 3 ), curr->text( 4 ), trackEpisodes );
     }
     return retVal;
 }
@@ -387,7 +360,7 @@ void CMissingEpisodes::slotCurrentServerChanged( const QModelIndex &index )
 
     fMediaModel->clear();
 
-    if ( !fSyncSystem->loadMissingEpisodes( serverInfo ) )
+    if ( !fSyncSystem->loadAllShows( serverInfo ) )
     {
         QMessageBox::critical( this, tr( "No Admin User Found" ), tr( "No user found with Administrator Privileges on server '%1'" ).arg( serverInfo->displayName() ) );
     }
@@ -435,6 +408,55 @@ void CMissingEpisodes::slotSetCurrentServer( const QModelIndex &current )
 {
     auto serverInfo = getServerInfo( current );
     slotModelDataChanged();
+}
+
+void CMissingEpisodes::loadShowFilter()
+{
+    if ( !fMediaModel->hasSeriesNames() )
+        return;
+
+    auto selectedShows = getShowFilters();
+
+    auto allSeries = fMediaModel->getAllSeries();
+    disconnect( fImpl->showsFilter, &QTreeWidget::itemChanged, this, &CMissingEpisodes::slotSearchByShowNameChanged );
+
+    fImpl->showsFilter->blockSignals( true );
+    fImpl->showsFilter->clear();
+
+    for ( auto &&series : allSeries )
+    {
+        std::shared_ptr< SShowFilter > filterForShow;
+        auto pos = selectedShows.find( series.first );
+        if ( pos != selectedShows.end() )
+            filterForShow = ( *pos ).second;
+
+        auto minSeason = ( filterForShow && filterForShow->fMinSeason.has_value() ) ? QString::number( filterForShow->fMinSeason.value() ) : QString();
+        auto maxSeason = ( filterForShow && filterForShow->fMaxSeason.has_value() ) ? QString::number( filterForShow->fMaxSeason.value() ) : QString();
+        auto trackEpisodes = filterForShow ? filterForShow->fTrackEpisodes : true;
+
+        auto curr = new QTreeWidgetItem( fImpl->showsFilter, { trackEpisodes ? "Yes" : "No", series.second->name(), QString::number( series.second->premiereDate().year() ), minSeason, maxSeason } );
+        curr->setData( 0, Qt::UserRole + 1, series.second->seriesID() );
+        curr->setFlags( curr->flags() | Qt::ItemIsEditable );
+        curr->setCheckState( 0, trackEpisodes ? Qt::CheckState::Checked : Qt::CheckState::Unchecked );
+    }
+    fImpl->showsFilter->resizeColumnToContents( 0 );
+    fImpl->showsFilter->resizeColumnToContents( 1 );
+    fImpl->showsFilter->blockSignals( false );
+    connect( fImpl->showsFilter, &QTreeWidget::itemChanged, this, &CMissingEpisodes::slotSearchByShowNameChanged );
+}
+
+void CMissingEpisodes::slotAllShowsLoaded()
+{
+    auto currServer = getCurrentServerInfo();
+    if ( !currServer )
+        return;
+
+    loadShowFilter();
+
+    if ( !fSyncSystem->loadMissingEpisodes( currServer ) )
+    {
+        QMessageBox::critical( this, tr( "No Admin User Found" ), tr( "No user found with Administrator Privileges on server '%1'" ).arg( currServer->displayName() ) );
+    }
 }
 
 void CMissingEpisodes::slotMissingEpisodesLoaded()

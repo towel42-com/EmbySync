@@ -52,6 +52,8 @@ class CTabUIInfo;
 class CServerFilterModel;
 class CMediaMissingFilterModel;
 
+using TFilterMap = std::map< QString, std::shared_ptr< SShowFilter > >;
+
 class CMissingEpisodes : public CTabPageBase
 {
     Q_OBJECT
@@ -100,15 +102,17 @@ private Q_SLOTS:
 
     void slotCurrentServerChanged( const QModelIndex &index );
     void slotMissingEpisodesLoaded();
+    void slotAllShowsLoaded();
     void slotMediaChanged();
 
 private:
-    void setAllShowsEnabled( bool enabled );
-    std::map< QString, std::shared_ptr< SShowFilter > > getShowFilters() const;
-    std::map< QString, std::shared_ptr< SShowFilter > > loadShowFilter() const;
+    void loadShowFilter();
+    void setAllShowFiltersEnabled( bool enabled );
+    TFilterMap getShowFilters();
     void saveShowFilter();
+    void initShowFilter();
 
-    bool filterChanged( const std::map< QString, std::shared_ptr< SShowFilter > > &currFilter );
+    bool filterChanged( const TFilterMap &currFilter );
 
     void showPrimaryServer();
     std::shared_ptr< CServerInfo > getCurrentServerInfo() const;
@@ -123,7 +127,7 @@ private:
 
     QPointer< QAction > fActionSearchForAll;
     QPointer< QToolBar > fToolBar{ nullptr };
-    std::map< QString, std::shared_ptr< SShowFilter > > fCurrFilter;
+    std::optional< TFilterMap > fCurrFilter;
 
     CServerFilterModel *fServerFilterModel{ nullptr };
     CMediaMissingFilterModel *fMissingMediaModel{ nullptr };

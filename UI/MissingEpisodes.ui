@@ -69,6 +69,11 @@
          </column>
          <column>
           <property name="text">
+           <string>Premier Year</string>
+          </property>
+         </column>
+         <column>
+          <property name="text">
            <string>Min Season</string>
           </property>
          </column>
