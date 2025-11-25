@@ -1830,7 +1830,7 @@ void CSyncSystem::handleMissingTVDBidResponse( const QString &serverName, const 
 
 void CSyncSystem::handleMissingEpisodesResponse( const QString &serverName, const QByteArray &data )
 {
-    handleGetMissingMediaListResponse( serverName, data, tr( "Loading Users Missing Media Data" ), tr( "Server '%1' has %2 missing episodes" ), tr( "Loading %2 missing episodes" ) );
+    handleGetMissingMediaListResponse( serverName, data, tr( "Loading Users Missing Media Data" ), tr( "Server '%1' has %2 unfiltered missing episodes" ), tr( "Loading %2 missing episodes" ) );
 }
 
 void CSyncSystem::handleAllMoviesResponse( const QString &serverName, const QByteArray &data )
