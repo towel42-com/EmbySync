@@ -83,7 +83,7 @@ CMissingEpisodes::CMissingEpisodes( QWidget *parent ) :
     connect( fImpl->showsFilter, &QTreeWidget::itemChanged, this, &CMissingEpisodes::slotFilterItemChanged );
     fImpl->showsFilter->setItemDelegate( new CEditDelegate( this ) );
 
-    fOrigFilter = loadShowFilter();
+    fCurrFilter = loadShowFilter();
     slotSearchByShowNameChanged();
 }
 
@@ -122,18 +122,23 @@ std::map< QString, std::shared_ptr< SShowFilter > > CMissingEpisodes::loadShowFi
             minSeason = settings.value( "MinSeason" );
 
         QVariant maxSeason;
-        if ( settings.contains( "MinSeason" ) )
+        if ( settings.contains( "MaxSeason" ) )
             maxSeason = settings.value( "MaxSeason" );
 
         // show = 0, hide = 1, disabled = 2
         bool trackEpisodes = false;
         std::optional< int > filterType;
-        if ( settings.contains( "FilterType" ) )
-            filterType = settings.value( "FilterType", 0 ).toInt();
-        else if ( settings.contains( "Enabled" ) )
-            filterType = settings.value( "Enabled" ).toBool() ? 0 : 1;
-        if ( filterType.has_value() )
-            trackEpisodes = filterType.value() == 0;
+        if ( settings.contains( "TrackEpisodes" ) )
+            trackEpisodes = settings.value( "TrackEpisodes", true ).toBool();
+        else
+        {
+            if ( settings.contains( "FilterType" ) )
+                filterType = settings.value( "FilterType", 0 ).toInt();
+            else if ( settings.contains( "Enabled" ) )
+                filterType = settings.value( "Enabled" ).toBool() ? 0 : 1;
+            if ( filterType.has_value() )
+                trackEpisodes = filterType.value() == 0;
+        }
 
         retVal[ name ] = std::make_shared< SShowFilter >( name, minSeason, maxSeason, trackEpisodes );
     }
@@ -145,15 +150,15 @@ std::map< QString, std::shared_ptr< SShowFilter > > CMissingEpisodes::loadShowFi
 
 void CMissingEpisodes::saveShowFilter()
 {
-    auto selected = getShowFilters();
-    if ( selected == fOrigFilter )
+    auto currFilter = getShowFilters();
+    if ( !filterChanged( currFilter ) )
         return;
 
     QSettings settings;
     settings.beginGroup( "MissingEpisodes" );
-    settings.beginWriteArray( "Show", static_cast< int >( selected.size() ) );
+    settings.beginWriteArray( "Show", static_cast< int >( currFilter.size() ) );
     int showNum = 0;
-    for ( auto &&[ name, curr ] : selected )
+    for ( auto &&[ name, curr ] : currFilter )
     {
         settings.setArrayIndex( showNum++ );
         settings.setValue( "Name", curr->fSeriesName );
@@ -163,7 +168,24 @@ void CMissingEpisodes::saveShowFilter()
     }
     settings.endArray();
     settings.endGroup();
-    fOrigFilter = selected;
+    fCurrFilter = currFilter;
+}
+
+bool CMissingEpisodes::filterChanged( const std::map< QString, std::shared_ptr< SShowFilter > > &nextFilter )
+{
+    if ( fCurrFilter.size() != nextFilter.size() )
+        return true;
+
+    for ( auto &&currFilter : nextFilter )
+    {
+        auto pos = fCurrFilter.find( currFilter.first );
+        if ( pos == fCurrFilter.end() )
+            return true;
+
+        if ( *( currFilter.second ) != *( ( *pos ).second ) )
+            return true;
+    }
+    return false;
 }
 
 void CMissingEpisodes::slotEnableAll()
@@ -230,6 +252,7 @@ void CMissingEpisodes::slotMediaChanged()
     auto showNames = fMediaModel->getKnownShows();
     disconnect( fImpl->showsFilter, &QTreeWidget::itemChanged, this, &CMissingEpisodes::slotSearchByShowNameChanged );
 
+    fImpl->showsFilter->blockSignals( true );
     fImpl->showsFilter->clear();
 
     for ( auto &&name : showNames )
@@ -248,6 +271,7 @@ void CMissingEpisodes::slotMediaChanged()
         curr->setCheckState( 0, trackEpisodes ? Qt::CheckState::Checked : Qt::CheckState::Unchecked );
     }
     fImpl->showsFilter->resizeColumnToContents( 0 );
+    fImpl->showsFilter->blockSignals( false );
     connect( fImpl->showsFilter, &QTreeWidget::itemChanged, this, &CMissingEpisodes::slotSearchByShowNameChanged );
     slotSearchByShowNameChanged();
 }
@@ -256,7 +280,7 @@ std::map< QString, std::shared_ptr< SShowFilter > > CMissingEpisodes::getShowFil
 {
     if ( !fImpl->showsFilter->topLevelItemCount() )
     {
-        return fOrigFilter;
+        return fCurrFilter;
     }
 
     std::map< QString, std::shared_ptr< SShowFilter > > retVal;

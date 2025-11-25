@@ -108,6 +108,8 @@ private:
     std::map< QString, std::shared_ptr< SShowFilter > > loadShowFilter() const;
     void saveShowFilter();
 
+    bool filterChanged( const std::map< QString, std::shared_ptr< SShowFilter > > &currFilter );
+
     void showPrimaryServer();
     std::shared_ptr< CServerInfo > getCurrentServerInfo() const;
     std::shared_ptr< CServerInfo > getServerInfo( QModelIndex idx ) const;
@@ -121,7 +123,7 @@ private:
 
     QPointer< QAction > fActionSearchForAll;
     QPointer< QToolBar > fToolBar{ nullptr };
-    std::map< QString, std::shared_ptr< SShowFilter > > fOrigFilter;
+    std::map< QString, std::shared_ptr< SShowFilter > > fCurrFilter;
 
     CServerFilterModel *fServerFilterModel{ nullptr };
     CMediaMissingFilterModel *fMissingMediaModel{ nullptr };
