@@ -162,6 +162,10 @@ QVariant CMediaModel::data( const QModelIndex &index, int role /*= Qt::DisplayRo
     {
         return mediaData->seriesName();
     }
+    if ( role == ECustomRoles::eSeriesIDRole )
+    {
+        return mediaData->seriesID();
+    }
     if ( role == ECustomRoles::eSeasonNumRole )
     {
         return mediaData->season().has_value() ? mediaData->season().value() : QVariant();
@@ -259,10 +263,16 @@ void CMediaModel::addMediaInfo( const QString &serverName, std::shared_ptr< CMed
 {
     mediaData->loadData( serverName, mediaInfo );
 
-    fMediaMap[ serverName ][ mediaData->getMediaID( serverName ) ] = mediaData;
-
-    fMergeSystem->addMediaInfo( serverName, mediaData );
-    updateMediaData( mediaData );
+    if ( mediaData->mediaType() == "Series" )
+    {
+        fAllSeries[ mediaData->searchKey() ] = mediaData;
+    }
+    else
+    {
+        fMediaMap[ serverName ][ mediaData->getMediaID( serverName ) ] = mediaData;
+        fMergeSystem->addMediaInfo( serverName, mediaData );
+        updateMediaData( mediaData );
+    }
 }
 
 void CMediaModel::updateMediaData( std::shared_ptr< CMediaData > mediaData )
@@ -439,10 +449,10 @@ std::shared_ptr< CMediaData > CMediaModel::loadMedia( const QString &serverName,
         }
 
         id = QString( "SID%1-S%2%3E%4" )   //
-                .arg( seriesID, 8, QChar( '0' ) )   //
-                .arg( seasonID, 2, 10, QChar( '0' ) )   //
-                .arg( endEpisodeID.has_value() ? QString( "%1" ).arg( endEpisodeID.value(), 2, 10, QChar( '0' ) ) : QString() )   //
-                .arg( episodeID, 2, 10, QChar( '0' ) );
+                 .arg( seriesID, 8, QChar( '0' ) )   //
+                 .arg( seasonID, 2, 10, QChar( '0' ) )   //
+                 .arg( endEpisodeID.has_value() ? QString( "%1" ).arg( endEpisodeID.value(), 2, 10, QChar( '0' ) ) : QString() )   //
+                 .arg( episodeID, 2, 10, QChar( '0' ) );
     }
 
     auto pos2 = ( *pos ).second.find( id );
@@ -618,20 +628,14 @@ void CMediaModel::addMovieStub( const SMovieStub &movieStub, std::function< bool
     addMedia( mediaData, true );
 }
 
-std::set< QString > CMediaModel::getKnownShows() const
+std::set< QString > CMediaModel::getAllSeriesNames() const
 {
-    std::set< QString > knownShows;
-    for ( auto &&ii : fAllMedia )
+    std::set< QString > retVal;
+    for ( auto &&ii : fAllSeries )
     {
-        if ( ii->mediaType() != "Episode" )
-            continue;
-        auto name = ii->seriesName();
-        if ( name.isEmpty() )
-            continue;
-
-        knownShows.insert( ii->seriesName() );
+        retVal.insert( ii.first );
     }
-    return knownShows;
+    return retVal;
 }
 
 std::shared_ptr< CMediaData > CMediaModel::findMedia( const QString &name, int year ) const
@@ -815,7 +819,7 @@ CMediaMissingFilterModel::CMediaMissingFilterModel( std::shared_ptr< CSettings >
         } );
 }
 
-void CMediaMissingFilterModel::setShowFilter( const std::map< QString, std::shared_ptr< SShowFilter > > &filter )
+void CMediaMissingFilterModel::setShowFilter( const TFilterMap &filter )
 {
     fShowFilter = filter;
 
@@ -830,12 +834,23 @@ bool CMediaMissingFilterModel::filterAcceptsRow( int source_row, const QModelInd
     if ( !sourceModel() )
         return true;
     auto childIdx = sourceModel()->index( source_row, 0, source_parent );
+    if ( !childIdx.isValid() )
+        return false;
+
+    auto seriesID = childIdx.data( CMediaModel::eSeriesIDRole ).toString();
+    if ( seriesID.isEmpty() )
+        return false;
+
     auto seriesName = childIdx.data( CMediaModel::eSeriesNameRole ).toString();
     if ( seriesName.isEmpty() )
         return false;
 
-    auto pos = fShowFilter.find( seriesName );
-    auto hasShowFilter = pos != fShowFilter.end();
+    if ( !fShowFilter.has_value() )
+        return true;
+
+    auto key = QString( "%1-%2" ).arg( seriesName ).arg( seriesID );
+    auto pos = fShowFilter.value().find( key );
+    auto hasShowFilter = pos != fShowFilter.value().end();
     if ( hasShowFilter )
     {
         auto &&filter = ( *pos ).second;
@@ -921,8 +936,18 @@ QVariant CMediaMissingFilterModel::data( const QModelIndex &index, int role /*= 
 
 bool SShowFilter::operator==( const SShowFilter &rhs ) const
 {
+    if ( fSeriesID != rhs.fSeriesID )
+        return false;
+
     if ( fSeriesName != rhs.fSeriesName )
         return false;
+
+    if ( fPremierYear != rhs.fPremierYear )
+        return false;
+
+    if ( fTrackEpisodes != rhs.fTrackEpisodes )
+        return false;
+
     if ( fMinSeason.has_value() != rhs.fMinSeason.has_value() )
         return false;
     if ( fMinSeason.has_value() && ( fMinSeason.value() != rhs.fMinSeason.value() ) )
@@ -933,14 +958,13 @@ bool SShowFilter::operator==( const SShowFilter &rhs ) const
     if ( fMaxSeason.has_value() && ( fMaxSeason.value() != rhs.fMaxSeason.value() ) )
         return false;
 
-    if ( fTrackEpisodes != rhs.fTrackEpisodes )
-        return false;
-
     return true;
 }
 
-SShowFilter::SShowFilter( const QString &name, const QString &min, const QString &max, bool trackEpisodes ) :
+SShowFilter::SShowFilter( const QString &seriesID, const QString &name, int premierYear, const QString &min, const QString &max, bool trackEpisodes ) :
     fSeriesName( name ),
+    fPremierYear( premierYear ),
+    fSeriesID( seriesID ),
     fTrackEpisodes( trackEpisodes )
 {
     if ( !min.isEmpty() )
@@ -959,7 +983,7 @@ SShowFilter::SShowFilter( const QString &name, const QString &min, const QString
     }
 }
 
-SShowFilter::SShowFilter( const QString &name, const QVariant &min, const QVariant &max, bool trackEpisodes ) :
-    SShowFilter( name, ( min.isValid() && min.canConvert< QString >() && min.canConvert< int >() ) ? min.toString() : QString(), ( max.isValid() && max.canConvert< QString >() && max.canConvert< int >() ) ? max.toString() : QString(), trackEpisodes )
+SShowFilter::SShowFilter( const QString &seriesID, const QString &name, int premierYear, const QVariant &min, const QVariant &max, bool trackEpisodes ) :
+    SShowFilter( seriesID, name, premierYear, ( min.isValid() && min.canConvert< QString >() && min.canConvert< int >() ) ? min.toString() : QString(), ( max.isValid() && max.canConvert< QString >() && max.canConvert< int >() ) ? max.toString() : QString(), trackEpisodes )
 {
 }

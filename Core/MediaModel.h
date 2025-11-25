@@ -49,7 +49,8 @@ public:
         eOnServerRole,
         eColumnsPerServerRole,
         ePerServerColumnRole,
-        eShowInSearchMovieRole
+        eShowInSearchMovieRole,
+        eSeriesIDRole
     };
 
     enum EColumns
@@ -110,10 +111,14 @@ public:
     void addMedia( const std::shared_ptr< CMediaData > &media, bool emitUpdate );
 
     using TMediaSet = std::unordered_set< std::shared_ptr< CMediaData > >;
+    using TSeriesMap = std::map< QString, std::shared_ptr< CMediaData > >;
 
     TMediaSet getAllMedia() const { return fAllMedia; }
-    std::set< QString > getKnownShows() const;
     bool hasMedia() const { return !fAllMedia.empty(); }
+
+    bool hasSeriesNames() const { return !fAllSeries.empty(); }
+    TSeriesMap getAllSeries() const { return fAllSeries; }
+    std::set< QString > getAllSeriesNames() const;
 
     std::shared_ptr< CMediaData > findMedia( const QString &name, int year ) const;
 
@@ -152,6 +157,7 @@ private:
     std::unique_ptr< CMergeMedia > fMergeSystem;
 
     TMediaSet fAllMedia;
+    TSeriesMap fAllSeries;
     std::map< QString, TMediaIDToMediaData > fMediaMap;   // serverName -> mediaID -> mediaData
 
     std::vector< std::shared_ptr< CMediaData > > fData;
@@ -191,17 +197,21 @@ public:
 struct SShowFilter
 {
     SShowFilter() = default;
-    SShowFilter( const QString &name, const QString &min, const QString &max, bool trackEpisodes );
-    SShowFilter( const QString &name, const QVariant &min, const QVariant &max, bool trackEpisodes );
+    SShowFilter( const QString &seriesID, const QString &name, int premierYear, const QString &min, const QString &max, bool trackEpisodes );
+    SShowFilter( const QString &seriesID, const QString &name, int premierYear, const QVariant &min, const QVariant &max, bool trackEpisodes );
 
-    bool operator==(const SShowFilter &rhs) const;
+    bool operator==( const SShowFilter &rhs ) const;
     bool operator!=( const SShowFilter &rhs ) const { return !operator==( rhs ); }
+    QString fSeriesID;
     QString fSeriesName;
+    int fPremierYear{ 0 };
     std::optional< int > fMinSeason;
     std::optional< int > fMaxSeason;
 
     bool fTrackEpisodes{ true };
 };
+
+using TFilterMap = std::map< QString, std::shared_ptr< SShowFilter > >;
 
 class CMediaMissingFilterModel : public QSortFilterProxyModel
 {
@@ -210,7 +220,7 @@ class CMediaMissingFilterModel : public QSortFilterProxyModel
 public:
     CMediaMissingFilterModel( std::shared_ptr< CSettings > settings, QObject *parent );
 
-    void setShowFilter( const std::map< QString, std::shared_ptr< SShowFilter > > &filter );
+    void setShowFilter( const TFilterMap &filter );
     virtual bool filterAcceptsRow( int source_row, const QModelIndex &source_parent ) const override;
     virtual bool filterAcceptsColumn( int source_column, const QModelIndex &source_parent ) const override;
     virtual void sort( int column, Qt::SortOrder order = Qt::AscendingOrder ) override;
@@ -221,7 +231,7 @@ public:
 private:
     std::shared_ptr< CSettings > fSettings;
     std::optional< QRegularExpression > fRegEx;
-    std::map< QString, std::shared_ptr< SShowFilter > > fShowFilter;
+    std::optional< TFilterMap > fShowFilter;
 };
 
 #endif
