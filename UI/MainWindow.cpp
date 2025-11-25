@@ -204,7 +204,7 @@ void CMainWindow::slotSettings()
 {
     CSettingsDlg settings( fSettings, fServerModel, fSyncSystem, this );
     settings.setKnownUsers( fUsersModel->getAllUsers( true ) );
-    settings.setKnownShows( fMediaModel->getKnownShows() );
+    settings.setKnownShows( fMediaModel->getAllSeriesNames() );
     settings.exec();
     if ( fSettings->changed() )
     {
