@@ -908,3 +908,48 @@ QVariant CMediaMissingFilterModel::data( const QModelIndex &index, int role /*= 
     }
     return {};
 }
+
+bool SShowFilter::operator==( const SShowFilter &rhs ) const
+{
+    if ( fSeriesName != rhs.fSeriesName )
+        return false;
+    if ( fMinSeason.has_value() != rhs.fMinSeason.has_value() )
+        return false;
+    if ( fMinSeason.has_value() && ( fMinSeason.value() != rhs.fMinSeason.value() ) )
+        return false;
+
+    if ( fMaxSeason.has_value() != rhs.fMaxSeason.has_value() )
+        return false;
+    if ( fMaxSeason.has_value() && ( fMaxSeason.value() != rhs.fMaxSeason.value() ) )
+        return false;
+
+    if ( fTrackEpisodes != rhs.fTrackEpisodes )
+        return false;
+
+    return true;
+}
+
+SShowFilter::SShowFilter( const QString &name, const QString &min, const QString &max, bool trackEpisodes ) :
+    fSeriesName( name ),
+    fTrackEpisodes( trackEpisodes )
+{
+    if ( !min.isEmpty() )
+    {
+        bool aOK = false;
+        auto tmp = min.toInt( &aOK );
+        if ( aOK )
+            fMinSeason = tmp;
+    }
+    if ( !max.isEmpty() )
+    {
+        bool aOK = false;
+        auto tmp = max.toInt( &aOK );
+        if ( aOK )
+            fMaxSeason = tmp;
+    }
+}
+
+SShowFilter::SShowFilter( const QString &name, const QVariant &min, const QVariant &max, bool trackEpisodes ) :
+    SShowFilter( name, ( min.isValid() && min.canConvert< QString >() && min.canConvert< int >() ) ? min.toString() : QString(), ( max.isValid() && max.canConvert< QString >() && max.canConvert< int >() ) ? max.toString() : QString(), trackEpisodes )
+{
+}

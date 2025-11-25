@@ -191,30 +191,11 @@ public:
 struct SShowFilter
 {
     SShowFilter() = default;
-    SShowFilter( const QString &name, const QString &min, const QString &max, bool trackEpisodes ) :
-        fSeriesName( name ),
-        fTrackEpisodes( trackEpisodes )
-    {
-        if ( !min.isEmpty() )
-        {
-            bool aOK = false;
-            auto tmp = min.toInt( &aOK );
-            if ( aOK )
-                fMinSeason = tmp;
-        }
-        if ( !max.isEmpty() )
-        {
-            bool aOK = false;
-            auto tmp = max.toInt( &aOK );
-            if ( aOK )
-                fMaxSeason = tmp;
-        }
-    }
-    SShowFilter( const QString &name, const QVariant &min, const QVariant &max, bool trackEpisodes ) :
-        SShowFilter( name, ( min.isValid() && min.canConvert< QString >() && min.canConvert< int >() ) ? min.toString() : QString(), ( max.isValid() && max.canConvert< QString >() && max.canConvert< int >() ) ? max.toString() : QString(), trackEpisodes )
-    {
-    }
+    SShowFilter( const QString &name, const QString &min, const QString &max, bool trackEpisodes );
+    SShowFilter( const QString &name, const QVariant &min, const QVariant &max, bool trackEpisodes );
 
+    bool operator==(const SShowFilter &rhs) const;
+    bool operator!=( const SShowFilter &rhs ) const { return !operator==( rhs ); }
     QString fSeriesName;
     std::optional< int > fMinSeason;
     std::optional< int > fMaxSeason;
