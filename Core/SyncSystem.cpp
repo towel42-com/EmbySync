@@ -93,6 +93,8 @@ QString toString( ERequestType request )
             return "GetMissingEpisodes";
         case ERequestType::eGetAllEpisodes:
             return "GetAllEpisodes";
+        case ERequestType::eGetAllShows:
+            return "GetAllShows";
         case ERequestType::eGetMissingTVDBid:
             return "GetMissingTVDBid";
         case ERequestType::eGetAllMovies:
@@ -306,6 +308,31 @@ bool CSyncSystem::loadAllEpisodes( std::shared_ptr< CUserData > userData, std::s
 
     emit sigAddToLog( EMsgType::eInfo, QString( "Loading All Episodes on server '%1' using admin user '%2'" ).arg( serverInfo->displayName() ).arg( userData->userName( serverInfo->keyName() ) ) );
     requestAllEpisodes( serverInfo->keyName() );
+    return true;
+}
+
+bool CSyncSystem::loadAllShows( std::shared_ptr< const CServerInfo > serverInfo )
+{
+    auto adminUser = findFirstAdminUser( serverInfo );
+    if ( !adminUser )
+        return false;
+
+    return loadAllShows( adminUser, serverInfo );
+}
+
+bool CSyncSystem::loadAllShows( std::shared_ptr< CUserData > userData, std::shared_ptr< const CServerInfo > serverInfo )
+{
+    if ( !serverInfo || !serverInfo->isEnabled() )
+        return false;
+
+    if ( !userData->isAdmin( serverInfo->keyName() ) )
+        return false;
+
+    if ( !setCurrentUser( ETool::eMissingEpisodes, userData, false ) )
+        return false;
+
+    emit sigAddToLog( EMsgType::eInfo, QString( "Loading All Shows on server '%1' using admin user '%2'" ).arg( serverInfo->displayName() ).arg( userData->userName( serverInfo->keyName() ) ) );
+    requestAllShows( serverInfo->keyName() );
     return true;
 }
 
@@ -846,8 +873,11 @@ void CSyncSystem::slotMergeMedia( ERequestType requestType )
         return;
     }
 
-    if ( !fMediaModel->mergeMedia( fProgressSystem ) )
-        clearCurrUser();
+    if ( requestType != ERequestType::eGetAllShows )
+    {
+        if ( !fMediaModel->mergeMedia( fProgressSystem ) )
+            clearCurrUser();
+    }
 
     switch ( requestType )
     {
@@ -858,6 +888,9 @@ void CSyncSystem::slotMergeMedia( ERequestType requestType )
         case ERequestType::eGetAllEpisodes:
             emit sigAllEpisodesLoaded();
             emit sigUserMediaLoaded();
+            break;
+        case ERequestType::eGetAllShows:
+            emit sigAllShowsLoaded();
             break;
         case ERequestType::eGetMissingTVDBid:
             emit sigMissingTVDBidLoaded();
@@ -1010,6 +1043,9 @@ void CSyncSystem::slotRequestFinished( QNetworkReply *reply )
             case ERequestType::eGetAllEpisodes:
                 emit sigAllEpisodesLoaded();
                 break;
+            case ERequestType::eGetAllShows:
+                emit sigAllShowsLoaded();
+                break;
             case ERequestType::eGetMissingTVDBid:
                 emit sigMissingTVDBidLoaded();
                 break;
@@ -1109,6 +1145,20 @@ void CSyncSystem::slotRequestFinished( QNetworkReply *reply )
                     handleAllEpisodesResponse( serverName, data );
 
                     if ( isLastRequestOfType( ERequestType::eGetAllEpisodes ) )
+                    {
+                        fProgressSystem->resetProgress();
+                        slotMergeMedia( requestType );
+                    }
+                }
+                break;
+            }
+        case ERequestType::eGetAllShows:
+            {
+                if ( !fProgressSystem->wasCanceled() )
+                {
+                    handleAllShowsResponse( serverName, data );
+
+                    if ( isLastRequestOfType( ERequestType::eGetAllShows ) )
                     {
                         fProgressSystem->resetProgress();
                         slotMergeMedia( requestType );
@@ -1812,7 +1862,7 @@ std::list< std::shared_ptr< CMediaData > > CSyncSystem::loadMediaArray( const QJ
     return retVal;
 }
 
-void CSyncSystem::requestMissingEpisodes( const QString &serverName  )
+void CSyncSystem::requestMissingEpisodes( const QString &serverName )
 {
     //http://‌‍‍localhost‌:8095/emby/Shows/Missing?
     // IncludeItemTypes=Episode&
@@ -1886,6 +1936,43 @@ void CSyncSystem::requestAllEpisodes( const QString &serverName )
     setRequestType( reply, ERequestType::eGetAllEpisodes );
 }
 
+void CSyncSystem::requestAllShows( const QString &serverName )
+{
+    //http://‌‍‍localhost‌:8095/emby/Shows/?
+    // IncludeItemTypes=Episode&
+    // Fields=BasicSyncInfo,CanDelete,CanDownload,PrimaryImageAspectRatio,ProductionYear,Status,EndDate,CommunityRating,OfficialRating,CriticRating,PremiereDate&
+    // StartIndex=0&
+    // SortBy=SeriesSortName,ParentIndexNumber,IndexNumber,SortName&
+    // SortOrder=Ascending&
+    // Recursive=true&
+    // Limit=30&
+    // UserId=USERID
+    std::list< std::pair< QString, QString > > queryItems =   //
+        {
+            std::make_pair( "IncludeItemTypes", "Series" ),   //
+            std::make_pair( "Fields", "BasicSyncInfo,CanDelete,CanDownload,PrimaryImageAspectRatio,ProductionYear,Status,EndDate,CommunityRating,OfficialRating,CriticRating,PremiereDate" ),   //
+            std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SeriesSortName,SortName" ),   //
+            std::make_pair( "SortOrder", "Ascending" ),   //
+            std::make_pair( "Recursive", "True" )   //
+        };
+
+    queryItems.emplace_back( "UserId", currUser().second->getUserID( serverName ) );   //
+
+    // ItemsService
+    auto &&url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Items" ), queryItems );
+    if ( !url.isValid() )
+        return;
+
+    qDebug().noquote().nospace() << url;
+    auto request = QNetworkRequest( url );
+
+    emit sigAddToLog( EMsgType::eInfo, QString( "Requesting all episodes from server '%2'" ).arg( serverName ) );
+
+    auto reply = makeRequest( request );
+    setServerName( reply, serverName );
+    setRequestType( reply, ERequestType::eGetAllShows );
+}
+
 void CSyncSystem::requestMissingTVDBid( const QString &serverName )
 {
     std::list< std::pair< QString, QString > > queryItems = {
@@ -1920,7 +2007,12 @@ void CSyncSystem::handleMissingEpisodesResponse( const QString &serverName, cons
 
 void CSyncSystem::handleAllEpisodesResponse( const QString &serverName, const QByteArray &data )
 {
-    handleGetMediaListResponse( serverName, data, tr( "Loading All Episodes" ), tr( "Server '%1' has %2 episodes" ), tr( "Loading %2 missing episodes" ) );
+    handleGetMediaListResponse( serverName, data, tr( "Loading All Episodes" ), tr( "Server '%1' has %2 episodes" ), tr( "Loading %2 all episodes" ) );
+}
+
+void CSyncSystem::handleAllShowsResponse( const QString &serverName, const QByteArray &data )
+{
+    handleGetMediaListResponse( serverName, data, tr( "Loading All Shows" ), tr( "Server '%1' has %2 shows" ), tr( "Loading %2 all shows" ) );
 }
 
 void CSyncSystem::handleAllMoviesResponse( const QString &serverName, const QByteArray &data )
