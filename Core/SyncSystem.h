@@ -65,6 +65,7 @@ enum class ETool
     ePlayState,
     eUserInfo,
     eMissingEpisodes,
+    eAllEpisodes,
     eMissingTMDBId,
     eMissingMovies,
     eMissingCollections
@@ -89,6 +90,7 @@ enum class ERequestType
     eSetConnectedID,
     eUpdateUserData,
     eGetMissingEpisodes,
+    eGetAllEpisodes,
     eGetMissingTVDBid,
     eGetAllMovies,
     eGetAllCollections,
@@ -170,6 +172,9 @@ public:
     bool loadMissingEpisodes( std::shared_ptr< const CServerInfo > serverInfo );   // return false if no admin user found on server
     bool loadMissingEpisodes( std::shared_ptr< CUserData > userData, std::shared_ptr< const CServerInfo > serverInfo );
 
+    bool loadAllEpisodes( std::shared_ptr< const CServerInfo > serverInfo );   // return false if no admin user found on server
+    bool loadAllEpisodes( std::shared_ptr< CUserData > userData, std::shared_ptr< const CServerInfo > serverInfo );
+
     bool loadMissingTVDBid( std::shared_ptr< const CServerInfo > serverInfo );   // return false if no admin user found on server
     bool loadMissingTVDBid( std::shared_ptr< CUserData > userData, std::shared_ptr< const CServerInfo > serverInfo );
 
@@ -208,6 +213,7 @@ Q_SIGNALS:
     void sigLoadingUsersFinished();
     void sigUserMediaLoaded();
     void sigMissingEpisodesLoaded();
+    void sigAllEpisodesLoaded();
     void sigMissingTVDBidLoaded();
     void sigAllMoviesLoaded();
     void sigAllCollectionsLoaded();
@@ -293,6 +299,9 @@ private:
 
     void requestMissingEpisodes( const QString &serverName );
     void handleMissingEpisodesResponse( const QString &serverName, const QByteArray &data );
+
+    void requestAllEpisodes( const QString &serverName );
+    void handleAllEpisodesResponse( const QString &serverName, const QByteArray &data );
 
     void requestAllMovies( const QString &serverName );
     void handleAllMoviesResponse( const QString &serverName, const QByteArray &data );
