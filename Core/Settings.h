@@ -45,13 +45,14 @@ namespace Ui
     class CSettings;
 }
 
+struct SShowFilter;
+using TFilterMap = std::map< QString, std::shared_ptr< SShowFilter > >;
+
 class CSettings
 {
 public:
     CSettings( std::shared_ptr< CServerModel > serverModel );
     CSettings( bool saveOnDelete, std::shared_ptr< CServerModel > serverModel );
-
-    void loadSearchServers();
 
     virtual ~CSettings();
 
@@ -148,13 +149,21 @@ public:
     void setIgnoreShowList( const QStringList &value );
 
     void addRecentProject( const QString &fileName );
-    QStringList recentProjectList() const;
+    static QStringList recentProjectList();
+    static QString latestProjectSettingsFile();
 
     void setPrimaryServer( const QString &serverName );
     QString primaryServer() const;
 
     std::list< std::shared_ptr< CServerInfo > > searchServers() const { return fSearchServers; }
     void setSearchServers( const std::list< std::shared_ptr< CServerInfo > > &servers ) { fSearchServers = servers; }
+    void loadSearchServers();
+
+    int enabledServerCount() const;
+    std::shared_ptr< CServerInfo > firstEnabledServer() const;
+
+    TFilterMap missingShowFilterMap() const;
+    void setMissingShowFilterMap( const TFilterMap &map );
 
 private:
     bool loadSearchServers( QJsonDocument &json, const std::function< void( const QString &title, const QString &msg ) > &errorFunc );

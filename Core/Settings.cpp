@@ -23,7 +23,7 @@
 #include "Settings.h"
 #include "ServerModel.h"
 #include "Core/ServerInfo.h"
-
+#include "Core/ShowFilter.h"
 #include <QJsonDocument>
 #include <QFile>
 #include <QJsonParseError>
@@ -207,6 +207,71 @@ bool CSettings::loadSearchServers( QJsonDocument &json, const std::function< voi
     return true;
 }
 
+int CSettings::enabledServerCount() const
+{
+    return fServerModel ? fServerModel->enabledServerCount() : 0;
+}
+
+std::shared_ptr< CServerInfo > CSettings::firstEnabledServer() const
+{
+    if ( fServerModel )
+        return fServerModel->firstEnabledServer();
+    return {};
+}
+
+TFilterMap CSettings::missingShowFilterMap() const
+{
+    TFilterMap filterMap;
+
+    QSettings settings;
+    settings.beginGroup( "MissingEpisodes" );
+    int cnt = settings.beginReadArray( "Show" );
+    for ( int ii = 0; ii < cnt; ++ii )
+    {
+        settings.setArrayIndex( ii );
+        auto name = settings.value( "Name" ).toString();
+        auto premierYear = settings.value( "Premier Year" ).toInt();
+        auto seriesID = settings.value( "SeriesID" ).toString();
+
+        QVariant minSeason;
+        if ( settings.contains( "MinSeason" ) )
+            minSeason = settings.value( "MinSeason" );
+
+        QVariant maxSeason;
+        if ( settings.contains( "MaxSeason" ) )
+            maxSeason = settings.value( "MaxSeason" );
+
+        auto trackEpisodes = settings.value( "TrackEpisodes", true ).toBool();
+
+        auto key = QString( "%1-%2" ).arg( name ).arg( seriesID );
+        filterMap[ key ] = std::make_shared< SShowFilter >( seriesID, name, premierYear, minSeason, maxSeason, trackEpisodes );
+    }
+    settings.endArray();
+    settings.endGroup();
+
+    return filterMap;
+}
+
+void CSettings::setMissingShowFilterMap( const TFilterMap &map )
+{
+    QSettings settings;
+    settings.beginGroup( "MissingEpisodes" );
+    settings.beginWriteArray( "Show", static_cast< int >( map.size() ) );
+    int showNum = 0;
+    for ( auto &&[ name, curr ] : map )
+    {
+        settings.setArrayIndex( showNum++ );
+        settings.setValue( "Name", curr->fSeriesName );
+        settings.setValue( "SeriesID", curr->fSeriesID );
+        settings.setValue( "Premier Year", curr->fPremierYear );
+        settings.setValue( "MinSeason", curr->fMinSeason.has_value() ? curr->fMinSeason.value() : QVariant() );
+        settings.setValue( "MaxSeason", curr->fMaxSeason.has_value() ? curr->fMaxSeason.value() : QVariant() );
+        settings.setValue( "TrackEpisodes", curr->fTrackEpisodes );
+    }
+    settings.endArray();
+    settings.endGroup();
+}
+
 void CSettings::addRecentProject( const QString &fileName )
 {
     auto fileList = recentProjectList();
@@ -217,10 +282,26 @@ void CSettings::addRecentProject( const QString &fileName )
     settings.setValue( "RecentProjects", fileList );
 }
 
-QStringList CSettings::recentProjectList() const
+QStringList CSettings::recentProjectList()
 {
     QSettings settings;
     return settings.value( "RecentProjects", QStringList() ).toStringList();
+}
+
+QString CSettings::latestProjectSettingsFile()
+{
+    auto recentProjects = recentProjectList();
+    if ( recentProjects.isEmpty() )
+        return {};
+
+    for ( int ii = 0; ii < recentProjects.size(); ++ii )
+    {
+        if ( QFile( recentProjects[ ii ] ).exists() )
+        {
+            return recentProjects[ ii ];
+        }
+    }
+    return {};
 }
 
 void CSettings::setPrimaryServer( const QString &serverName )
