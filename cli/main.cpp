@@ -28,6 +28,8 @@
 #include <QCoreApplication>
 #include <QCommandLineParser>
 
+#include <conio.h>
+
 void showVersion()
 {
     std::cout << NVersion::APP_NAME.toStdString() << " - " << NVersion::getVersionString( true, false ).toStdString() << "\n";
@@ -133,5 +135,8 @@ int main( int argc, char **argv )
     }
 
     int retVal = appl.exec();
+    std::cout << "Press any key to close this window...";
+    _getche();
+
     return retVal;
 }
