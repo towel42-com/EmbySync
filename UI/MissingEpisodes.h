@@ -35,7 +35,6 @@ class QAction;
 class QToolBar;
 class QTreeWidgetItem;
 
-struct SShowFilter;
 namespace Ui
 {
     class CMissingEpisodes;
@@ -52,6 +51,7 @@ class CTabUIInfo;
 class CServerFilterModel;
 class CMediaMissingFilterModel;
 
+struct SShowFilter;
 using TFilterMap = std::map< QString, std::shared_ptr< SShowFilter > >;
 
 class CMissingEpisodes : public CTabPageBase

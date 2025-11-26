@@ -111,22 +111,7 @@ void CMissingEpisodes::saveShowFilter()
     if ( !filterChanged( currFilter ) )
         return;
 
-    QSettings settings;
-    settings.beginGroup( "MissingEpisodes" );
-    settings.beginWriteArray( "Show", static_cast< int >( currFilter.size() ) );
-    int showNum = 0;
-    for ( auto &&[ name, curr ] : currFilter )
-    {
-        settings.setArrayIndex( showNum++ );
-        settings.setValue( "Name", curr->fSeriesName );
-        settings.setValue( "SeriesID", curr->fSeriesID );
-        settings.setValue( "Premier Year", curr->fPremierYear );
-        settings.setValue( "MinSeason", curr->fMinSeason.has_value() ? curr->fMinSeason.value() : QVariant() );
-        settings.setValue( "MaxSeason", curr->fMaxSeason.has_value() ? curr->fMaxSeason.value() : QVariant() );
-        settings.setValue( "TrackEpisodes", curr->fTrackEpisodes );
-    }
-    settings.endArray();
-    settings.endGroup();
+    fSettings->setMissingShowFilterMap( currFilter );
     fCurrFilter = currFilter;
 }
 
@@ -212,35 +197,7 @@ void CMissingEpisodes::initShowFilter()
     if ( fCurrFilter.has_value() )
         return;
 
-    TFilterMap filterMap;
-
-    QSettings settings;
-    settings.beginGroup( "MissingEpisodes" );
-    int cnt = settings.beginReadArray( "Show" );
-    for ( int ii = 0; ii < cnt; ++ii )
-    {
-        settings.setArrayIndex( ii );
-        auto name = settings.value( "Name" ).toString();
-        auto premierYear = settings.value( "Premier Year" ).toInt();
-        auto seriesID = settings.value( "SeriesID" ).toString();
-
-        QVariant minSeason;
-        if ( settings.contains( "MinSeason" ) )
-            minSeason = settings.value( "MinSeason" );
-
-        QVariant maxSeason;
-        if ( settings.contains( "MaxSeason" ) )
-            maxSeason = settings.value( "MaxSeason" );
-
-        auto trackEpisodes = settings.value( "TrackEpisodes", true ).toBool();
-
-        auto key = QString( "%1-%2" ).arg( name ).arg( seriesID );
-        filterMap[ key ] = std::make_shared< SShowFilter >( seriesID, name, premierYear, minSeason, maxSeason, trackEpisodes );
-    }
-    settings.endArray();
-    settings.endGroup();
-
-    fCurrFilter = filterMap;
+    fCurrFilter = fSettings->missingShowFilterMap();
 }
 
 TFilterMap CMissingEpisodes::getShowFilters()

@@ -121,6 +121,28 @@ std::shared_ptr< CServerInfo > CServerModel::getServerInfo( const QModelIndex &i
     return fServers[ idx.row() ];
 }
 
+int CServerModel::enabledServerCount() const
+{
+    int retVal = 0;
+    for(auto server : fServers)
+    {
+        if ( server->isEnabled() )
+            retVal++;
+    }
+    return retVal;
+}
+
+std::shared_ptr< CServerInfo > CServerModel::firstEnabledServer() const
+{
+    int retVal = 0;
+    for ( auto server : fServers )
+    {
+        if ( server->isEnabled() )
+            return server;
+    }
+    return {};
+}
+
 void CServerModel::save( QJsonObject &root )
 {
     auto servers = QJsonDocument().array();
@@ -330,7 +352,10 @@ std::shared_ptr< CServerInfo > CServerModel::enableServer( const QString &server
             ii->setIsEnabled( true );
         }
         else if ( disableOthers )
+        {
             ii->setIsEnabled( false );
+        }
+
         if ( isServer && retVal )
         {
             msg = QString( "Multiple servers match '%1'." ).arg( serverName );

@@ -50,6 +50,9 @@ public:
     std::shared_ptr< CServerInfo > getServerInfo( const QModelIndex &idx ) const;
     std::shared_ptr< CServerInfo > getServerInfo( int serverNum ) const;
 
+    int enabledServerCount() const;;
+    std::shared_ptr< CServerInfo > firstEnabledServer() const;
+
     void setServers( const std::vector< std::shared_ptr< CServerInfo > > &servers );
 
     int enabledServerCnt() const;

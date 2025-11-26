@@ -215,18 +215,10 @@ void CMainWindow::slotSettings()
 
 void CMainWindow::slotLoadLastProject()
 {
-    auto recentProjects = fSettings->recentProjectList();
-    if ( !recentProjects.isEmpty() )
+    auto lastProject = CSettings::latestProjectSettingsFile();
+    if ( !lastProject.isEmpty() )
     {
-        for ( int ii = 0; ii < recentProjects.size(); ++ii )
-        {
-            if ( QFile( recentProjects[ ii ] ).exists() )
-            {
-                auto project = recentProjects[ ii ];
-                QTimer::singleShot( 0, [ this, project ]() { loadFile( project ); } );
-                break;
-            }
-        }
+        QTimer::singleShot( 0, [ this, lastProject ]() { loadFile( lastProject ); } );
     }
 }
 
@@ -289,7 +281,7 @@ void CMainWindow::slotRecentMenuAboutToShow()
 {
     fImpl->menuLoadRecent->clear();
 
-    auto recentProjects = fSettings->recentProjectList();
+    auto recentProjects = CSettings::recentProjectList();
     int num = 0;
     for ( auto &&ii : recentProjects )
     {
