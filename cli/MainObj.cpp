@@ -42,6 +42,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QLocale>
 
 CMainObj::CMainObj( const QString &settingsFile, const QString &mode, QObject *parent /*= nullptr*/ ) :
     QObject( parent ),
@@ -58,6 +59,10 @@ CMainObj::CMainObj( const QString &settingsFile, const QString &mode, QObject *p
         return;
     }
 
+    if ( fSettings->enabledServerCount() == 1 )
+    {
+        fSelectedServerToProcess = fSettings->firstEnabledServer()->displayName();
+    }
     auto userRegExList = fSettings->syncUserList();
     QStringList syncUsers;
     for ( auto &&ii : userRegExList )
@@ -102,12 +107,18 @@ CMainObj::CMainObj( const QString &settingsFile, const QString &mode, QObject *p
     progressSystem->setSetTitleFunc(
         [ this ]( const QString &title )
         {
+            if ( fQuiet )
+                return;
+
             fCurrentProgress = { 0, title, QString() };
             addToLog( EMsgType::eInfo, std::get< 1 >( fCurrentProgress ) );
         } );
     progressSystem->setIncFunc(
         [ this ]()
         {
+            if ( fQuiet )
+                return;
+
             std::get< 0 >( fCurrentProgress )++;
             static constexpr auto chars = R"(|||///---***---\\\)";
             static auto cnt = strlen( chars );
@@ -117,6 +128,9 @@ CMainObj::CMainObj( const QString &settingsFile, const QString &mode, QObject *p
     progressSystem->setResetFunc(
         [ this ]()
         {
+            if ( fQuiet )
+                return;
+
             if ( std::get< 1 >( fCurrentProgress ) != std::get< 2 >( fCurrentProgress ) )
             {
                 addToLog( EMsgType::eInfo, QString( "Finished '%1'" ).arg( std::get< 1 >( fCurrentProgress ) ) );
@@ -288,7 +302,8 @@ void CMainObj::slotProcessNextUser()
     }
     else if ( fMode == EMode::eCheckMissing )
     {
-        if ( !fSyncSystem->loadMissingEpisodes( currUser, fSelectedServer ) )
+        fUsersToSync.push_back( currUser );
+        if ( !fSyncSystem->loadAllShows( currUser, fSelectedServer ) )
         {
             fErrorString = tr( "No user found with Administrator Privileges on server '%1'" ).arg( fSelectedServer->displayName() );
         }
@@ -315,19 +330,46 @@ void CMainObj::slotProcessMedia()
 
 void CMainObj::slotAllShowsLoaded()
 {
+    if ( fUsersToSync.empty() )
+        return;
+
+    auto currUser = fUsersToSync.front();
+    fUsersToSync.pop_front();
+
+    if ( !fSyncSystem->loadMissingEpisodes( currUser, fSelectedServer ) )
+    {
+        fErrorString = tr( "No user found with Administrator Privileges on server '%1'" ).arg( fSelectedServer->displayName() );
+    }
 }
 
 void CMainObj::slotMissingEpisodesLoaded()
 {
     slotAddToLog( EMsgType::eInfo, "Finished loading missing episodes" );
-    QJsonArray shows;
+
+    auto filterMap = fSettings->missingShowFilterMap();
+
+    std::list< std::shared_ptr< CMediaData > > episodes;
 
     for ( auto &&mediaInfo : *fMediaModel )
     {
-        shows.push_back( mediaInfo->toJson( fSettings, true ) );
+        if ( !SShowFilter::showEpisode( filterMap, mediaInfo ) )
+            continue;
+
+        episodes.push_back( mediaInfo );
     }
-    QJsonDocument doc( shows );
-    std::cout << doc.toJson( QJsonDocument::JsonFormat::Indented ).toStdString() << "\n";
+    if ( episodes.empty() )
+    {
+        std::cout << "No missing episodes were found.\n";
+    }
+    else
+    {
+        std::cout << "There were " << episodes.size() << " missing episodes found.\n";
+        QLocale locale;
+        for ( auto &&ii : episodes )
+        {
+            std::cout << "    " << ii->name().toStdString() << " - " << locale.toString( ii->premiereDate() ).toStdString() << "\n";
+        }
+    }
     QTimer::singleShot( 0, this, &CMainObj::slotProcessNextUser );
 }
 
@@ -343,5 +385,6 @@ bool CMainObj::setMode( const QString &mode )
         fAOK = false;
         return false;
     }
+    fAOK = true;
     return true;
 }

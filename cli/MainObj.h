@@ -53,7 +53,7 @@ public:
     CMainObj( const QString &settingsFile, const QString &mode, QObject *parent = nullptr );
 
     void run();
-    void setSelectiveProcesssServer( const QString &selectedServer ) { this->fSelectedServerToProcess = selectedServer; }
+    void setSelectedServer( const QString &selectedServer ) { this->fSelectedServerToProcess = selectedServer; }
     void setMinimumDate( const QString &minDate );
     void setMinimumDate( const QDate &minDate ) { fMinDate = minDate; }
     void setMaximumDate( const QString &maxDate );

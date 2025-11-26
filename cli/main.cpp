@@ -21,6 +21,7 @@
 // SOFTWARE.
 
 #include "MainObj.h"
+#include "Core/Settings.h"
 
 #include "Version.h"
 #include <iostream>
@@ -45,7 +46,7 @@ int main( int argc, char **argv )
     auto settingsFileOption = QCommandLineOption(
         QStringList() << "settings"
                       << "s",
-        "The settings json file", "Settings file" );
+        "The settings json file", "Settings file", CSettings::latestProjectSettingsFile() );
     parser.addOption( settingsFileOption );
 
     auto modeOption = QCommandLineOption(
@@ -89,36 +90,28 @@ int main( int argc, char **argv )
         return 0;
     }
 
-    std::cout << NVersion::APP_NAME.toStdString() << " - " << NVersion::getVersionString( true, false ).toStdString() << "\n";
-    if ( !parser.isSet( modeOption ) )
+    if ( parser.isSet( versionOption ) )
     {
         showVersion();
-        parser.showHelp();
-        return -1;
+        return 0;
     }
 
     if ( !parser.isSet( quietOption ) )
         showVersion();
 
-    auto mode = parser.value( modeOption ).toLower();
-    if ( parser.isSet( versionOption ) )
+    if ( !parser.isSet( modeOption ) )
     {
-        return 0;
-    }
-
-    if ( !parser.isSet( settingsFileOption ) )
-    {
-        std::cerr << "--settings must be set\n";
-        std::cerr << parser.helpText().toStdString() << "\n";
+        parser.showHelp();
         return -1;
     }
 
     auto settingsFile = parser.value( settingsFileOption );
+    auto mode = parser.value( modeOption ).toLower();
     auto mainObj = std::make_shared< CMainObj >( settingsFile, mode );
     QObject::connect( mainObj.get(), &CMainObj::sigExit, &appl, &QCoreApplication::exit );
 
     if ( parser.isSet( selectedServerOption ) )
-        mainObj->setSelectiveProcesssServer( parser.value( selectedServerOption ) );
+        mainObj->setSelectedServer( parser.value( selectedServerOption ) );
 
     mainObj->setMinimumDate( parser.value( minDateOption ) );
     mainObj->setMaximumDate( parser.value( maxDateOption ) );
