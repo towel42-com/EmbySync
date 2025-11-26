@@ -1773,7 +1773,7 @@ std::list< std::shared_ptr< CMediaData > > CSyncSystem::handleGetMissingMediaLis
         return {};
     }
 
-    qDebug().noquote().nospace() << doc.toJson();
+    //qDebug().noquote().nospace() << doc.toJson();
     auto mediaArray = toItemArray( doc, []( QJsonObject &media ) { media.insert( "IsMissing", true ); } );
     //QJsonArray mediaArray;
     //if ( doc[ "Items" ].isArray() )
@@ -1812,7 +1812,7 @@ std::list< std::shared_ptr< CMediaData > > CSyncSystem::handleGetMediaListRespon
 
 std::list< std::shared_ptr< CMediaData > > CSyncSystem::loadMediaArray( const QJsonArray &mediaArray, const QString &serverName, const QString &progressTitle, const QString &logMsg, const QString &partialLogMsg )
 {
-    qDebug().noquote().nospace() << QJsonDocument( mediaArray ).toJson();
+    //qDebug().noquote().nospace() << QJsonDocument( mediaArray ).toJson();
 
     auto showProgress = mediaArray.count() > 10;
     if ( showProgress )
@@ -1889,7 +1889,7 @@ void CSyncSystem::requestMissingEpisodes( const QString &serverName )
     if ( !url.isValid() )
         return;
 
-    qDebug().noquote().nospace() << url;
+    //qDebug().noquote().nospace() << url;
     auto request = QNetworkRequest( url );
 
     emit sigAddToLog( EMsgType::eInfo, QString( "Requesting missing episodes from server '%2'" ).arg( serverName ) );
@@ -1926,7 +1926,7 @@ void CSyncSystem::requestAllEpisodes( const QString &serverName )
     if ( !url.isValid() )
         return;
 
-    qDebug().noquote().nospace() << url;
+    //qDebug().noquote().nospace() << url;
     auto request = QNetworkRequest( url );
 
     emit sigAddToLog( EMsgType::eInfo, QString( "Requesting all episodes from server '%2'" ).arg( serverName ) );
@@ -1963,7 +1963,7 @@ void CSyncSystem::requestAllShows( const QString &serverName )
     if ( !url.isValid() )
         return;
 
-    qDebug().noquote().nospace() << url;
+    //qDebug().noquote().nospace() << url;
     auto request = QNetworkRequest( url );
 
     emit sigAddToLog( EMsgType::eInfo, QString( "Requesting all episodes from server '%2'" ).arg( serverName ) );
