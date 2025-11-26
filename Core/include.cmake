@@ -37,6 +37,7 @@ set(qtproject_SRCS
     ServerInfo.cpp
     ServerModel.cpp
     Settings.cpp
+    ShowFilter.cpp
     UserData.cpp
     UserServerData.cpp
     UsersModel.cpp
@@ -59,6 +60,7 @@ set(project_H
     MovieStub.h
     ProgressSystem.h
     Settings.h
+    ShowFilter.h
     UserData.h
     UserServerData.h
     IServerForColumn.h

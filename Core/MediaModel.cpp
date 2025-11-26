@@ -424,7 +424,7 @@ std::shared_ptr< CMediaData > CMediaModel::getMediaDataForID( const QString &ser
 
 std::shared_ptr< CMediaData > CMediaModel::loadMedia( const QString &serverName, const QJsonObject &media )
 {
-    qDebug().nospace().noquote() << QJsonDocument( media ).toJson();
+    //qDebug().nospace().noquote() << QJsonDocument( media ).toJson();
 
     std::shared_ptr< CMediaData > mediaData;
 
@@ -821,7 +821,7 @@ CMediaMissingFilterModel::CMediaMissingFilterModel( std::shared_ptr< CSettings >
 
 void CMediaMissingFilterModel::setShowFilter( const TFilterMap &filter )
 {
-    fShowFilter = filter;
+    fShowFilterMap = filter;
 
     auto col = sortColumn();
     auto order = sortOrder();
@@ -845,49 +845,9 @@ bool CMediaMissingFilterModel::filterAcceptsRow( int source_row, const QModelInd
     if ( seriesName.isEmpty() )
         return false;
 
-    if ( !fShowFilter.has_value() )
-        return true;
+    int seasonNum = childIdx.data( CMediaModel::eSeasonNumRole ).toInt();
 
-    auto key = QString( "%1-%2" ).arg( seriesName ).arg( seriesID );
-    auto pos = fShowFilter.value().find( key );
-    auto hasShowFilter = pos != fShowFilter.value().end();
-    if ( hasShowFilter )
-    {
-        auto &&filter = ( *pos ).second;
-        if ( !filter->fTrackEpisodes )
-            return false;
-
-        int seasonNum = childIdx.data( CMediaModel::eSeasonNumRole ).toInt();
-
-        std::optional< bool > seasonMatch;   // 3 states, not set by the filter, set and the season num matches, set and the season num doesnt
-        if ( filter->fMinSeason.has_value() )
-        {
-            seasonMatch = ( seasonNum >= filter->fMinSeason.value() );
-        }
-
-        if ( filter->fMaxSeason.has_value() )
-        {
-            if ( seasonMatch.has_value() )
-                seasonMatch = seasonMatch.value();
-            else
-                seasonMatch = ( seasonNum <= filter->fMaxSeason.value() );
-        }
-
-        if ( seasonMatch.has_value() && !seasonMatch.value() )   // if the season doesnt match either because there was a season filter and its outside the range, dont show
-            return false;
-    }
-
-    // seasonal filter failed to remove the show
-
-    if ( fRegEx.has_value() && fRegEx.value().isValid() )
-    {
-        auto match = fRegEx.value().match( seriesName );
-        bool isMatch = ( match.hasMatch() && ( match.captured( 0 ).length() == seriesName.length() ) );
-        if ( !isMatch )
-            return false;
-    }
-
-    return true;
+    return SShowFilter::showEpisode( fShowFilterMap, seriesID, seriesName, seasonNum, fRegEx );
 }
 
 bool CMediaMissingFilterModel::filterAcceptsColumn( int source_column, const QModelIndex &source_parent ) const
@@ -934,56 +894,3 @@ QVariant CMediaMissingFilterModel::data( const QModelIndex &index, int role /*= 
     return {};
 }
 
-bool SShowFilter::operator==( const SShowFilter &rhs ) const
-{
-    if ( fSeriesID != rhs.fSeriesID )
-        return false;
-
-    if ( fSeriesName != rhs.fSeriesName )
-        return false;
-
-    if ( fPremierYear != rhs.fPremierYear )
-        return false;
-
-    if ( fTrackEpisodes != rhs.fTrackEpisodes )
-        return false;
-
-    if ( fMinSeason.has_value() != rhs.fMinSeason.has_value() )
-        return false;
-    if ( fMinSeason.has_value() && ( fMinSeason.value() != rhs.fMinSeason.value() ) )
-        return false;
-
-    if ( fMaxSeason.has_value() != rhs.fMaxSeason.has_value() )
-        return false;
-    if ( fMaxSeason.has_value() && ( fMaxSeason.value() != rhs.fMaxSeason.value() ) )
-        return false;
-
-    return true;
-}
-
-SShowFilter::SShowFilter( const QString &seriesID, const QString &name, int premierYear, const QString &min, const QString &max, bool trackEpisodes ) :
-    fSeriesName( name ),
-    fPremierYear( premierYear ),
-    fSeriesID( seriesID ),
-    fTrackEpisodes( trackEpisodes )
-{
-    if ( !min.isEmpty() )
-    {
-        bool aOK = false;
-        auto tmp = min.toInt( &aOK );
-        if ( aOK )
-            fMinSeason = tmp;
-    }
-    if ( !max.isEmpty() )
-    {
-        bool aOK = false;
-        auto tmp = max.toInt( &aOK );
-        if ( aOK )
-            fMaxSeason = tmp;
-    }
-}
-
-SShowFilter::SShowFilter( const QString &seriesID, const QString &name, int premierYear, const QVariant &min, const QVariant &max, bool trackEpisodes ) :
-    SShowFilter( seriesID, name, premierYear, ( min.isValid() && min.canConvert< QString >() && min.canConvert< int >() ) ? min.toString() : QString(), ( max.isValid() && max.canConvert< QString >() && max.canConvert< int >() ) ? max.toString() : QString(), trackEpisodes )
-{
-}

@@ -2,6 +2,7 @@
 #define __MEDIAMODEL_H
 
 #include "IServerForColumn.h"
+#include "ShowFilter.h"
 
 #include <QAbstractTableModel>
 #include <QSortFilterProxyModel>
@@ -194,25 +195,6 @@ public:
     virtual bool lessThan( const QModelIndex &source_left, const QModelIndex &source_right ) const override;
 };
 
-struct SShowFilter
-{
-    SShowFilter() = default;
-    SShowFilter( const QString &seriesID, const QString &name, int premierYear, const QString &min, const QString &max, bool trackEpisodes );
-    SShowFilter( const QString &seriesID, const QString &name, int premierYear, const QVariant &min, const QVariant &max, bool trackEpisodes );
-
-    bool operator==( const SShowFilter &rhs ) const;
-    bool operator!=( const SShowFilter &rhs ) const { return !operator==( rhs ); }
-    QString fSeriesID;
-    QString fSeriesName;
-    int fPremierYear{ 0 };
-    std::optional< int > fMinSeason;
-    std::optional< int > fMaxSeason;
-
-    bool fTrackEpisodes{ true };
-};
-
-using TFilterMap = std::map< QString, std::shared_ptr< SShowFilter > >;
-
 class CMediaMissingFilterModel : public QSortFilterProxyModel
 {
     Q_OBJECT;
@@ -231,7 +213,7 @@ public:
 private:
     std::shared_ptr< CSettings > fSettings;
     std::optional< QRegularExpression > fRegEx;
-    std::optional< TFilterMap > fShowFilter;
+    std::optional< TFilterMap > fShowFilterMap;
 };
 
 #endif
