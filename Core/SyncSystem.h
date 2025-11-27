@@ -140,7 +140,8 @@ enum EMsgType
 {
     eError,
     eWarning,
-    eInfo
+    eInfo,
+    eStatus
 };
 
 QString toString( EMsgType type );

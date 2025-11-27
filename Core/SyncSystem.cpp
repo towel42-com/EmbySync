@@ -121,6 +121,8 @@ QString toString( EMsgType type )
             return "WARNING";
         case EMsgType::eInfo:
             return "INFO";
+        case EMsgType::eStatus:
+            return "STATUS";
         default:
             return {};
             break;
