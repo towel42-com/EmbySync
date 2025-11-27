@@ -43,6 +43,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QLocale>
+#include <QDate>
 
 CMainObj::CMainObj( const QString &settingsFile, const QString &mode, QObject *parent /*= nullptr*/ ) :
     QObject( parent ),
@@ -166,7 +167,7 @@ void CMainObj::addToLog( int msgType, const QString &msg )
 
 void CMainObj::addToLog( int msgType, const QString &title, const QString &msg )
 {
-    if ( fQuiet )
+    if ( fQuiet && ( msgType != EMsgType::eStatus ) )
         return;
 
     auto tmp = QStringList() << title.trimmed() << msg.trimmed();
@@ -195,6 +196,7 @@ void CMainObj::run()
         }
     }
 
+    addToLog( EMsgType::eStatus, "Validating Users" );
     fSyncSystem->loadUsers();
 }
 
@@ -297,12 +299,13 @@ void CMainObj::slotProcessNextUser()
     fUsersToSync.pop_front();
     if ( fMode == EMode::eSync )
     {
-        slotAddToLog( EMsgType::eInfo, "Processing user: " + currUser->allNames() );
+        slotAddToLog( EMsgType::eStatus, "Processing user: " + currUser->allNames() );
         fSyncSystem->loadUsersMedia( ETool::ePlayState, currUser );
     }
     else if ( fMode == EMode::eCheckMissing )
     {
         fUsersToSync.push_back( currUser );
+        slotAddToLog( EMsgType::eStatus, "Loading all shows" );
         if ( !fSyncSystem->loadAllShows( currUser, fSelectedServer ) )
         {
             fErrorString = tr( "No user found with Administrator Privileges on server '%1'" ).arg( fSelectedServer->displayName() );
@@ -336,6 +339,8 @@ void CMainObj::slotAllShowsLoaded()
     auto currUser = fUsersToSync.front();
     fUsersToSync.pop_front();
 
+    slotAddToLog( EMsgType::eStatus, "Loading missing episodes" );
+
     if ( !fSyncSystem->loadMissingEpisodes( currUser, fSelectedServer ) )
     {
         fErrorString = tr( "No user found with Administrator Privileges on server '%1'" ).arg( fSelectedServer->displayName() );
@@ -344,7 +349,7 @@ void CMainObj::slotAllShowsLoaded()
 
 void CMainObj::slotMissingEpisodesLoaded()
 {
-    slotAddToLog( EMsgType::eInfo, "Finished loading missing episodes" );
+    slotAddToLog( EMsgType::eStatus, "Finished loading missing episodes" );
 
     auto filterMap = fSettings->missingShowFilterMap();
 
@@ -355,19 +360,30 @@ void CMainObj::slotMissingEpisodesLoaded()
         if ( !SShowFilter::showEpisode( filterMap, mediaInfo ) )
             continue;
 
+        auto premiereDate = mediaInfo->premiereDate();
+        if ( premiereDate > QDate::currentDate() )
+            continue;
+
         episodes.push_back( mediaInfo );
     }
+
+    episodes.sort(   //
+        []( const std::shared_ptr< CMediaData > &lhs, const std::shared_ptr< CMediaData > &rhs )   //
+        {
+            return lhs->name() < rhs->name();   //
+        } );
     if ( episodes.empty() )
     {
-        std::cout << "No missing episodes were found.\n";
+        slotAddToLog( EMsgType::eStatus, "No missing episodes found" );
     }
     else
     {
-        std::cout << "There were " << episodes.size() << " missing episodes found.\n";
+        slotAddToLog( EMsgType::eStatus, QString( "There were %1 missing episodes found." ).arg( episodes.size() ) );
         QLocale locale;
         for ( auto &&ii : episodes )
         {
-            std::cout << "    " << ii->name().toStdString() << " - " << locale.toString( ii->premiereDate() ).toStdString() << "\n";
+            auto msg = QString( "    %1 - %2 - %3" ).arg( ii->name() ).arg( locale.toString( ii->premiereDate() ) ).arg( ii->getDefaultSearchURL( fSettings ).toString() );
+            slotAddToLog( EMsgType::eStatus, msg );
         }
     }
     QTimer::singleShot( 0, this, &CMainObj::slotProcessNextUser );
