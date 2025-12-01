@@ -82,13 +82,13 @@ public:
     void reset();
 
     // other settings
-    QColor mediaSourceColor( bool forBackground = true ) const;
+    QColor mediaSourceColor( Qt::ItemDataRole role ) const;
     void setMediaSourceColor( const QColor &color );
 
-    QColor mediaDestColor( bool forBackground = true ) const;
+    QColor mediaDestColor( Qt::ItemDataRole role ) const;
     void setMediaDestColor( const QColor &color );
 
-    QColor dataMissingColor( bool forBackground = true ) const;
+    QColor dataMissingColor( Qt::ItemDataRole role ) const;
     void setDataMissingColor( const QColor &color );
 
     int maxItems() const { return fMaxItems; }
@@ -169,7 +169,7 @@ private:
     bool loadSearchServers( QJsonDocument &json, const std::function< void( const QString &title, const QString &msg ) > &errorFunc );
     QVariant getValue( const QJsonObject &data, const QString &fieldName, const QVariant &defaultValue ) const;
 
-    QColor getColor( const QColor &clr, bool forBackground /*= true */ ) const;
+    QColor getColor( const QColor &clr, Qt::ItemDataRole role ) const;
     bool maybeSave( QWidget *parent, std::function< QString() > selectFileFunc, std::function< void( const QString &title, const QString &msg ) > errorFunc );
 
     template< typename T >

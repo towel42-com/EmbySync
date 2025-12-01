@@ -28,6 +28,7 @@
 #include "TabUIInfo.h"
 
 #include "Core/MediaModel.h"
+#include "Core/MediaMissingFilterModel.h"
 #include "Core/MediaData.h"
 #include "Core/ProgressSystem.h"
 #include "Core/ServerInfo.h"

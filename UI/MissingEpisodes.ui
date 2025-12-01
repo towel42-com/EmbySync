@@ -57,6 +57,12 @@
        </item>
        <item row="1" column="0" colspan="4">
         <widget class="QTreeWidget" name="showsFilter">
+         <property name="sortingEnabled">
+          <bool>true</bool>
+         </property>
+         <attribute name="headerShowSortIndicator" stdset="0">
+          <bool>true</bool>
+         </attribute>
          <column>
           <property name="text">
            <string>Track Show's Episodes?</string>

@@ -24,6 +24,8 @@
 #include "ServerModel.h"
 #include "Core/ServerInfo.h"
 #include "Core/ShowFilter.h"
+#include "Core/MediaData.h"
+
 #include <QJsonDocument>
 #include <QFile>
 #include <QJsonParseError>
@@ -32,7 +34,8 @@
 #include <QFileInfo>
 #include <QSettings>
 
-#include <QUrlQuery>
+#include <QDate>
+#include< QUrlQuery >
 #include <QColor>
 
 #include <map>
@@ -181,7 +184,7 @@ bool CSettings::load( const QString &fileName, std::function< void( const QStrin
     return true;
 }
 
-bool CSettings::loadSearchServers( QJsonDocument &json, const std::function< void( const QString &title, const QString &msg ) > & errorFunc )
+bool CSettings::loadSearchServers( QJsonDocument &json, const std::function< void( const QString &title, const QString &msg ) > &errorFunc )
 {
     auto searchServers = json[ "searchServers" ].toArray();
     for ( int ii = 0; ii < searchServers.count(); ++ii )
@@ -241,9 +244,10 @@ TFilterMap CSettings::missingShowFilterMap() const
         if ( settings.contains( "MaxSeason" ) )
             maxSeason = settings.value( "MaxSeason" );
 
-        auto trackEpisodes = settings.value( "TrackEpisodes", true ).toBool();
+        auto trackDefault = ( premierYear >= ( QDate::currentDate().year() - 10 ) );
+        auto trackEpisodes = settings.value( "TrackEpisodes", trackDefault ).toBool();
 
-        auto key = QString( "%1-%2" ).arg( name ).arg( seriesID );
+        auto key = CMediaData::seriesSearchKey( name, seriesID );
         filterMap[ key ] = std::make_shared< SShowFilter >( seriesID, name, premierYear, minSeason, maxSeason, trackEpisodes );
     }
     settings.endArray();
@@ -334,8 +338,8 @@ bool CSettings::save( std::function< void( const QString &title, const QString &
     root[ "ShowMediaWithIssues" ] = showMediaWithIssues();
     root[ "OnlyShowEnabledServers" ] = onlyShowEnabledServers();
 
-    root[ "MediaSourceColor" ] = mediaSourceColor().name();
-    root[ "MediaDestColor" ] = mediaDestColor().name();
+    root[ "MediaSourceColor" ] = mediaSourceColor( Qt::ItemDataRole::BackgroundRole ).name();
+    root[ "MediaDestColor" ] = mediaDestColor( Qt::ItemDataRole::BackgroundRole ).name();
     root[ "MaxItems" ] = maxItems();
 
     root[ "SyncAudio" ] = syncAudio();
@@ -388,16 +392,16 @@ bool CSettings::save( std::function< void( const QString &title, const QString &
     return true;
 }
 
-QColor CSettings::getColor( const QColor &clr, bool forBackground /*= true */ ) const
+QColor CSettings::getColor( const QColor &clr, Qt::ItemDataRole role ) const
 {
     if ( clr == Qt::black )
     {
-        if ( !forBackground )
+        if ( role != Qt::ItemDataRole::BackgroundRole )
             return QColor( Qt::white ).name();
     }
 
-    if ( !forBackground )
-        return QString();
+    if ( role != Qt::ItemDataRole::BackgroundRole )
+        return {};
     return clr;
 }
 
@@ -408,9 +412,9 @@ void CSettings::reset()
     fFileName.clear();
 }
 
-QColor CSettings::mediaSourceColor( bool forBackground /*= true */ ) const
+QColor CSettings::mediaSourceColor( Qt::ItemDataRole role ) const
 {
-    return getColor( fMediaSourceColor, forBackground );
+    return getColor( fMediaSourceColor, role );
 }
 
 QString CSettings::getSyncItemTypes() const
@@ -442,9 +446,9 @@ void CSettings::setMediaSourceColor( const QColor &color )
     updateValue( fMediaSourceColor, color );
 }
 
-QColor CSettings::mediaDestColor( bool forBackground /*= true */ ) const
+QColor CSettings::mediaDestColor( Qt::ItemDataRole role ) const
 {
-    return getColor( fMediaDestColor, forBackground );
+    return getColor( fMediaDestColor, role );
 }
 
 void CSettings::setMediaDestColor( const QColor &color )
@@ -452,9 +456,9 @@ void CSettings::setMediaDestColor( const QColor &color )
     updateValue( fMediaDestColor, color );
 }
 
-QColor CSettings::dataMissingColor( bool forBackground /*= true */ ) const
+QColor CSettings::dataMissingColor( Qt::ItemDataRole role ) const
 {
-    return getColor( fMediaDataMissingColor, forBackground );
+    return getColor( fMediaDataMissingColor, role );
 }
 
 void CSettings::setDataMissingColor( const QColor &color )

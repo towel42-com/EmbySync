@@ -409,9 +409,9 @@ void CSettingsDlg::load()
         loadServer( fImpl->searchServers, ii );
     }
 
-    fMediaSourceColor = fSettings->mediaSourceColor();
-    fMediaDestColor = fSettings->mediaDestColor();
-    fDataMissingColor = fSettings->dataMissingColor();
+    fMediaSourceColor = fSettings->mediaSourceColor( Qt::ItemDataRole::BackgroundRole );
+    fMediaDestColor = fSettings->mediaDestColor( Qt::ItemDataRole::BackgroundRole );
+    fDataMissingColor = fSettings->dataMissingColor( Qt::ItemDataRole::BackgroundRole );
     updateColors();
     auto maxItems = fSettings->maxItems();
     if ( maxItems < fImpl->maxItems->minimum() )

@@ -28,6 +28,7 @@
 #include "TabUIInfo.h"
 
 #include "Core/MediaModel.h"
+#include "Core/MediaMissingFilterModel.h"
 #include "Core/MediaData.h"
 #include "Core/ProgressSystem.h"
 #include "Core/ServerInfo.h"
@@ -374,16 +375,16 @@ void CMissingEpisodes::loadShowFilter()
 
     auto selectedShows = getShowFilters();
 
-    auto allSeries = fMediaModel->getAllSeries();
+    auto allSeriesMap = fMediaModel->getAllSeries();
     disconnect( fImpl->showsFilter, &QTreeWidget::itemChanged, this, &CMissingEpisodes::slotSearchByShowNameChanged );
 
     fImpl->showsFilter->blockSignals( true );
     fImpl->showsFilter->clear();
 
-    for ( auto &&series : allSeries )
+    for ( auto &&[ key, series ] : allSeriesMap )
     {
         std::shared_ptr< SShowFilter > filterForShow;
-        auto pos = selectedShows.find( series.first );
+        auto pos = selectedShows.find( series->searchKey() );
         if ( pos != selectedShows.end() )
             filterForShow = ( *pos ).second;
 
@@ -391,14 +392,18 @@ void CMissingEpisodes::loadShowFilter()
         auto maxSeason = ( filterForShow && filterForShow->fMaxSeason.has_value() ) ? QString::number( filterForShow->fMaxSeason.value() ) : QString();
         auto trackEpisodes = filterForShow ? filterForShow->fTrackEpisodes : true;
 
-        auto curr = new QTreeWidgetItem( fImpl->showsFilter, { trackEpisodes ? "Yes" : "No", series.second->name(), QString::number( series.second->premiereDate().year() ), minSeason, maxSeason } );
-        curr->setData( 0, Qt::UserRole + 1, series.second->seriesID() );
+        auto curr = new QTreeWidgetItem( fImpl->showsFilter, { trackEpisodes ? "Yes" : "No", series->name(), QString::number( series->premiereDate().year() ), minSeason, maxSeason } );
+        curr->setData( 0, Qt::UserRole + 1, series->seriesID() );
         curr->setFlags( curr->flags() | Qt::ItemIsEditable );
         curr->setCheckState( 0, trackEpisodes ? Qt::CheckState::Checked : Qt::CheckState::Unchecked );
     }
     fImpl->showsFilter->resizeColumnToContents( 0 );
     fImpl->showsFilter->resizeColumnToContents( 1 );
+    fImpl->showsFilter->resizeColumnToContents( 2 );
     fImpl->showsFilter->blockSignals( false );
+    fImpl->showsFilter->sortByColumn( 0, Qt::SortOrder::DescendingOrder );
+    fImpl->showsFilter->sortByColumn( 1, Qt::SortOrder::AscendingOrder );
+    fImpl->showsFilter->sortByColumn( 2, Qt::SortOrder::DescendingOrder );
     connect( fImpl->showsFilter, &QTreeWidget::itemChanged, this, &CMissingEpisodes::slotSearchByShowNameChanged );
 }
 

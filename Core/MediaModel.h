@@ -152,7 +152,7 @@ private:
     void addMediaInfo( const QString &serverName, std::shared_ptr< CMediaData > mediaData, const QJsonObject &mediaInfo );
     void updateMediaData( std::shared_ptr< CMediaData > mediaData );
 
-    QVariant getColor( const QModelIndex &index, const QString &serverName, bool background ) const;
+    QVariant getColor( const QModelIndex &index, const QString &serverName, Qt::ItemDataRole role ) const;
     void updateProviderColumns( std::shared_ptr< CMediaData > ii );
 
     std::unique_ptr< CMergeMedia > fMergeSystem;
@@ -181,39 +181,6 @@ struct SMediaSummary
     QString getSummaryText() const;
     std::map< QString, int > fNeedsUpdating;
     std::map< QString, int > fMissingData;
-};
-
-class CMediaFilterModel : public QSortFilterProxyModel
-{
-    Q_OBJECT;
-
-public:
-    CMediaFilterModel( QObject *parent );
-
-    virtual bool filterAcceptsRow( int source_row, const QModelIndex &source_parent ) const override;
-    virtual void sort( int column, Qt::SortOrder order = Qt::AscendingOrder ) override;
-    virtual bool lessThan( const QModelIndex &source_left, const QModelIndex &source_right ) const override;
-};
-
-class CMediaMissingFilterModel : public QSortFilterProxyModel
-{
-    Q_OBJECT;
-
-public:
-    CMediaMissingFilterModel( std::shared_ptr< CSettings > settings, QObject *parent );
-
-    void setShowFilter( const TFilterMap &filter );
-    virtual bool filterAcceptsRow( int source_row, const QModelIndex &source_parent ) const override;
-    virtual bool filterAcceptsColumn( int source_column, const QModelIndex &source_parent ) const override;
-    virtual void sort( int column, Qt::SortOrder order = Qt::AscendingOrder ) override;
-    virtual bool lessThan( const QModelIndex &source_left, const QModelIndex &source_right ) const override;
-
-    virtual QVariant data( const QModelIndex &index, int role /*= Qt::DisplayRole */ ) const override;
-
-private:
-    std::shared_ptr< CSettings > fSettings;
-    std::optional< QRegularExpression > fRegEx;
-    std::optional< TFilterMap > fShowFilterMap;
 };
 
 #endif

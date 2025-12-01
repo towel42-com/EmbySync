@@ -27,6 +27,8 @@ set(FOLDER_NAME Libs)
 set(qtproject_SRCS
     CollectionsModel.cpp
     MediaData.cpp
+    MediaFilterModel.cpp
+    MediaMissingFilterModel.cpp
     MediaServerData.cpp
     MediaModel.cpp
     MovieSearchFilterModel.cpp
@@ -46,6 +48,8 @@ set(qtproject_SRCS
 set(qtproject_H
     CollectionsModel.h
     MediaModel.h
+    MediaFilterModel.h
+    MediaMissingFilterModel.h
     MovieSearchFilterModel.h
     ServerInfo.h
     SyncSystem.h

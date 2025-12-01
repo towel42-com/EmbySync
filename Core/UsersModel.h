@@ -139,7 +139,7 @@ private:
     void setupColumns();
     int serverNum( int columnNum ) const;
 
-    QVariant getColor( const QModelIndex &index, bool background, bool missingOnly = false ) const;
+    QVariant getColor( const QModelIndex &index, Qt::ItemDataRole role, bool missingOnly = false ) const;
 
     std::map< QString, std::shared_ptr< CUserData > > fUserMap;
     TUserDataVector fUsers;

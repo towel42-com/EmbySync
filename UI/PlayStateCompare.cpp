@@ -28,6 +28,7 @@
 #include "TabUIInfo.h"
 
 #include "Core/MediaModel.h"
+#include "Core/MediaFilterModel.h"
 #include "Core/ProgressSystem.h"
 #include "Core/ServerInfo.h"
 #include "Core/Settings.h"

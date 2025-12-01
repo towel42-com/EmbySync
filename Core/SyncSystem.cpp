@@ -1777,24 +1777,6 @@ std::list< std::shared_ptr< CMediaData > > CSyncSystem::handleGetMissingMediaLis
 
     //qDebug().noquote().nospace() << doc.toJson();
     auto mediaArray = toItemArray( doc, []( QJsonObject &media ) { media.insert( "IsMissing", true ); } );
-    //QJsonArray mediaArray;
-    //if ( doc[ "Items" ].isArray() )
-    //{
-    //    auto mediaList = doc[ "Items" ].toArray();
-
-    //    for ( auto &&ii : mediaList )
-    //    {
-    //        auto media = ii.toObject();
-    //        media.insert( "IsMissing", true );
-    //        mediaArray.append( media );
-    //    }
-    //}
-    //else
-    //{
-    //    auto media = doc.object();
-    //    media.insert( "IsMissing", true );
-    //    mediaArray.append( media );
-    //}
     return loadMediaArray( mediaArray, serverName, progressTitle, logMsg, partialLogMsg );
 }
 
@@ -1879,7 +1861,7 @@ void CSyncSystem::requestMissingEpisodes( const QString &serverName )
         {
             std::make_pair( "IncludeItemTypes", "Episode" ),   //
             std::make_pair( "Fields", "BasicSyncInfo,CanDelete,CanDownload,PrimaryImageAspectRatio,ProductionYear,Status,EndDate,CommunityRating,OfficialRating,CriticRating,PremiereDate" ),   //
-            std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SeriesSortName,SortName" ),   //
+            std::make_pair( "SortBy", "Type,SeriesSortName,ProductionYear,PremiereDate,SortName" ),   //
             std::make_pair( "SortOrder", "Ascending" ),   //
             std::make_pair( "Recursive", "True" )   //
         };

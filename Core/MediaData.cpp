@@ -94,6 +94,11 @@ CMediaData::CMediaData( const SMovieStub &movieStub, const QString &type )
         fResolution = { 0, 0 };
 }
 
+QString CMediaData::seriesSearchKey( const QString &seriesName, const QString &seriesID )
+{
+    return QString( "%1-%2" ).arg( seriesName ).arg( seriesID );
+}
+
 QString CMediaData::searchKey() const
 {
     QString searchKey;
@@ -107,7 +112,7 @@ QString CMediaData::searchKey() const
 
     if ( this->mediaType() == "Series" )
     {
-        searchKey = QString( "%1-%2" ).arg( fName ).arg( fSeriesID );
+        searchKey = seriesSearchKey( fName, fSeriesID );
     }
     else if ( this->mediaType() == "Episode" )
     {

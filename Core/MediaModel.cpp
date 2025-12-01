@@ -183,17 +183,9 @@ QVariant CMediaModel::data( const QModelIndex &index, int role /*= Qt::DisplayRo
     auto serverName = this->serverForColumn( column );
 
     // reverse for black background
-    if ( role == Qt::ForegroundRole )
+    if ( ( role == Qt::ForegroundRole ) || ( role == Qt::BackgroundRole ) )
     {
-        auto color = getColor( index, serverName, false );
-        if ( !color.isValid() )
-            return {};
-        return color;
-    }
-
-    if ( role == Qt::BackgroundRole )
-    {
-        auto color = getColor( index, serverName, true );
+        auto color = getColor( index, serverName, (Qt::ItemDataRole)role );
         if ( !color.isValid() )
             return {};
         return color;
@@ -474,6 +466,7 @@ std::shared_ptr< CMediaData > CMediaModel::loadMedia( const QString &serverName,
     }
     */
 
+    qDebug() << "Adding Media - " << mediaData->mediaType() << " - " << mediaData->name();
     addMediaInfo( serverName, mediaData, media );
     return mediaData;
 }
@@ -648,7 +641,7 @@ std::shared_ptr< CMediaData > CMediaModel::findMedia( const QString &name, int y
     return {};
 }
 
-QVariant CMediaModel::getColor( const QModelIndex &index, const QString &serverName, bool background ) const
+QVariant CMediaModel::getColor( const QModelIndex &index, const QString &serverName, Qt::ItemDataRole role ) const
 {
     if ( !index.isValid() )
         return {};
@@ -671,7 +664,7 @@ QVariant CMediaModel::getColor( const QModelIndex &index, const QString &serverN
             case ePlayCount:
             case ePlaybackPosition:
             case eResolution:
-                return fSettings->dataMissingColor( background );
+                return fSettings->dataMissingColor( role );
                 break;
             default:
                 return {};
@@ -710,8 +703,8 @@ QVariant CMediaModel::getColor( const QModelIndex &index, const QString &serverN
         if ( dataSame )
             return {};
 
-        auto older = fSettings->mediaDestColor( background );
-        auto newer = fSettings->mediaSourceColor( background );
+        auto older = fSettings->mediaDestColor( role );
+        auto newer = fSettings->mediaSourceColor( role );
         auto serverName = this->serverForColumn( index.column() );
 
         auto isOlder = mediaData->needsUpdating( serverName );
@@ -775,122 +768,4 @@ QString SMediaSummary::getSummaryText() const
     return retVal;
 }
 
-CMediaFilterModel::CMediaFilterModel( QObject *parent ) :
-    QSortFilterProxyModel( parent )
-{
-    setDynamicSortFilter( false );
-}
-
-bool CMediaFilterModel::filterAcceptsRow( int source_row, const QModelIndex &source_parent ) const
-{
-    if ( !sourceModel() )
-        return true;
-    auto childIdx = sourceModel()->index( source_row, 0, source_parent );
-    return childIdx.data( CMediaModel::eShowItemRole ).toBool();
-}
-
-void CMediaFilterModel::sort( int column, Qt::SortOrder order /*= Qt::AscendingOrder */ )
-{
-    QSortFilterProxyModel::sort( column, order );
-}
-
-bool CMediaFilterModel::lessThan( const QModelIndex &source_left, const QModelIndex &source_right ) const
-{
-    return QSortFilterProxyModel::lessThan( source_left, source_right );
-}
-
-CMediaMissingFilterModel::CMediaMissingFilterModel( std::shared_ptr< CSettings > settings, QObject *parent ) :
-    QSortFilterProxyModel( parent ),
-    fSettings( settings )
-{
-    fRegEx = fSettings->ignoreShowRegEx();
-    setDynamicSortFilter( false );
-    connect(
-        this, &QSortFilterProxyModel::sourceModelChanged,
-        [ this ]()
-        {
-            connect(
-                dynamic_cast< CMediaModel * >( sourceModel() ), &CMediaModel::sigSettingsChanged,
-                [ this ]()
-                {
-                    fRegEx = fSettings->ignoreShowRegEx();
-                    invalidateFilter();
-                } );
-        } );
-}
-
-void CMediaMissingFilterModel::setShowFilter( const TFilterMap &filter )
-{
-    fShowFilterMap = filter;
-
-    auto col = sortColumn();
-    auto order = sortOrder();
-    invalidateFilter();
-    sort( col, order );
-}
-
-bool CMediaMissingFilterModel::filterAcceptsRow( int source_row, const QModelIndex &source_parent ) const
-{
-    if ( !sourceModel() )
-        return true;
-    auto childIdx = sourceModel()->index( source_row, 0, source_parent );
-    if ( !childIdx.isValid() )
-        return false;
-
-    auto seriesID = childIdx.data( CMediaModel::eSeriesIDRole ).toString();
-    if ( seriesID.isEmpty() )
-        return false;
-
-    auto seriesName = childIdx.data( CMediaModel::eSeriesNameRole ).toString();
-    if ( seriesName.isEmpty() )
-        return false;
-
-    int seasonNum = childIdx.data( CMediaModel::eSeasonNumRole ).toInt();
-
-    return SShowFilter::showEpisode( fShowFilterMap, seriesID, seriesName, seasonNum, fRegEx );
-}
-
-bool CMediaMissingFilterModel::filterAcceptsColumn( int source_column, const QModelIndex &source_parent ) const
-{
-    auto idx = sourceModel()->index( 0, source_column, source_parent );
-    return !idx.data( CMediaModel::ECustomRoles::eIsProviderColumnRole ).toBool();
-}
-
-void CMediaMissingFilterModel::sort( int column, Qt::SortOrder order /*= Qt::AscendingOrder */ )
-{
-    QSortFilterProxyModel::sort( column, order );
-}
-
-bool CMediaMissingFilterModel::lessThan( const QModelIndex &source_left, const QModelIndex &source_right ) const
-{
-    return QSortFilterProxyModel::lessThan( source_left, source_right );
-}
-
-QVariant CMediaMissingFilterModel::data( const QModelIndex &index, int role /*= Qt::DisplayRole */ ) const
-{
-    if ( ( role != Qt::ForegroundRole ) && ( role != Qt::BackgroundRole ) )
-        return QSortFilterProxyModel::data( index, role );
-
-    auto premiereDate = index.data( CMediaModel::ECustomRoles::ePremiereDateRole ).toDate();
-    if ( premiereDate > QDate::currentDate() )
-        return {};
-
-    // reverse for black background
-    if ( role == Qt::ForegroundRole )
-    {
-        auto color = fSettings->dataMissingColor( false );
-        if ( !color.isValid() )
-            return {};
-        return color;
-    }
-
-    if ( role == Qt::BackgroundRole )
-    {
-        auto color = fSettings->dataMissingColor( true );
-        if ( !color.isValid() )
-            return {};
-        return color;
-    }
-    return {};
-}
 

@@ -71,7 +71,7 @@ bool SShowFilter::showEpisode( const std::optional< TFilterMap > &filterMap, con
     if ( !filterMap.has_value() )
         return true;
 
-    auto key = QString( "%1-%2" ).arg( seriesName ).arg( seriesID );
+    auto key = CMediaData::seriesSearchKey( seriesName, seriesID );
     auto pos = filterMap.value().find( key );
     auto hasShowFilter = pos != filterMap.value().end();
     if ( hasShowFilter )

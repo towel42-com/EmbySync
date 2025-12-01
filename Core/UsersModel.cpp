@@ -106,17 +106,9 @@ QVariant CUsersModel::data( const QModelIndex &index, int role /*= Qt::DisplayRo
     if ( role == ECustomRoles::eConnectedIDValidRole )
         return !userData->connectedID().isEmpty() && !userData->connectedIDNeedsUpdate();
 
-    if ( role == eIsMissingOnServerBGColor )
+    if ( ( role == eIsMissingOnServerFGColor ) || ( role == eIsMissingOnServerBGColor ) )
     {
-        auto color = getColor( index, true, true );
-        if ( !color.isValid() )
-            return {};
-        return color;
-    }
-
-    if ( role == eIsMissingOnServerBGColor )
-    {
-        auto color = getColor( index, false, true );
+        auto color = getColor( index, ( role == eIsMissingOnServerFGColor ) ? Qt::ItemDataRole::ForegroundRole : Qt::ItemDataRole::BackgroundRole, true );
         if ( !color.isValid() )
             return {};
         return color;
@@ -125,7 +117,7 @@ QVariant CUsersModel::data( const QModelIndex &index, int role /*= Qt::DisplayRo
     //// reverse for black background
     if ( role == Qt::ForegroundRole )
     {
-        auto color = getColor( index, false );
+        auto color = getColor( index, Qt::ItemDataRole::BackgroundRole );
         if ( !color.isValid() )
             return {};
         return color;
@@ -133,7 +125,7 @@ QVariant CUsersModel::data( const QModelIndex &index, int role /*= Qt::DisplayRo
 
     if ( role == Qt::BackgroundRole )
     {
-        auto color = getColor( index, true );
+        auto color = getColor( index, Qt::ItemDataRole::ForegroundRole );
         if ( !color.isValid() )
             return {};
         return color;
@@ -417,7 +409,7 @@ void CUsersModel::loadAvatars( std::shared_ptr< CSyncSystem > syncSystem ) const
     }
 }
 
-QVariant CUsersModel::getColor( const QModelIndex &index, bool background, bool missingOnly /*=false*/ ) const
+QVariant CUsersModel::getColor( const QModelIndex &index, Qt::ItemDataRole role, bool missingOnly /*=false*/ ) const
 {
     if ( !index.isValid() )
         return {};
@@ -426,7 +418,7 @@ QVariant CUsersModel::getColor( const QModelIndex &index, bool background, bool 
     if ( index.column() == eConnectedID )
     {
         if ( userData->connectedIDNeedsUpdate() )
-            return fSettings->dataMissingColor( background );
+            return fSettings->dataMissingColor( role );
     }
 
     if ( index.column() < eFirstServerColumn )
@@ -438,7 +430,7 @@ QVariant CUsersModel::getColor( const QModelIndex &index, bool background, bool 
 
     if ( !userData->onServer( ( *pos ).second.second->keyName() ) )
     {
-        return fSettings->dataMissingColor( background );
+        return fSettings->dataMissingColor( role );
     }
 
     if ( missingOnly )
@@ -511,8 +503,8 @@ QVariant CUsersModel::getColor( const QModelIndex &index, bool background, bool 
     if ( dataSame )
         return {};
 
-    auto older = fSettings->mediaDestColor( background );
-    auto newer = fSettings->mediaSourceColor( background );
+    auto older = fSettings->mediaDestColor( role );
+    auto newer = fSettings->mediaSourceColor( role );
     auto serverInfo = this->serverInfo( index );
     auto serverName = serverInfo ? serverInfo->keyName() : QString();
     auto isOlder = userData->needsUpdating( serverName );

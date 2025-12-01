@@ -21,7 +21,7 @@ CMovieSearchFilterModel::CMovieSearchFilterModel( std::shared_ptr< CSettings > s
     connect( this, &QSortFilterProxyModel::sourceModelChanged, [ this ]() { connect( dynamic_cast< CMediaModel * >( sourceModel() ), &CMediaModel::sigSettingsChanged, [ this ]() { startInvalidateTimer(); } ); } );
 }
 
-void CMovieSearchFilterModel::addSearchMovie( const QString &name, const std::optional< int > & year, const std::optional< std::pair< int, int > > &resolution, bool postLoad )
+void CMovieSearchFilterModel::addSearchMovie( const QString &name, const std::optional< int > &year, const std::optional< std::pair< int, int > > &resolution, bool postLoad )
 {
     auto movieStub = SMovieStub( name, year, resolution );
 
@@ -276,22 +276,14 @@ QVariant CMovieSearchFilterModel::data( const QModelIndex &index, int role /*= Q
 
     if ( ( !onServer && ( perServerColumn == CMediaModel::EColumns::eName ) ) || ( onServer && !resolutionMatches && ( perServerColumn == CMediaModel::EColumns::eResolution ) ) )
     {
-        // reverse for black background
-        if ( role == Qt::ForegroundRole )
+        if ( ( role == Qt::ForegroundRole ) || ( role == Qt::BackgroundRole ) )
         {
-            auto color = fSettings->dataMissingColor( false );
+            auto color = fSettings->dataMissingColor( (Qt::ItemDataRole)role );
             if ( !color.isValid() )
                 return {};
             return color;
         }
 
-        if ( role == Qt::BackgroundRole )
-        {
-            auto color = fSettings->dataMissingColor( true );
-            if ( !color.isValid() )
-                return {};
-            return color;
-        }
     }
     return {};
 }

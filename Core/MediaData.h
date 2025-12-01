@@ -71,6 +71,8 @@ public:
     CMediaData( const SMovieStub &movieStub, const QString &type );   // stub for dummy media
 
     static bool isExtra( const QJsonObject &obj );
+    static QString seriesSearchKey( const QString &seriesName, const QString &seriesID );
+
     bool hasProviderIDs() const;
     void addProvider( const QString &providerName, const QString &providerID );
 
