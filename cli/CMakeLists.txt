@@ -33,7 +33,6 @@ include_directories( ${CMAKE_BINARY_DIR} )
 add_executable( ${PROJECT_NAME}
                 ${_PROJECT_DEPENDENCIES} 
                 ${_CMAKE_MODULE_FILES}
-                application.rc 
           )
 if ( NOT DEPLOYQT_EXECUTABLE )
     message( FATAL_ERROR "DEPLOYQT_EXECUTABLE not set" )
