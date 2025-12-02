@@ -466,7 +466,7 @@ std::shared_ptr< CMediaData > CMediaModel::loadMedia( const QString &serverName,
     }
     */
 
-    qDebug() << "Adding Media - " << mediaData->mediaType() << " - " << mediaData->name();
+    //qDebug() << "Adding Media - " << mediaData->mediaType() << " - " << mediaData->name();
     addMediaInfo( serverName, mediaData, media );
     return mediaData;
 }
