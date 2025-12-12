@@ -382,7 +382,7 @@ void CMainObj::slotMissingEpisodesLoaded()
         QLocale locale;
         for ( auto &&ii : episodes )
         {
-            auto msg = QString( "    %1 - %2 - %3" ).arg( ii->name() ).arg( locale.toString( ii->premiereDate() ) ).arg( ii->getDefaultSearchURL( fSettings ).toString() );
+            auto msg = QString( R"__(    %1 - %2 - %3)__" ).arg( ii->name() ).arg( locale.toString( ii->premiereDate() ) ).arg( ii->getDefaultSearchURL( fSettings ).toString( QUrl::FullyEncoded ) );
             slotAddToLog( EMsgType::eStatus, msg );
         }
     }
