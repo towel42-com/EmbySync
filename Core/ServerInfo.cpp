@@ -109,7 +109,7 @@ QUrl CServerInfo::getUrl( const QString &extraPath, const std::list< std::pair< 
 
 QUrl CServerInfo::searchUrl( const QString &searchKey ) const
 {
-    return getUrl( {}, { std::make_pair( apiKey(), QString( searchKey ).replace( " ", "%20" ) ) }, false );
+    return getUrl( {}, { std::make_pair( apiKey(), QUrl::toPercentEncoding( searchKey ) ) }, false );
 }
 
 QString CServerInfo::displayName( bool verbose ) const
