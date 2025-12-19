@@ -125,18 +125,26 @@ int main( int argc, char **argv )
         return -1;
     }
 
-    mainObj->run();
-
-    if ( !mainObj->aOK() )
+    int retVal = -1;
+    do
     {
-        std::cerr << mainObj->errorString().toStdString() << "\n";
-        parser.showHelp();
-        return -1;
-    }
+        mainObj->run();
 
-    int retVal = appl.exec();
-    std::cout << "Press any key to close this window...";
-    _getche();
+        if ( !mainObj->aOK() )
+        {
+            std::cerr << mainObj->errorString().toStdString() << "\n";
+            parser.showHelp();
+            return -1;
+        }
+
+        retVal = appl.exec();
+        std::cout << "Press 'R' to re-run, otherwise press any key to close this window...";
+        auto ch = _getche();
+        if ( ( ch == 'Y' ) || ( ch == 'y' ) || ( ch == 'R' ) || ( ch == 'r' ) )
+            continue;
+        break;
+    }
+    while ( true );
 
     return retVal;
 }
