@@ -27,8 +27,8 @@
 #include "Core/UserData.h"
 #include "Core/SyncSystem.h"
 #include "Core/ServerModel.h"
-#include "SABUtils/ButtonEnabler.h"
-#include "SABUtils/WidgetChanged.h"
+#include "T42-Utils/ButtonEnabler.h"
+#include "T42-Utils/WidgetChanged.h"
 
 #include <QFileDialog>
 #include <QDesktopServices>
@@ -377,7 +377,7 @@ void CSettingsDlg::editServer( QTreeWidget *serverTree, QTreeWidgetItem *item )
             item = new QTreeWidgetItem( serverTree );
         item->setText( 0, dlg.name() );
         item->setCheckState( 0, dlg.enabled() ? Qt::CheckState::Checked : Qt::CheckState::Unchecked );
-        item->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/unknownStatus.png" ) ) );
+        item->setIcon( 0, QIcon( QString::fromUtf8( ":/Towel42UtilsResources/unknownStatus.png" ) ) );
         item->setText( 1, dlg.url() );
         item->setText( 2, dlg.apiKey() );
     }
@@ -450,7 +450,7 @@ void CSettingsDlg::loadServer( QTreeWidget *serverTree, const std::shared_ptr< C
 
     auto item = new QTreeWidgetItem( serverTree, QStringList() << name << url << apiKey );
     item->setCheckState( 0, serverInfo->isEnabled() ? Qt::CheckState::Checked : Qt::CheckState::Unchecked );
-    item->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/unknownStatus.png" ) ) );
+    item->setIcon( 0, QIcon( QString::fromUtf8( ":/Towel42UtilsResources/unknownStatus.png" ) ) );
 }
 
 void CSettingsDlg::loadPrimaryServers()
@@ -769,7 +769,7 @@ void CSettingsDlg::slotTestServers()
 {
     for ( int ii = 0; ii < fImpl->servers->topLevelItemCount(); ++ii )
     {
-        fImpl->servers->topLevelItem( ii )->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/unknownStatus.png" ) ) );
+        fImpl->servers->topLevelItem( ii )->setIcon( 0, QIcon( QString::fromUtf8( ":/Towel42UtilsResources/unknownStatus.png" ) ) );
     }
 
     auto tmp = getServerInfos( fImpl->servers, true );
@@ -789,9 +789,9 @@ void CSettingsDlg::slotTestServerResults( const QString &serverName, bool result
         {
             auto item = fImpl->servers->topLevelItem( ii );
             if ( results )
-                item->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/ok.png" ) ) );
+                item->setIcon( 0, QIcon( QString::fromUtf8( ":/Towel42UtilsResources/ok.png" ) ) );
             else
-                item->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/error.png" ) ) );
+                item->setIcon( 0, QIcon( QString::fromUtf8( ":/Towel42UtilsResources/error.png" ) ) );
         }
     }
     if ( !results )
@@ -826,11 +826,11 @@ void CSettingsDlg::testSearchServer( QTreeWidgetItem *item )
     auto url = serverInfo->searchUrl( "the empire strikes back" );
     if ( url.isValid() )
     {
-        item->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/ok.png" ) ) );
+        item->setIcon( 0, QIcon( QString::fromUtf8( ":/Towel42UtilsResources/ok.png" ) ) );
         QDesktopServices::openUrl( url );
     }
     else
-        item->setIcon( 0, QIcon( QString::fromUtf8( ":/SABUtilsResources/error.png" ) ) );
+        item->setIcon( 0, QIcon( QString::fromUtf8( ":/Towel42UtilsResources/error.png" ) ) );
 }
 
 void CSettingsDlg::slotServerModelChanged()

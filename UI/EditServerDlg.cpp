@@ -22,7 +22,7 @@
 
 #include "EditServerDlg.h"
 #include "ui_EditServerDlg.h"
-#include "SABUtils/WidgetChanged.h"
+#include "T42-Utils/WidgetChanged.h"
 #include "Core/SyncSystem.h"
 #include "Core/Settings.h"
 

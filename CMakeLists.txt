@@ -53,7 +53,7 @@ file( REAL_PATH ~/bin HOME_BIN_DIR EXPAND_TILDE)
 
 SET( TOWEL42_ENABLE_TESTING ON )
 SET( QNETWORK_SUPPORT ON )
-add_subdirectory( SABUtils )
+add_subdirectory( T42-Utils )
 add_subdirectory( UI )
 add_subdirectory( Core )
 add_subdirectory( gui )

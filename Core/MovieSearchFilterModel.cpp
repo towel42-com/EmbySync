@@ -3,7 +3,7 @@
 #include "MediaData.h"
 #include "Settings.h"
 
-#include "SABUtils/StringUtils.h"
+#include "T42-Utils/StringUtils.h"
 
 #include <QJsonObject>
 #include <QJsonArray>

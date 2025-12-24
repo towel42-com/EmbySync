@@ -92,7 +92,7 @@
   <customwidget>
    <class>CHyperLinkLineEdit</class>
    <extends>QTextEdit</extends>
-   <header>SABUtils/HyperLinkLineEdit.h</header>
+   <header>T42-Utils/HyperLinkLineEdit.h</header>
   </customwidget>
  </customwidgets>
  <tabstops>
@@ -102,7 +102,7 @@
  </tabstops>
  <resources>
   <include location="EmbySync.qrc"/>
-  <include location="../SABUtils/resources/Towel42Utils.qrc"/>
+  <include location="../T42-Utils/resources/Towel42Utils.qrc"/>
  </resources>
  <connections>
   <connection>

@@ -1,12 +1,12 @@
 #include "MovieStub.h"
 #include "MediaData.h"
-#include "SABUtils/HashUtils.h"
+#include "T42-Utils/HashUtils.h"
 #include <QJsonObject>
 #include <QJsonArray>
 
 #include <QRegularExpression>
 #include <unordered_map>
-#include "SABUtils/StringUtils.h"
+#include "T42-Utils/StringUtils.h"
 
 SMovieStub::SMovieStub( const QString &name ) :
     SMovieStub( name, {} )

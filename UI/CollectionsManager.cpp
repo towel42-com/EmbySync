@@ -40,9 +40,9 @@
 #include "Core/ServerModel.h"
 #include <QAbstractItemModelTester>
 
-#include "SABUtils/AutoWaitCursor.h"
-#include "SABUtils/QtUtils.h"
-#include "SABUtils/WidgetChanged.h"
+#include "T42-Utils/AutoWaitCursor.h"
+#include "T42-Utils/QtUtils.h"
+#include "T42-Utils/WidgetChanged.h"
 
 #include <QAction>
 #include <QApplication>
@@ -115,7 +115,7 @@ void CCollectionsManager::setupActions()
 {
     fCreateCollections = new QAction( this );
     fCreateCollections->setObjectName( QString::fromUtf8( "fCreateCollections" ) );
-    setIcon( QString::fromUtf8( ":/SABUtilsResources/run.png" ), fCreateCollections );
+    setIcon( QString::fromUtf8( ":/Towel42UtilsResources/run.png" ), fCreateCollections );
     fCreateCollections->setText( QCoreApplication::translate( "CCollectionsManager", "Create Missing Collections", nullptr ) );
     fCreateCollections->setToolTip( QCoreApplication::translate( "CCollectionsManager", "Create Missing Collections", nullptr ) );
 

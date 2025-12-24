@@ -95,7 +95,7 @@
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset resource="../SABUtils/resources/Towel42Utils.qrc">
+          <iconset resource="../T42-Utils/resources/Towel42Utils.qrc">
            <normaloff>:/Towel42UtilsResources/add.png</normaloff>:/Towel42UtilsResources/add.png</iconset>
          </property>
         </widget>
@@ -106,7 +106,7 @@
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset resource="../SABUtils/resources/Towel42Utils.qrc">
+          <iconset resource="../T42-Utils/resources/Towel42Utils.qrc">
            <normaloff>:/Towel42UtilsResources/delete.png</normaloff>:/Towel42UtilsResources/delete.png</iconset>
          </property>
         </widget>
@@ -156,7 +156,7 @@
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset resource="../SABUtils/resources/Towel42Utils.qrc">
+          <iconset resource="../T42-Utils/resources/Towel42Utils.qrc">
            <normaloff>:/Towel42UtilsResources/edit.png</normaloff>:/Towel42UtilsResources/edit.png</iconset>
          </property>
         </widget>
@@ -370,7 +370,7 @@
               <string>...</string>
              </property>
              <property name="icon">
-              <iconset resource="../SABUtils/resources/Towel42Utils.qrc">
+              <iconset resource="../T42-Utils/resources/Towel42Utils.qrc">
                <normaloff>:/Towel42UtilsResources/add.png</normaloff>:/Towel42UtilsResources/add.png</iconset>
              </property>
             </widget>
@@ -381,7 +381,7 @@
               <string>...</string>
              </property>
              <property name="icon">
-              <iconset resource="../SABUtils/resources/Towel42Utils.qrc">
+              <iconset resource="../T42-Utils/resources/Towel42Utils.qrc">
                <normaloff>:/Towel42UtilsResources/delete.png</normaloff>:/Towel42UtilsResources/delete.png</iconset>
              </property>
             </widget>
@@ -392,7 +392,7 @@
               <string>...</string>
              </property>
              <property name="icon">
-              <iconset resource="../SABUtils/resources/Towel42Utils.qrc">
+              <iconset resource="../T42-Utils/resources/Towel42Utils.qrc">
                <normaloff>:/Towel42UtilsResources/edit.png</normaloff>:/Towel42UtilsResources/edit.png</iconset>
              </property>
             </widget>
@@ -499,7 +499,7 @@
               <string>...</string>
              </property>
              <property name="icon">
-              <iconset resource="../SABUtils/resources/Towel42Utils.qrc">
+              <iconset resource="../T42-Utils/resources/Towel42Utils.qrc">
                <normaloff>:/Towel42UtilsResources/add.png</normaloff>:/Towel42UtilsResources/add.png</iconset>
              </property>
             </widget>
@@ -510,7 +510,7 @@
               <string>...</string>
              </property>
              <property name="icon">
-              <iconset resource="../SABUtils/resources/Towel42Utils.qrc">
+              <iconset resource="../T42-Utils/resources/Towel42Utils.qrc">
                <normaloff>:/Towel42UtilsResources/delete.png</normaloff>:/Towel42UtilsResources/delete.png</iconset>
              </property>
             </widget>
@@ -521,7 +521,7 @@
               <string>...</string>
              </property>
              <property name="icon">
-              <iconset resource="../SABUtils/resources/Towel42Utils.qrc">
+              <iconset resource="../T42-Utils/resources/Towel42Utils.qrc">
                <normaloff>:/Towel42UtilsResources/edit.png</normaloff>:/Towel42UtilsResources/edit.png</iconset>
              </property>
             </widget>
@@ -632,7 +632,7 @@
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset resource="../SABUtils/resources/Towel42Utils.qrc">
+          <iconset resource="../T42-Utils/resources/Towel42Utils.qrc">
            <normaloff>:/Towel42UtilsResources/add.png</normaloff>:/Towel42UtilsResources/add.png</iconset>
          </property>
         </widget>
@@ -643,7 +643,7 @@
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset resource="../SABUtils/resources/Towel42Utils.qrc">
+          <iconset resource="../T42-Utils/resources/Towel42Utils.qrc">
            <normaloff>:/Towel42UtilsResources/delete.png</normaloff>:/Towel42UtilsResources/delete.png</iconset>
          </property>
         </widget>
@@ -654,7 +654,7 @@
           <string>...</string>
          </property>
          <property name="icon">
-          <iconset resource="../SABUtils/resources/Towel42Utils.qrc">
+          <iconset resource="../T42-Utils/resources/Towel42Utils.qrc">
            <normaloff>:/Towel42UtilsResources/edit.png</normaloff>:/Towel42UtilsResources/edit.png</iconset>
          </property>
         </widget>
@@ -807,7 +807,7 @@
  </tabstops>
  <resources>
   <include location="EmbySync.qrc"/>
-  <include location="../SABUtils/resources/Towel42Utils.qrc"/>
+  <include location="../T42-Utils/resources/Towel42Utils.qrc"/>
  </resources>
  <connections>
   <connection>

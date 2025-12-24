@@ -37,9 +37,9 @@
 #include "Core/UsersModel.h"
 #include "Core/ServerModel.h"
 
-#include "SABUtils/AutoWaitCursor.h"
-#include "SABUtils/QtUtils.h"
-#include "SABUtils/WidgetChanged.h"
+#include "T42-Utils/AutoWaitCursor.h"
+#include "T42-Utils/QtUtils.h"
+#include "T42-Utils/WidgetChanged.h"
 
 #include <QAction>
 #include <QApplication>

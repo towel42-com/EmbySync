@@ -37,9 +37,9 @@
 #include "Core/UserData.h"
 #include "Core/ServerModel.h"
 
-#include "SABUtils/AutoWaitCursor.h"
-#include "SABUtils/QtUtils.h"
-#include "SABUtils/WidgetChanged.h"
+#include "T42-Utils/AutoWaitCursor.h"
+#include "T42-Utils/QtUtils.h"
+#include "T42-Utils/WidgetChanged.h"
 
 #include <QAction>
 #include <QApplication>
@@ -227,7 +227,7 @@ void CMissingEpisodes::setupActions()
 {
     fActionSearchForAll = new QAction( this );
     fActionSearchForAll->setObjectName( QString::fromUtf8( "fActionSearchForAll" ) );
-    setIcon( QString::fromUtf8( ":/SABUtilsResources/search.png" ), fActionSearchForAll );
+    setIcon( QString::fromUtf8( ":/Towel42UtilsResources/search.png" ), fActionSearchForAll );
     fActionSearchForAll->setText( QCoreApplication::translate( "CMissingEpisodes", "Search for All Missing", nullptr ) );
     fActionSearchForAll->setToolTip( QCoreApplication::translate( "CMissingEpisodes", "Search for All Missing", nullptr ) );
 

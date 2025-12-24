@@ -28,7 +28,7 @@
 #include "MediaModel.h"
 #include "SyncSystem.h"
 #include "MovieStub.h"
-#include "SABUtils/StringUtils.h"
+#include "T42-Utils/StringUtils.h"
 
 #include <QJsonDocument>
 #include <QJsonObject>

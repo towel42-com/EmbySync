@@ -34,9 +34,9 @@
 #include "Core/CollectionsModel.h"
 #include "Core/ServerModel.h"
 
-#include "SABUtils/DownloadFile.h"
-#include "SABUtils/GitHubGetVersions.h"
-#include "SABUtils/WidgetChanged.h"
+#include "T42-Utils/DownloadFile.h"
+#include "T42-Utils/GitHubGetVersions.h"
+#include "T42-Utils/WidgetChanged.h"
 
 #include <QDebug>
 #include <QFileInfo>

@@ -1,7 +1,7 @@
 #ifndef __SERVERMODEL_H
 #define __SERVERMODEL_H
 
-#include "SABUtils/HashUtils.h"
+#include "T42-Utils/HashUtils.h"
 
 #include <QAbstractTableModel>
 #include <QSortFilterProxyModel>

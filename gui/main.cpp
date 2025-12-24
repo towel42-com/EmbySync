@@ -21,14 +21,14 @@
 // SOFTWARE.
 #include "UI/MainWindow.h"
 #include "Core/MediaData.h"
-#include "SABUtils/utils.h"
+#include "T42-Utils/utils.h"
 
 #include "Version.h"
-#include "SABUtils/Towel42UtilsResources.h"
+#include "T42-Utils/Towel42UtilsResources.h"
 
 #include <QApplication>
 #include <QMessageBox>
-#include "SABUtils/ValidateOpenSSL.h"
+#include "T42-Utils/ValidateOpenSSL.h"
 
 int main( int argc, char **argv )
 {

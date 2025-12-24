@@ -26,7 +26,7 @@
 #include "Settings.h"
 #include "ServerInfo.h"
 #include "ServerModel.h"
-#include "SABUtils/StringUtils.h"
+#include "T42-Utils/StringUtils.h"
 
 #include <QRegularExpression>
 #include <QDebug>

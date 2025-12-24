@@ -194,7 +194,7 @@
   <customwidget>
    <class>NTowel42Utils::CPathBasedDelayLineEdit</class>
    <extends>QLineEdit</extends>
-   <header>SABUtils/DelayLineEdit.h</header>
+   <header>T42-Utils/DelayLineEdit.h</header>
   </customwidget>
  </customwidgets>
  <tabstops>

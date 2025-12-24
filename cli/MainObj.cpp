@@ -32,8 +32,8 @@
 #include "Core/CollectionsModel.h"
 #include "Core/MediaData.h"
 
-#include "SABUtils/QtUtils.h"
-#include "SABUtils/uiUtils.h"
+#include "T42-Utils/QtUtils.h"
+#include "T42-Utils/uiUtils.h"
 
 #include "Version.h"
 #include <iostream>

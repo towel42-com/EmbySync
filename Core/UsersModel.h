@@ -5,7 +5,7 @@
 #include <QAbstractTableModel>
 #include <QSortFilterProxyModel>
 #include <memory>
-#include "SABUtils/HashUtils.h"
+#include "T42-Utils/HashUtils.h"
 
 #include <unordered_set>
 #include <vector>

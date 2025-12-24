@@ -28,7 +28,7 @@
 #include "Core/MediaData.h"
 #include "Core/ServerModel.h"
 #include "Core/ServerInfo.h"
-#include "SABUtils/WidgetChanged.h"
+#include "T42-Utils/WidgetChanged.h"
 
 #include <QHBoxLayout>
 #include <QMetaMethod>
