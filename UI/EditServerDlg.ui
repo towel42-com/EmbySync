@@ -102,7 +102,7 @@
  </tabstops>
  <resources>
   <include location="EmbySync.qrc"/>
-  <include location="../SABUtils/resources/SABUtils.qrc"/>
+  <include location="../SABUtils/resources/Towel42Utils.qrc"/>
  </resources>
  <connections>
   <connection>
