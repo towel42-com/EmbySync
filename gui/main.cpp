@@ -24,7 +24,7 @@
 #include "SABUtils/utils.h"
 
 #include "Version.h"
-#include "SABUtils/SABUtilsResources.h"
+#include "SABUtils/Towel42UtilsResources.h"
 
 #include <QApplication>
 #include <QMessageBox>
@@ -32,16 +32,16 @@
 
 int main( int argc, char **argv )
 {
-    CMediaData::setMSecsToStringFunc( []( uint64_t msecs ) { return NSABUtils::CTimeString( msecs ).toString( "dd:hh:mm:ss.zzz", true ); } );
+    CMediaData::setMSecsToStringFunc( []( uint64_t msecs ) { return NTowel42Utils::CTimeString( msecs ).toString( "dd:hh:mm:ss.zzz", true ); } );
 
-    NSABUtils::initResources();
+    NTowel42Utils::initResources();
     Q_INIT_RESOURCE( EmbySync );
     Q_INIT_RESOURCE( Token );
 
     QApplication appl( argc, argv );
     NVersion::setupApplication( appl, true );
 
-    auto aOK = NSABUtils::validateOpenSSL( true );
+    auto aOK = NTowel42Utils::validateOpenSSL( true );
     if ( !aOK.first )
     {
         QMessageBox::critical( nullptr, QObject::tr( "Could not find OpenSSL libraries" ), aOK.second );

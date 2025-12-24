@@ -52,7 +52,7 @@ message( STATUS "DEBUG_PLUGINPATH=${DEBUG_PLUGINPATH}")
 
 set ( DEBUG_PATH 
         "%PATH%"
-        "$<TARGET_FILE_DIR:SABUtils>"
+        "$<TARGET_FILE_DIR:Towel42Utils>"
         "${QTDIR}"
         )
 
