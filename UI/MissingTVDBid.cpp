@@ -51,7 +51,6 @@
 #include <QTimer>
 #include <QToolBar>
 #include <QSettings>
-#include <QDesktopServices>
 
 CMissingTVDBid::CMissingTVDBid( QWidget *parent ) :
     CTabPageBase( parent ),
@@ -77,7 +76,7 @@ void CMissingTVDBid::setupPage(
     fServerFilterModel = new CServerFilterModel( fServerModel.get() );
     fServerFilterModel->setSourceModel( fServerModel.get() );
     fServerFilterModel->sort( 0, Qt::SortOrder::AscendingOrder );
-    NSABUtils::setupModelChanged( fMediaModel.get(), this, QMetaMethod::fromSignal( &CMissingTVDBid::sigModelDataChanged ) );
+    NTowel42Utils::setupModelChanged( fMediaModel.get(), this, QMetaMethod::fromSignal( &CMissingTVDBid::sigModelDataChanged ) );
 
     fImpl->servers->setModel( fServerFilterModel );
     fImpl->servers->setContextMenuPolicy( Qt::ContextMenuPolicy::CustomContextMenu );
@@ -143,7 +142,7 @@ void CMissingTVDBid::slotSettingsChanged()
 
 void CMissingTVDBid::showPrimaryServer()
 {
-    NSABUtils::CAutoWaitCursor awc;
+    NTowel42Utils::CAutoWaitCursor awc;
     fServerFilterModel->setOnlyShowEnabledServers( true );
     fServerFilterModel->setOnlyShowPrimaryServer( true );
 }

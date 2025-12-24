@@ -49,14 +49,14 @@ CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, std::shared_p
     fSyncSystem( syncSystem )
 {
     fImpl->setupUi( this );
-    new NSABUtils::CButtonEnabler( fImpl->usersList, fImpl->delUser );
-    new NSABUtils::CButtonEnabler( fImpl->usersList, fImpl->editUser );
-    new NSABUtils::CButtonEnabler( fImpl->servers, fImpl->delServer );
-    new NSABUtils::CButtonEnabler( fImpl->servers, fImpl->editServer );
-    new NSABUtils::CButtonEnabler( fImpl->searchServers, fImpl->delSearchServer );
-    new NSABUtils::CButtonEnabler( fImpl->searchServers, fImpl->editSearchServer );
-    new NSABUtils::CButtonEnabler( fImpl->showsList, fImpl->delShow );
-    new NSABUtils::CButtonEnabler( fImpl->showsList, fImpl->editShow );
+    new NTowel42Utils::CButtonEnabler( fImpl->usersList, fImpl->delUser );
+    new NTowel42Utils::CButtonEnabler( fImpl->usersList, fImpl->editUser );
+    new NTowel42Utils::CButtonEnabler( fImpl->servers, fImpl->delServer );
+    new NTowel42Utils::CButtonEnabler( fImpl->servers, fImpl->editServer );
+    new NTowel42Utils::CButtonEnabler( fImpl->searchServers, fImpl->delSearchServer );
+    new NTowel42Utils::CButtonEnabler( fImpl->searchServers, fImpl->editSearchServer );
+    new NTowel42Utils::CButtonEnabler( fImpl->showsList, fImpl->delShow );
+    new NTowel42Utils::CButtonEnabler( fImpl->showsList, fImpl->editShow );
 
     fServerTestButton = fImpl->serverTestButtonBox->addButton( tr( "Test" ), QDialogButtonBox::ButtonRole::ActionRole );
     fServerTestButton->setObjectName( "Test Server Button" );
@@ -163,7 +163,7 @@ CSettingsDlg::CSettingsDlg( std::shared_ptr< CSettings > settings, std::shared_p
         } );
     connect( fImpl->servers, &QTreeWidget::itemDoubleClicked, [ this ]( QTreeWidgetItem *item ) { return editServer( item ); } );
     connect( fImpl->servers, &QTreeWidget::itemSelectionChanged, this, &CSettingsDlg::slotCurrServerChanged );
-    NSABUtils::setupModelChanged( fImpl->servers->model(), this, SLOT( slotServerModelChanged() ) );
+    NTowel42Utils::setupModelChanged( fImpl->servers->model(), this, SLOT( slotServerModelChanged() ) );
     connect( fImpl->servers, &QTreeWidget::itemSelectionChanged, this, &CSettingsDlg::slotCurrServerChanged );
     connect( fImpl->moveServerUp, &QToolButton::clicked, this, &CSettingsDlg::slotMoveServerUp );
     connect( fImpl->moveServerDown, &QToolButton::clicked, this, &CSettingsDlg::slotMoveServerDown );

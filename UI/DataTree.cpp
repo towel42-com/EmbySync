@@ -104,7 +104,7 @@ QModelIndex CDataTree::indexAt( const QPoint &pt ) const
 
 void CDataTree::autoSize()
 {
-    NSABUtils::autoSize( fImpl->data );
+    NTowel42Utils::autoSize( fImpl->data );
 }
 
 void CDataTree::slotSetCurrentMediaItem( const QModelIndex &idx )

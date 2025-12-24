@@ -58,7 +58,7 @@ CUserWindow::CUserWindow( std::shared_ptr< CServerModel > serverModel, std::shar
         connect( userDataWidget, &CUserDataWidget::sigProcessToServer, this, &CUserWindow::slotProcessToServer );
     }
 
-    NSABUtils::setupWidgetChanged( this, QMetaMethod::fromSignal( &CUserWindow::sigChanged ), { fImpl->process } );
+    NTowel42Utils::setupWidgetChanged( this, QMetaMethod::fromSignal( &CUserWindow::sigChanged ), { fImpl->process } );
     connect(
         this, &CUserWindow::sigChanged,
         [ this ]()

@@ -77,7 +77,7 @@ void CPlayStateCompare::setupPage( std::shared_ptr< CSettings > settings, std::s
 
     fMediaFilterModel->sort( -1, Qt::SortOrder::AscendingOrder );
     fUsersFilterModel->sort( -1, Qt::SortOrder::AscendingOrder );
-    NSABUtils::setupModelChanged( fMediaModel.get(), this, QMetaMethod::fromSignal( &CPlayStateCompare::sigModelDataChanged ) );
+    NTowel42Utils::setupModelChanged( fMediaModel.get(), this, QMetaMethod::fromSignal( &CPlayStateCompare::sigModelDataChanged ) );
 
     fImpl->users->setModel( fUsersFilterModel );
     fImpl->users->setContextMenuPolicy( Qt::ContextMenuPolicy::CustomContextMenu );
@@ -238,7 +238,7 @@ void CPlayStateCompare::loadingUsersFinished()
 {
     onlyShowSyncableUsers();
     fUsersFilterModel->sort( 0, Qt::SortOrder::AscendingOrder );
-    NSABUtils::autoSize( fImpl->users, -1 );
+    NTowel42Utils::autoSize( fImpl->users, -1 );
 }
 
 QSplitter *CPlayStateCompare::getDataSplitter() const
@@ -307,7 +307,7 @@ void CPlayStateCompare::slotToggleOnlyShowSyncableUsers()
 
 void CPlayStateCompare::onlyShowSyncableUsers()
 {
-    NSABUtils::CAutoWaitCursor awc;
+    NTowel42Utils::CAutoWaitCursor awc;
     auto usersSummary = fUsersModel->settingsChanged();
     fImpl->usersLabel->setText( tr( "Users: %1 sync-able out of %2 total users" ).arg( usersSummary.fSyncable ).arg( usersSummary.fTotal ) );
 }
@@ -320,7 +320,7 @@ void CPlayStateCompare::slotToggleOnlyShowMediaWithDifferences()
 
 void CPlayStateCompare::onlyShowMediaWithDifferences()
 {
-    NSABUtils::CAutoWaitCursor awc;
+    NTowel42Utils::CAutoWaitCursor awc;
 
     fMediaModel->settingsChanged();
 
@@ -349,7 +349,7 @@ void CPlayStateCompare::slotToggleShowMediaWithIssues()
 
 void CPlayStateCompare::showMediaWithIssues()
 {
-    NSABUtils::CAutoWaitCursor awc;
+    NTowel42Utils::CAutoWaitCursor awc;
 
     fMediaModel->settingsChanged();
     fProgressSystem->resetProgress();

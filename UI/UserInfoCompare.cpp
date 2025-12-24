@@ -268,7 +268,7 @@ void CUserInfoCompare::slotToggleOnlyShowSyncableUsers()
 
 void CUserInfoCompare::onlyShowSyncableUsers()
 {
-    NSABUtils::CAutoWaitCursor awc;
+    NTowel42Utils::CAutoWaitCursor awc;
     auto usersSummary = fUsersModel->settingsChanged();
     fImpl->usersLabel->setText( tr( "Users: %1 sync-able out of %2 total users" ).arg( usersSummary.fSyncable ).arg( usersSummary.fTotal ) );
 }
@@ -281,7 +281,7 @@ void CUserInfoCompare::slotToggleOnlyShowUsersWithDifferences()
 
 void CUserInfoCompare::onlyShowUsersWithDifferences()
 {
-    NSABUtils::CAutoWaitCursor awc;
+    NTowel42Utils::CAutoWaitCursor awc;
 
     fMediaModel->settingsChanged();
 
@@ -308,7 +308,7 @@ void CUserInfoCompare::slotToggleShowUsersWithIssues()
 
 void CUserInfoCompare::showUsersWithIssues()
 {
-    NSABUtils::CAutoWaitCursor awc;
+    NTowel42Utils::CAutoWaitCursor awc;
 
     fMediaModel->settingsChanged();
     fProgressSystem->resetProgress();

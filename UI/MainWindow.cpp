@@ -58,13 +58,13 @@ CMainWindow::CMainWindow( QWidget *parent ) :
     fSettings = std::make_shared< CSettings >( fServerModel );
 
     fUsersModel = std::make_shared< CUsersModel >( fSettings, fServerModel );
-    NSABUtils::setupModelChanged( fUsersModel.get(), this, QMetaMethod::fromSignal( &CMainWindow::sigModelDataChanged ) );
+    NTowel42Utils::setupModelChanged( fUsersModel.get(), this, QMetaMethod::fromSignal( &CMainWindow::sigModelDataChanged ) );
     connect( this, &CMainWindow::sigSettingsLoaded, fUsersModel.get(), &CUsersModel::slotSettingsChanged );
     connect( this, &CMainWindow::sigSettingsLoaded, this, &CMainWindow::slotSettingsChanged );
     connect( this, &CMainWindow::sigSettingsChanged, this, &CMainWindow::slotSettingsChanged );
 
     fMediaModel = std::make_shared< CMediaModel >( fSettings, fServerModel );
-    NSABUtils::setupModelChanged( fMediaModel.get(), this, QMetaMethod::fromSignal( &CMainWindow::sigModelDataChanged ) );
+    NTowel42Utils::setupModelChanged( fMediaModel.get(), this, QMetaMethod::fromSignal( &CMainWindow::sigModelDataChanged ) );
 
     fCollectionsModel = std::make_shared< CCollectionsModel >( fMediaModel );
 
@@ -92,10 +92,10 @@ CMainWindow::CMainWindow( QWidget *parent ) :
 
     connect( fImpl->actionCheckForLatestVersion, &QAction::triggered, this, &CMainWindow::slotActionCheckForLatest );
 
-    fGitHubVersion.first = new NSABUtils::CGitHubGetVersions( {}, this );
+    fGitHubVersion.first = new NTowel42Utils::CGitHubGetVersions( {}, this );
     fGitHubVersion.first->setCurrentVersion( NVersion::MAJOR_VERSION, NVersion::MINOR_VERSION, NVersion::buildDateTime() );
-    connect( fGitHubVersion.first, &NSABUtils::CGitHubGetVersions::sigVersionsDownloaded, this, &CMainWindow::slotVersionsDownloaded );
-    connect( fGitHubVersion.first, &NSABUtils::CGitHubGetVersions::sigLogMessage, this, &CMainWindow::slotAddInfoToLog );
+    connect( fGitHubVersion.first, &NTowel42Utils::CGitHubGetVersions::sigVersionsDownloaded, this, &CMainWindow::slotVersionsDownloaded );
+    connect( fGitHubVersion.first, &NTowel42Utils::CGitHubGetVersions::sigLogMessage, this, &CMainWindow::slotAddInfoToLog );
 
     auto idx = fImpl->tabWidget->currentIndex();
 
@@ -256,7 +256,7 @@ void CMainWindow::slotVersionsDownloaded()
             if ( !asset )
                 return;
 
-            NSABUtils::CDownloadFile dlg( asset->fName, asset->fUrl.second, asset->fSize, this );
+            NTowel42Utils::CDownloadFile dlg( asset->fName, asset->fUrl.second, asset->fSize, this );
             if ( dlg.startDownload() && ( dlg.exec() == QDialog::Accepted ) && dlg.installAfterDownload() )
             {
                 QProcess::startDetached( dlg.getDownloadFile(), {} );

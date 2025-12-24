@@ -55,7 +55,6 @@
 #include <QTimer>
 #include <QToolBar>
 #include <QSettings>
-#include <QDesktopServices>
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
@@ -83,7 +82,7 @@ void CCollectionsManager::setupPage( std::shared_ptr< CSettings > settings, std:
     fServerFilterModel = new CServerFilterModel( fServerModel.get() );
     fServerFilterModel->setSourceModel( fServerModel.get() );
     fServerFilterModel->sort( 0, Qt::SortOrder::AscendingOrder );
-    NSABUtils::setupModelChanged( fMediaModel.get(), this, QMetaMethod::fromSignal( &CCollectionsManager::sigModelDataChanged ) );
+    NTowel42Utils::setupModelChanged( fMediaModel.get(), this, QMetaMethod::fromSignal( &CCollectionsManager::sigModelDataChanged ) );
 
     fFilterModel = new CCollectionsFilterModel( fCollectionsModel.get() );
     fFilterModel->setSourceModel( fCollectionsModel.get() );
@@ -182,7 +181,7 @@ void CCollectionsManager::slotSettingsChanged()
 
 void CCollectionsManager::showPrimaryServer()
 {
-    NSABUtils::CAutoWaitCursor awc;
+    NTowel42Utils::CAutoWaitCursor awc;
     fServerFilterModel->setOnlyShowEnabledServers( true );
     fServerFilterModel->setOnlyShowPrimaryServer( true );
 }

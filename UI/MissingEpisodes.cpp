@@ -51,7 +51,6 @@
 #include <QTimer>
 #include <QToolBar>
 #include <QSettings>
-#include <QDesktopServices>
 #include <QStyledItemDelegate>
 
 class CEditDelegate : public QStyledItemDelegate
@@ -169,7 +168,7 @@ void CMissingEpisodes::setupPage( std::shared_ptr< CSettings > settings, std::sh
     fServerFilterModel = new CServerFilterModel( fServerModel.get() );
     fServerFilterModel->setSourceModel( fServerModel.get() );
     fServerFilterModel->sort( 0, Qt::SortOrder::AscendingOrder );
-    NSABUtils::setupModelChanged( fMediaModel.get(), this, QMetaMethod::fromSignal( &CMissingEpisodes::sigModelDataChanged ) );
+    NTowel42Utils::setupModelChanged( fMediaModel.get(), this, QMetaMethod::fromSignal( &CMissingEpisodes::sigModelDataChanged ) );
 
     fImpl->servers->setModel( fServerFilterModel );
     fImpl->servers->setContextMenuPolicy( Qt::ContextMenuPolicy::CustomContextMenu );
@@ -277,7 +276,7 @@ void CMissingEpisodes::slotSettingsChanged()
 
 void CMissingEpisodes::showPrimaryServer()
 {
-    NSABUtils::CAutoWaitCursor awc;
+    NTowel42Utils::CAutoWaitCursor awc;
     fServerFilterModel->setOnlyShowEnabledServers( true );
     fServerFilterModel->setOnlyShowPrimaryServer( true );
 }

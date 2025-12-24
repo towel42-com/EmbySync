@@ -84,9 +84,9 @@ CMissingMovies::CMissingMovies( QWidget *parent ) :
                 return;
             fImpl->listFile->setText( QFileInfo( fileName ).absoluteFilePath() );
         } );
-    connect( fImpl->listFile, &NSABUtils::CPathBasedDelayLineEdit::sigTextEditedAfterDelay, this, &CMissingMovies::slotSetMovieSearchFile );
-    connect( fImpl->listFile, &NSABUtils::CPathBasedDelayLineEdit::sigFinishedEditingAfterDelay, this, &CMissingMovies::slotSetMovieSearchFile );
-    connect( fImpl->listFile, &NSABUtils::CPathBasedDelayLineEdit::sigTextChangedAfterDelay, this, &CMissingMovies::slotSetMovieSearchFile );
+    connect( fImpl->listFile, &NTowel42Utils::CPathBasedDelayLineEdit::sigTextEditedAfterDelay, this, &CMissingMovies::slotSetMovieSearchFile );
+    connect( fImpl->listFile, &NTowel42Utils::CPathBasedDelayLineEdit::sigFinishedEditingAfterDelay, this, &CMissingMovies::slotSetMovieSearchFile );
+    connect( fImpl->listFile, &NTowel42Utils::CPathBasedDelayLineEdit::sigTextChangedAfterDelay, this, &CMissingMovies::slotSetMovieSearchFile );
 
     QSettings settings;
     settings.beginGroup( "MissingMovies" );
@@ -115,7 +115,7 @@ void CMissingMovies::setupPage( std::shared_ptr< CSettings > settings, std::shar
 
     fServerFilterModel = new CServerFilterModel( fServerModel.get() );
     fServerFilterModel->setSourceModel( fServerModel.get() );
-    NSABUtils::setupModelChanged( fMediaModel.get(), this, QMetaMethod::fromSignal( &CMissingMovies::sigModelDataChanged ) );
+    NTowel42Utils::setupModelChanged( fMediaModel.get(), this, QMetaMethod::fromSignal( &CMissingMovies::sigModelDataChanged ) );
 
     fImpl->servers->setModel( fServerFilterModel );
     fImpl->servers->setContextMenuPolicy( Qt::ContextMenuPolicy::CustomContextMenu );
@@ -245,7 +245,7 @@ void CMissingMovies::setupActions()
     connect( fActionSaveMissing, &QAction::triggered, [ this ]() { fMoviesModel->saveMissing( this ); } );
 
     if ( !fDataTrees.empty() )
-        new NSABUtils::CButtonEnabler( fDataTrees[ 0 ]->dataTree(), fRemoveMovieToSearchFor );
+        new NTowel42Utils::CButtonEnabler( fDataTrees[ 0 ]->dataTree(), fRemoveMovieToSearchFor );
 }
 
 bool CMissingMovies::prepForClose()
@@ -285,7 +285,7 @@ void CMissingMovies::slotSettingsChanged()
 
 void CMissingMovies::showPrimaryServer()
 {
-    NSABUtils::CAutoWaitCursor awc;
+    NTowel42Utils::CAutoWaitCursor awc;
     fServerFilterModel->setOnlyShowEnabledServers( true );
     fServerFilterModel->setOnlyShowPrimaryServer( true );
 }
@@ -471,7 +471,7 @@ void CMissingMovies::saveJSON( const QString &fileName )
     auto obj = fMoviesModel->toJSON();
 
     if ( QFileInfo( fileName ).exists() )
-        NSABUtils::NFileUtils::backup( fileName );
+        NTowel42Utils::NFileUtils::backup( fileName );
 
     QFile fi( fileName );
     if ( !fi.open( QFile::WriteOnly | QFile::Truncate ) )

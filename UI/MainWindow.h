@@ -30,7 +30,7 @@ namespace Ui
 {
     class CMainWindow;
 }
-namespace NSABUtils
+namespace NTowel42Utils
 {
     class CGitHubGetVersions;
 }
@@ -129,6 +129,6 @@ private:
     std::unordered_map< int, CTabPageBase * > fPages;
     std::shared_ptr< CTabUIInfo > fCurrentTabUIInfo;
 
-    std::pair< NSABUtils::CGitHubGetVersions *, bool > fGitHubVersion{ nullptr, false };
+    std::pair< NTowel42Utils::CGitHubGetVersions *, bool > fGitHubVersion{ nullptr, false };
 };
 #endif
