@@ -1558,7 +1558,7 @@ void CSyncSystem::repairConnectIDs( const std::list< std::shared_ptr< CUserData 
     for ( auto &&ii : users )
     {
         auto connectedID = ii->connectedID();
-        if ( !NSABUtils::NStringUtils::isValidEmailAddress( connectedID ) )
+        if ( !NTowel42Utils::NStringUtils::isValidEmailAddress( connectedID ) )
             connectedID = kForceDelete;
         auto connectedIDType = ii->connectedIDType();
 

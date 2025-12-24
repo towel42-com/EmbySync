@@ -73,7 +73,7 @@ QString SMovieStub::nameKey( const QString &name )
     }
 
 
-    auto words = NSABUtils::NStringUtils::getImportantWordsInOrder( retVal, true );
+    auto words = NTowel42Utils::NStringUtils::getImportantWordsInOrder( retVal, true );
     retVal.clear();
     for ( auto &&ii : words )
     {
@@ -104,11 +104,11 @@ std::size_t SMovieStub::hash( bool useName, bool useYear, bool useResolution ) c
     std::size_t retVal = 0;
 
     if ( useName )
-        retVal = NSABUtils::HashCombine( retVal, nameKey() );
+        retVal = NTowel42Utils::HashCombine( retVal, nameKey() );
     if ( useYear && hasYear() )
-        retVal = NSABUtils::HashCombine( retVal, fYear );
+        retVal = NTowel42Utils::HashCombine( retVal, fYear );
     if ( useResolution && hasResolution() )
-        retVal = NSABUtils::HashCombine( retVal, fResolution.value().first );
+        retVal = NTowel42Utils::HashCombine( retVal, fResolution.value().first );
 
     return retVal;
 }

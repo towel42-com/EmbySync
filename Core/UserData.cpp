@@ -385,7 +385,7 @@ bool CUserData::isUser( const QString &serverName, const QString &userID ) const
 
 bool CUserData::connectedIDNeedsUpdate() const
 {
-    return !fConnectedID.second.isEmpty() && !NSABUtils::NStringUtils::isValidEmailAddress( fConnectedID.second );
+    return !fConnectedID.second.isEmpty() && !NTowel42Utils::NStringUtils::isValidEmailAddress( fConnectedID.second );
 }
 
 bool CUserData::isMatch( const QRegularExpression &regEx, const QString &value ) const

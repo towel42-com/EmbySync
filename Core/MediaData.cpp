@@ -681,9 +681,9 @@ bool CMediaData::isMatch( const QString &name, int year ) const
         return true;
     if ( SMovieStub::nameKey( name ) == SMovieStub::nameKey( fOriginalTitle ) )
         return true;
-    if ( NSABUtils::NStringUtils::isSimilar( fName, name, true ) )
+    if ( NTowel42Utils::NStringUtils::isSimilar( fName, name, true ) )
         return true;
-    if ( NSABUtils::NStringUtils::isSimilar( fOriginalTitle, name, true ) )
+    if ( NTowel42Utils::NStringUtils::isSimilar( fOriginalTitle, name, true ) )
         return true;
     return false;
 }
