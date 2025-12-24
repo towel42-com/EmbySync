@@ -64,6 +64,7 @@ public:
     QString errorString() const { return fErrorString; }
 
     void setQuiet( bool quiet ) { fQuiet = quiet; }
+    void setLaunchMissing( bool launchMissing ) { fLaunchMissing = launchMissing; }
     void addToLog( int msgType, const QString &title, const QString &msg );
     void addToLog( int msgType, const QString &msg );
 
@@ -76,6 +77,8 @@ public Q_SLOTS:
     void slotUserMediaCompletelyLoaded();
     void slotProcessingFinished( const QString &userName );
     void slotMissingEpisodesLoaded();
+
+public:
     void slotAllShowsLoaded();
     void slotProcessMedia();
 
@@ -104,6 +107,7 @@ private:
     QDate fMaxDate;
     EMode fMode{ EMode::eUnknown };
     bool fQuiet{ false };
+    bool fLaunchMissing{ false };
 };
 
 #endif

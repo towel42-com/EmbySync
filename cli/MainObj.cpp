@@ -19,7 +19,6 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-
 #include "MainObj.h"
 
 #include "Core/Settings.h"
@@ -34,6 +33,8 @@
 #include "Core/MediaData.h"
 
 #include "SABUtils/QtUtils.h"
+#include "SABUtils/uiUtils.h"
+
 #include "Version.h"
 #include <iostream>
 
@@ -202,7 +203,7 @@ void CMainObj::run()
 
 void CMainObj::setMinimumDate( const QString &minDate )
 {
-    fMinDate = NSABUtils::getDate( minDate );
+    fMinDate = NTowel42Utils::getDate( minDate );
     if ( !fMinDate.isValid() )
     {
         fAOK = false;
@@ -212,7 +213,7 @@ void CMainObj::setMinimumDate( const QString &minDate )
 
 void CMainObj::setMaximumDate( const QString &maxDate )
 {
-    fMaxDate = NSABUtils::getDate( maxDate );
+    fMaxDate = NTowel42Utils::getDate( maxDate );
     if ( !fMaxDate.isValid() )
     {
         fAOK = false;
@@ -331,6 +332,7 @@ void CMainObj::slotProcessMedia()
         fSyncSystem->selectiveProcessMedia( fSelectedServerToProcess );
 }
 
+
 void CMainObj::slotAllShowsLoaded()
 {
     if ( fUsersToSync.empty() )
@@ -380,10 +382,23 @@ void CMainObj::slotMissingEpisodesLoaded()
     {
         slotAddToLog( EMsgType::eStatus, QString( "There were %1 missing episodes found." ).arg( episodes.size() ) );
         QLocale locale;
+        bool launchedOK = true;
         for ( auto &&ii : episodes )
         {
-            auto msg = QString( R"__(    %1 - %2 - %3)__" ).arg( ii->name() ).arg( locale.toString( ii->premiereDate() ) ).arg( ii->getDefaultSearchURL( fSettings ).toString( QUrl::FullyEncoded ) );
+            auto url = ii->getDefaultSearchURL( fSettings );
+            auto msg = QString( R"__(    %1 - %2 - %3)__" ).arg( ii->name() ).arg( locale.toString( ii->premiereDate() ) ).arg( url.toString( QUrl::FullyEncoded ) );
+
             slotAddToLog( EMsgType::eStatus, msg );
+
+            if ( launchedOK && fLaunchMissing )
+            {
+                auto msg = NTowel42Utils::openUrl( url );
+                if ( msg.has_value() )
+                {
+                    addToLog( EMsgType::eError, msg.value() );
+                    launchedOK = false;
+                }
+            }
         }
     }
     QTimer::singleShot( 0, this, &CMainObj::slotProcessNextUser );

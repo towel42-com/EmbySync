@@ -67,10 +67,12 @@ int main( int argc, char **argv )
     auto maxDateOption = QCommandLineOption( QStringList() << "max_date", QString( "The latest premiere date to check if its missing (default %1)" ).arg( dateStr ), "max date", dateStr );
     parser.addOption( maxDateOption );
 
-    auto quietOption = QCommandLineOption(
-        QStringList() << "quiet"
-                      << "q",
-        QString( "Minimize text output" ), "" );
+#ifdef Q_OS_WIN
+    auto launchMissing = QCommandLineOption( QStringList() << "launch", QString( "Launch search on missing episodes" ) );
+    parser.addOption( launchMissing );
+#endif
+
+    auto quietOption = QCommandLineOption( QStringList() << "quiet" << "q", QString( "Minimize text output" ) );
     parser.addOption( quietOption );
 
     parser.process( appl );
@@ -118,6 +120,7 @@ int main( int argc, char **argv )
     mainObj->setMinimumDate( parser.value( minDateOption ) );
     mainObj->setMaximumDate( parser.value( maxDateOption ) );
     mainObj->setQuiet( parser.isSet( quietOption ) );
+    mainObj->setLaunchMissing( parser.isSet( launchMissing ) );
     if ( !mainObj->aOK() )
     {
         std::cerr << mainObj->errorString().toStdString() << "\n";
