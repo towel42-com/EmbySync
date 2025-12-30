@@ -46,18 +46,122 @@
 #include <QLocale>
 #include <QDate>
 
-CMainObj::CMainObj( const QString &settingsFile, const QString &mode, QObject *parent /*= nullptr*/ ) :
-    QObject( parent ),
-    fSettingsFile( settingsFile )
+CCommandLineParser::CCommandLineParser( const QCoreApplication &appl ) :
+    QCommandLineParser()
 {
-    if ( !setMode( mode ) )
+    setApplicationDescription( NVersion::APP_NAME + " CLI - a tool to sync two emby servers" );
+    auto helpOption = addHelpOption();
+    auto versionOption = addVersionOption();
+
+    auto settingsFileOption = QCommandLineOption(
+        QStringList() << "settings"
+                      << "s",
+        "The settings json file", "Settings file", CSettings::latestProjectSettingsFile() );
+    addOption( settingsFileOption );
+
+    auto modeOption = QCommandLineOption(
+        QStringList() << "mode"
+                      << "m",
+        "The particular mode of operation you wish to use valid values are check_missing|sync", "Mode" );
+    addOption( modeOption );
+
+    auto selectedServerOption = QCommandLineOption( QStringList() << "selected_server", "The server name you wish to use as the primary server to use as the source server (required for check_missing)", "Selected Server" );
+    addOption( selectedServerOption );
+
+    auto minDateStr = QDate::currentDate().addDays( -60 ).toString( "MM/dd/yyyy" );
+    auto minDateOption = QCommandLineOption( QStringList() << "min_date", QString( "The oldest premiere date to check if its missing (default %1)" ).arg( minDateStr ), "min date", minDateStr );
+    addOption( minDateOption );
+
+    auto maxDateStr = QDate::currentDate().toString( "MM/dd/yyyy" );
+    auto maxDateOption = QCommandLineOption( QStringList() << "max_date", QString( "The latest premiere date to check if its missing (default %1)" ).arg( maxDateStr ), "max date", maxDateStr );
+    addOption( maxDateOption );
+
+#ifdef Q_OS_WIN
+    auto launchMissing = QCommandLineOption( QStringList() << "launch", QString( "Launch search on missing episodes" ) );
+    addOption( launchMissing );
+#endif
+
+    auto quietOption = QCommandLineOption( QStringList() << "quiet" << "q", QString( "Minimize text output" ) );
+    addOption( quietOption );
+
+    if ( !parse( appl.arguments() ) )
+    {
+        fStatus = { false, this->errorText(), -1 };
+        return;
+    }
+
+    if ( !unknownOptionNames().isEmpty() )
+    {
+        auto msg = versionString() + "\n";
+        msg += "The following options were set and are unknown:";
+        for ( auto &&ii : unknownOptionNames() )
+            msg += "\n    " + ii.toStdString();
+        fStatus = { false, msg, -1 };
+        return;
+    }
+
+    if ( isSet( helpOption ) )
+    {
+        fStatus = { true, versionString() + "\n" + helpText().trimmed(), 0 };
+        return;
+    }
+
+    if ( isSet( "help-all" ) )
+    {
+        fStatus = { true, versionString() + "\n" + helpText( /*true*/ ).trimmed(), 0 };
+        return;
+    }
+
+    if ( isSet( versionOption ) )
+    {
+        fStatus = { true, versionString(), 0 };
+        return;
+    }
+
+    if ( !isSet( modeOption ) )
+    {
+        fStatus = { false, helpText().trimmed(), -1 };
+        return;
+    }
+
+    fStatus = { true, "", std::optional< int >() };
+    fSettingsFile = value( settingsFileOption );
+    fMode = value( modeOption ).toLower();
+
+    if ( isSet( selectedServerOption ) )
+        fSelectedServer = value( selectedServerOption );
+
+    fMinDate = value( minDateOption );
+    fMaxDate = value( maxDateOption );
+    fQuiet = isSet( quietOption );
+    fLaunchMissingEpisodes = isSet( launchMissing );
+}
+
+QString CCommandLineParser::versionString() const
+{
+    return NVersion::APP_NAME + " - " + NVersion::getVersionString( true, false );
+}
+
+CMainObj::CMainObj( const QCoreApplication &appl, QObject *parent /*= nullptr*/ ) :
+    QObject( parent )
+{
+    init( appl );
+}
+
+void CMainObj::init( const QCoreApplication &appl )
+{
+    fCLIParser = std::make_shared< CCommandLineParser >( appl );
+
+    if ( std::get< 2 >( fCLIParser->status() ).has_value() )
+        return;
+
+    if ( !setMode( fCLIParser->mode() ) )
         return;
 
     fServerModel = std::make_shared< CServerModel >();
     fSettings = std::make_shared< CSettings >( false, fServerModel );
-    if ( !fSettings->load( settingsFile, [ this, settingsFile ]( const QString & /*title*/, const QString &msg ) { fErrorString = QString( "--settings file '%1' could not be loaded: %2" ).arg( settingsFile ).arg( msg ); }, false ) )
+    if ( !fSettings->load( fCLIParser->settingsFile(), [ this ]( const QString & /*title*/, const QString &msg ) { fStatusText = QString( "--settings file '%1' could not be loaded: %2" ).arg( fCLIParser->settingsFile() ).arg( msg ); }, false ) )
     {
-        fSettings.reset();
         return;
     }
 
@@ -71,7 +175,7 @@ CMainObj::CMainObj( const QString &settingsFile, const QString &mode, QObject *p
     {
         if ( !QRegularExpression( ii ).isValid() )
         {
-            fErrorString = QString( "SyncUserList contains invalid regular expression: '%1'." ).arg( ii );
+            fStatusText = QString( "SyncUserList contains invalid regular expression: '%1'." ).arg( ii );
             return;
         }
         syncUsers << "(" + ii + ")";
@@ -80,13 +184,13 @@ CMainObj::CMainObj( const QString &settingsFile, const QString &mode, QObject *p
     fUserRegExp = QRegularExpression( regExStr );
     if ( !fUserRegExp.isValid() )
     {
-        fErrorString = QString( "SyncUserList creates an invalid regular expression: '%1'." ).arg( regExStr );
+        fStatusText = QString( "SyncUserList creates an invalid regular expression: '%1'." ).arg( regExStr );
         return;
     }
 
     if ( regExStr.isEmpty() )
     {
-        fErrorString = QString( "SyncUserList is not set in the settings file." );
+        fStatusText = QString( "SyncUserList is not set in the settings file." );
         return;
     }
 
@@ -143,17 +247,34 @@ CMainObj::CMainObj( const QString &settingsFile, const QString &mode, QObject *p
     fSyncSystem->setProgressSystem( progressSystem );
     fSyncSystem->setUserMsgFunc( [ this ]( EMsgType msgType, const QString &title, QString msg ) { addToLog( msgType, title, msg ); } );
 
+    if ( fCLIParser->selectedServer().has_value() )
+        setSelectedServer( fCLIParser->selectedServer().value() );
+
+    setMinimumDate( fCLIParser->minDate() );
+    setMaximumDate( fCLIParser->maxDate() );
+    setQuiet( fCLIParser->quiet() );
+    setLaunchMissing( fCLIParser->launchMissingEpisodes() );
+
     fAOK = true;
 }
 
-bool CMainObj::aOK() const
+std::optional< std::pair< bool, int > > CMainObj::status() const
 {
+    if ( std::get< 2 >( fCLIParser->status() ).has_value() )
+    {
+        fStatusText = std::get< 1 >( fCLIParser->status() );
+        return std::make_pair( std::get< 0 >( fCLIParser->status() ), std::get< 2 >( fCLIParser->status() ).value() );
+    }
+
     if ( ( fMode == EMode::eCheckMissing ) && fSelectedServerToProcess.isEmpty() )
     {
-        fErrorString = "Selected server must be set to check for missing.";
+        fStatusText = "Selected server must be set to check for missing.";
         fAOK = false;
     }
-    return fAOK;
+
+    if ( fAOK == false )
+        return std::make_pair( false, -1 );
+    return {};
 }
 
 void CMainObj::slotAddToLog( int msgType, const QString &msg )
@@ -189,7 +310,7 @@ void CMainObj::run()
 
     if ( fMode == EMode::eCheckMissing )
     {
-        fSelectedServer = fServerModel->enableServer( fSelectedServerToProcess, true, fErrorString );
+        fSelectedServer = fServerModel->enableServer( fSelectedServerToProcess, true, fStatusText );
         if ( !fSelectedServer )
         {
             fAOK = false;
@@ -207,7 +328,7 @@ void CMainObj::setMinimumDate( const QString &minDate )
     if ( !fMinDate.isValid() )
     {
         fAOK = false;
-        fErrorString = tr( "Invalid Minimum date '%1'." ).arg( minDate );
+        fStatusText = tr( "Invalid Minimum date '%1'." ).arg( minDate );
     }
 }
 
@@ -217,7 +338,7 @@ void CMainObj::setMaximumDate( const QString &maxDate )
     if ( !fMaxDate.isValid() )
     {
         fAOK = false;
-        fErrorString = tr( "Invalid Maximum date '%1'." ).arg( maxDate );
+        fStatusText = tr( "Invalid Maximum date '%1'." ).arg( maxDate );
     }
 }
 
@@ -309,7 +430,7 @@ void CMainObj::slotProcessNextUser()
         slotAddToLog( EMsgType::eStatus, "Loading all shows" );
         if ( !fSyncSystem->loadAllShows( currUser, fSelectedServer ) )
         {
-            fErrorString = tr( "No user found with Administrator Privileges on server '%1'" ).arg( fSelectedServer->displayName() );
+            fStatusText = tr( "No user found with Administrator Privileges on server '%1'" ).arg( fSelectedServer->displayName() );
         }
     }
 }
@@ -332,7 +453,6 @@ void CMainObj::slotProcessMedia()
         fSyncSystem->selectiveProcessMedia( fSelectedServerToProcess );
 }
 
-
 void CMainObj::slotAllShowsLoaded()
 {
     if ( fUsersToSync.empty() )
@@ -345,7 +465,7 @@ void CMainObj::slotAllShowsLoaded()
 
     if ( !fSyncSystem->loadMissingEpisodes( currUser, fSelectedServer ) )
     {
-        fErrorString = tr( "No user found with Administrator Privileges on server '%1'" ).arg( fSelectedServer->displayName() );
+        fStatusText = tr( "No user found with Administrator Privileges on server '%1'" ).arg( fSelectedServer->displayName() );
     }
 }
 
@@ -412,7 +532,7 @@ bool CMainObj::setMode( const QString &mode )
         fMode = EMode::eSync;
     else
     {
-        fErrorString = QString( "Invalid mode '%1'" ).arg( mode );
+        fStatusText = QString( "Invalid mode '%1'" ).arg( mode );
         fAOK = false;
         return false;
     }

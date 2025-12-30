@@ -30,123 +30,33 @@
 
 #include <conio.h>
 
-void showVersion()
-{
-    std::cout << NVersion::APP_NAME.toStdString() << " - " << NVersion::getVersionString( true, false ).toStdString() << "\n";
-}
-
 int main( int argc, char **argv )
 {
     QCoreApplication appl( argc, argv );
     NVersion::setupApplication( appl, true );
 
-    QCommandLineParser parser;
-    parser.setApplicationDescription( NVersion::APP_NAME + " CLI - a tool to sync two emby servers" );
-    auto helpOption = parser.addHelpOption();
-    auto versionOption = parser.addVersionOption();
-
-    auto settingsFileOption = QCommandLineOption(
-        QStringList() << "settings"
-                      << "s",
-        "The settings json file", "Settings file", CSettings::latestProjectSettingsFile() );
-    parser.addOption( settingsFileOption );
-
-    auto modeOption = QCommandLineOption(
-        QStringList() << "mode"
-                      << "m",
-        "The particular mode of operation you wish to use valid values are check_missing|sync", "Mode" );
-    parser.addOption( modeOption );
-
-    auto selectedServerOption = QCommandLineOption( QStringList() << "selected_server", "The server name you wish to use as the primary server to use as the source server (required for check_missing)", "Selected Server" );
-    parser.addOption( selectedServerOption );
-
-    auto dateStr = QDate::currentDate().toString( "MM/dd/yyyy" );
-    auto minDateOption = QCommandLineOption( QStringList() << "min_date", QString( "The oldest premiere date to check if its missing (default %1)" ).arg( dateStr ), "min date", dateStr );
-    parser.addOption( minDateOption );
-
-    auto maxDateOption = QCommandLineOption( QStringList() << "max_date", QString( "The latest premiere date to check if its missing (default %1)" ).arg( dateStr ), "max date", dateStr );
-    parser.addOption( maxDateOption );
-
-#ifdef Q_OS_WIN
-    auto launchMissing = QCommandLineOption( QStringList() << "launch", QString( "Launch search on missing episodes" ) );
-    parser.addOption( launchMissing );
-#endif
-
-    auto quietOption = QCommandLineOption( QStringList() << "quiet" << "q", QString( "Minimize text output" ) );
-    parser.addOption( quietOption );
-
-    parser.process( appl );
-
-    if ( !parser.unknownOptionNames().isEmpty() )
-    {
-        showVersion();
-        std::cerr << "The following options were set and are unknown:\n";
-        for ( auto &&ii : parser.unknownOptionNames() )
-            std::cerr << "    " << ii.toStdString() << "\n";
-        parser.showHelp();
-        return -1;
-    }
-
-    if ( parser.isSet( helpOption ) )
-    {
-        showVersion();
-        parser.showHelp();
-        return 0;
-    }
-
-    if ( parser.isSet( versionOption ) )
-    {
-        showVersion();
-        return 0;
-    }
-
-    if ( !parser.isSet( quietOption ) )
-        showVersion();
-
-    if ( !parser.isSet( modeOption ) )
-    {
-        parser.showHelp();
-        return -1;
-    }
-
-    auto settingsFile = parser.value( settingsFileOption );
-    auto mode = parser.value( modeOption ).toLower();
-
     int retVal = -1;
     do
     {
-        auto mainObj = std::make_shared< CMainObj >( settingsFile, mode );
+        auto mainObj = std::make_shared< CMainObj >( appl );
         QObject::connect( mainObj.get(), &CMainObj::sigExit, &appl, &QCoreApplication::exit );
 
-        if ( parser.isSet( selectedServerOption ) )
-            mainObj->setSelectedServer( parser.value( selectedServerOption ) );
-
-        mainObj->setMinimumDate( parser.value( minDateOption ) );
-        mainObj->setMaximumDate( parser.value( maxDateOption ) );
-        mainObj->setQuiet( parser.isSet( quietOption ) );
-        mainObj->setLaunchMissing( parser.isSet( launchMissing ) );
-        if ( !mainObj->aOK() )
+        auto status = mainObj->status();
+        if ( status.has_value() )
         {
-            std::cerr << mainObj->errorString().toStdString() << "\n";
-            parser.showHelp();
-            return -1;
+            ( status.value().first ? std::cout : std::cerr ) << mainObj->statusText().toStdString() << "\n";
+            return status.value().second;
         }
 
         mainObj->run();
 
-        if ( !mainObj->aOK() )
-        {
-            std::cerr << mainObj->errorString().toStdString() << "\n";
-            parser.showHelp();
-            return -1;
-        }
-
         retVal = appl.exec();
-        std::cout << "Press 'R' to re-run, otherwise press any key to close this window...";
+        QString msg = "Press 'R' to re-run, otherwise press any key to close this window...";
+        std::cout << msg.toStdString();
         auto ch = _getche();
         if ( ( ch == 'Y' ) || ( ch == 'y' ) || ( ch == 'R' ) || ( ch == 'r' ) )
         {
-            std::cout << "                                                                    ";
+            std::cout << '\r' << QString( msg.size() + 1, '=' ).toStdString() << "\n";
             continue;
         }
         break;

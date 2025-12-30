@@ -26,6 +26,8 @@
 #include <QObject>
 #include <QDate>
 #include <QRegularExpression>
+#include <QCommandLineParser>
+
 #include <list>
 #include <memory>
 #include <tuple>
@@ -38,6 +40,38 @@ class CUsersModel;
 class CServerModel;
 class CCollectionsModel;
 class CServerInfo;
+
+class CCommandLineParser : public QCommandLineParser
+{
+public:
+    CCommandLineParser( const QCoreApplication &appl );
+    std::tuple< bool, QString, std::optional< int > > status() const { return fStatus; }
+
+    QString mode() const { return fMode; }
+    QString settingsFile() const { return fSettingsFile; }
+    std::optional< QString > selectedServer() const { return fSelectedServer; }
+
+    QString minDate() const { return fMinDate; }
+    QString maxDate() const { return fMaxDate; }
+
+    bool quiet() const { return fQuiet; }
+    bool launchMissingEpisodes() const { return fLaunchMissingEpisodes; }
+
+    QString versionString() const;
+
+private:
+    QString fSettingsFile;
+    QString fMode;
+    std::optional< QString > fSelectedServer;
+
+    QString fMinDate;
+    QString fMaxDate;
+    bool fQuiet{ false };
+    bool fLaunchMissingEpisodes;
+
+    std::tuple< bool, QString, std::optional< int > > fStatus;
+};
+
 class CMainObj : public QObject
 {
     Q_OBJECT;
@@ -50,19 +84,19 @@ public:
         eSync
     };
 
-    CMainObj( const QString &settingsFile, const QString &mode, QObject *parent = nullptr );
+    CMainObj( const QCoreApplication &appl, QObject *parent = nullptr );
     ~CMainObj() = default;
 
+    std::optional< std::pair< bool, int > > status() const;
+    QString statusText() const { return fStatusText; }
+
     void run();
+
     void setSelectedServer( const QString &selectedServer ) { this->fSelectedServerToProcess = selectedServer; }
     void setMinimumDate( const QString &minDate );
     void setMinimumDate( const QDate &minDate ) { fMinDate = minDate; }
     void setMaximumDate( const QString &maxDate );
     void setMaximumDate( const QDate &maxDate ) { fMaxDate = maxDate; }
-
-    bool aOK() const;
-
-    QString errorString() const { return fErrorString; }
 
     void setQuiet( bool quiet ) { fQuiet = quiet; }
     void setLaunchMissing( bool launchMissing ) { fLaunchMissing = launchMissing; }
@@ -84,6 +118,9 @@ public:
     void slotProcessMedia();
 
 private:
+    void init( const QCoreApplication &appl );
+    std::shared_ptr< CCommandLineParser > fCLIParser;
+
     bool setMode( const QString &mode );
     std::shared_ptr< CSettings > fSettings;
     std::shared_ptr< CSyncSystem > fSyncSystem;
@@ -93,9 +130,8 @@ private:
     std::shared_ptr< CCollectionsModel > fCollectionsModel;
     std::shared_ptr< CUsersModel > fUsersModel;
 
-    QString fSettingsFile;
     QRegularExpression fUserRegExp;
-    mutable QString fErrorString{ "Unknown Error" };
+    mutable QString fStatusText{ "Unknown Error" };
     mutable bool fAOK{ false };
 
     std::tuple< int, QString, QString > fCurrentProgress{ 0, QString(), QString() };
