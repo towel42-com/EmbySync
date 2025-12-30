@@ -111,26 +111,27 @@ int main( int argc, char **argv )
 
     auto settingsFile = parser.value( settingsFileOption );
     auto mode = parser.value( modeOption ).toLower();
-    auto mainObj = std::make_shared< CMainObj >( settingsFile, mode );
-    QObject::connect( mainObj.get(), &CMainObj::sigExit, &appl, &QCoreApplication::exit );
-
-    if ( parser.isSet( selectedServerOption ) )
-        mainObj->setSelectedServer( parser.value( selectedServerOption ) );
-
-    mainObj->setMinimumDate( parser.value( minDateOption ) );
-    mainObj->setMaximumDate( parser.value( maxDateOption ) );
-    mainObj->setQuiet( parser.isSet( quietOption ) );
-    mainObj->setLaunchMissing( parser.isSet( launchMissing ) );
-    if ( !mainObj->aOK() )
-    {
-        std::cerr << mainObj->errorString().toStdString() << "\n";
-        parser.showHelp();
-        return -1;
-    }
 
     int retVal = -1;
     do
     {
+        auto mainObj = std::make_shared< CMainObj >( settingsFile, mode );
+        QObject::connect( mainObj.get(), &CMainObj::sigExit, &appl, &QCoreApplication::exit );
+
+        if ( parser.isSet( selectedServerOption ) )
+            mainObj->setSelectedServer( parser.value( selectedServerOption ) );
+
+        mainObj->setMinimumDate( parser.value( minDateOption ) );
+        mainObj->setMaximumDate( parser.value( maxDateOption ) );
+        mainObj->setQuiet( parser.isSet( quietOption ) );
+        mainObj->setLaunchMissing( parser.isSet( launchMissing ) );
+        if ( !mainObj->aOK() )
+        {
+            std::cerr << mainObj->errorString().toStdString() << "\n";
+            parser.showHelp();
+            return -1;
+        }
+
         mainObj->run();
 
         if ( !mainObj->aOK() )
@@ -144,7 +145,10 @@ int main( int argc, char **argv )
         std::cout << "Press 'R' to re-run, otherwise press any key to close this window...";
         auto ch = _getche();
         if ( ( ch == 'Y' ) || ( ch == 'y' ) || ( ch == 'R' ) || ( ch == 'r' ) )
+        {
+            std::cout << "                                                                    ";
             continue;
+        }
         break;
     }
     while ( true );

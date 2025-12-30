@@ -51,6 +51,7 @@ public:
     };
 
     CMainObj( const QString &settingsFile, const QString &mode, QObject *parent = nullptr );
+    ~CMainObj() = default;
 
     void run();
     void setSelectedServer( const QString &selectedServer ) { this->fSelectedServerToProcess = selectedServer; }
