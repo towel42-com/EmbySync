@@ -57,7 +57,7 @@ public:
     bool quiet() const { return fQuiet; }
     bool launchMissingEpisodes() const { return fLaunchMissingEpisodes; }
 
-    QString versionString() const;
+    QString versionText() const;
 
 private:
     QString fSettingsFile;

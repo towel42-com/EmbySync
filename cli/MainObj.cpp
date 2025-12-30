@@ -92,7 +92,7 @@ CCommandLineParser::CCommandLineParser( const QCoreApplication &appl ) :
 
     if ( !unknownOptionNames().isEmpty() )
     {
-        auto msg = versionString() + "\n";
+        auto msg = versionText() + "\n";
         msg += "The following options were set and are unknown:";
         for ( auto &&ii : unknownOptionNames() )
             msg += "\n    " + ii.toStdString();
@@ -102,19 +102,19 @@ CCommandLineParser::CCommandLineParser( const QCoreApplication &appl ) :
 
     if ( isSet( helpOption ) )
     {
-        fStatus = { true, versionString() + "\n" + helpText().trimmed(), 0 };
+        fStatus = { true, versionText() + "\n" + helpText().trimmed(), 0 };
         return;
     }
 
     if ( isSet( "help-all" ) )
     {
-        fStatus = { true, versionString() + "\n" + helpText( /*true*/ ).trimmed(), 0 };
+        fStatus = { true, versionText() + "\n" + helpText( /*true*/ ).trimmed(), 0 };
         return;
     }
 
     if ( isSet( versionOption ) )
     {
-        fStatus = { true, versionString(), 0 };
+        fStatus = { true, versionText(), 0 };
         return;
     }
 
@@ -137,9 +137,9 @@ CCommandLineParser::CCommandLineParser( const QCoreApplication &appl ) :
     fLaunchMissingEpisodes = isSet( launchMissing );
 }
 
-QString CCommandLineParser::versionString() const
+QString CCommandLineParser::versionText() const
 {
-    return NVersion::APP_NAME + " - " + NVersion::getVersionString( true, false );
+    return NVersion::APP_NAME + " - " + NVersion::getVersionText( true, false );
 }
 
 CMainObj::CMainObj( const QCoreApplication &appl, QObject *parent /*= nullptr*/ ) :
