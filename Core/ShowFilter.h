@@ -17,7 +17,7 @@ struct SShowFilter
     SShowFilter( const QString &seriesID, const QString &name, int premierYear, const QVariant &min, const QVariant &max, bool trackEpisodes );
 
     static bool showEpisode( const std::optional< TFilterMap > &filterMap, const QString &seriesID, const QString &seriesName, int seasonNum, std::optional< QRegularExpression > regEx );
-	static bool showEpisode( const std::optional< TFilterMap > &filterMap, std::shared_ptr< CMediaData > mediaData );
+    static bool showEpisode( const std::optional< TFilterMap > &filterMap, std::shared_ptr< CMediaData > mediaData );
 
     bool operator==( const SShowFilter &rhs ) const;
     bool operator!=( const SShowFilter &rhs ) const { return !operator==( rhs ); }
