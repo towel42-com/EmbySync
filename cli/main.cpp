@@ -23,7 +23,7 @@
 #include "MainObj.h"
 #include "Core/Settings.h"
 
-#include "Version.h"
+#include "Version/Version.h"
 #include <iostream>
 #include <QCoreApplication>
 #include <QCommandLineParser>
@@ -33,7 +33,8 @@
 int main( int argc, char **argv )
 {
     QCoreApplication appl( argc, argv );
-    NVersion::setupApplication( appl, true );
+
+    NVersion::versionInfo()->setupApplication();
 
     int retVal = -1;
     do

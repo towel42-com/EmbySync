@@ -22,11 +22,11 @@
 
 cmake_minimum_required(VERSION 3.22)
  
+project( EmbySyncCLI )
 
 find_package(IncludeProjectSettings REQUIRED)
-include( ${CMAKE_CURRENT_LIST_DIR}/include.cmake )
-project( ${_PROJECT_NAME} )
-IncludeProjectSettings(QT ${USE_QT})
+include( include.cmake )
+IncludeProjectSettings()
 
 include_directories( ${CMAKE_BINARY_DIR} )
 
@@ -34,16 +34,11 @@ add_executable( ${PROJECT_NAME}
                 ${_PROJECT_DEPENDENCIES} 
                 ${_CMAKE_MODULE_FILES}
           )
-if ( NOT DEPLOYQT_EXECUTABLE )
-    message( FATAL_ERROR "DEPLOYQT_EXECUTABLE not set" )
-endif()
-
-get_filename_component( QTDIR ${DEPLOYQT_EXECUTABLE} DIRECTORY )
 
 set ( DEBUG_PATH 
         "%PATH%"
         "$<TARGET_FILE_DIR:Towel42Utils>"
-        "${QTDIR}"
+        "${QT6_INSTALL_PREFIX}/bin"
         )
 
 set_target_properties( ${PROJECT_NAME} PROPERTIES FOLDER ${FOLDER_NAME} 
@@ -59,7 +54,7 @@ target_link_libraries( ${PROJECT_NAME}
         ${project_pri_DEPS}
 )
 
-DeployQt( ${PROJECT_NAME} . INSTALL_ONLY 1 )
+#DeployQt( ${PROJECT_NAME} . INSTALL_ONLY 1 )
 DeploySystem( ${PROJECT_NAME} . INSTALL_ONLY 1 )
 
 INSTALL( TARGETS ${PROJECT_NAME} RUNTIME DESTINATION . )

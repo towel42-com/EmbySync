@@ -23,14 +23,14 @@
 cmake_minimum_required(VERSION 3.22)
 
 find_package(IncludeProjectSettings REQUIRED)
-include( ${CMAKE_CURRENT_LIST_DIR}/include.cmake )
-project( ${_PROJECT_NAME} )
-IncludeProjectSettings(QT ${USE_QT})
+project( UI LANGUAGES CXX )
+include( include.cmake )
+IncludeProjectSettings()
+include_directories( ${CMAKE_BINARY_DIR} )
 
 add_library(${PROJECT_NAME} STATIC
     ${_PROJECT_DEPENDENCIES} 
     )
-set_target_properties( ${PROJECT_NAME} PROPERTIES FOLDER ${FOLDER_NAME} )
 
 target_link_libraries( ${PROJECT_NAME}
     PUBLIC
@@ -38,3 +38,6 @@ target_link_libraries( ${PROJECT_NAME}
     PRIVATE 
         ${project_pri_DEPS}
 )
+
+set_target_properties( ${PROJECT_NAME} PROPERTIES FOLDER ${FOLDER_NAME} )
+

@@ -35,7 +35,7 @@
 #include "T42-Utils/QtUtils.h"
 #include "T42-Utils/uiUtils.h"
 
-#include "Version.h"
+#include "Version/Version.h"
 #include <iostream>
 
 #include <QTimer>
@@ -49,7 +49,7 @@
 CCommandLineParser::CCommandLineParser( const QCoreApplication &appl ) :
     QCommandLineParser()
 {
-    setApplicationDescription( NVersion::APP_NAME + " CLI - a tool to sync two emby servers" );
+    setApplicationDescription( NVersion::versionInfo()->appName() + " CLI - a tool to sync two emby servers" );
     auto helpOption = addHelpOption();
     auto versionOption = addVersionOption();
 
@@ -139,7 +139,7 @@ CCommandLineParser::CCommandLineParser( const QCoreApplication &appl ) :
 
 QString CCommandLineParser::versionText() const
 {
-    return NVersion::APP_NAME + " - " + NVersion::getVersionText( true, false );
+    return NVersion::versionInfo()->appName() + " - " + NVersion::versionInfo()->getVersionTextEX( true, true, false );
 }
 
 CMainObj::CMainObj( const QCoreApplication &appl, QObject *parent /*= nullptr*/ ) :

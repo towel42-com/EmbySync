@@ -22,10 +22,11 @@
 
 cmake_minimum_required(VERSION 3.22)
 
+project( Core )
+
 find_package(IncludeProjectSettings REQUIRED)
-include( ${CMAKE_CURRENT_LIST_DIR}/include.cmake )
-project( ${_PROJECT_NAME} )
-IncludeProjectSettings(QT ${USE_QT})
+include( include.cmake )
+IncludeProjectSettings()
 
 
 add_library(${PROJECT_NAME} STATIC

@@ -23,9 +23,11 @@
 cmake_minimum_required(VERSION 3.22)
 
 find_package(IncludeProjectSettings REQUIRED)
-include( ${CMAKE_CURRENT_LIST_DIR}/include.cmake )
-project( ${_PROJECT_NAME} )
-IncludeProjectSettings(QT ${USE_QT})
+find_package(Deploy REQUIRED)
+
+project( EmbySyncGUI )
+include( include.cmake )
+IncludeProjectSettings()
  
 include_directories( ${CMAKE_BINARY_DIR} )
 
@@ -34,26 +36,18 @@ add_executable( ${PROJECT_NAME} WIN32
                 ${_CMAKE_MODULE_FILES}
                 application.rc 
           )
-if ( NOT DEPLOYQT_EXECUTABLE )
-    message( FATAL_ERROR "DEPLOYQT_EXECUTABLE not set" )
-endif()
+#if ( NOT OPENSSL_DEPLOY_BINDIR )
+#    message( FATAL_ERROR "OPENSSL_DEPLOY_BINDIR not set" )
+#endif()
 
-if ( NOT OPENSSL_DEPLOY_BINDIR )
-    message( FATAL_ERROR "OPENSSL_DEPLOY_BINDIR not set" )
-endif()
-
-get_filename_component( QTDIR ${DEPLOYQT_EXECUTABLE} DIRECTORY )
-
-message( STATUS "QTDIR=${QTDIR}")
 set ( DEBUG_PLUGINPATH 
-        "${QTDIR}/../plugins"
+        "${QT6_INSTALL_PREFIX}/plugins"
         )
-message( STATUS "DEBUG_PLUGINPATH=${DEBUG_PLUGINPATH}")
 
 set ( DEBUG_PATH 
         "%PATH%"
         "$<TARGET_FILE_DIR:Towel42Utils>"
-        "${QTDIR}"
+        "${QT6_INSTALL_PREFIX}/bin"
         )
 
 set_target_properties( ${PROJECT_NAME} PROPERTIES FOLDER Apps 
@@ -69,9 +63,9 @@ target_link_libraries( ${PROJECT_NAME}
         ${project_pri_DEPS}
 )
 
-DeployQt( ${PROJECT_NAME} . INSTALL_ONLY 1 )
+#DeployQt( ${PROJECT_NAME} . INSTALL_ONLY 1 )
 DeploySystem( ${PROJECT_NAME} . INSTALL_ONLY 1 )
-DeployOpenSSL( ${PROJECT_NAME} . )
+#DeployOpenSSL( ${PROJECT_NAME} . )
 
 INSTALL( TARGETS ${PROJECT_NAME} RUNTIME DESTINATION . )
 INSTALL( FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${PROJECT_NAME}.pdb DESTINATION . CONFIGURATIONS Debug RelWithDebInfo )

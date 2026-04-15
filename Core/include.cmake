@@ -20,8 +20,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-set(_PROJECT_NAME Core)
-set(USE_QT TRUE)
 set(FOLDER_NAME Libs)
 
 set(qtproject_SRCS
@@ -79,4 +77,14 @@ set(qtproject_QRC
 )
 
 set( project_pub_DEPS
+    ${project_pub_DEPS}
 )
+
+SET( project_pri_DEPS
+    ${project_pri_DEPS}
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Widgets
+    Qt6::Network
+)
+

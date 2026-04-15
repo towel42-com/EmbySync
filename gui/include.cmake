@@ -1,5 +1,3 @@
-set(_PROJECT_NAME EmbySyncGUI)
-set(USE_QT TRUE)
 set(FOLDER_NAME Apps)
 
 set(qtproject_SRCS
@@ -19,8 +17,13 @@ set(qtproject_UIS
 set(qtproject_QRC
 )
 
-set( project_pub_DEPS
-        Towel42Utils
-        UI
-        Core
+SET( project_pub_DEPS
+    ${project_pub_DEPS}
+    Towel42Utils
+    UI
+    Core
+)
+
+SET( project_pri_DEPS
+    ${project_pri_DEPS}
 )

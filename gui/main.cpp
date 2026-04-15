@@ -23,12 +23,11 @@
 #include "Core/MediaData.h"
 #include "T42-Utils/utils.h"
 
-#include "Version.h"
+#include "Version/Version.h"
 #include "T42-Utils/Towel42UtilsResources.h"
 
 #include <QApplication>
 #include <QMessageBox>
-#include "T42-Utils/ValidateOpenSSL.h"
 
 int main( int argc, char **argv )
 {
@@ -39,17 +38,10 @@ int main( int argc, char **argv )
     Q_INIT_RESOURCE( Token );
 
     QApplication appl( argc, argv );
-    NVersion::setupApplication( appl, true );
-
-    auto aOK = NTowel42Utils::validateOpenSSL( true );
-    if ( !aOK.first )
-    {
-        QMessageBox::critical( nullptr, QObject::tr( "Could not find OpenSSL libraries" ), aOK.second );
-        return -1;
-    }
+    NVersion::versionInfo()->setupApplication();
 
     CMainWindow mainWindow;
-    mainWindow.setWindowTitle( NVersion::getWindowTitle() );
+    mainWindow.setWindowTitle( NVersion::versionInfo()->getWindowTitle() );
 
     mainWindow.show();
     return appl.exec();

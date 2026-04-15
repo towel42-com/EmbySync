@@ -23,6 +23,15 @@
 cmake_minimum_required(VERSION 3.22)
 project(root-EmbySync) 
 
+set( MAIN_EXE_PROJECT_NAME "EmbySync" )
+set( APP_NAME              "Emby Sync" )
+set( MAJOR_VERSION         1 )
+set( MINOR_VERSION         5 )
+set( PATCH_VERSION         0 )
+
+SET_PROPERTY(GLOBAL PROPERTY MAIN_EXE_PROJECT_NAME ${MAIN_EXE_PROJECT_NAME})
+project(Root-${MAIN_EXE_PROJECT_NAME} VERSION ${MAJOR_VERSION}.${MINOR_VERSION})
+
 SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/T42-CMakeUtils/Modules ${CMAKE_MODULE_PATH})
 IF(WIN32)
     find_package(VerifyVisualStudio REQUIRED)
@@ -37,12 +46,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED true)
 find_package(Threads)
 find_package(Qt6 COMPONENTS Core Widgets Network Test Multimedia REQUIRED)
 find_package(Deploy REQUIRED)
-find_package(CheckOpenSSL REQUIRED)
 find_package(AddUnitTest REQUIRED)
+find_package(LoadVersionInfo REQUIRED)
+LoadVersionInfoFile()
 
-include( ${CMAKE_SOURCE_DIR}/VersionInfo.cmake )
-
-CheckOpenSSL()
+SET(TOWEL42_ENABLE_TESTING ON)
+SET(TOWEL42_QCORE_SUPPORT ON)
+SET(TOWEL42_QWIDGET_SUPPORT ON)
+set(TOWEL42_QCONCURRENT_SUPPORT ON)
+SET(TOWEL42_QNETWORK_SUPPORT ON)
+set(TOWEL42_NO_DEPLOY_SUBMODULES ON)
+SET(TOWEL42_UTILS_DLL ON)
 
 option( gtest_force_shared_crt "Use shared ( DLL ) run-time lib even when Google Test is built as static lib." ON ) 
 
