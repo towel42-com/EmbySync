@@ -237,7 +237,7 @@ void CUserDataWidget::slotSelectChangeAvatar()
     QStringList exts;
     for ( auto &&ii : formats )
     {
-        exts << "*." + ii;
+        exts << QStringLiteral( "*." ) + QString::fromUtf8( ii );
     }
 
     auto extensions = tr( "Image Files (%1);;All Files (* *.*)" ).arg( exts.join( " " ) );

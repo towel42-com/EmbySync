@@ -31,6 +31,8 @@
 #include <QScrollBar>
 #include <QHeaderView>
 
+#include "T42-Utils/AutoSize.h"
+
 CDataTree::CDataTree( const std::shared_ptr< const CServerInfo > &serverInfo, QWidget *parentWidget ) :
     QWidget( parentWidget ),
     fImpl( new Ui::CDataTree )

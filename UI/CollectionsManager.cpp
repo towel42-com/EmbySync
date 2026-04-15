@@ -38,7 +38,6 @@
 #include "Core/SyncSystem.h"
 #include "Core/UserData.h"
 #include "Core/ServerModel.h"
-#include <QAbstractItemModelTester>
 
 #include "T42-Utils/AutoWaitCursor.h"
 #include "T42-Utils/QtUtils.h"
@@ -59,6 +58,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QJsonParseError>
+#include <QAbstractItemModelTester>
 
 CCollectionsManager::CCollectionsManager( QWidget *parent ) :
     CTabPageBase( parent ),

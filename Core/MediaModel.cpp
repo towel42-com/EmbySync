@@ -223,9 +223,9 @@ QVariant CMediaModel::data( const QModelIndex &index, int role /*= Qt::DisplayRo
         case eMediaID:
             return isValid ? mediaData->getMediaID( serverName ) : QString();
         case eFavorite:
-            return isValid ? ( mediaData->isFavorite( serverName ) ? "Yes" : "No" ) : QString();
+            return isValid ? ( mediaData->isFavorite( serverName ) ? QStringLiteral( "Yes" ) : QStringLiteral( "No" ) ) : QString();
         case ePlayed:
-            return isValid ? ( mediaData->isPlayed( serverName ) ? "Yes" : "No" ) : QString();
+            return isValid ? ( mediaData->isPlayed( serverName ) ? QStringLiteral( "Yes" ) : QStringLiteral( "No" ) ) : QString();
         case eLastPlayed:
             return isValid ? ( mediaData->lastPlayed( serverName ).toString() ) : QString();
         case ePlayCount:
@@ -235,7 +235,7 @@ QVariant CMediaModel::data( const QModelIndex &index, int role /*= Qt::DisplayRo
         case eResolution:
             return isValid ? ( mediaData->resolution() ) : QString();
         case eIsMissing:
-            return isValid ? ( mediaData->isMissing() ? "Yes" : "No" ) : QString();
+            return isValid ? ( mediaData->isMissing() ? QStringLiteral( "Yes" ) : QStringLiteral( "No" ) ) : QString();
         default:
             return {};
     }

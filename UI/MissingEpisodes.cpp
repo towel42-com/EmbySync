@@ -90,7 +90,7 @@ void CMissingEpisodes::slotFilterItemChanged( QTreeWidgetItem *item, int column 
 {
     if ( item && ( column == 0 ) )
     {
-        item->setText( column, ( item->checkState( 0 ) == Qt::Checked ) ? "Yes" : "No" );
+        item->setText( column, ( item->checkState( 0 ) == Qt::Checked ) ? QStringLiteral( "Yes" ) : QStringLiteral( "No" ) );
     }
     slotSearchByShowNameChanged();
 }
@@ -391,7 +391,7 @@ void CMissingEpisodes::loadShowFilter()
         auto maxSeason = ( filterForShow && filterForShow->fMaxSeason.has_value() ) ? QString::number( filterForShow->fMaxSeason.value() ) : QString();
         auto trackEpisodes = filterForShow ? filterForShow->fTrackEpisodes : true;
 
-        auto curr = new QTreeWidgetItem( fImpl->showsFilter, { trackEpisodes ? "Yes" : "No", series->name(), QString::number( series->premiereDate().year() ), minSeason, maxSeason } );
+        auto curr = new QTreeWidgetItem( fImpl->showsFilter, { trackEpisodes ? QStringLiteral( "Yes" ) : QStringLiteral( "No" ), series->name(), QString::number( series->premiereDate().year() ), minSeason, maxSeason } );
         curr->setData( 0, Qt::UserRole + 1, series->seriesID() );
         curr->setFlags( curr->flags() | Qt::ItemIsEditable );
         curr->setCheckState( 0, trackEpisodes ? Qt::CheckState::Checked : Qt::CheckState::Unchecked );

@@ -15,19 +15,21 @@ CMediaMissingFilterModel::CMediaMissingFilterModel( std::shared_ptr< CSettings >
                 dynamic_cast< CMediaModel * >( sourceModel() ), &CMediaModel::sigSettingsChanged,
                 [ this ]()
                 {
+                    beginFilterChange();
                     fRegEx = fSettings->ignoreShowRegEx();
-                    invalidateFilter();
+                    endFilterChange();
                 } );
         } );
 }
 
 void CMediaMissingFilterModel::setShowFilter( const TFilterMap &filter )
 {
+    beginFilterChange();
     fShowFilterMap = filter;
+    endFilterChange();
 
     auto col = sortColumn();
     auto order = sortOrder();
-    invalidateFilter();
     sort( col, order );
 }
 

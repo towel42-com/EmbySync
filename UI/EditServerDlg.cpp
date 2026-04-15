@@ -40,7 +40,7 @@ CEditServerDlg::CEditServerDlg( const QString &name, const QString &url, const Q
     fImpl->url->setText( url );
     fImpl->apiKey->setText( apiKey );
     fImpl->enabled->setChecked( enabled );
-    fImpl->apiLabel->setText( searchServer ? "Search Key Query Name:" : "API Key:" );
+    fImpl->apiLabel->setText( searchServer ? QStringLiteral( "Search Key Query Name:" ) : QStringLiteral( "API Key:" ) );
 
     QObject::connect( fImpl->name, &QLineEdit::textChanged, this, &CEditServerDlg::slotChanged );
     QObject::connect( fImpl->apiKey, &QLineEdit::textChanged, this, &CEditServerDlg::slotChanged );

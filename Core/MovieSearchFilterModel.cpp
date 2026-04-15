@@ -49,7 +49,8 @@ void CMovieSearchFilterModel::startInvalidateTimer()
 
 void CMovieSearchFilterModel::slotInvalidateFilter()
 {
-    invalidateFilter();
+    beginFilterChange();
+    endFilterChange();
 }
 
 void CMovieSearchFilterModel::setMinPremier( std::optional< int > year )

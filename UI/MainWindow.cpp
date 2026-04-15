@@ -22,7 +22,7 @@
 
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
-#include "../Version.h"
+#include "Version/Version.h"
 #include "SettingsDlg.h"
 #include "TabUIInfo.h"
 
@@ -93,7 +93,7 @@ CMainWindow::CMainWindow( QWidget *parent ) :
     connect( fImpl->actionCheckForLatestVersion, &QAction::triggered, this, &CMainWindow::slotActionCheckForLatest );
 
     fGitHubVersion.first = new NTowel42Utils::CGitHubGetVersions( {}, this );
-    fGitHubVersion.first->setCurrentVersion( NVersion::MAJOR_VERSION, NVersion::MINOR_VERSION, NVersion::buildDateTime() );
+    fGitHubVersion.first->setCurrentVersion( NVersion::versionInfo() );
     connect( fGitHubVersion.first, &NTowel42Utils::CGitHubGetVersions::sigVersionsDownloaded, this, &CMainWindow::slotVersionsDownloaded );
     connect( fGitHubVersion.first, &NTowel42Utils::CGitHubGetVersions::sigLogMessage, this, &CMainWindow::slotAddInfoToLog );
 
@@ -343,7 +343,7 @@ void CMainWindow::loadSettings()
 {
     slotAddToLog( EMsgType::eInfo, "Loading Settings" );
 
-    auto windowTitle = NVersion::getWindowTitle();
+    auto windowTitle = NVersion::versionInfo()->getWindowTitle();
     if ( !fSettings->fileName().isEmpty() )
         windowTitle += " - " + QFileInfo( fSettings->fileName() ).fileName();
 

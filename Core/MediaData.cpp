@@ -913,7 +913,7 @@ namespace NJSON
             return {};
         }
 
-        auto data = QString( fi.readAll() ).split( "\r\n" );
+        auto data = QString::fromUtf8( fi.readAll() ).split( "\r\n" );
         for ( auto &&currLine : data )
             currLine = currLine.trimmed();
 

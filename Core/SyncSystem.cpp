@@ -996,7 +996,7 @@ bool CSyncSystem::handleError( QNetworkReply *reply, const QString &serverName, 
         }
 
         auto data = reply->readAll();
-        errorMsg = tr( "Error from Server '%1': %2%3" ).arg( serverName ).arg( reply->errorString() ).arg( data.isEmpty() ? QString() : QString( " - %1" ).arg( QString( data ) ) );
+        errorMsg = tr( "Error from Server '%1': %2%3" ).arg( serverName ).arg( reply->errorString() ).arg( data.isEmpty() ? QString() : QString( " - %1" ).arg( QString::fromUtf8( data ) ) );
         if ( fUserMsgFunc && reportMsg )
             fUserMsgFunc( EMsgType::eError, tr( "Error response from server" ), errorMsg );
         return false;
@@ -1335,7 +1335,7 @@ void CSyncSystem::handleGetServerInfoResponse( const QString &serverName, const 
     if ( error.error != QJsonParseError::NoError )
     {
         if ( fUserMsgFunc )
-            fUserMsgFunc( EMsgType::eError, tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ) );
+            fUserMsgFunc( EMsgType::eError, tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString::fromUtf8( data ) ).arg( error.offset ) );
         return;
     }
 
@@ -1369,7 +1369,7 @@ void CSyncSystem::handleGetServerHomePageResponse( const QString &serverName, co
 
     for ( auto &&ii : regExs )
     {
-        auto match = ii.match( data );
+        auto match = ii.match( QString::fromUtf8( data ) );
         if ( match.hasMatch() )
         {
             auto url = match.captured( "url" );
@@ -1431,7 +1431,7 @@ void CSyncSystem::handleGetUsersResponse( const QString &serverName, const QByte
     if ( error.error != QJsonParseError::NoError )
     {
         if ( fUserMsgFunc )
-            fUserMsgFunc( EMsgType::eError, tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ) );
+            fUserMsgFunc( EMsgType::eError, tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString::fromUtf8( data ) ).arg( error.offset ) );
         return;
     }
 
@@ -1481,7 +1481,7 @@ void CSyncSystem::handleGetUserResponse( const QString &serverName, const QByteA
     if ( error.error != QJsonParseError::NoError )
     {
         if ( fUserMsgFunc )
-            fUserMsgFunc( EMsgType::eError, tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ) );
+            fUserMsgFunc( EMsgType::eError, tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString::fromUtf8( data ) ).arg( error.offset ) );
         return;
     }
 
@@ -1665,7 +1665,11 @@ void CSyncSystem::requestSetConnectedID( const QString &serverName )
     if ( !fCurrUserConnectID.fUserData )
         return;
 
-    std::list< std::pair< QString, QString > > queryItems = { std::make_pair( "ConnectUsername", fCurrUserConnectID.fConnectID.second ) };
+    std::list< std::pair< QString, QString > > queryItems =   //
+        {
+            //
+            std::make_pair( QStringLiteral( "ConnectUsername" ), fCurrUserConnectID.fConnectID.second )   //
+        };
 
     // ConnectService
     auto &&url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Users/%1/Connect/Link" ).arg( fCurrUserConnectID.fUserData->getUserID( serverName ) ), queryItems );
@@ -1705,7 +1709,8 @@ QString CSyncSystem::getItemFields() const
                               "EndDate",   //
                               "StartDate",   //
                               "OriginalTitle",   //
-                              "MediaSources",   "Id" };
+                              QStringLiteral( "MediaSources" ),   //
+                              QStringLiteral( "Id" ) };
     static auto retVal = items.join( "," );
     return retVal;
 }
@@ -1715,7 +1720,14 @@ void CSyncSystem::requestGetMediaList( const QString &serverName )
     if ( !currUser().second )
         return;
 
-    std::list< std::pair< QString, QString > > queryItems = { std::make_pair( "IncludeItemTypes", fSettings->getSyncItemTypes() ), std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SortName" ), std::make_pair( "SortOrder", "Ascending" ), std::make_pair( "Recursive", "True" ), std::make_pair( "IsMissing", "False" ), std::make_pair( "Fields", getItemFields() ) };
+    std::list< std::pair< QString, QString > > queryItems =   //
+        { //
+          std::make_pair( QStringLiteral( "IncludeItemTypes" ), fSettings->getSyncItemTypes() ),   //
+          std::make_pair( QStringLiteral( "SortBy" ), QStringLiteral( "Type,ProductionYear,PremiereDate,SortName" ) ),   //
+          std::make_pair( QStringLiteral( "SortOrder" ), QStringLiteral( "Ascending" ) ),   //
+          std::make_pair( QStringLiteral( "Recursive" ), QStringLiteral( "True" ) ),   //
+          std::make_pair( QStringLiteral( "IsMissing" ), QStringLiteral( "False" ) ),   //
+          std::make_pair( QStringLiteral( "Fields" ), getItemFields() ) };
 
     // ItemsService
     auto &&url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Users/%1/Items" ).arg( currUser().second->getUserID( serverName ) ), queryItems );
@@ -1771,7 +1783,7 @@ std::list< std::shared_ptr< CMediaData > > CSyncSystem::handleGetMissingMediaLis
     if ( error.error != QJsonParseError::NoError )
     {
         if ( fUserMsgFunc )
-            fUserMsgFunc( EMsgType::eError, tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ) );
+            fUserMsgFunc( EMsgType::eError, tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString::fromUtf8( data ) ).arg( error.offset ) );
         return {};
     }
 
@@ -1787,7 +1799,7 @@ std::list< std::shared_ptr< CMediaData > > CSyncSystem::handleGetMediaListRespon
     if ( error.error != QJsonParseError::NoError )
     {
         if ( fUserMsgFunc )
-            fUserMsgFunc( EMsgType::eError, tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ) );
+            fUserMsgFunc( EMsgType::eError, tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString::fromUtf8( data ) ).arg( error.offset ) );
         return {};
     }
 
@@ -1859,11 +1871,11 @@ void CSyncSystem::requestMissingEpisodes( const QString &serverName )
     // UserId=USERID
     std::list< std::pair< QString, QString > > queryItems =   //
         {
-            std::make_pair( "IncludeItemTypes", "Episode" ),   //
-            std::make_pair( "Fields", "BasicSyncInfo,CanDelete,CanDownload,PrimaryImageAspectRatio,ProductionYear,Status,EndDate,CommunityRating,OfficialRating,CriticRating,PremiereDate" ),   //
-            std::make_pair( "SortBy", "Type,SeriesSortName,ProductionYear,PremiereDate,SortName" ),   //
-            std::make_pair( "SortOrder", "Ascending" ),   //
-            std::make_pair( "Recursive", "True" )   //
+            std::make_pair( QStringLiteral( "IncludeItemTypes" ), QStringLiteral( "Episode" ) ),   //
+            std::make_pair( QStringLiteral( "Fields" ), QStringLiteral( "BasicSyncInfo,CanDelete,CanDownload,PrimaryImageAspectRatio,ProductionYear,Status,EndDate,CommunityRating,OfficialRating,CriticRating,PremiereDate" ) ),   //
+            std::make_pair( QStringLiteral( "SortBy" ), QStringLiteral( "Type,SeriesSortName,ProductionYear,PremiereDate,SortName" ) ),   //
+            std::make_pair( QStringLiteral( "SortOrder" ), QStringLiteral( "Ascending" ) ),   //
+            std::make_pair( QStringLiteral( "Recursive" ), QStringLiteral( "True" ) )   //
         };
 
     queryItems.emplace_back( "UserId", currUser().second->getUserID( serverName ) );   //
@@ -1896,11 +1908,11 @@ void CSyncSystem::requestAllEpisodes( const QString &serverName )
     // UserId=USERID
     std::list< std::pair< QString, QString > > queryItems =   //
         {
-            std::make_pair( "IncludeItemTypes", "Episode" ),   //
-            std::make_pair( "Fields", "BasicSyncInfo,CanDelete,CanDownload,PrimaryImageAspectRatio,ProductionYear,Status,EndDate,CommunityRating,OfficialRating,CriticRating,PremiereDate" ),   //
-            std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SeriesSortName,SortName" ),   //
-            std::make_pair( "SortOrder", "Ascending" ),   //
-            std::make_pair( "Recursive", "True" )   //
+            std::make_pair( QStringLiteral( "IncludeItemTypes" ), QStringLiteral( "Episode" ) ),   //
+            std::make_pair( QStringLiteral( "Fields" ), QStringLiteral( "BasicSyncInfo,CanDelete,CanDownload,PrimaryImageAspectRatio,ProductionYear,Status,EndDate,CommunityRating,OfficialRating,CriticRating,PremiereDate" ) ),   //
+            std::make_pair( QStringLiteral( "SortBy" ), QStringLiteral( "Type,ProductionYear,PremiereDate,SeriesSortName,SortName" ) ),   //
+            std::make_pair( QStringLiteral( "SortOrder" ), QStringLiteral( "Ascending" ) ),   //
+            std::make_pair( QStringLiteral( "Recursive" ), QStringLiteral( "True" ) )   //
         };
 
     queryItems.emplace_back( "UserId", currUser().second->getUserID( serverName ) );   //
@@ -1933,11 +1945,11 @@ void CSyncSystem::requestAllShows( const QString &serverName )
     // UserId=USERID
     std::list< std::pair< QString, QString > > queryItems =   //
         {
-            std::make_pair( "IncludeItemTypes", "Series" ),   //
-            std::make_pair( "Fields", "BasicSyncInfo,CanDelete,CanDownload,PrimaryImageAspectRatio,ProductionYear,Status,EndDate,CommunityRating,OfficialRating,CriticRating,PremiereDate" ),   //
-            std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SeriesSortName,SortName" ),   //
-            std::make_pair( "SortOrder", "Ascending" ),   //
-            std::make_pair( "Recursive", "True" )   //
+            std::make_pair( QStringLiteral( "IncludeItemTypes" ), QStringLiteral( "Series" ) ),   //
+            std::make_pair( QStringLiteral( "Fields" ), QStringLiteral( "BasicSyncInfo,CanDelete,CanDownload,PrimaryImageAspectRatio,ProductionYear,Status,EndDate,CommunityRating,OfficialRating,CriticRating,PremiereDate" ) ),   //
+            std::make_pair( QStringLiteral( "SortBy" ), QStringLiteral( "Type,ProductionYear,PremiereDate,SeriesSortName,SortName" ) ),   //
+            std::make_pair( QStringLiteral( "SortOrder" ), QStringLiteral( "Ascending" ) ),   //
+            std::make_pair( QStringLiteral( "Recursive" ), QStringLiteral( "True" ) )   //
         };
 
     queryItems.emplace_back( "UserId", currUser().second->getUserID( serverName ) );   //
@@ -1959,10 +1971,17 @@ void CSyncSystem::requestAllShows( const QString &serverName )
 
 void CSyncSystem::requestMissingTVDBid( const QString &serverName )
 {
-    std::list< std::pair< QString, QString > > queryItems = {
-        std::make_pair( "IncludeItemTypes", "Episode" ), std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SortName" ), std::make_pair( "SortOrder", "Ascending" ), std::make_pair( "Recursive", "True" ),
-        // std::make_pair( "IsMissing", "True" ),
-        std::make_pair( "HasTvdbId", "False" ), std::make_pair( "HasSpecialFeature", "False" ), std::make_pair( "Fields", getItemFields() ) };
+    std::list< std::pair< QString, QString > > queryItems =   //
+        {
+            std::make_pair( QStringLiteral( "IncludeItemTypes" ), QStringLiteral( "Episode" ) ),   //
+            std::make_pair( QStringLiteral( "SortBy" ), QStringLiteral( "Type,ProductionYear,PremiereDate,SortName" ) ),   //
+            std::make_pair( QStringLiteral( "SortOrder" ), QStringLiteral( "Ascending" ) ),   //
+            std::make_pair( QStringLiteral( "Recursive" ), QStringLiteral( "True" ) ),
+            // std::make_pair(  QStringLiteral( "IsMissing" ), QStringLiteral(  "True" ) ), //
+            std::make_pair( QStringLiteral( "HasTvdbId" ), QStringLiteral( "False" ) ),   //
+            std::make_pair( QStringLiteral( "HasSpecialFeature" ), QStringLiteral( "False" ) ),   //
+            std::make_pair( QStringLiteral( "Fields" ), getItemFields() )   //
+        };
 
     // ItemsService
     auto &&url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Users/%1/Items" ).arg( currUser().second->getUserID( serverName ) ), queryItems );
@@ -2006,11 +2025,14 @@ void CSyncSystem::handleAllMoviesResponse( const QString &serverName, const QByt
 
 void CSyncSystem::requestAllMovies( const QString &serverName )
 {
-    std::list< std::pair< QString, QString > > queryItems = {
-        std::make_pair( "IncludeItemTypes", "Movie" ),   //
-        std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SortName" ),   //
-        std::make_pair( "SortOrder", "Ascending" ), std::make_pair( "Recursive", "True" ),   //
-        std::make_pair( "Fields", getItemFields() ) };
+    std::list< std::pair< QString, QString > > queryItems =   //
+        {
+            std::make_pair( QStringLiteral( "IncludeItemTypes" ), QStringLiteral( "Movie" ) ),   //
+            std::make_pair( QStringLiteral( "SortBy" ), QStringLiteral( "Type,ProductionYear,PremiereDate,SortName" ) ),   //
+            std::make_pair( QStringLiteral( "SortOrder" ), QStringLiteral( "Ascending" ) ),   //
+            std::make_pair( QStringLiteral( "Recursive" ), QStringLiteral( "True" ) ),   //
+            std::make_pair( QStringLiteral( "Fields" ), getItemFields() )   //
+        };
 
     // ItemsService
     auto &&url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Users/%1/Items" ).arg( currUser().second->getUserID( serverName ) ), queryItems );
@@ -2044,7 +2066,13 @@ bool CSyncSystem::requestCreateCollection( const QString &serverName, const QStr
     if ( ids.empty() )
         return false;
 
-    std::list< std::pair< QString, QString > > queryItems = { std::make_pair( "IsLocked", "false" ), std::make_pair( "Name", collectionName ), std::make_pair( "Ids", ids.join( "," ) ) };
+    std::list< std::pair< QString, QString > > queryItems =   //
+        {
+            //
+            std::make_pair( QStringLiteral( "IsLocked" ), QStringLiteral( "false" ) ),   //
+            std::make_pair( QStringLiteral( "Name" ), collectionName ),   //
+            std::make_pair( QStringLiteral( "Ids" ), ids.join( "," ) )   //
+        };
 
     // collection service
     auto &&url = fServerModel->findServerInfo( serverName )->getUrl( QString( "emby/Collections" ), queryItems );
@@ -2071,7 +2099,7 @@ void CSyncSystem::handleCreateCollection( const QString & /*serverName*/, const 
     if ( error.error != QJsonParseError::NoError )
     {
         if ( fUserMsgFunc )
-            fUserMsgFunc( EMsgType::eError, tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ) );
+            fUserMsgFunc( EMsgType::eError, tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString::fromUtf8( data ) ).arg( error.offset ) );
         return;
     }
 
@@ -2102,7 +2130,7 @@ void CSyncSystem::handleAllCollectionsResponse( const QString &serverName, const
     if ( error.error != QJsonParseError::NoError )
     {
         if ( fUserMsgFunc )
-            fUserMsgFunc( EMsgType::eError, tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ) );
+            fUserMsgFunc( EMsgType::eError, tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString::fromUtf8( data ) ).arg( error.offset ) );
         return;
     }
 
@@ -2140,7 +2168,10 @@ void CSyncSystem::handleAllCollectionsResponse( const QString &serverName, const
 
 void CSyncSystem::requestAllCollectionsEx( const QString &serverName, const QString &folderName, const QString &folderId )
 {
-    std::list< std::pair< QString, QString > > queryItems = { std::make_pair( "ParentId", folderId ), std::make_pair( "Recursive", "False" ) };
+    std::list< std::pair< QString, QString > > queryItems =   //
+        { //
+          std::make_pair( QStringLiteral( "ParentId" ), folderId ),   //
+          std::make_pair( QStringLiteral( "Recursive" ), QStringLiteral( "False" ) ) };
 
     // ItemsService
     auto &&url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Items" ), queryItems );
@@ -2165,7 +2196,7 @@ void CSyncSystem::handleAllCollectionsExResponse( const QString &serverName, con
     if ( error.error != QJsonParseError::NoError )
     {
         if ( fUserMsgFunc )
-            fUserMsgFunc( EMsgType::eError, tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ) );
+            fUserMsgFunc( EMsgType::eError, tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString::fromUtf8( data ) ).arg( error.offset ) );
         return;
     }
 
@@ -2198,7 +2229,14 @@ void CSyncSystem::handleAllCollectionsExResponse( const QString &serverName, con
 
 void CSyncSystem::requestGetCollection( const QString &serverName, const QString &collectionName, const QString &collectionId )
 {
-    std::list< std::pair< QString, QString > > queryItems = { std::make_pair( "ParentId", collectionId ), std::make_pair( "Recursive", "False" ), std::make_pair( "IncludeItemTypes", "Movie" ), std::make_pair( "SortBy", "Type,ProductionYear,PremiereDate,SortName" ), std::make_pair( "SortOrder", "Ascending" ), std::make_pair( "Fields", "Path,ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate,OriginalTitle" ) };
+    std::list< std::pair< QString, QString > > queryItems =   //
+        { //
+          std::make_pair( QStringLiteral( "ParentId" ), collectionId ),   //
+          std::make_pair( QStringLiteral( "Recursive" ), QStringLiteral( "False" ) ),   //
+          std::make_pair( QStringLiteral( "IncludeItemTypes" ), QStringLiteral( "Movie" ) ),   //
+          std::make_pair( QStringLiteral( "SortBy" ), QStringLiteral( "Type,ProductionYear,PremiereDate,SortName" ) ),   //
+          std::make_pair( QStringLiteral( "SortOrder" ), QStringLiteral( "Ascending" ) ),   //
+          std::make_pair( QStringLiteral( "Fields" ), QStringLiteral( "Path,ProviderIds,ExternalUrls,Missing,ProductionYear,PremiereDate,DateCreated,EndDate,StartDate,OriginalTitle" ) ) };
 
     // ItemsService
     auto &&url = fServerModel->findServerInfo( serverName )->getUrl( QString( "Items" ), queryItems );
@@ -2256,7 +2294,7 @@ void CSyncSystem::handleReloadMediaResponse( const QString &serverName, const QB
     if ( error.error != QJsonParseError::NoError )
     {
         if ( fUserMsgFunc )
-            fUserMsgFunc( EMsgType::eError, tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString( data ) ).arg( error.offset ) );
+            fUserMsgFunc( EMsgType::eError, tr( "Invalid Response" ), tr( "Invalid Response from Server: %1 - %2" ).arg( error.errorString() ).arg( QString::fromUtf8( data ) ).arg( error.offset ) );
         return;
     }
 

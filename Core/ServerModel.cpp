@@ -174,14 +174,16 @@ bool CServerFilterModel::filterAcceptsRow( int source_row, const QModelIndex &so
 
 void CServerFilterModel::setOnlyShowEnabledServers( bool value )
 {
+    beginFilterChange();
     fOnlyShowEnabled = value;
-    invalidateFilter();
+    endFilterChange();
 }
 
 void CServerFilterModel::setOnlyShowPrimaryServer( bool value )
 {
+    beginFilterChange();
     fOnlyShowPrimaryServer = value;
-    invalidateFilter();
+    endFilterChange();
 }
 
 void CServerFilterModel::sort( int column, Qt::SortOrder order /*= Qt::AscendingOrder */ )

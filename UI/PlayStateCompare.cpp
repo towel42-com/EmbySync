@@ -38,8 +38,8 @@
 #include "Core/ServerModel.h"
 
 #include "T42-Utils/AutoWaitCursor.h"
-#include "T42-Utils/QtUtils.h"
 #include "T42-Utils/WidgetChanged.h"
+#include "T42-Utils/autoSize.h"
 
 #include <QAction>
 #include <QApplication>
