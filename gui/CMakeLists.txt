@@ -29,8 +29,6 @@ project( EmbySyncGUI )
 include( include.cmake )
 IncludeProjectSettings()
  
-include_directories( ${CMAKE_BINARY_DIR} )
-
 add_executable( ${PROJECT_NAME} WIN32
                 ${_PROJECT_DEPENDENCIES} 
                 ${_CMAKE_MODULE_FILES}

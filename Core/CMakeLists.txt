@@ -27,7 +27,6 @@ project( Core )
 find_package(IncludeProjectSettings REQUIRED)
 include( include.cmake )
 IncludeProjectSettings()
-include_directories( ${CMAKE_BINARY_DIR} )
 
 add_library(${PROJECT_NAME} STATIC
     ${_PROJECT_DEPENDENCIES} 

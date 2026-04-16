@@ -32,8 +32,6 @@ add_executable( ${PROJECT_NAME}
                 ${_PROJECT_DEPENDENCIES} 
                 ${_CMAKE_MODULE_FILES}
           )
-include_directories( ${CMAKE_BINARY_DIR} )
-
 set ( DEBUG_PATH 
         "%PATH%"
         "$<TARGET_FILE_DIR:Towel42Utils>"
