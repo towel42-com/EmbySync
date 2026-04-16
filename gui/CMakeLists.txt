@@ -65,7 +65,7 @@ target_link_libraries( ${PROJECT_NAME}
         ${project_pri_DEPS}
 )
 
-#DeployQt( ${PROJECT_NAME} . INSTALL_ONLY 1 )
+DeployQt( ${PROJECT_NAME} . INSTALL_ONLY 1 )
 DeploySystem( ${PROJECT_NAME} . INSTALL_ONLY 1 )
 #DeployOpenSSL( ${PROJECT_NAME} . )
 
