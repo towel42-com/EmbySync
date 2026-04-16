@@ -35,7 +35,7 @@
 #include <QSettings>
 
 #include <QDate>
-#include< QUrlQuery >
+#include < QUrlQuery >
 #include <QColor>
 
 #include <map>
@@ -91,7 +91,7 @@ QVariant CSettings::getValue( const QJsonObject &json, const QString &fieldName,
         return json[ fieldName ].toVariant();
 }
 
-bool CSettings::load( const QString &fileName, std::function< void( const QString &title, const QString &msg ) > errorFunc, bool addToRecentFileList )
+bool CSettings::load( const QString &fileName, const TErrorFunc &errorFunc, bool addToRecentFileList )
 {
     fFileName = fileName;
 
@@ -184,7 +184,13 @@ bool CSettings::load( const QString &fileName, std::function< void( const QStrin
     return true;
 }
 
-bool CSettings::loadSearchServers( QJsonDocument &json, const std::function< void( const QString &title, const QString &msg ) > &errorFunc )
+void CSettings::setSearchServers( const std::list< std::shared_ptr< CServerInfo > > &servers )
+{
+    fSearchServers = servers;
+    fChanged = true;
+}
+
+bool CSettings::loadSearchServers( QJsonDocument &json, const TErrorFunc &errorFunc )
 {
     auto searchServers = json[ "searchServers" ].toArray();
     for ( int ii = 0; ii < searchServers.count(); ++ii )
@@ -322,10 +328,10 @@ bool CSettings::save()
 {
     if ( fFileName.isEmpty() )
         return false;
-    return save( std::function< void( const QString &title, const QString &msg ) >() );
+    return save( TErrorFunc() );
 }
 
-bool CSettings::save( std::function< void( const QString &title, const QString &msg ) > errorFunc )
+bool CSettings::save( const TErrorFunc &errorFunc )
 {
     if ( fFileName.isEmpty() )
         return false;

@@ -47,6 +47,8 @@ namespace Ui
 
 struct SShowFilter;
 using TFilterMap = std::map< QString, std::shared_ptr< SShowFilter > >;
+using TErrorFunc = std::function< void( const QString &title, const QString &msg ) >;
+using TSelectFileFunc = std::function< QString() >;
 
 class CSettings
 {
@@ -68,15 +70,15 @@ public:
 
     bool load( bool addToRecentFileList, QWidget *parent );
     bool load( const QString &fileName, bool addToRecentFileList, QWidget *parent );
-    bool load( const QString &fileName, std::function< void( const QString &title, const QString &msg ) > errorFunc, bool addToRecentFileList );
+    bool load( const QString &fileName, const TErrorFunc &errorFunc, bool addToRecentFileList );
 
     bool save();
 
     bool save( QWidget *parent );
     bool saveAs( QWidget *parent );
     bool maybeSave( QWidget *parent );
-    bool save( QWidget *parent, std::function< QString() > selectFileFunc, std::function< void( const QString &title, const QString &msg ) > errorFunc );
-    bool save( std::function< void( const QString &title, const QString &msg ) > errorFunc );
+    bool save( QWidget *parent, const TSelectFileFunc &selectFileFunc, const TErrorFunc &errorFunc );
+    bool save( const TErrorFunc &errorFunc );
 
     bool changed() const { return fChanged; }
     void reset();
@@ -156,7 +158,7 @@ public:
     QString primaryServer() const;
 
     std::list< std::shared_ptr< CServerInfo > > searchServers() const { return fSearchServers; }
-    void setSearchServers( const std::list< std::shared_ptr< CServerInfo > > &servers ) { fSearchServers = servers; }
+    void setSearchServers( const std::list< std::shared_ptr< CServerInfo > > &servers );
     void loadSearchServers();
 
     int enabledServerCount() const;
@@ -166,11 +168,11 @@ public:
     void setMissingShowFilterMap( const TFilterMap &map );
 
 private:
-    bool loadSearchServers( QJsonDocument &json, const std::function< void( const QString &title, const QString &msg ) > &errorFunc );
+    bool loadSearchServers( QJsonDocument &json, const TErrorFunc &errorFunc );
     QVariant getValue( const QJsonObject &data, const QString &fieldName, const QVariant &defaultValue ) const;
 
     QColor getColor( const QColor &clr, Qt::ItemDataRole role ) const;
-    bool maybeSave( QWidget *parent, std::function< QString() > selectFileFunc, std::function< void( const QString &title, const QString &msg ) > errorFunc );
+    bool maybeSave( QWidget *parent, const TSelectFileFunc &selectFileFunc, const TErrorFunc &errorFunc );
 
     template< typename T >
     void updateValue( T &lhs, const T &rhs )

@@ -25,6 +25,9 @@
 
 #include <QString>
 #include <functional>
+using TErrorFunc = std::function< void( const QString &title, const QString &msg ) >;
+using TSelectFileFunc = std::function< QString() >;
+
 class CProgressSystem
 {
 public:
@@ -45,7 +48,7 @@ public:
     bool wasCanceled() const;
 
     void setSetTitleFunc( std::function< void( const QString &title ) > setTitleFunc );
-    void setTitleFunc( std::function< QString() > titleFunc );
+    void setTitleFunc( TSelectFileFunc titleFunc );
 
     void setMaximumFunc( std::function< int() > maximumFunc );
     void setSetMaximumFunc( std::function< void( int ) > setMaximumFunc );
@@ -59,7 +62,7 @@ public:
 
 private:
     std::function< void( const QString &title ) > fSetTitleFunc;
-    std::function< QString() > fTitleFunc;
+    TSelectFileFunc fTitleFunc;
 
     std::function< int() > fMaximumFunc;
     std::function< void( int ) > fSetMaximumFunc;

@@ -101,7 +101,7 @@ void CProgressSystem::setSetTitleFunc( std::function< void( const QString &title
     fSetTitleFunc = setTitleFunc;
 }
 
-void CProgressSystem::setTitleFunc( std::function< QString() > titleFunc )
+void CProgressSystem::setTitleFunc( TSelectFileFunc titleFunc )
 {
     fTitleFunc = titleFunc;
 }
