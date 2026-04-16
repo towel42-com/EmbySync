@@ -736,7 +736,7 @@ bool CSettings::maybeSave( QWidget *parentWidget )
         [ parentWidget ]( const QString &title, const QString &msg ) { QMessageBox::critical( parentWidget, title, msg ); } );
 }
 
-bool CSettings::save( QWidget *parentWidget, std::function< QString() > selectFileFunc, std::function< void( const QString &title, const QString &msg ) > errorFunc )
+bool CSettings::save( QWidget *parentWidget, const TSelectFileFunc &selectFileFunc, const std::function< void( const QString &title, const QString &msg ) > &errorFunc )
 {
     if ( fFileName.isEmpty() )
         return maybeSave( parentWidget, selectFileFunc, errorFunc );
@@ -744,7 +744,7 @@ bool CSettings::save( QWidget *parentWidget, std::function< QString() > selectFi
     return save( errorFunc );
 }
 
-bool CSettings::maybeSave( QWidget *parentWidget, std::function< QString() > selectFileFunc, std::function< void( const QString &title, const QString &msg ) > errorFunc )
+bool CSettings::maybeSave( QWidget *parentWidget, const TSelectFileFunc &selectFileFunc, const std::function< void( const QString &title, const QString &msg ) > &errorFunc )
 {
     if ( !fChanged )
         return true;
