@@ -92,7 +92,7 @@ CMainWindow::CMainWindow( QWidget *parent ) :
 
     connect( fImpl->actionCheckForLatestVersion, &QAction::triggered, this, &CMainWindow::slotActionCheckForLatest );
 
-    fGitHubVersion.first = new NTowel42Utils::CGitHubGetVersions( {}, this );
+    fGitHubVersion.first = new NTowel42Utils::CGitHubGetVersions( this );
     fGitHubVersion.first->setCurrentVersion( NVersion::versionInfo() );
     connect( fGitHubVersion.first, &NTowel42Utils::CGitHubGetVersions::sigVersionsDownloaded, this, &CMainWindow::slotVersionsDownloaded );
     connect( fGitHubVersion.first, &NTowel42Utils::CGitHubGetVersions::sigLogMessage, this, &CMainWindow::slotAddInfoToLog );
