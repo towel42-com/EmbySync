@@ -36,6 +36,8 @@ add_executable( ${PROJECT_NAME} WIN32
                 ${_CMAKE_MODULE_FILES}
                 application.rc 
           )
+include_directories( ${CMAKE_BINARY_DIR} )
+
 #if ( NOT OPENSSL_DEPLOY_BINDIR )
 #    message( FATAL_ERROR "OPENSSL_DEPLOY_BINDIR not set" )
 #endif()
